@@ -164,6 +164,7 @@ test('readback: a kernel change that grows out', async (d) => {
   const side = await warm(g);
   const kept: Snap[] = [];
   const both = ['s', 'p'];
+  const all = [...both, 'r'];
   step(g, 1);
   step(c, 1);
   onGpu(side, both, 1);
@@ -174,13 +175,13 @@ test('readback: a kernel change that grows out', async (d) => {
     agrees(r, both[k] as string, 1, kept[1] as Snap);
   });
 
-  const scoped = d as unknown as {
-    pushErrorScope(f: string): void;
-    popErrorScope(): Promise<{ message: string } | null>;
+  // Idling the CPU voice on `r` and cuing one the GPU runs compiles the kernel that folds `r`.
+  // Waking it again goes back to a kernel without `r`, so idling it later regrows `out` at once.
+  const idle = (w: number) => {
+    for (const x of [g, c]) (x.cpu as { weight: number }).weight = w;
   };
-  scoped.pushErrorScope('validation');
-  for (const x of [g, c]) {
-    (x.cpu as { weight: number }).weight = 0;
+  idle(0);
+  for (const x of [g, c])
     x.m.cue({
       patch: keys<C, P>(
         700,
@@ -193,30 +194,48 @@ test('readback: a kernel change that grows out', async (d) => {
       subjects: CELLS,
       loop: true,
     });
-  }
+  if (side.channel('s') !== null) throw new Error('s folded while the kernel with r compiled');
+  await side.ready;
+  idle(1);
+  side.channel('s');
+  await side.ready;
+  onGpu(side, both, 1);
+  if (side.channel('r') !== null) throw new Error('r on the GPU while its CPU voice plays');
+  if (side.channel('s')?.buffer !== before) throw new Error('out regrew before frame 2');
+
   step(g, 2);
   step(c, 2);
-  kept[2] = snap(c);
-  // The turn copies frame 1's fold; the kernel writing `r` is still compiling.
-  for (const r of await reads(side, both))
-    if (r !== null) throw new Error('read during the compile was not null');
-  await side.ready;
-  // This refold regrows `out`, after the copy above was submitted.
-  const second = reads(side, both);
-  onGpu(side, [...both, 'r'], 2);
-  if (side.channel('s')?.buffer === before) throw new Error('out did not regrow');
-  (await second).forEach((r, k) => {
+  // These copy nothing: frame 1's first reads already copied the fold they give.
+  (await reads(side, both)).forEach((r, k) => {
     agrees(r, both[k] as string, 1, kept[1] as Snap);
   });
 
-  step(g, 3);
-  step(c, 3);
-  kept[3] = snap(c);
-  onGpu(side, [...both, 'r'], 3);
-  (await reads(side, both)).forEach((r, k) => {
+  const scoped = d as unknown as {
+    pushErrorScope(f: string): void;
+    popErrorScope(): Promise<{ message: string } | null>;
+  };
+  scoped.pushErrorScope('validation');
+  // A weight write starts a frame, still at frame 2's time. Its first refresh submits a copy of
+  // frame 2's fold from `out`, then folds with the compiled kernel, which regrows `out`.
+  idle(0);
+  kept[2] = snap(c);
+  const second = reads(side, both);
+  onGpu(side, all, 2);
+  if (side.channel('s')?.buffer === before) throw new Error('out did not regrow');
+  (await second).forEach((r, k) => {
     agrees(r, both[k] as string, 2, kept[2] as Snap);
   });
-  agrees(await side.read('r'), 'r', 3, kept[3] as Snap);
+  agrees(await side.read('r'), 'r', 2, kept[2] as Snap);
+
+  for (let f = 3; f <= 4; f++) {
+    step(g, f);
+    step(c, f);
+    kept[f] = snap(c);
+    onGpu(side, all, f);
+    (await reads(side, all)).forEach((r, k) => {
+      agrees(r, all[k] as string, f - 1, kept[f - 1] as Snap);
+    });
+  }
   const error = await scoped.popErrorScope();
   if (error !== null) throw new Error(`validation: ${error.message}`);
 });
