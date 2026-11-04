@@ -8,7 +8,7 @@ import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { Col, ROW, type Slot, voiceTable } from '../src/gpu/table.js';
 import { Timings } from '../src/gpu/timings.js';
 import { Flag, NONE } from '../src/gpu/wgsl/timing.js';
-import { kit, mix, quat, sum } from '../src/index.js';
+import { kit, type Mix, mix, quat, sum } from '../src/index.js';
 import type { Mixer } from '../src/mixer.js';
 import type { Voice } from '../src/voice.js';
 
@@ -26,6 +26,14 @@ const wave = shaderPatch<C, P>(1000, {
 });
 const slots = Array.from({ length: 3 }, () => ({ runner: 0, values: 0, sub: 0 }));
 const cells = [{ x: 0 }, { x: 1 }];
+
+/** `eligibility` for `m`'s voices over `list`, with an `Answers` registered as the gpu side's is. */
+function elig<O>(m: Mix<C, O>, list: readonly C[] = cells) {
+  const mixer = mixerOf(m);
+  const answers = new Answers<C>(mixer as unknown as Mixer<C, unknown>);
+  answers.register(list);
+  return eligibility(mixer, answers);
+}
 
 /** A staggered voice's table, at each sync, with its timing block laid as the gpu side lays it. */
 function staggered(spec: Record<string, unknown>, list: readonly C[] = cells) {
@@ -63,7 +71,7 @@ describe('voice table', () => {
     const h = m.cue({ patch: wave, subjects: cells, loop: true, fade: { in: 400 } });
     m.sync(0);
     m.sync(250);
-    const e = eligibility(mixerOf(m), cells);
+    const e = elig(m);
     const t = voiceTable(mixerOf(m), e.voices, slots);
     m.probe(cells[0] as C);
     expect(t.count).toBe(1);
@@ -81,7 +89,7 @@ describe('voice table', () => {
     m.cue({ patch: wave, subjects: cells, role: 'a' });
     m.cue({ patch: wave, subjects: cells });
     m.sync(0);
-    const voices = eligibility(mixerOf(m), cells).voices;
+    const voices = elig(m).voices;
     expect(voices.length).toBe(4);
     const four = Array.from({ length: 4 }, () => ({ runner: 0, values: 0, sub: 0 }));
     const t = voiceTable(mixerOf(m), voices, four);
@@ -227,39 +235,42 @@ describe('voice table', () => {
     const m = mix<C, P>(K);
     m.cue({ patch: wave, subjects: cells, weight: () => 0.5 });
     m.sync(0);
-    const e = eligibility(mixerOf(m), cells);
+    const e = elig(m);
     expect(e.channels.has('y')).toBe(false);
     expect(e.reasons[0]?.why).toMatch(/weight signal/);
   });
 
-  it('keeps a channel on the CPU when a voice misses a registered subject', () => {
+  it('folds a voice that misses a registered subject on the GPU', () => {
     const m = mix<C, P>(K);
     m.cue({ patch: wave, subjects: [cells[0] as C] });
     m.sync(0);
-    expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(false);
+    const e = elig(m);
+    expect(e.channels.has('y')).toBe(true);
+    expect(e.reasons).toEqual([]);
   });
 
-  it('asks again whether a voice reaches every subject when the list changes', () => {
+  it('keeps a voice on the CPU whose stagger answers NaN for a subject', () => {
     const m = mix<C, P>(K);
-    m.cue({ patch: wave, subjects: [cells[0] as C] });
+    m.cue({ patch: wave, subjects: cells, stagger: (c: C) => (c.x === 1 ? Number.NaN : 0) });
     m.sync(0);
-    const one = [cells[0] as C];
-    expect(eligibility(mixerOf(m), one).channels.has('y')).toBe(true);
-    expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(false);
-    expect(eligibility(mixerOf(m), one).channels.has('y')).toBe(true);
+    const e = elig(m);
+    expect(e.channels.has('y')).toBe(false);
+    expect(e.reasons.map((r) => r.why)).toEqual([
+      'its stagger gives a subject a delay that is not a finite number',
+    ]);
   });
 
   it('keeps a channel whose rule has no WGSL on the CPU', () => {
     const m = mix<C, { r: number[] }>(kit({ r: quat() }));
     m.sync(0);
-    expect(eligibility(mixerOf(m), cells).channels.size).toBe(0);
+    expect(elig(m).channels.size).toBe(0);
   });
 
   it('writes the values and per-subject offsets as u32 bits, exact past 2^24', () => {
     const m = mix<C, P>(K);
     m.cue({ patch: wave, subjects: cells, loop: true });
     m.sync(0);
-    const e = eligibility(mixerOf(m), cells);
+    const e = elig(m);
     const far = 2 ** 24 + 1;
     const t = voiceTable(mixerOf(m), e.voices, [{ runner: 0, values: far, sub: far + 2 }]);
     const bits = new Uint32Array(t.rows.buffer);
@@ -271,7 +282,7 @@ describe('voice table', () => {
     const m = mix<C, P>(K);
     m.cue({ patch: wave, subjects: cells, loop: true });
     m.sync(0);
-    const e = eligibility(mixerOf(m), cells);
+    const e = elig(m);
     within(e, () => ({ values: 4, persub: 0 }), 16);
     expect(e.voices.length).toBe(1);
     within(e, () => ({ values: 4, persub: 8 }), 16);
@@ -283,7 +294,7 @@ describe('voice table', () => {
   it('folds a channel no playing voice writes on the GPU, at its rest', () => {
     const m = mix<C, P>(K);
     m.sync(0);
-    expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(true);
+    expect(elig(m).channels.has('y')).toBe(true);
   });
 });
 

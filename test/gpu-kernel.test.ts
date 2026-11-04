@@ -56,7 +56,7 @@ describe('kernel', () => {
     expect(k.code).toContain(
       'fn run_0(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32, lag: f32) -> Out_0',
     );
-    expect(k.code).toContain('fn blits_take(o: u32, i: u32) -> Take');
+    expect(k.code).toContain('fn blits_take(o: u32, i: u32) -> BlitsTake');
     expect(k.code.match(/blits_take\(o, i\)/g)).toHaveLength(2);
   });
   it("picks each role's leader per subject, reading none from the row", () => {

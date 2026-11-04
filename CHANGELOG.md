@@ -17,6 +17,8 @@ version and everything else the patch. Each release lists its changes as **Break
   channel does, straight across OKLab or round the hue, and a role of its voices blended the same.
 - The `gpu` engine folds `tween()`, `spring()` and `glide()` voices, committing a `to()`, `set()`
   or `push()` at the voice's time even where nothing reads the subject on the CPU.
+- The `gpu` engine folds a voice that reaches only some of the registered subjects,
+  through `subjects` or `target`.
 
 ### Fixed
 
@@ -27,6 +29,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine keeps a voice on the CPU, saying why, where its numbers or its subjects' runs
   would pass the largest storage buffer the device binds, rather than failing to bind; and it
   reads a voice's place in those buffers exactly past 2^24 numbers.
+- The `gpu` engine folded a `target` voice into every registered subject, including those its
+  `target` turned away.
 
 ## 0.20.0
 

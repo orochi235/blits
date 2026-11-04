@@ -1,6 +1,7 @@
 import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
+import type { Answers } from './answers.js';
 import { type ChannelLookup, packOf } from './runner.js';
 import { type ChannelCode, codeFor } from './wgsl/channels.js';
 
@@ -18,22 +19,6 @@ const PLAYING = new Set(['live', 'frozen', 'fading']);
 
 const lookups = new WeakMap<object, ChannelLookup>();
 
-/** Per voice's `named`: whether it holds every subject of the list last asked about. It never changes. */
-const covered = new WeakMap<object, { list: readonly unknown[]; all: boolean }>();
-
-function coversAll<I>(named: { has(subject: I): boolean }, subjects: readonly I[]): boolean {
-  const had = covered.get(named);
-  if (had?.list === subjects) return had.all;
-  let all = true;
-  for (const s of subjects)
-    if (!named.has(s)) {
-      all = false;
-      break;
-    }
-  covered.set(named, { list: subjects, all });
-  return all;
-}
-
 /** The WGSL of each of the mix's channels whose rule has some, one map per mix. */
 export function codesOf<I, O>(mix: Mixer<I, O>): ChannelLookup {
   let codes = lookups.get(mix);
@@ -50,11 +35,7 @@ export function codesOf<I, O>(mix: Mixer<I, O>): ChannelLookup {
 }
 
 /** Why a voice cannot run on the GPU, or null where it can. */
-function why<I, O>(
-  voice: Voice<I, O>,
-  subjects: readonly I[],
-  codes: ChannelLookup,
-): string | null {
+function why<I, O>(voice: Voice<I, O>, codes: ChannelLookup, answers: Answers<I>): string | null {
   for (const name of voice.patch.writes as readonly string[])
     if (!codes.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
   const packed = packOf(voice.patch, codes);
@@ -66,13 +47,16 @@ function why<I, O>(
     return 'it is a motion read by a projection, which commits nothing';
   if (voice.spec.from === 'current') return "it starts from the subject's current pose";
   if (typeof voice.spec.weight === 'function') return 'its weight is a weight signal';
-  if (voice.spec.stagger !== undefined) return 'it staggers its subjects';
   if (voice.owner !== null) return 'an owner lays it out';
   if (voice.patch.state !== undefined || voice.patch.step !== undefined)
     return 'its patch keeps state';
   if (voice.parts !== null || voice.parted !== null) return 'it is parting from subjects';
   if (voice.bound !== null) return 'it is bounded';
-  if (voice.named !== null && !coversAll(voice.named, subjects)) return 'it misses a subject';
+  const { stagger, target } = voice.spec;
+  if (stagger === undefined && target === undefined && voice.named === null) return null;
+  const answer = answers.of(voice as Voice<I, unknown>);
+  if (!answer.finite) return 'its stagger gives a subject a delay that is not a finite number';
+  if (answer.delays !== null) return 'it staggers its subjects';
   return null;
 }
 
@@ -80,7 +64,7 @@ function why<I, O>(
  * Sorts this frame's voices into what the GPU folds and what stays on the CPU. A channel goes on
  * the GPU when its rule has WGSL and every playing voice writing it can run there.
  */
-export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eligibility<I, O> {
+export function eligibility<I, O>(mix: Mixer<I, O>, answers: Answers<I>): Eligibility<I, O> {
   const channels = new Set<string>();
   const kept = new Set<string>();
   const reasons: { voice: Voice<I, O>; why: string }[] = [];
@@ -89,7 +73,7 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
   const playing = mix.cued.filter((v) => PLAYING.has(v.state));
   const fit = new Set<Voice<I, O>>();
   for (const voice of playing) {
-    const reason = why(voice, subjects, codes);
+    const reason = why(voice, codes, answers);
     for (const name of voice.patch.writes as readonly string[]) {
       if (reason === null) channels.add(name);
       else kept.add(name);

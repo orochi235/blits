@@ -1,22 +1,19 @@
 import type { Mixer } from '../mixer.js';
+import type { Voice } from '../voice.js';
 import { production, warnOnce } from '../warn.js';
+import { Answers } from './answers.js';
+import { Buffers } from './buffers.js';
 import { type Built, compile, layoutOf } from './compile.js';
 import { codesOf, eligibility, within } from './eligible.js';
-import { GROUP, type Kernel, MAX_ROLES } from './kernel.js';
+import { GROUP, MAX_ROLES } from './kernel.js';
 import type { Mirror } from './mirror.js';
 import { Mirrors } from './mirrors.js';
 import { type Entry, Regions } from './region.js';
 import { type Packed, packOf, type Runner, unpack } from './runner.js';
 import { elapsedOf, type Slot, voiceTable } from './table.js';
+import { sizeOf, Timings } from './timings.js';
 import { twins } from './twins.js';
-import {
-  type GpuBindGroup,
-  type GpuBuffer,
-  type GpuComputePipeline,
-  type GpuDevice,
-  STORAGE_LIMIT,
-  Usage,
-} from './webgpu.js';
+import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT, Usage } from './webgpu.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
 /**
@@ -55,20 +52,20 @@ export class GpuSide<I> {
   private readonly checked = new Set<string>();
   private readonly regions = new Regions();
   private readonly mirrors = new Mirrors();
+  private readonly answers: Answers<I>;
+  private readonly timings = new Timings();
+  private readonly buffers: Buffers;
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
   private stale = true;
   /** Each channel's reason for staying on the CPU, said once. */
   private readonly told = new Set<string>();
-  private uploaded: { list: readonly I[]; fields: readonly string[] } | null = null;
-  private buffers: Partial<
-    Record<'subjects' | 'table' | 'values' | 'frame' | 'out' | 'persub', GpuBuffer>
-  > = {};
-  private group: { of: GpuComputePipeline; group: GpuBindGroup } | null = null;
 
   constructor(
     private readonly mix: Mixer<I, unknown>,
     private readonly device: GpuDevice,
   ) {
+    this.answers = new Answers(mix);
+    this.buffers = new Buffers(device);
     void device.lost.then(() => {
       this.off = true;
       this.outputs.clear();
@@ -85,9 +82,10 @@ export class GpuSide<I> {
   subjects(list: readonly I[], fieldsOf: (subject: I) => Record<string, number>): void {
     this.list = list.slice();
     this.fieldsOf = fieldsOf;
-    this.uploaded = null;
     this.frame = Number.NaN;
     this.mirrors.clear();
+    this.answers.register(this.list);
+    this.timings.clear();
   }
 
   /**
@@ -110,16 +108,18 @@ export class GpuSide<I> {
     const mix = this.mix;
     const n = this.list.length;
     if (n === 0) return;
-    const e = eligibility(mix, this.list);
+    const e = eligibility(mix, this.answers);
     const codes = codesOf(mix);
     const limit = this.device.limits?.maxStorageBufferBindingSize ?? STORAGE_LIMIT;
     within(
       e,
       (v) => {
         const p = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
+        const rows = p.perSubject === undefined ? 0 : n * (p.runner.stride ?? 0);
+        const fades = (v.fade.in ?? 0) > 0;
         return {
           values: p.values.length,
-          persub: p.perSubject === undefined ? 0 : n * (p.runner.stride ?? 0),
+          persub: rows + sizeOf(this.answers.of(v as Voice<I, unknown>), fades),
         };
       },
       limit,
@@ -181,13 +181,27 @@ export class GpuSide<I> {
       this.dispatch();
       return;
     }
-    const placed = this.regions.frame(entries, limit / 4);
     const subs = this.mirrors.place(mirrors);
-    const slots: Slot[] = runners.map((r, k) => ({
-      runner: this.index.get(r.key) as number,
-      values: placed.offsets[k] as number,
-      sub: subs[k] as number,
-    }));
+    const voices = e.voices as Voice<I, unknown>[];
+    const timing = this.timings.place(mix, voices, this.answers, this.mirrors.length);
+    // Each fade curve's entry after every voice's, at `curves[k]` for voice k.
+    const curves = voices.map((v) => {
+      const c = this.timings.curveOf(v as Voice<unknown, unknown>);
+      if (c === undefined) return undefined;
+      entries.push(c);
+      return entries.length - 1;
+    });
+    const placed = this.regions.frame(entries, limit / 4);
+    const slots: Slot[] = runners.map((r, k) => {
+      const c = curves[k];
+      return {
+        runner: this.index.get(r.key) as number,
+        values: placed.offsets[k] as number,
+        sub: subs[k] as number,
+        timing: timing[k],
+        ...(c === undefined ? {} : { ease: placed.offsets[c] as number }),
+      };
+    });
     const table = voiceTable(mix, e.voices, slots);
     if (table.roles > MAX_ROLES) {
       this.stale = true;
@@ -198,16 +212,20 @@ export class GpuSide<I> {
       return;
     }
     const k = b.kernel;
-    this.upload(k);
-    const dev = this.device;
     const buf = this.buffers;
-    const t = this.sized('table', table.rows.byteLength, Usage.STORAGE | Usage.COPY_DST);
-    const had = buf.values;
-    const v = this.sized('values', this.regions.length * 4, Usage.STORAGE | Usage.COPY_DST);
-    const f = this.sized('frame', 16, Usage.UNIFORM | Usage.COPY_DST);
-    const out = this.sized('out', k.size * 4, Usage.STORAGE | Usage.COPY_SRC);
-    const hadSub = buf.persub;
-    const persub = this.sized('persub', this.mirrors.length * 4, Usage.STORAGE | Usage.COPY_DST);
+    buf.subjects(this.list, this.fieldsOf, k.fields);
+    const dev = this.device;
+    const t = buf.sized('table', table.rows.byteLength, Usage.STORAGE | Usage.COPY_DST);
+    const had = buf.of('values');
+    const v = buf.sized('values', this.regions.length * 4, Usage.STORAGE | Usage.COPY_DST);
+    const f = buf.sized('frame', 16, Usage.UNIFORM | Usage.COPY_DST);
+    const out = buf.sized('out', k.size * 4, Usage.STORAGE | Usage.COPY_SRC);
+    const hadSub = buf.of('persub');
+    const persub = buf.sized(
+      'persub',
+      (this.mirrors.length + this.timings.length) * 4,
+      Usage.STORAGE | Usage.COPY_DST,
+    );
     dev.queue.writeBuffer(t, 0, table.rows);
     const data = this.regions.data;
     if (this.stale || v !== had) {
@@ -218,23 +236,13 @@ export class GpuSide<I> {
       for (const [from, to] of placed.changed)
         dev.queue.writeBuffer(v, from, data.subarray(from / 4, to / 4));
     this.mirrors.upload(dev, persub, persub !== hadSub);
+    this.timings.upload(dev, persub, persub !== hadSub);
     dev.queue.writeBuffer(f, 0, new Uint32Array([table.count, n, 0, 0]));
-    if (this.group === null || this.group.of !== b.pipeline) {
-      this.group = {
-        of: b.pipeline,
-        group: dev.createBindGroup({
-          layout: layoutOf(dev),
-          entries: [buf.subjects, t, v, f, out, persub].map((buffer, binding) => ({
-            binding,
-            resource: { buffer: buffer as GpuBuffer },
-          })),
-        }),
-      };
-    }
+    const group = buf.bind(b.pipeline, layoutOf(dev));
     const enc = dev.createCommandEncoder();
     const pass = enc.beginComputePass();
     pass.setPipeline(b.pipeline);
-    pass.setBindGroup(0, this.group.group);
+    pass.setBindGroup(0, group);
     pass.dispatchWorkgroups(Math.ceil(n / GROUP));
     pass.end();
     dev.queue.submit([enc.finish()]);
@@ -251,38 +259,5 @@ export class GpuSide<I> {
     if (fresh.length === 0) return;
     for (const r of fresh) this.checked.add(r.key);
     twins(dev, mix, this.list, k, out, fresh[0] as Runner);
-  }
-
-  /** A buffer at least `bytes` long, made again (and the bind group with it) when it is too small. */
-  private sized(name: keyof GpuSide<I>['buffers'], bytes: number, usage: number): GpuBuffer {
-    const have = this.buffers[name];
-    if (have !== undefined && have.size >= bytes) return have;
-    have?.destroy();
-    const limit = this.device.limits?.maxStorageBufferBindingSize ?? STORAGE_LIMIT;
-    const size = Math.max(
-      16,
-      Math.min(2 ** Math.ceil(Math.log2(Math.max(bytes, 1))), Math.max(bytes, limit)),
-    );
-    const made = this.device.createBuffer({ size, usage, label: `blits gpu ${name}` });
-    this.buffers[name] = made;
-    this.group = null;
-    return made;
-  }
-
-  /** Writes each subject's fields, in the kernel's order, where the list or the fields changed. */
-  private upload(k: Kernel): void {
-    const u = this.uploaded;
-    if (u !== null && u.list === this.list && u.fields.join() === k.fields.join()) return;
-    const width = Math.max(1, k.fields.length);
-    const data = new Float32Array(this.list.length * width);
-    this.list.forEach((s, i) => {
-      const f = this.fieldsOf(s);
-      k.fields.forEach((name, j) => {
-        data[i * width + j] = f[name] ?? 0;
-      });
-    });
-    const b = this.sized('subjects', data.byteLength, Usage.STORAGE | Usage.COPY_DST);
-    this.device.queue.writeBuffer(b, 0, data);
-    this.uploaded = { list: this.list, fields: k.fields };
   }
 }

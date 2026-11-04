@@ -21,7 +21,8 @@ type WithTables<P, T extends string, V> = [T] extends [never]
 export interface ShaderSpec<I, O, P extends Record<string, number>, T extends string = never> {
   /**
    * WGSL statements setting fields of `out`, one per channel in `writes`, from `phase`, `pass_index`,
-   * `subject` (the fields named in `fields`), and `params` (those named in `params`).
+   * `subject` (the fields named in `fields`), `params` (those named in `params`), and `lag`, how many
+   * ms this subject's time trails the voice's (0 where the voice does not stagger).
    */
   wgsl: string;
   /** WGSL declarations the body uses, included once however many patches share them. */

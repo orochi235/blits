@@ -1,6 +1,8 @@
+import { curveData, straight } from '../easing.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import type { Answer, Answers } from './answers.js';
+import type { Entry } from './region.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
 import { NONE } from './wgsl/timing.js';
 
@@ -40,6 +42,8 @@ class Block {
   private readonly shown: Float64Array | null;
   /** Set where an origin moved since `data` last took them, so the next `place` lays them again. */
   private stale = false;
+  /** The voice's fade curve as `blits_ease` reads it, where it fades its origins in on one. */
+  readonly curve: Float32Array | null;
   anchor: number;
   latest = Number.NEGATIVE_INFINITY;
   dirty = Dirty.ALL;
@@ -57,6 +61,8 @@ class Block {
     if (delays !== null) this.data.set(delays);
     if (reach !== null) new Uint32Array(this.data.buffer).set(reach, n);
     this.at = delays !== null && fades ? n + (reach?.length ?? 0) : -1;
+    const curve = this.at >= 0 && !straight(voice.ease) ? curveData(voice.ease) : undefined;
+    this.curve = curve === undefined ? null : Float32Array.from(curve);
     this.anchor = now;
     if (this.at < 0 || delays === null) {
       this.early = null;
@@ -195,6 +201,12 @@ export class Timings {
     this.placed = placed;
     this.length = at - from;
     return slots;
+  }
+
+  /** The fade curve of `voice`'s block as a values entry the block owns, where it has one. */
+  curveOf(voice: Voice<unknown, unknown>): Entry | undefined {
+    const b = this.by.get(voice);
+    return b?.curve ? { owner: b, values: b.curve } : undefined;
   }
 
   /** Writes blocks that changed since the last upload, or all where `full`. */
