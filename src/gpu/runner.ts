@@ -1,3 +1,4 @@
+import { wavePack } from './runners/wave.js';
 import { shaderPack } from './shader-patch.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
@@ -33,7 +34,7 @@ export type Packed =
 /** A kind of patch's packer: undefined for a patch of another kind. */
 type Claim = (patch: object, channels: ChannelLookup) => Packed | undefined;
 
-const claims: readonly Claim[] = [shaderPack];
+const claims: readonly Claim[] = [shaderPack, wavePack];
 
 const packs = new WeakMap<ChannelLookup, WeakMap<object, Packed | null>>();
 

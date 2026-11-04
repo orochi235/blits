@@ -49,7 +49,7 @@ export function waveAt(shape: WaveShape, x: number): number {
 }
 
 /** A wave's options worked out once: what each call of `at` reads. */
-interface Plan {
+export interface WavePlan {
   shape: WaveShape;
   cycles: number;
   start: number;
@@ -58,9 +58,9 @@ interface Plan {
   rests: number[];
 }
 
-const plans = new WeakMap<object, Plan>();
+const plans = new WeakMap<object, WavePlan>();
 
-function planOf<O>(opts: WaveOptions<O>): Plan {
+function planOf<O>(opts: WaveOptions<O>): WavePlan {
   let plan = plans.get(opts);
   if (plan === undefined) {
     const depth: Record<string, number | undefined> = opts.depth;
@@ -79,6 +79,12 @@ function planOf<O>(opts: WaveOptions<O>): Plan {
     plans.set(opts, plan);
   }
   return plan;
+}
+
+/** The plan of a patch `wave` made, or undefined for any other patch. */
+export function wavePlanOf(patch: object): WavePlan | undefined {
+  const opts = (patch as { wave?: WaveOptions<unknown> }).wave;
+  return opts === undefined ? undefined : planOf(opts);
 }
 
 /**

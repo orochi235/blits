@@ -10,6 +10,7 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - The `gpu` engine folds `angle()` channels, each value taken the short way round as on the CPU,
   and a role's members blended the short way too.
+- The `gpu` engine folds `wave()` voices.
 
 ## 0.20.0
 

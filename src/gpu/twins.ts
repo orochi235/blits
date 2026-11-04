@@ -53,7 +53,7 @@ export function twins<I>(
           if (Math.abs(g - w) > ABSOLUTE + RELATIVE * Math.abs(w))
             warnOnce(
               about,
-              `a shader patch writing ${o.name} gives ${g} on the GPU and ${w} on the CPU for subject ${i}; its wgsl and at disagree`,
+              `the GPU runner writing ${o.name} gives ${g} on the GPU and ${w} on the CPU for subject ${i}; the runner and the patch's JS disagree`,
             );
         }
       });
