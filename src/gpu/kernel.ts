@@ -40,6 +40,11 @@ export function prefixed(wgsl: string): string {
 const ty = (axes: number) => (axes === 1 ? 'f32' : `array<f32, ${axes}>`);
 /** How many numbers a voice's value for a channel takes. */
 const inputOf = (c: ChannelCode | undefined) => c?.input ?? c?.axes ?? 1;
+/** Blends a role's next member into `into` on axis `a`, by the channel's `lerp` where it has one. */
+const blendOf = (c: ChannelCode | undefined, into: string) =>
+  c?.lerp === undefined
+    ? `${into} = mix(${into}, v[a], w / total);`
+    : `{ let x = ${into}; let y = v[a]; let u = w / total; ${into} = ${c.lerp}; }`;
 const arr = (axes: number, e: string) => (axes === 1 ? `array<f32, 1>(${e})` : e);
 
 /**
@@ -134,7 +139,7 @@ export function kernel(
   add(
     arms(
       (n, c, axes) =>
-        `{ let v = ${arr(axes, `d.o_${n}`)}; let t = rt_${c}[r]; let total = t + w; if (t == 0.0) { rv_${c}[r] = v; } else { for (var a = 0u; a < ${axes}u; a++) { rv_${c}[r][a] = mix(rv_${c}[r][a], v[a], w / total); } } rt_${c}[r] = total; }`,
+        `{ let v = ${arr(axes, `d.o_${n}`)}; let t = rt_${c}[r]; let total = t + w; if (t == 0.0) { rv_${c}[r] = v; } else { for (var a = 0u; a < ${axes}u; a++) { ${blendOf(channels.get(n), `rv_${c}[r][a]`)} } } rt_${c}[r] = total; }`,
     ),
   );
   add('      default: {}', '    }', '  }');

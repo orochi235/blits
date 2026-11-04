@@ -2,6 +2,7 @@ import { gpu, gpuOf } from '../../src/gpu/engine.js';
 import { shaderPatch } from '../../src/gpu/shader-patch.js';
 import type { GpuDevice } from '../../src/gpu/webgpu.js';
 import {
+  angle,
   type Channel,
   darken,
   kit,
@@ -83,6 +84,9 @@ const RULES: [string, () => Channel<number>][] = [
   ['norm(4)', () => norm({ power: 4 })],
   ['screen', screen],
   ['darken', darken],
+  ['angle', angle],
+  // A turn the wave's values cross, so most of them wrap.
+  ['angle({ turn: 1 })', () => angle({ turn: 1 })],
 ];
 for (const [name, ch] of RULES) {
   test(`${name}: one voice at full weight`, (d) => agree(d, ch, [{ k: 1 }], [130, 470]));

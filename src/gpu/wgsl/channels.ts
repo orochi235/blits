@@ -18,6 +18,11 @@ export interface ChannelCode {
   readonly helpers?: string;
   /** The channel's bounds, which its folded value is clamped to, as the CPU's `clamp` does. */
   readonly bounds?: readonly [number, number];
+  /**
+   * How a role's members blend on axis `a`, where a straight `mix` would differ from the channel's
+   * `lerp`: a WGSL expression of `x` (so far), `y` (the next member) and `u` (its share).
+   */
+  readonly lerp?: string;
 }
 
 /** A number as a WGSL f32 literal. */
@@ -47,9 +52,31 @@ export function codeFor(channel: Channel<unknown>): ChannelCode | undefined {
     : { ...code, bounds: channel.bounds };
 }
 
+/**
+ * `shortWay` in `turns.ts`, into [-turn/2, turn/2) as `Math.round` taking halves up leaves it. The
+ * last two lines are not redundant: a compiler may divide by `turn` as a multiply by its f32
+ * reciprocal, which puts -180 / 360 a hair below -0.5.
+ */
+const SHORT_WAY = `fn blits_short_way(d: f32, turn: f32) -> f32 {
+  var s = d - turn * floor(d / turn + 0.5);
+  if (s >= turn * 0.5) { s = s - turn; }
+  if (s < -turn * 0.5) { s = s + turn; }
+  return s;
+}`;
+
 function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
   const n = numericOf(channel);
   const plain = typeof channel.rest === 'number';
+  if (n !== undefined && n.turn !== undefined && n.op === 'sum' && n.axes === 1 && plain) {
+    const t = f(n.turn);
+    return {
+      axes: 1,
+      rest: [0],
+      helpers: SHORT_WAY,
+      fold: `acc[0] = acc[0] + blits_short_way(v[0], ${t}) * w;`,
+      lerp: `x + blits_short_way(y - x, ${t}) * u`,
+    };
+  }
   if (n !== undefined && n.turn === undefined && n.op in OPS) {
     // A vec of numbers holds an array, color() among them; one axis of it is a number.
     if (n.axes === 1 ? plain : Array.isArray(channel.rest)) return stock(n.op, n.axes);
