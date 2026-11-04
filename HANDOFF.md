@@ -935,10 +935,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     voices and voices reaching some subjects, owners and weight signals, and readback
     (`gpuOf(m).read`). The schema page's `#gpu` ("The gpu engine") says what folds, why, and what
     each part costs. Open from phase 4:
-    - **Readback copies a frame's fold only when the next frame first refreshes**, so a host that
-      stops calling `channel` or `read` never gets its last frame copied.
     - **At 1M subjects, 14 of 300 frames awaiting four `read`s took over 16.7 ms**, up to 147 ms,
-      against a 3.155 ms median (`bench/runs/2026-11-04-gpu-readback.txt`); unexplained.
+      against a 3.155 ms median (`bench/runs/2026-11-04-gpu-readback.txt`): 10 mostly awaiting the
+      reads, 4 mostly in `onSubmittedWorkDone`; unexplained.
+    - `Readback` keeps each channel's newest `GpuRead` until `subjects()` or `close()`, about 32 MB
+      at 1M subjects × 8 numbers, even after the host stops reading.
+    - After a stretch of frames with no fold, `turn` copies the last fold, which `read` then turns
+      down as more than one sync old before copying the current one: one wasted copy.
+    - A spring's first fold leaves `mirrors.stirred` true, so the next `channel()` or `read` in that
+      frame folds it a second time.
+    - In `twins.ts`, a throw inside `check` (after the map settles) is an unhandled rejection, and a
+      refused map leaves its staging buffer undestroyed.
     Open from phase 3:
     - **A frame where a scene starts costs 195–241 ms at 1M on the gpu engine**, about half in
       `sync` and half in the fold, against a 0.515 ms median (`bench/runs/2026-11-04-gpu-owned.txt`);
