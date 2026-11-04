@@ -55,6 +55,11 @@ interface Tune {
  * home from B. Each fa-la is sung with a part a third above.
  */
 const A_LINE: Tune = { beats: [1.5, 0.5, 1, 1, 1, 1, 1, 1], steps: [4, 3, 2, 1, 0, 1, 2, 0] };
+/** The last A line, its fourth beat split in two for a ninth syllable. */
+const LAST_LINE: Tune = {
+  beats: [1.5, 0.5, 1, 0.5, 0.5, 1, 1, 1, 1],
+  steps: [4, 3, 2, 1, 1, 0, 1, 2, 0],
+};
 const B_LINE: Tune = { beats: [1.5, 0.5, 1, 1, 1.5, 0.5, 1, 1], steps: [1, 2, 3, 1, 2, 3, 4, 2] };
 const A_FA_LA: Tune = {
   beats: [0.5, 0.5, 0.5, 0.5, 1.5, 0.5, 1, 1, 2],
@@ -101,7 +106,8 @@ const PHRASES: Phrase[] = [
   },
   {
     ...A,
-    words: 'Lined with sat- in, like a cas- ket.',
+    line: LAST_LINE,
+    words: 'How dare you make me e- ven ask it.',
     answer: LAST_FA_LA,
     answerChords: CADENCE,
   },
