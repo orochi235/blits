@@ -38,11 +38,12 @@ function why<I, O>(
   subjects: readonly I[],
   codes: ChannelLookup,
 ): string | null {
+  for (const name of voice.patch.writes as readonly string[])
+    if (!codes.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
   const packed = packOf(voice.patch, codes);
   if (packed === undefined) return `no gpu runner takes a ${voice.patch.form} patch`;
   if ('why' in packed) return packed.why;
-  for (const name of voice.patch.writes as readonly string[])
-    if (!codes.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
+  if (voice.spec.from === 'current') return "it starts from the subject's current pose";
   if (typeof voice.spec.weight === 'function') return 'its weight is a weight signal';
   if (voice.spec.stagger !== undefined) return 'it staggers its subjects';
   if (voice.owner !== null) return 'an owner lays it out';

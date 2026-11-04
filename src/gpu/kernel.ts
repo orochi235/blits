@@ -1,6 +1,6 @@
 import type { Runner } from './runner.js';
 import { Col, ROW } from './table.js';
-import type { ChannelCode } from './wgsl/channels.js';
+import { type ChannelCode, helpersOf, lerpWgsl } from './wgsl/channels.js';
 
 /** The most roles one frame's GPU voices may play; a frame with more keeps its channels on the CPU. */
 export const MAX_ROLES = 8;
@@ -41,11 +41,6 @@ export function prefixed(wgsl: string): string {
 const ty = (axes: number) => (axes === 1 ? 'f32' : `array<f32, ${axes}>`);
 /** How many numbers a voice's value for a channel takes. */
 const inputOf = (c: ChannelCode | undefined) => c?.input ?? c?.axes ?? 1;
-/** Blends a role's next member into `into` on axis `a`, by the channel's `lerp` where it has one. */
-const blendOf = (c: ChannelCode | undefined, into: string) =>
-  c?.lerp === undefined
-    ? `${into} = mix(${into}, v[a], w / total);`
-    : `{ let x = ${into}; let y = v[a]; let u = w / total; ${into} = ${c.lerp}; }`;
 const arr = (axes: number, e: string) => (axes === 1 ? `array<f32, 1>(${e})` : e);
 
 /**
@@ -79,7 +74,10 @@ export function kernel(
   add('@group(0) @binding(4) var<storage, read_write> outv: array<f32>;');
   add('@group(0) @binding(5) var<storage, read> persub: array<f32>;');
   const codes = [...channels.values()];
-  const helpers = [...codes.map((c) => c.helpers ?? ''), ...runners.map((r) => r.helpers)];
+  const helpers = [
+    ...codes.flatMap((c) => helpersOf(c.helpers)),
+    ...runners.flatMap((r) => helpersOf(r.helpers)),
+  ];
   for (const h of new Set(helpers.filter((h) => h !== ''))) add(h);
   outputs.forEach((o, c) => {
     const code = channels.get(o.name) as ChannelCode;
@@ -139,7 +137,7 @@ export function kernel(
   add(
     arms(
       (n, c, axes) =>
-        `{ let v = ${arr(axes, `d.o_${n}`)}; let t = rt_${c}[r]; let total = t + w; if (t == 0.0) { rv_${c}[r] = v; } else { for (var a = 0u; a < ${axes}u; a++) { ${blendOf(channels.get(n), `rv_${c}[r][a]`)} } } rt_${c}[r] = total; }`,
+        `{ let v = ${arr(axes, `d.o_${n}`)}; let t = rt_${c}[r]; let total = t + w; if (t == 0.0) { rv_${c}[r] = v; } else { ${lerpWgsl(channels.get(n), axes, `rv_${c}[r]`, `rv_${c}[r]`, 'v', 'w / total')} } rt_${c}[r] = total; }`,
     ),
   );
   add('      default: {}', '    }', '  }');

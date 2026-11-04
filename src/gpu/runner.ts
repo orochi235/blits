@@ -1,3 +1,4 @@
+import { keysPack } from './runners/keys-pack.js';
 import { wavePack } from './runners/wave.js';
 import { shaderPack } from './shader-patch.js';
 import type { ChannelCode } from './wgsl/channels.js';
@@ -6,8 +7,8 @@ import type { ChannelCode } from './wgsl/channels.js';
 export interface Runner {
   /** Stable across patches of the kind: the kernel cache key includes it. */
   readonly key: string;
-  /** WGSL declarations, included once per kernel. */
-  readonly helpers: string;
+  /** WGSL declarations, each included once per kernel. */
+  readonly helpers: string | readonly string[];
   /**
    * The WGSL body of `fn run_<i>(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32) -> Out_<i>`,
    * setting `out.<channel>` for each channel it writes. `base` is the voice's offset in `values`;
@@ -34,7 +35,7 @@ export type Packed =
 /** A kind of patch's packer: undefined for a patch of another kind. */
 type Claim = (patch: object, channels: ChannelLookup) => Packed | undefined;
 
-const claims: readonly Claim[] = [shaderPack, wavePack];
+const claims: readonly Claim[] = [shaderPack, wavePack, keysPack];
 
 const packs = new WeakMap<ChannelLookup, WeakMap<object, Packed | null>>();
 

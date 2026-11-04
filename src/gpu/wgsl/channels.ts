@@ -14,8 +14,8 @@ export interface ChannelCode {
   readonly fold: string;
   /** How many numbers a voice's value takes, where that differs from the folded value's `axes`. */
   readonly input?: number;
-  /** WGSL declarations `fold` uses, included once in a kernel. */
-  readonly helpers?: string;
+  /** WGSL declarations `fold` and `lerp` use, each included once in a kernel. */
+  readonly helpers?: string | readonly string[];
   /** The channel's bounds, which its folded value is clamped to, as the CPU's `clamp` does. */
   readonly bounds?: readonly [number, number];
   /**
@@ -24,7 +24,28 @@ export interface ChannelCode {
    * straight.
    */
   readonly lerp?: string;
+  /** The CPU `lerp` that `lerp` ports: a keys track interpolating by any other stays on the CPU. */
+  readonly source?: Channel<unknown>['lerp'];
 }
+
+/**
+ * WGSL setting `out`, an `array<f32, n>`, to arrays `x` and `y` interpolated by `u` as `code`'s
+ * `lerp` does, or straight where it has none.
+ */
+export function lerpWgsl(
+  code: ChannelCode | undefined,
+  n: number,
+  out: string,
+  x: string,
+  y: string,
+  u: string,
+): string {
+  return `for (var a = 0u; a < ${n}u; a++) { let x = ${x}[a]; let y = ${y}[a]; let u = ${u}; ${out}[a] = ${code?.lerp ?? STRAIGHT}; }`;
+}
+
+/** A runner's or channel's `helpers`, as a list. */
+export const helpersOf = (h: string | readonly string[] | undefined): readonly string[] =>
+  h === undefined ? [] : typeof h === 'string' ? [h] : h;
 
 /** The `lerp` of every rule whose values interpolate as plain numbers. */
 const STRAIGHT = 'mix(x, y, u)';
@@ -52,9 +73,12 @@ function stock(op: string, axes: number): ChannelCode {
 /** The WGSL for a channel's rule, or undefined where the GPU has none and it stays on the CPU. */
 export function codeFor(channel: Channel<unknown>): ChannelCode | undefined {
   const code = ruleOf(channel);
-  return code === undefined || channel.bounds === undefined
-    ? code
-    : { ...code, bounds: channel.bounds };
+  if (code === undefined) return undefined;
+  return {
+    ...code,
+    ...(channel.bounds === undefined ? {} : { bounds: channel.bounds }),
+    ...(code.lerp === undefined ? {} : { source: channel.lerp }),
+  };
 }
 
 /**
