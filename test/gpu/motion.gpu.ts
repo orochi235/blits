@@ -355,3 +355,59 @@ test('motion: a patch whose subjects move on more axes than its channel stays on
   g.sync(100);
   if (side.channel('p') !== null) throw new Error('p went on the GPU');
 });
+
+test('motion: two live gpu mixes on one spring both show a set() made with no sync', async (d) => {
+  const build = () => spring<C, P>('x', { from: (c) => c.id, to: 30, stiffness: 180, damping: 12 });
+  const gp = build();
+  const cp = build();
+  const g1 = make(gp, gpu({ device: d }), CELLS);
+  const g2 = make(gp, gpu({ device: d }), CELLS);
+  const c = make(cp, mixer, CELLS);
+  const sides = [gpuOf(g1), gpuOf(g2)];
+  for (const side of sides) {
+    side.subjects(CELLS, () => ({}));
+    side.channel('x');
+    await side.ready;
+  }
+  const read = async (k: number) => {
+    const ch = (sides[k] as (typeof sides)[number]).channel('x');
+    if (ch === null) throw new Error(`x is not on GPU mix ${k + 1}`);
+    return readBack(d, ch.buffer, ch.offset, CELLS.length * 4);
+  };
+  const versusCpu = async (when: string) => {
+    for (const k of [0, 1]) {
+      const got = await read(k);
+      CELLS.forEach((s, i) => {
+        close(got[i] as number, c.probe(s).x, `mix ${k + 1} ${when}, subject ${s.id}`);
+      });
+    }
+  };
+  // Each order leaves the other mix's mirror holding the patch's watch when set() is called.
+  for (const [t, order, goal] of [
+    [200, [0, 1], 80],
+    [400, [1, 0], -20],
+  ] as const) {
+    for (const m of [g1, g2, c]) m.sync(t);
+    const before = [] as Float32Array[];
+    for (const k of order) before[k] = await read(k);
+    // The CPU twin meets its subjects now too, as the GPU reads just did.
+    for (const s of CELLS) c.probe(s);
+    each(
+      CELLS,
+      (i) => i % 2 === 0,
+      (s) => {
+        gp.set(s, goal);
+        cp.set(s, goal);
+      },
+    );
+    for (const k of [0, 1]) {
+      const got = await read(k);
+      CELLS.forEach((s, i) => {
+        const want = i % 2 === 0 ? goal : ((before[k] as Float32Array)[i] as number);
+        close(got[i] as number, want, `mix ${k + 1} at ${t} with no sync, subject ${s.id}`);
+      });
+    }
+    for (const m of [g1, g2, c]) m.sync(t + 100);
+    await versusCpu(`at ${t + 100}`);
+  }
+});

@@ -139,7 +139,7 @@ describe('motion mirror', () => {
     const other = new Mirror(motions, list, mirror.values());
     s.to(list[0] as C, 9);
     expect(other.stirred).toBe(true);
-    expect(mirror.stirred).toBe(false);
+    expect(mirror.stirred).toBe(true);
     mirror.prepare(16, Number.POSITIVE_INFINITY);
     expect(motions.listener).not.toBeNull();
     expect(mirror.take()).toEqual([[0, 2 * mirror.stride * 4]]);

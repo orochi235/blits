@@ -49,6 +49,7 @@ export class Mirror<I> {
   /** Set where `take` hands over every row as one range, as after a rewrite or a new anchor. */
   private all = false;
   private time = Number.NaN;
+  private detached = false;
   private vals: Float32Array;
   private readonly listen = (s: number) => {
     this.touched.add(s);
@@ -153,9 +154,12 @@ export class Mirror<I> {
     return row;
   }
 
-  /** Whether a run changed since the last `prepare`, so the fold made then is out of date. */
+  /**
+   * Whether a run changed since the last `prepare`, so the fold made then is out of date. A mirror
+   * whose watch another took cannot hear changes, so it counts as stirred until it takes it back.
+   */
   get stirred(): boolean {
-    return this.touched.size > 0;
+    return this.touched.size > 0 || (!this.detached && this.motions.listener !== this.listen);
   }
 
   /** The rows that will be written next, in order. */
@@ -289,6 +293,7 @@ export class Mirror<I> {
 
   /** Stops listening to the patch. */
   detach(): void {
+    this.detached = true;
     if (this.motions.listener === this.listen) this.motions.watch(null);
   }
 }
