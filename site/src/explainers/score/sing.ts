@@ -5,6 +5,7 @@ import {
   createDelayEffect,
   createReverbEffect,
   impulseResponse,
+  type NoiseOptions,
   type NoteOptions,
 } from '@weasel-js/audio';
 import type { Attached } from '../kit/scene';
@@ -72,21 +73,77 @@ const AH: Omit<NoteOptions, 'pitch'> = {
   bus: 'choir',
 };
 
+/** Who sings the chorus: a choir on "ah", or dogs barking each note at its pitch. */
+export type Singers = 'choir' | 'dogs';
+
+/** One bark at `midi`: a buzzy body dropping onto the pitch through a snapping filter, and a breath of noise on the onset. */
+function bark(
+  midi: number,
+  at: number,
+  gain: number,
+  pan: number,
+  note: (o: NoteOptions) => Voice,
+  noise: (o: NoiseOptions) => Voice,
+): Voice[] {
+  return [
+    note({
+      pitch: { midi: midi + 3 },
+      glide: { to: { midi }, ms: 50 },
+      wave: [1, 0.7, 0.5, 0.35, 0.2, 0.1],
+      filter: {
+        type: 'bandpass',
+        frequency: 700,
+        Q: 2.5,
+        amount: 1400,
+        envelope: { attack: 3, decay: 90, sustain: 0.1, release: 60 },
+      },
+      envelope: { attack: 4, decay: 110, sustain: 0.15, release: 70 },
+      duration: 120,
+      gain,
+      pan,
+      when: at,
+      bus: 'choir',
+    }),
+    noise({
+      noise: 'pink',
+      filter: { type: 'bandpass', frequency: 1500, Q: 1 },
+      envelope: { attack: 2, decay: 40, sustain: 0, release: 30 },
+      duration: 40,
+      gain: gain * 0.6,
+      pan,
+      when: at,
+      bus: 'choir',
+    }),
+  ];
+}
+
 /** The voices one hit is sounded by: a click, a chord on the organ, or the tune in a detuned pair with its harmony. */
-function sing(e: AudioEngine, n: Note, when: number, sounding: Set<Voice>): Voice[] {
+function sing(
+  e: AudioEngine,
+  n: Note,
+  when: number,
+  sounding: Set<Voice>,
+  singers: Singers,
+): Voice[] {
   const ms = Math.max(60, n.ms * 0.92);
-  const play = (o: NoteOptions): Voice => {
-    // A voice can be dropped inside `playNote`, before there is a handle to forget.
-    let v: Voice | undefined;
-    let ended = false;
-    const end = () => {
-      ended = true;
-      if (v) sounding.delete(v);
+  // A voice can be dropped as it is launched, before there is a handle to forget.
+  const keep =
+    <O extends { onDone?: () => void; onDrop?: (reason: never) => void }>(
+      launch: (o: O) => Voice,
+    ) =>
+    (o: O): Voice => {
+      let v: Voice | undefined;
+      let ended = false;
+      const end = () => {
+        ended = true;
+        if (v) sounding.delete(v);
+      };
+      v = launch({ ...o, onDone: end, onDrop: end });
+      if (!ended) sounding.add(v);
+      return v;
     };
-    v = e.playNote({ ...o, onDone: end, onDrop: end });
-    if (!ended) sounding.add(v);
-    return v;
-  };
+  const play = keep<NoteOptions>((o) => e.playNote(o));
+  const hiss = keep<NoiseOptions>((o) => e.playNoise(o));
   const [tune = 60, ...rest] = n.midi;
   if (n.part === 'count') {
     return [
@@ -116,6 +173,22 @@ function sing(e: AudioEngine, n: Note, when: number, sounding: Set<Voice>): Voic
       }),
     );
   }
+  if (n.part === 'chorus' && singers === 'dogs') {
+    // A note held a beat and a half or longer gets a second, smaller bark halfway through it.
+    const times = n.ms >= 600 ? [when, when + n.ms / 2] : [when];
+    return times.flatMap((at, k) =>
+      n.midi.flatMap((midi, i) =>
+        bark(
+          midi,
+          at,
+          (i === 0 ? 0.3 : 0.22) * (k === 0 ? 1 : 0.7),
+          i === 0 ? -0.25 : 0.35,
+          play,
+          hiss,
+        ),
+      ),
+    );
+  }
   const parts = [
     { midi: tune, detune: -6, pan: -0.3, gain: 0.2 },
     { midi: tune, detune: 6, pan: 0.3, gain: 0.2 },
@@ -129,7 +202,7 @@ function sing(e: AudioEngine, n: Note, when: number, sounding: Set<Voice>): Voic
  * takes back any whose time moves. Only while the player plays on in time; a scrub or a step back
  * stops what is sounding and books nothing.
  */
-export function choir(m: Mix<Syllable, Pose>): Attached {
+export function choir(m: Mix<Syllable, Pose>, singers: Singers): Attached {
   const e = engine();
   if (e.state() !== 'running') void e.unlock().catch(() => undefined);
   let playing = true;
@@ -141,7 +214,7 @@ export function choir(m: Mix<Syllable, Pose>): Attached {
     late: 30,
     take(item: Marked | BookedHit<Note, Syllable>, when: number, lateBy: number) {
       if (!playing || lateBy > 0 || !('hit' in item)) return undefined;
-      const voices = sing(e, item.event, when, sounding);
+      const voices = sing(e, item.event, when, sounding, singers);
       return {
         cancel: () => {
           for (const v of voices) v.stop(30);

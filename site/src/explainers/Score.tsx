@@ -4,7 +4,7 @@ import { f } from '@weasel-js/labkit';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import { FRAME, type Scene } from './kit/scene';
-import { choir, primeOn, soundWanted } from './score/sing';
+import { choir, primeOn, type Singers, soundWanted } from './score/sing';
 import {
   K,
   KEYS,
@@ -36,6 +36,7 @@ const config = f.schema({
   key: f.enum<Key>('D', [...KEYS]).label('Key'),
   mode: f.enum<Mode>('dorian', Object.keys(MODES) as Mode[]).label('Mode'),
   chords: f.boolean(true).label('Chords'),
+  singers: f.enum<Singers>('dogs', ['dogs', 'choir']).label('Chorus sung by'),
   cut: f
     .number(Number.POSITIVE_INFINITY)
     .range(0, LONGEST)
@@ -51,7 +52,7 @@ function scene(c: Config): Scene<Syllable, Pose, Config> {
     kit: K,
     subjects: () => SUBJECTS,
     voices: () => voices(c),
-    attach: (m) => (c.sound ? choir(m) : { close() {} }),
+    attach: (m) => (c.sound ? choir(m, c.singers) : { close() {} }),
     events: () => {
       if (!Number.isFinite(c.cut)) return [];
       const i = voices(c).findIndex((v) => v.name === CUT);
