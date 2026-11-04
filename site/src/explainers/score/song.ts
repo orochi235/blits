@@ -211,8 +211,9 @@ export interface Note {
   part: Part;
   /** MIDI notes: a sung note's tune first and its harmony after; a chord's root, then its triad. */
   midi: number[];
-  /** How long it is held, in ms. */
+  /** How long it is held, in ms and in beats. */
   ms: number;
+  beats: number;
 }
 
 function notesOf(l: Line, s: Syllable, c: SongConfig): number[] {
@@ -269,7 +270,12 @@ export function voices(c: SongConfig): VoiceDef<Syllable, Pose>[] {
         patch: sung(l, beat),
         hits: l.syllables.map((s) => ({
           at: s.onset * beat,
-          event: { part: l.part, midi: notesOf(l, s, c), ms: s.beats * beat } satisfies Note,
+          event: {
+            part: l.part,
+            midi: notesOf(l, s, c),
+            ms: s.beats * beat,
+            beats: s.beats,
+          } satisfies Note,
         })),
         ...(typeof start === 'number' ? { start } : { anchor: { start } }),
       },

@@ -117,6 +117,41 @@ function bark(
   ];
 }
 
+/**
+ * A howl at `midi` for `ms`: scooping up onto the pitch, its vowel closing from "ah" to "oo", in two
+ * voices a few cents apart so it wavers.
+ */
+function howl(
+  midi: number,
+  at: number,
+  ms: number,
+  gain: number,
+  pan: number,
+  note: (o: NoteOptions) => Voice,
+): Voice[] {
+  return [-8, 8].map((detune) =>
+    note({
+      pitch: { midi: midi - 5 },
+      glide: { to: { midi }, ms: 250 },
+      detune,
+      wave: [1, 0.35, 0.15, 0.05],
+      filter: {
+        type: 'lowpass',
+        frequency: 700,
+        Q: 3,
+        amount: 1600,
+        envelope: { attack: 60, decay: Math.max(200, ms * 0.6), sustain: 0, release: 200 },
+      },
+      envelope: { attack: 140, decay: 300, sustain: 0.75, release: 450 },
+      duration: Math.max(150, ms),
+      gain: gain / 2,
+      pan,
+      when: at,
+      bus: 'choir',
+    }),
+  );
+}
+
 /** The voices one hit is sounded by: a click, a chord on the organ, or the tune in a detuned pair with its harmony. */
 function sing(
   e: AudioEngine,
@@ -174,20 +209,14 @@ function sing(
     );
   }
   if (n.part === 'chorus' && singers === 'dogs') {
-    // A note held a beat and a half or longer gets a second, smaller bark halfway through it.
-    const times = n.ms >= 600 ? [when, when + n.ms / 2] : [when];
-    return times.flatMap((at, k) =>
-      n.midi.flatMap((midi, i) =>
-        bark(
-          midi,
-          at,
-          (i === 0 ? 0.3 : 0.22) * (k === 0 ? 1 : 0.7),
-          i === 0 ? -0.25 : 0.35,
-          play,
-          hiss,
-        ),
-      ),
-    );
+    // A note held a beat and a half or longer is barked, then howled to its end.
+    const held = n.beats >= 1.5;
+    return n.midi.flatMap((midi, i) => {
+      const pan = i === 0 ? -0.25 : 0.35;
+      const gain = i === 0 ? 0.3 : 0.22;
+      const woof = bark(midi, when, gain, pan, play, hiss);
+      return held ? [...woof, ...howl(midi, when + 80, n.ms - 80, gain * 0.8, pan, play)] : woof;
+    });
   }
   const parts = [
     { midi: tune, detune: -6, pan: -0.3, gain: 0.2 },
