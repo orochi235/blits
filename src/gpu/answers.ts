@@ -1,6 +1,8 @@
 import type { Asked } from '../asked.js';
+import { headOf } from '../chain.js';
 import type { Mixer } from '../mixer.js';
 import { Store } from '../store.js';
+import { unreached } from '../unreached.js';
 import type { Voice } from '../voice.js';
 
 /** A voice's `stagger` and `target` answers for the registered subjects, in registration order. */
@@ -24,9 +26,12 @@ export class Answers<I> {
   /** Per voice over no named list, each subject answered: its delay where reached, else null. */
   private readonly known = new WeakMap<Voice<I, unknown>, Store<I, number | null>>();
 
-  constructor(readonly mix: Mixer<I, unknown>) {}
+  constructor(private readonly mix: Mixer<I, unknown>) {}
 
-  /** Forgets every answer and indexes `list`; each voice is asked again at its next `of`. */
+  /**
+   * Indexes `list`; each voice's arrays are made again at its next `of`, asking only subjects it
+   * has never answered for that voice.
+   */
   register(list: readonly I[]): void {
     this.list = list;
     // A new map, not a cleared one: each voice's hook keeps reading the index its arrays were made by.
@@ -59,43 +64,21 @@ export class Answers<I> {
     const list = this.list;
     const n = list.length;
     const { named } = voice;
-    const { stagger, target } = voice.spec;
-    const delays = stagger !== undefined ? new Float64Array(n) : null;
+    const delays = voice.spec.stagger !== undefined ? new Float64Array(n) : null;
     const bits = new Uint32Array((n + 31) >>> 5);
     let all = true;
     let finite = true;
-    let known: Store<I, number | null> | undefined;
-    if (named === null) {
-      known = this.known.get(voice);
-      if (known === undefined) {
-        known = new Store();
-        this.known.set(voice, known);
-      }
+    let known = this.known.get(voice);
+    if (named === null && known === undefined) {
+      known = new Store();
+      this.known.set(voice, known);
     }
     for (let i = 0; i < n; i++) {
       const s = list[i] as I;
-      let reaches: boolean;
-      let delay = 0;
-      const held = voice.subjects.get(s);
-      if (held !== undefined) {
-        reaches = held.reaches;
-        if (reaches) delay = held.delay;
-        known?.set(s, reaches ? delay : null);
-      } else if (named !== null) {
-        reaches = named.has(s);
-        if (reaches) delay = named.delays?.get(s) ?? 0;
-      } else {
-        const k = (known as Store<I, number | null>).get(s);
-        if (k !== undefined) {
-          reaches = k !== null;
-          delay = k ?? 0;
-        } else {
-          reaches = target ? target(s) : true;
-          if (reaches && stagger) delay = stagger(s);
-          (known as Store<I, number | null>).set(s, reaches ? delay : null);
-        }
-      }
-      if (!reaches) {
+      let delay: number | null;
+      if (named !== null) delay = named.has(s) ? (named.delays?.get(s) ?? 0) : null;
+      else delay = this.unnamed(voice, s, known as Store<I, number | null>);
+      if (delay === null) {
         all = false;
         continue;
       }
@@ -106,6 +89,28 @@ export class Answers<I> {
       }
     }
     return { delays, reach: all ? null : bits, finite };
+  }
+
+  /**
+   * A subject's answer for a voice over no named list, its delay where `target` reaches it and
+   * null where not: from what the voice already holds, else asked, and kept either way.
+   */
+  private unnamed(voice: Voice<I, unknown>, s: I, known: Store<I, number | null>): number | null {
+    const k = known.get(s);
+    if (k !== undefined) return k;
+    // A subject faded out is held unreached, which says nothing of what `target` answered.
+    const parted = voice.parted?.has(s) === true;
+    const held = voice.subjects.get(s);
+    let answer: number | null;
+    if (held !== undefined && (held.reaches || !parted)) answer = held.reaches ? held.delay : null;
+    else if (!parted && unreached(voice, headOf(this.mix, s)?.slot ?? -1)) answer = null;
+    else {
+      const { target, stagger } = voice.spec;
+      const reaches = target ? target(s) : true;
+      answer = !reaches ? null : stagger ? stagger(s) : 0;
+    }
+    known.set(s, answer);
+    return answer;
   }
 }
 

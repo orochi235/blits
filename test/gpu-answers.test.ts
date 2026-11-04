@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { part, unpart } from '../src/fade.js';
 import { Answers } from '../src/gpu/answers.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
@@ -144,6 +145,50 @@ describe('Answers', () => {
     cpu.m.sync(2500);
     expect(gpu.voice.latest).toBe(cpu.voice.latest);
     expect(gpu.voice.state).toBe(cpu.voice.state);
+  });
+
+  for (const lanes of [true, false])
+    it(`keeps target's answer, not a fade out's, for a subject faded out (lanes ${lanes})`, () => {
+      const list = cells(2);
+      const s = list[0] as C;
+      const steps = (answers: boolean) => {
+        const m = mix<C, P>(K, { name: 'parted', lanes });
+        m.sync(0);
+        m.cue({ patch: wave, loop: true, target: () => true, stagger: (c: C) => c.i });
+        const mixer = mixerOf(m);
+        const voice = mixer.cued[0] as Voice<C, P>;
+        m.probe(s);
+        part(mixer, voice, s, 0);
+        m.probe(s);
+        if (answers) {
+          const a = new Answers<C>(mixer as never);
+          a.register(list);
+          a.of(voice as Voice<C, unknown>);
+        }
+        unpart(mixer, voice, s);
+        m.probe(s);
+        return voice.subjects.get(s)?.reaches;
+      };
+      expect(steps(false)).toBe(true);
+      expect(steps(true)).toBe(true);
+    });
+
+  it("takes a laned voice's no to a subject it met rather than asking target again", () => {
+    const list = cells(6);
+    let calls = 0;
+    const { m, voice, answers } = setup({
+      target: (c: C) => {
+        calls++;
+        return c.i % 3 === 0;
+      },
+    });
+    for (const c of list) m.probe(c);
+    expect(voice.unreachedBits).not.toBeNull();
+    expect(calls).toBe(6);
+    answers.register(list);
+    const reach = answers.of(voice).reach as Uint32Array;
+    expect(calls).toBe(6);
+    for (let i = 0; i < 6; i++) expect(bit(reach, i)).toBe(i % 3 === 0 ? 1 : 0);
   });
 
   it('leaves a mix with no gpu side as it was', () => {
