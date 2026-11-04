@@ -274,7 +274,9 @@ function ExplainerBody<I, O, C>({
         )}
         {panel && (
           <div className="explainer-controls">
+            {/* weasel 1.16 lays rows inline by default, which a phone's half-width column can't fit. */}
             <ControlPanel
+              layout="block"
               schema={resolved}
               config={config as Record<string, unknown>}
               setConfig={(path, value) => setConfig((c) => ({ ...c, [path]: value }) as C)}
