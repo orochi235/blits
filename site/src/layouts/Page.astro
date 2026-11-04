@@ -1,4 +1,7 @@
 ---
+import touchIcon from '@brand/out/png/mark-panel-180.png?url';
+import shareImage from '@brand/out/png/mark-panel-512.png?url';
+import icon from '@brand/out/mark-panel.svg?url';
 import '../styles/site.css';
 import '../styles/explainer.css';
 import '../styles/timeline.css';
@@ -21,6 +24,7 @@ const title = Astro.props.title ?? fm.title ?? 'blits';
 const description = Astro.props.description ?? fm.description;
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const full = title === 'blits' ? 'blits' : `blits: ${title}`;
+const shareUrl = Astro.site ? new URL(shareImage, Astro.site).href : shareImage;
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 ---
 <!doctype html>
@@ -36,8 +40,10 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     <meta property="og:title" content={full} />
     {description && <meta property="og:description" content={description} />}
     {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:image" content={shareUrl} />
     <meta name="twitter:card" content="summary" />
-    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="icon" type="image/svg+xml" href={icon} />
+    <link rel="apple-touch-icon" href={touchIcon} />
     <link rel="sitemap" href={`${base}sitemap-index.xml`} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

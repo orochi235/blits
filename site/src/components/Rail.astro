@@ -1,6 +1,7 @@
 ---
 import pkg from '../../../package.json';
 import { extra, local, start, under, words } from '../nav';
+import wordmark from '@brand/out/wordmark-green.svg?raw';
 import Search from './Search.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
@@ -9,7 +10,7 @@ const link = (slug: string) => `${base}${slug ? `${slug}/` : ''}`;
 const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
 ---
 <nav class="rail" aria-label="Pages">
-  <a class="mark" href={link('')}>blits</a>
+  <a class="mark" href={link('')} aria-label="blits"><Fragment set:html={wordmark} /></a>
   <p class="meta">
     <a href={link('changelog')}>v{pkg.version}</a>
     <a href="https://github.com/orochi235/blits">GitHub</a>
@@ -92,11 +93,18 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
 
   .mark {
     display: block;
-    font: 700 1.6rem / 1 var(--label);
-    font-stretch: 87.5%;
-    text-decoration: none;
-    margin-bottom: 0.6rem;
-    letter-spacing: -0.01em;
+    width: 6rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .mark :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .mark :global(g) {
+    fill: var(--logo);
   }
 
   .meta {

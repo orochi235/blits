@@ -60,6 +60,7 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: [
+        { find: /^@brand\//, replacement: fileURLToPath(new URL('../brand/', import.meta.url)) },
         { find: /^@msb235\/blits$/, replacement: src('index.ts') },
         { find: /^@msb235\/blits\/lean$/, replacement: src('lean.ts') },
         { find: /^@msb235\/blits\/gpu$/, replacement: src('gpu.ts') },

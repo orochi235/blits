@@ -4,6 +4,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "paths": {
+      "@brand/*": ["../brand/*"],
       "@msb235/blits": ["../src/index.ts"],
       "@msb235/blits/lean": ["../src/lean.ts"],
       "@msb235/blits/gpu": ["../src/gpu.ts"],
