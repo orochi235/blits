@@ -199,8 +199,10 @@ export function blending(
   kind: string,
   lerp: Channel<number[]>['lerp'],
   rule: Channel<unknown>,
+  /** Whether `lerp` travels round the hue. */
+  round: boolean,
 ): Channel<number[]> {
-  if (ordered(mode)) return stacking(mode, kind, lerp, rule);
+  if (ordered(mode)) return stacking(mode, kind, lerp, rule, round);
   const m = MODES[mode];
   const channel: Channel<number[]> = {
     kind,
@@ -212,22 +214,25 @@ export function blending(
   };
   vouch(channel, { op: 'own', axes: 4 });
   foldsInto(channel);
-  blends.set(channel, { kind: 'free', tag: m.tag, invert: m.invert, op: m.op });
+  blends.set(channel, { kind: 'free', tag: m.tag, invert: m.invert, op: m.op, round });
   return channel;
 }
 
 /**
  * How a blend-mode color channel folds, keyed by the channel itself, so another engine can trust
- * it: a commuting mode's tag and arithmetic, or an ordered mode's tag and layer count.
+ * it: a commuting mode's tag and arithmetic, or an ordered mode's tag and layer count. `round` says
+ * whether a value travels round the hue, as `ink` does, or straight across OKLab; a rule from a
+ * copy of blits that predates it has none.
  */
-export type BlendRule =
+export type BlendRule = (
   | {
       readonly kind: 'free';
       readonly tag: number;
       readonly invert: boolean;
       readonly op: 'screen' | 'sum' | 'max';
     }
-  | { readonly kind: 'stack'; readonly tag: number; readonly layers: number };
+  | { readonly kind: 'stack'; readonly tag: number; readonly layers: number }
+) & { readonly round?: boolean };
 
 const blends = shared<object, BlendRule>('blend-rule@1');
 

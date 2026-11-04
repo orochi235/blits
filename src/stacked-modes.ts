@@ -128,6 +128,7 @@ export function stacking(
   kind: string,
   lerp: Channel<number[]>['lerp'],
   rule: Channel<unknown>,
+  round: boolean,
 ): Channel<number[]> {
   const tag = STACKED[mode].tag;
   const layers = capacities.get(rule) ?? LAYERS;
@@ -146,7 +147,7 @@ export function stacking(
   };
   vouch(channel, { op: 'own', axes: 2 + 4 * layers });
   foldsInto(channel);
-  blends.set(channel, { kind: 'stack', tag, layers });
+  blends.set(channel, { kind: 'stack', tag, layers, round });
   return channel;
 }
 

@@ -27,7 +27,8 @@ export function keysPack(patch: object, channels: ChannelLookup): Packed | undef
   const codes: ChannelCode[] = [];
   for (const track of built.tracks) {
     const code = channels.get(track.channel);
-    if (code?.lerp === undefined) return { why: `the GPU cannot interpolate ${track.channel}` };
+    if (code === undefined || (code.lerp === undefined && code.lerpAll === undefined))
+      return { why: `the GPU cannot interpolate ${track.channel}` };
     if (track.lerp !== undefined && track.lerp !== code.source)
       return { why: `${track.channel} interpolates by its own lerp` };
     if (track.all.length === 0) return { why: `${track.channel} has no stops` };

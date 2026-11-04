@@ -2,6 +2,7 @@ import { blendRuleOf } from '../../blend-modes.js';
 import { numericOf } from '../../channels.js';
 import { extremeOf } from '../../extremes.js';
 import type { Channel } from '../../types.js';
+import { LERP_LCH_WGSL } from './lch.js';
 
 /**
  * A channel's WGSL: how many numbers a subject's value takes, its rest, and how a voice's value
@@ -24,7 +25,12 @@ export interface ChannelCode {
    * straight.
    */
   readonly lerp?: string;
-  /** The CPU `lerp` that `lerp` ports: a keys track interpolating by any other stays on the CPU. */
+  /**
+   * The channel's `lerp` where its axes do not interpolate apart, as a hue's do not: a WGSL
+   * expression of `x` and `y`, each `array<f32, input>`, and `u`. Takes the place of `lerp`.
+   */
+  readonly lerpAll?: string;
+  /** The CPU `lerp` that `lerp` or `lerpAll` ports: a keys track interpolating by any other stays on the CPU. */
   readonly source?: Channel<unknown>['lerp'];
 }
 
@@ -40,6 +46,8 @@ export function lerpWgsl(
   y: string,
   u: string,
 ): string {
+  if (code?.lerpAll !== undefined)
+    return `{ let x = ${x}; let y = ${y}; let u = ${u}; ${out} = ${code.lerpAll}; }`;
   return `for (var a = 0u; a < ${n}u; a++) { let x = ${x}[a]; let y = ${y}[a]; let u = ${u}; ${out}[a] = ${code?.lerp ?? STRAIGHT}; }`;
 }
 
@@ -77,7 +85,7 @@ export function codeFor(channel: Channel<unknown>): ChannelCode | undefined {
   return {
     ...code,
     ...(channel.bounds === undefined ? {} : { bounds: channel.bounds }),
-    ...(code.lerp === undefined ? {} : { source: channel.lerp }),
+    ...(code.lerp === undefined && code.lerpAll === undefined ? {} : { source: channel.lerp }),
   };
 }
 
@@ -160,6 +168,27 @@ const LAYER =
   'let c = clamp(blits_linear(v[0] / cov, v[1] / cov, v[2] / cov), vec3f(0.0), vec3f(1.0));';
 
 /**
+ * A blend mode's `lerp`, as `blending` and `stacking` give it: straight across OKLab or round the
+ * hue, a stack's held at either end. None for a rule that does not say which.
+ */
+function travel(
+  rule: NonNullable<ReturnType<typeof blendRuleOf>>,
+): Pick<ChannelCode, 'lerp' | 'lerpAll' | 'helpers'> {
+  const held = rule.kind === 'stack';
+  if (rule.round === false)
+    return {
+      helpers: LINEAR_WGSL,
+      lerp: held ? `select(select(${STRAIGHT}, y, u >= 1.0), x, u <= 0.0)` : STRAIGHT,
+    };
+  if (rule.round === true)
+    return {
+      helpers: [LINEAR_WGSL, LERP_LCH_WGSL],
+      lerpAll: held ? 'blits_lerp_lch_held(x, y, u)' : 'blits_lerp_lch(x, y, u)',
+    };
+  return { helpers: LINEAR_WGSL };
+}
+
+/**
  * A blend mode's fold, as `foldInto` in `blend-modes.ts` (the pose one layer, `[x, y, z, tag]`)
  * or `layOn` in `stacked-modes.ts` (the pose `[tag, n, r, g, b, α, …]`).
  */
@@ -175,7 +204,7 @@ function blended(rule: NonNullable<ReturnType<typeof blendRuleOf>>): ChannelCode
     return {
       axes: 4,
       rest: [0, 0, 0, 0],
-      helpers: LINEAR_WGSL,
+      ...travel(rule),
       fold: `let cov = v[3]; if (cov > 0.0 && w > 0.0) { ${LAYER} let x = w * min(cov, 1.0) * (${x}); for (var a = 0u; a < 3u; a++) { ${op} } } acc[3] = ${f(rule.tag)};`,
     };
   }
@@ -184,7 +213,7 @@ function blended(rule: NonNullable<ReturnType<typeof blendRuleOf>>): ChannelCode
     axes,
     input: 4,
     rest: [rule.tag, 0, ...Array.from({ length: 4 * rule.layers }, () => 0)],
-    helpers: LINEAR_WGSL,
+    ...travel(rule),
     fold: `let cov = v[3]; let n = u32(acc[1]); if (w > 0.0 && cov > 0.0 && n < ${rule.layers}u) { ${LAYER} let at = 2u + 4u * n; acc[1] = f32(n + 1u); acc[at] = c.x; acc[at + 1u] = c.y; acc[at + 2u] = c.z; acc[at + 3u] = w * min(cov, 1.0); }`,
   };
 }

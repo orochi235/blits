@@ -222,7 +222,7 @@ export function color(
   const travel = round ? lerpLch : vec(4, sum()).lerp;
   if (own.kind === 'last') return replacing(`color(last${space})`, travel);
   const mode = modeOf(own);
-  if (mode !== undefined) return blending(mode, `color(${mode}${space})`, travel, own);
+  if (mode !== undefined) return blending(mode, `color(${mode}${space})`, travel, own, round);
   throw refuse('color', own);
 }
 
@@ -250,7 +250,7 @@ export function ink(of?: Channel<number> | Channel<unknown>): Channel<number[]> 
     const own = of as Channel<unknown>;
     if (own.kind === 'last') return replacing('ink(last)', lerpLch);
     const mode = modeOf(own);
-    if (mode !== undefined) return blending(mode, `ink(${mode})`, lerpLch, own);
+    if (mode !== undefined) return blending(mode, `ink(${mode})`, lerpLch, own, true);
     throw refuse('ink', own);
   }
   const channel: Channel<number[]> = {

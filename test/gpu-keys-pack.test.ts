@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { eligibility } from '../src/gpu/eligible.js';
+import { mixerOf } from '../src/gpu/engine.js';
 import { packOf } from '../src/gpu/runner.js';
 import { codeFor } from '../src/gpu/wgsl/channels.js';
-import { type Channel, keys, last, sum, vec } from '../src/index.js';
+import { type Channel, keys, kit, last, mix, sum, vec } from '../src/index.js';
 
 type O = { v: number; p: number[]; s: string };
 const v = sum();
@@ -85,5 +87,23 @@ describe('packing a keys patch', () => {
       kit: { v: last() as never },
     });
     expect(pack(kitted)).toEqual({ why: 'v interpolates by its own lerp' });
+  });
+});
+
+describe('a keys voice from the current pose', () => {
+  it('stays on the CPU, saying why', () => {
+    const k = kit<{ v: number }>({ v: sum() });
+    const m = mix<object, { v: number }>(k);
+    const cells = [{}];
+    m.cue({
+      patch: keys(1000, [{ at: 1, delta: { v: 1 } }], { kit: k }),
+      subjects: cells,
+      from: 'current',
+    });
+    m.sync(0);
+    m.sync(10);
+    expect(eligibility(mixerOf(m), cells).reasons.map((r) => r.why)).toEqual([
+      "it starts from the subject's current pose",
+    ]);
   });
 });

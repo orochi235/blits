@@ -16,12 +16,16 @@ import {
   hardLight,
   hardMix,
   hue,
+  ink,
+  type Keyframe,
+  keys,
   kit,
   lighten,
   lighterColor,
   linearBurn,
   linearLight,
   luminosity,
+  type Mix,
   mix,
   mixer,
   multiply,
@@ -56,33 +60,41 @@ const disc = shaderPatch<C, P, { L: number; a: number; b: number; r: number }>(1
 
 type Cue = { L: number; a: number; b: number; r: number; weight?: number; role?: string };
 
+/** Cues a disc per cue, each a voice on `m`. */
+const discs = (cues: Cue[]) => (m: Mix<C, P>) => {
+  for (const q of cues)
+    m.cue({
+      patch: disc.with({ L: q.L, a: q.a, b: q.b, r: q.r }),
+      subjects: cells,
+      weight: q.weight ?? 1,
+      loop: true,
+      ...(q.role === undefined ? {} : { role: q.role }),
+    });
+};
+
 async function agreeArrays(
   device: GpuDevice,
   channel: () => Channel<number[]>,
-  cues: Cue[],
+  cue: Cue[] | ((m: Mix<C, P>, k: { c: Channel<number[]> }) => void),
   times: number[],
   axes: number,
 ): Promise<void> {
   const make = (engine: typeof mixer) => {
-    const m = mix<C, P>(kit<P>({ c: channel() }), { engine });
+    const k = kit<P>({ c: channel() });
+    const m = mix<C, P>(k, { engine, name: 'color' });
     m.sync(0);
-    for (const q of cues)
-      m.cue({
-        patch: disc.with({ L: q.L, a: q.a, b: q.b, r: q.r }),
-        subjects: cells,
-        weight: q.weight ?? 1,
-        loop: true,
-        ...(q.role === undefined ? {} : { role: q.role }),
-      });
+    if (Array.isArray(cue)) discs(cue)(m);
+    else cue(m, k);
     return m;
   };
   const g = make(gpu({ device }));
   const c = make(mixer);
   const side = gpuOf(g);
   side.subjects(cells, (s) => ({ x: s.x }));
-  g.sync(1);
   side.channel('c');
   await side.ready;
+  // Folds again at the time the mix is at, which a sync to that time would not.
+  side.subjects(cells, (s) => ({ x: s.x }));
   for (const t of times) {
     g.sync(t);
     c.sync(t);
@@ -196,3 +208,53 @@ test('color(overlay({ layers: 2 })): a third layer is left off', (d) =>
     [200],
     10,
   ));
+
+/** Premultiplied OKLab: `[L, a, b]` at coverage `w`. */
+const lab = (L: number, a: number, b: number, w = 1) => [L * w, a * w, b * w, w];
+type Keyed = { stops: Keyframe<P>[]; weight?: number; role?: string };
+const keyed = (voices: Keyed[]) => (m: Mix<C, P>, k: { c: Channel<number[]> }) => {
+  for (const v of voices)
+    m.cue({
+      patch: keys<C, P>(1000, v.stops, { kit: k }),
+      subjects: cells,
+      weight: v.weight ?? 1,
+      loop: true,
+      ...(v.role === undefined ? {} : { role: v.role }),
+    });
+};
+const KEY_TIMES = [0, 130, 499, 500, 501, 870, 2300];
+/** From a hue below 0 to one above it, the short way across 0, then on to blue. */
+const ACROSS: Keyframe<P>[] = [
+  { at: 0, delta: { c: lab(0.6, 0.12, -0.06) } },
+  { at: 0.5, delta: { c: lab(0.7, 0.1, 0.08, 0.6) }, ease: 'ease-in' },
+  { at: 1, delta: { c: lab(0.45, -0.03, -0.19) } },
+];
+const GRAYED: Keyframe<P>[] = [
+  { at: 0, delta: { c: lab(0.63, 0.22, 0.13) } },
+  { at: 0.5, delta: { c: lab(0.5, 0, 0) } },
+  { at: 1, delta: { c: lab(0.45, -0.03, -0.19, 0.8) }, ease: 'ease-out' },
+];
+const KEYED = {
+  'color(multiply())': () => color(multiply()),
+  'ink(screen())': () => ink(screen()),
+  'color(overlay())': () => color(overlay()),
+  'ink(overlay())': () => ink(overlay()),
+};
+for (const [name, make] of Object.entries(KEYED)) {
+  const axes = make().rest?.length ?? 4;
+  test(`${name}: keys crossing hue 0`, (d) =>
+    agreeArrays(d, make, keyed([{ stops: ACROSS }]), KEY_TIMES, axes));
+  test(`${name}: keys through gray`, (d) =>
+    agreeArrays(d, make, keyed([{ stops: GRAYED }]), KEY_TIMES, axes));
+  test(`${name}: a role of two keys voices`, (d) =>
+    agreeArrays(
+      d,
+      make,
+      keyed([
+        { stops: ACROSS, role: 'a' },
+        { stops: GRAYED, role: 'a', weight: 0.5 },
+      ]),
+      KEY_TIMES,
+      axes,
+    ));
+}

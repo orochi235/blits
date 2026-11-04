@@ -11,7 +11,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine folds `angle()` channels, each value taken the short way round as on the CPU,
   and a role's members blended the short way too.
 - The `gpu` engine folds `wave()` voices.
-- The `gpu` engine folds `keys()` voices.
+- The `gpu` engine folds `keys()` voices, a blend-mode color channel's stops interpolated as the
+  channel does, straight across OKLab or round the hue, and a role of its voices blended the same.
 
 ## 0.20.0
 

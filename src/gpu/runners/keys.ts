@@ -62,7 +62,7 @@ const runners = new Map<string, Runner>();
 const kinds = new Map<string, number>();
 
 function kindOf(code: ChannelCode): number {
-  const sig = `${widthOf(code)}|${code.lerp}|${helpersOf(code.helpers).join('\n')}`;
+  const sig = `${widthOf(code)}|${code.lerp}|${code.lerpAll}|${helpersOf(code.helpers).join('\n')}`;
   let id = kinds.get(sig);
   if (id === undefined) {
     id = kinds.size;
