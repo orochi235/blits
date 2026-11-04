@@ -97,6 +97,47 @@ describe('motion mirror', () => {
     expect(mirror.rows[mirror.stride]).toBe(600 - mirror.anchor);
   });
 
+  it('gives an unmet subject its first row without the patch meeting it', () => {
+    const list = cells(3);
+    const { s, motions, mirror } = setup(list);
+    mirror.prepare(0, Number.POSITIVE_INFINITY);
+    for (const c of list) expect(s.read(c)).toBeUndefined();
+    expect(motions.numbers.size).toBe(0);
+    const n = motions.n;
+    expect(mirror.rows[mirror.stride + 3]).toBe(1);
+    expect(mirror.rows[mirror.stride + 3 + 2 * n]).toBe(1);
+  });
+
+  it('reads a subject retargeted after registration from its number from then on', () => {
+    const list = cells(3);
+    const { s, m, motions, mirror } = setup(list);
+    mirror.prepare(0, Number.POSITIVE_INFINITY);
+    mirror.take();
+    m.sync(100);
+    s.to(list[1] as C, 50);
+    expect(mirror.dirtyRows()).toEqual([1]);
+    mirror.prepare(100, Number.POSITIVE_INFINITY);
+    const slot = motions.known(list[1] as C) as number;
+    const n = motions.n;
+    expect(motions.runs[motions.base(slot)]).toBe(100);
+    expect(mirror.rows[mirror.stride]).toBe(100);
+    expect(mirror.rows[mirror.stride + 3 + 2 * n]).toBe(50);
+    s.to(list[1] as C, 70, 300);
+    mirror.prepare(300, Number.POSITIVE_INFINITY);
+    expect(mirror.rows[mirror.stride]).toBe(300);
+    expect(mirror.rows[mirror.stride + 3 + 2 * n]).toBe(70);
+    // The others are still unmet.
+    expect(motions.known(list[0] as C)).toBeUndefined();
+  });
+
+  it('refuses a second watch on a patch already watched', () => {
+    const list = cells(2);
+    const { motions, mirror } = setup(list);
+    expect(() => new Mirror(motions, list, mirror.values())).toThrow(/already watched/);
+    mirror.detach();
+    expect(() => new Mirror(motions, list, mirror.values())).not.toThrow();
+  });
+
   it('stops listening once detached', () => {
     const list = cells(2);
     const { s, motions, mirror } = setup(list);

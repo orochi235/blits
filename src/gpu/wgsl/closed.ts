@@ -46,21 +46,31 @@ fn blits_closed_coast(k: u32, y0: f32, v0: f32, t: f32) -> vec2f {
   return vec2f(y0 * e, (-y0 / tau) * e);
 }`;
 
-/**
- * `solveBound`, from `x0` toward `goal`. Where the CPU tests the coast's rest against `goal` with
- * `===`, a rest within f32 rounding of it counts as the goal itself, the bounds unmet.
- */
+/** Where a row's flags word carries each axis's `Branch`, two bits an axis from this bit. */
+export const BRANCH_SHIFT = 4;
+
+/** Which way `solveBound` goes on an axis, decided on the CPU in f64 as `solveBound` decides it. */
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
+export const enum Branch {
+  /** The coast stops inside the bounds. */
+  COAST = 0,
+  /** Let go past an edge, it springs back at once. */
+  BACK = 1,
+  /** It coasts until it crosses an edge and springs back from there. */
+  CROSS = 2,
+}
+
+/** `solveBound`, from `x0` toward `goal`, on the branch the row's flags give. */
 const BOUND_WGSL = /* wgsl */ `
-fn blits_closed_bound(k: u32, x0: f32, goal: f32, v0: f32, t: f32) -> vec2f {
+fn blits_closed_bound(k: u32, branch: u32, x0: f32, goal: f32, v0: f32, t: f32) -> vec2f {
   let tau = values[k + 2u];
   let y0 = x0 - goal;
-  let over = x0 + v0 * tau - goal;
-  if (abs(over) <= 1e-6 * (abs(x0) + abs(v0 * tau) + abs(goal))) {
+  if (branch == ${Branch.COAST}u) {
     let e = exp(-t / tau);
     return vec2f(y0 * e, (-y0 / tau) * e);
   }
   let w0 = values[k + 3u];
-  if (y0 * over > 0.0) {
+  if (branch == ${Branch.BACK}u) {
     let e = exp(-w0 * t);
     let b = v0 + w0 * y0;
     let y = e * (y0 + b * t);
@@ -108,7 +118,10 @@ export function closedWgsl(form: number, n: number): { helpers: string[]; body: 
     };
   const solve =
     form === BOUND
-      ? { helpers: [BOUND_WGSL], call: `blits_closed_bound(k, ${x0('a')}, goal, ${v0('a')}, dt)` }
+      ? {
+          helpers: [BOUND_WGSL],
+          call: `blits_closed_bound(k, (u32(persub[r + 1u]) >> (${BRANCH_SHIFT}u + 2u * a)) & 3u, ${x0('a')}, goal, ${v0('a')}, dt)`,
+        }
       : (() => {
           const f = SPRUNG[form];
           if (f === undefined) throw new Error(`blits: no WGSL for motion law ${form}`);

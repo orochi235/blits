@@ -29,8 +29,13 @@ export class Mirrors {
       this.list = list;
     }
     let m = this.by.get(voice);
-    if (m === undefined || m.motions !== p.motions) {
-      m?.detach();
+    if (m === undefined || m.motions !== p.motions || m.packed !== packed) {
+      // A patch has room for one watch: a voice cued again on it hands it over.
+      for (const [v, other] of this.by)
+        if (other.motions === p.motions) {
+          other.detach();
+          this.by.delete(v);
+        }
       m = new Mirror(p.motions, list, packed);
       this.by.set(voice, m);
     }

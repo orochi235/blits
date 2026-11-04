@@ -235,8 +235,13 @@ export class Motions<I> {
   /** What `watch` set; called only here and in `change`. */
   listener: ((slot: number) => void) | null = null;
 
-  /** Calls `listener` with a subject's number whenever its run or what is pending for it changes. */
+  /**
+   * Calls `listener` with a subject's number whenever its run or what is pending for it changes;
+   * null stops. Throws where another listener is attached: there is room for one.
+   */
   watch(listener: ((slot: number) => void) | null): void {
+    if (listener !== null && this.listener !== null && this.listener !== listener)
+      throw new Error('blits: this motion patch is already watched; stop that watch first');
     this.listener = listener;
   }
 

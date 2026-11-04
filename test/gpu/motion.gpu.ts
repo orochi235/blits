@@ -224,6 +224,19 @@ test('motion: a glide with bounds, released inside, crossing and past an edge', 
     { near: true },
   ));
 
+test('motion: a glide let go past an edge with its rest a hair past it too', (d) =>
+  agree(
+    d,
+    'x',
+    () =>
+      glide<C, P>('x', {
+        from: 120,
+        velocity: (c) => ([-20 + 1e-4, -20 + 1e-6, -20, -20 - 1e-6][c.id % 4] as number) / 0.325,
+        bounds: [0, 100],
+      }),
+    [0, 40, 90, 250, 600],
+  ));
+
 test('motion: 1,000 subjects each retargeted at a time of its own', (d) =>
   agree(
     d,

@@ -1,6 +1,9 @@
+import { BOUND } from '../closed.js';
 import type { Motions } from '../motions.js';
+import { absent } from '../numbers.js';
 import { reading } from '../reading.js';
-import { RunFlag } from '../stretch.js';
+import { RunFlag, type Segment } from '../stretch.js';
+import { BRANCH_SHIFT, Branch } from './wgsl/closed.js';
 
 const PENDING = RunFlag.PENDING;
 const OLDER = RunFlag.OLDER;
@@ -13,9 +16,11 @@ const DRIFT = 2 ** 14;
 
 /**
  * A motion voice's runs as the GPU reads them: each registered subject's run, in registration
- * order, kept in step with its `Motions` by `watch`. Before each dispatch, `prepare` commits the
- * changes due by the voice's time, as a live `sample` would, since a host reading only the GPU's
- * buffers makes none; `take` then hands over the rows that changed.
+ * order, kept in step with its `Motions` by `watch`. A subject the patch has not met yet gets the
+ * row its first stretch would have, without the patch numbering it: registering is not meeting.
+ * Before each dispatch, `prepare` commits the changes due by the voice's time, as a live `sample`
+ * would, since a host reading only the GPU's buffers makes none; `take` then hands over the rows
+ * that changed.
  */
 export class Mirror<I> {
   /** Each registered subject's run, `stride` numbers apiece, its release time counted from `anchor`. */
@@ -23,10 +28,13 @@ export class Mirror<I> {
   stride = 0;
   /** The voice time the rows' times count from; NaN until a frame shows the voice. */
   anchor = Number.NaN;
-  /** By row, the subject's number in `motions`. */
+  /** By row, the subject's number in `motions`; -1 for one the patch has not met. */
   private slots = new Int32Array(0);
-  /** By subject number, its row; undefined for a subject not registered. */
+  /** By row, the first stretch of a subject the patch has not met, and its flags. */
+  private unmet: ({ seg: Segment; flags: number } | undefined)[] = [];
+  /** By subject number, its row; undefined for a number not yet matched to a registered subject. */
   private rowOf: (number | undefined)[] = [];
+  private bySubject = new Map<I, number>();
   /** `motions.freed` when the rows were numbered: a number given up since may now be another's. */
   private freed = 0;
   /** Subject numbers whose run or pending changes moved since the last `prepare`. */
@@ -45,26 +53,36 @@ export class Mirror<I> {
     readonly motions: Motions<I>,
     readonly list: readonly I[],
     /** The voice's numbers as the runner packed them, the first a place for its time. */
-    private readonly packed: Float32Array,
+    readonly packed: Float32Array,
   ) {
     this.vals = packed;
-    this.number();
     motions.watch(this.listen);
+    this.number();
   }
 
-  /** Numbers every registered subject, making a run for one the patch has not met, as a sample would. */
+  /** Matches every registered subject to its number, working out the first row of one with none. */
   private number(): void {
     const m = this.motions;
-    this.slots = Int32Array.from(this.list, (s) => m.slot(s));
     this.freed = m.freed;
     this.rowOf = [];
-    this.slots.forEach((s, i) => {
+    this.bySubject = new Map();
+    this.slots = new Int32Array(this.list.length).fill(-1);
+    this.unmet = [];
+    this.due = new Set();
+    this.list.forEach((subject, i) => {
+      this.bySubject.set(subject, i);
+      const s = m.known(subject);
+      if (s === undefined) {
+        const run = m.freshRun(subject);
+        this.unmet[i] = { seg: run.stretches[0] as Segment, flags: run.flags };
+        return;
+      }
+      this.slots[i] = s;
       this.rowOf[s] = i;
+      if (this.flags(s) & (PENDING | OLDER)) this.due.add(s);
     });
     this.stride = m.stride;
     this.rows = new Float32Array(this.list.length * this.stride);
-    this.due = new Set();
-    for (const s of this.slots) if (this.flags(s) & (PENDING | OLDER)) this.due.add(s);
     this.touched.clear();
     this.every();
   }
@@ -77,6 +95,20 @@ export class Mirror<I> {
     return this.motions.runs[this.motions.base(s) + 1] as number;
   }
 
+  /** Subject number `s`'s row, matching it to its registered subject the first time it is seen. */
+  private rowFor(s: number): number | undefined {
+    const known = this.rowOf[s];
+    if (known !== undefined) return known;
+    const subject = this.motions.numbers.subject(s);
+    if (subject === absent) return undefined;
+    const row = this.bySubject.get(subject);
+    if (row === undefined) return undefined;
+    this.slots[row] = s;
+    this.rowOf[s] = row;
+    this.unmet[row] = undefined;
+    return row;
+  }
+
   /** Whether a run changed since the last `prepare`, so the fold made then is out of date. */
   get stirred(): boolean {
     return this.touched.size > 0;
@@ -86,7 +118,7 @@ export class Mirror<I> {
   dirtyRows(): number[] {
     const rows = new Set(this.dirty);
     for (const s of this.touched) {
-      const row = this.rowOf[s];
+      const row = this.rowFor(s);
       if (row !== undefined) rows.add(row);
     }
     return [...rows].sort((a, b) => a - b);
@@ -110,7 +142,7 @@ export class Mirror<I> {
       const was = reading.horizon;
       reading.horizon = horizon;
       try {
-        for (const s of work) if (this.rowOf[s] !== undefined) m.advance(s, t);
+        for (const s of work) if (this.rowFor(s) !== undefined) m.advance(s, t);
       } finally {
         reading.horizon = was;
       }
@@ -119,7 +151,7 @@ export class Mirror<I> {
     this.touched.clear();
     this.due = new Set();
     for (const s of work) {
-      const row = this.rowOf[s];
+      const row = this.rowFor(s);
       if (row === undefined) continue;
       this.dirty.add(row);
       if (this.flags(s) & (PENDING | OLDER)) this.due.add(s);
@@ -140,26 +172,48 @@ export class Mirror<I> {
   private write(row: number, t: number): void {
     const m = this.motions;
     const s = this.slots[row] as number;
-    const b = m.base(s);
-    const runs = m.runs;
-    const o = row * this.stride;
-    const rows = this.rows;
-    if ((this.flags(s) & OLDER) !== 0 && t < (runs[b] as number)) {
-      // An earlier stretch plays at `t`, as after a seek back with history kept.
-      const seg = m.playing(s, t);
-      const n = m.n;
-      rows[o] = seg.at - this.anchor;
-      rows[o + 1] = runs[b + 1] as number;
-      rows[o + 2] = seg.ms;
-      for (let i = 0; i < n; i++) {
-        rows[o + 3 + i] = seg.x0[i] as number;
-        rows[o + 3 + n + i] = seg.v0[i] as number;
-        rows[o + 3 + 2 * n + i] = seg.to[i] as number;
-      }
+    if (s < 0) {
+      const u = this.unmet[row] as { seg: Segment; flags: number };
+      this.put(row, u.flags, u.seg);
       return;
     }
-    for (let j = 0; j < this.stride; j++) rows[o + j] = runs[b + j] as number;
-    rows[o] = (runs[b] as number) - this.anchor;
+    const b = m.base(s);
+    const runs = m.runs;
+    const flags = runs[b + 1] as number;
+    // An earlier stretch plays at `t`, as after a seek back with history kept.
+    if ((flags & OLDER) !== 0 && t < (runs[b] as number)) this.put(row, flags, m.playing(s, t));
+    else this.put(row, flags, m.latest(s));
+  }
+
+  /**
+   * Writes `seg` into `row`. A bounded glide's branch on each axis is decided here in f64, as the
+   * CPU decides it, and carried in the flags word: f32 could take a different one.
+   */
+  private put(row: number, flags: number, seg: Segment): void {
+    const n = this.motions.n;
+    const law = this.motions.shape.law;
+    const rows = this.rows;
+    const o = row * this.stride;
+    let word = flags;
+    if (law[0] === BOUND) {
+      const tau = law[2] as number;
+      for (let i = 0; i < n; i++) {
+        const x0 = seg.x0[i] as number;
+        const goal = seg.to[i] as number;
+        const y0 = x0 - goal;
+        const over = x0 + (seg.v0[i] as number) * tau - goal;
+        const branch = over === 0 ? Branch.COAST : y0 * over > 0 ? Branch.BACK : Branch.CROSS;
+        word += branch * 2 ** (BRANCH_SHIFT + 2 * i);
+      }
+    }
+    rows[o] = seg.at - this.anchor;
+    rows[o + 1] = word;
+    rows[o + 2] = seg.ms;
+    for (let i = 0; i < n; i++) {
+      rows[o + 3 + i] = seg.x0[i] as number;
+      rows[o + 3 + n + i] = seg.v0[i] as number;
+      rows[o + 3 + 2 * n + i] = seg.to[i] as number;
+    }
   }
 
   /** The rows written since the last call, as sorted `[start, end)` byte ranges, touching ones joined. */
