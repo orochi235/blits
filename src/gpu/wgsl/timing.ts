@@ -1,3 +1,5 @@
+import { Col } from '../columns.js';
+
 /** A voice's timing bits in its table row. */
 // biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row` in src/lane.ts
 export const enum Flag {
@@ -70,5 +72,38 @@ fn blits_fade_in(end: f32, shown: f32, fade_in: f32, ease_at: u32) -> f32 {
   let c = max(0.0, u);
   if (ease_at == ${NONE}u) { return c; }
   return blits_ease(ease_at, c);
+}
+`;
+
+const col = (c: Col) => `table[o + ${c}u]`;
+const u32At = (c: Col) => `bitcast<u32>(${col(c)})`;
+
+/**
+ * `blits_take(o, i)`: subject `i`'s take of the voice whose row starts at `o`: whether it shows,
+ * its weight, phase and pass, and `lag`, how far its shown time is behind the voice's raw time.
+ * Needs `table`, `persub`, `CLOCK_WGSL`, `FADE_WGSL` and `EASING_WGSL` (so `values`) in scope.
+ */
+export const TAKE_WGSL = /* wgsl */ `
+struct Take { shows: bool, w: f32, phase: f32, pass_index: f32, lag: f32 }
+
+fn blits_take(o: u32, i: u32) -> Take {
+  let hidden = Take(false, 0.0, 0.0, 0.0, 0.0);
+  let mask = ${u32At(Col.MASK)};
+  if (mask != ${NONE}u && ((bitcast<u32>(persub[mask + (i >> 5u)]) >> (i & 31u)) & 1u) == 0u) { return hidden; }
+  let flags = ${u32At(Col.FLAGS)};
+  let delays = ${u32At(Col.DELAYS)};
+  if (delays == ${NONE}u) {
+    if ((flags & ${Flag.SHOWS}u) == 0u) { return hidden; }
+    return Take(true, ${col(Col.WEIGHT)}, ${col(Col.PHASE)}, ${col(Col.PASS)}, 0.0);
+  }
+  let raw = ${col(Col.CLOCK)};
+  let c = blits_clock(raw - persub[delays + i], flags, ${col(Col.START)}, ${col(Col.SPAN)}, ${col(Col.DURATION)}, ${col(Col.PASS_BASE)}, ${col(Col.LAST_PASS)});
+  if (!c.shows) { return hidden; }
+  var w = ${col(Col.WEIGHT)};
+  if ((flags & ${Flag.FADE}u) != 0u) {
+    let shown = ${u32At(Col.SHOWN)};
+    w = clamp(w * blits_fade_in(${col(Col.FADE_END)}, persub[shown + i], ${col(Col.FADE_IN)}, ${u32At(Col.EASE)}), 0.0, 1.0);
+  }
+  return Take(true, w, c.phase, c.pass_index, raw - c.elapsed);
 }
 `;

@@ -1,7 +1,8 @@
 import { clampWeight, envelope } from '../clock.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
-import { Col, type Slot } from './table.js';
+import { Col } from './columns.js';
+import type { Slot } from './table.js';
 import { Flag, NONE } from './wgsl/timing.js';
 
 /**

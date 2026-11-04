@@ -73,9 +73,9 @@ describe('voice table', () => {
     expect(t.rows[Col.WEIGHT]).toBeLessThan(1);
   });
 
-  it('marks the first member of each role', () => {
+  it('gives every member its role, and marks only those showing', () => {
     const m = mix<C, P>(K);
-    // Before its start, so it shows nothing: the next member leads, and it keeps its role.
+    // Before its start, so it shows nothing, and it keeps its role.
     m.cue({ patch: wave, subjects: cells, role: 'a', loop: true, seek: -500 });
     m.cue({ patch: wave, subjects: cells, role: 'a' });
     m.cue({ patch: wave, subjects: cells, role: 'a' });
@@ -87,7 +87,6 @@ describe('voice table', () => {
     const t = voiceTable(mixerOf(m), voices, four);
     const col = (c: Col) => [0, 1, 2, 3].map((k) => t.rows[k * ROW + c]);
     expect(col(Col.ROLE)).toEqual([1, 1, 1, 0]);
-    expect(col(Col.FIRST)).toEqual([0, 1, 0, 0]);
     const flags = new Uint32Array(t.rows.buffer);
     expect([0, 1, 2, 3].map((k) => (flags[k * ROW + Col.FLAGS] as number) & Flag.SHOWS)).toEqual([
       0,

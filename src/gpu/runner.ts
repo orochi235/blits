@@ -12,9 +12,10 @@ export interface Runner {
   /** WGSL declarations, each included once per kernel. */
   readonly helpers: string | readonly string[];
   /**
-   * The WGSL body of `fn run_<i>(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32) -> Out_<i>`,
+   * The WGSL body of `fn run_<i>(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32, lag: f32) -> Out_<i>`,
    * setting `out.<channel>` for each channel it writes. `base` is the voice's offset in `values`;
-   * `sub` its offset in the per-subject buffer for this subject (0 where it has none).
+   * `sub` its offset in the per-subject buffer for this subject (0 where it has none); `lag` how
+   * far this subject's shown time is behind the voice's raw time, 0 for a voice with no delays.
    */
   readonly wgsl: string;
   readonly writes: readonly string[];
