@@ -30,12 +30,12 @@ reach", bound by its "Decided" section.
    knows every delay once subjects are met; the row carries the result."** With the side table, a
    host that reads only GPU buffers never meets its subjects, so a voice with an unnamed `stagger`
    keeps `voice.latest` at 0 and goes `done` (or `frozen`) at its span while its later subjects
-   still play. **Resolution:** when `Answers` builds a voice's delays it raises `voice.latest` and
-   lowers `voice.soonest` to them and calls `schedule(mix, voice)` as `held()` does. That is what
-   `Named` already does at cue ("Every subject's stagger is known at cue, so a finite loop ends by
-   them all, read or not"), but it is a CPU-visible change to when such a voice ends, against the
-   rule that the gpu side changes nothing the CPU observes. Mike's call; the plan builds the
-   resolution, and Task 2's test pins it.
+   still play. **Ruling (controller, 2026-11-04):** the gpu side does not raise `voice.latest` or
+   reschedule anything. A voice with an unnamed `stagger` (its delays asked as subjects are met)
+   and a finite span stays on the CPU, with the reason "its stagger is asked as subjects are met,
+   so when it ends depends on which were read". A looping-forever one runs on the GPU, since its
+   end never depends on its delays. This keeps the rule that the gpu side changes nothing the CPU
+   observes.
 2. **Fade-in stalls.** The spec has the CPU upload one fade-in origin per subject, but `fadeInAt`
    also subtracts `voice.stalls` (fade outs that were turned back), which depend on each subject's
    origin. **Resolution:** a staggered voice that fades in and has `stalls` stays on the CPU, with a
@@ -88,8 +88,9 @@ fixes it and pins it with a test.
 2. **`subjects()` called again, reordered and grown, after the CPU has met some subjects.** Expect
    no second `stagger`/`target` call for a met subject or one already answered, and the met ones
    keeping the record's answer. Test in Task 2.
-3. **A host that never probes, with an unnamed `stagger` on a finite loop.** Expect the voice to play
-   until its last subject's last pass ends (Spec conflict 1). Test in Task 2 (unit) and Task 8
+3. **A host that never probes, with an unnamed `stagger` on a finite loop.** Expect the voice on the
+   CPU with the reason in Spec conflict 1's ruling, and its end unchanged from `mixer` (Spec
+   conflict 1). Test in Task 2 (unit) and Task 8
    (agreement past the end).
 4. **Negative delays, and a staggered voice cued backward (`rate < 0`, beginless).** Expect the same
    phase and pass as `mixer`, before 0 included. Test in Task 3 (port grid) and Task 8 (agreement).
@@ -208,9 +209,9 @@ Rules `of` follows, in this order per registered subject: a record the voice alr
 subject, as `held()` asks them. Delays and reach are kept for reached subjects only (0 otherwise).
 `reach` is null when every registered subject is reached. Where the voice has an unnamed `stagger`
 or a `target`, `of` sets `voice.asked` to an object reading these arrays through `index`; a named
-voice's answers are fixed at cue and need no hook. For an unnamed `stagger`, `of` raises
-`voice.latest` / lowers `voice.soonest` to the finite delays and calls `schedule(mix, voice)` where
-either moved (Spec conflict 1).
+voice's answers are fixed at cue and need no hook. `of` never touches `voice.latest`,
+`voice.soonest` or the schedule (Spec conflict 1's ruling); eligibility keeps a finite-span voice
+with an unnamed `stagger` on the CPU.
 
 - [ ] **Step 1: Write the failing tests** (`test/gpu-answers.test.ts`)
 
