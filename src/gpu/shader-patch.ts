@@ -8,6 +8,11 @@ import type { Packed, Runner } from './runner.js';
  */
 export type Scalar = 'f32';
 
+/** `P`, and a `V` for each table name in `T`; the no-parameter default `P` drops out beside tables. */
+type WithTables<P, T extends string, V> = [T] extends [never]
+  ? P
+  : (string extends keyof P ? unknown : P) & { [K in T]: V };
+
 /**
  * What `shaderPatch` takes.
  *
@@ -38,7 +43,7 @@ export interface ShaderSpec<I, O, P extends Record<string, number>, T extends st
     phase: number,
     subject: I,
     setting: Setting<void, unknown>,
-    params: P & { [K in T]: (x: number, y: number) => number },
+    params: WithTables<P, T, (x: number, y: number) => number>,
   ): Partial<O>;
   writes: readonly (keyof O & string)[];
 }
@@ -70,7 +75,7 @@ export interface GpuDescriptor {
  */
 export interface ShaderPatch<I, O, P extends Record<string, number>, T extends string = never>
   extends Patch<I, O> {
-  with(values: P & { [K in T]: ArrayLike<number> }): ShaderPatch<I, O, P, T>;
+  with(values: WithTables<P, T, ArrayLike<number>>): ShaderPatch<I, O, P, T>;
 }
 
 const descriptors = new WeakMap<object, GpuDescriptor>();
@@ -169,7 +174,7 @@ const TABLE_HELPER = `fn blits_table(at: u32, w: u32, h: u32, x: f32, y: f32) ->
 export function shaderPatch<
   I,
   O,
-  P extends Record<string, number> = Record<never, never>,
+  P extends Record<string, number> = Record<string, never>,
   T extends string = never,
 >(duration: number, spec: ShaderSpec<I, O, P, T>): ShaderPatch<I, O, P, T> {
   const fields = Object.keys(spec.fields ?? {});
@@ -182,6 +187,8 @@ export function shaderPatch<
     'table',
     declared.map(([n]) => n),
   );
+  for (const [n] of declared)
+    if (params.includes(n)) throw new Error(`blits: the name ${n} is both a parameter and a table`);
   let end = params.length;
   const placed = declared.map(([name, { width, height }]) => {
     if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1)
@@ -220,26 +227,27 @@ export function shaderPatch<
         },
       ]),
     );
-    const args = { ...p, ...lookups } as P & { [K in T]: (x: number, y: number) => number };
+    const args = { ...p, ...lookups } as WithTables<P, T, (x: number, y: number) => number>;
     const patch: ShaderPatch<I, O, P, T> = {
       form: 'fn',
       duration,
       writes: spec.writes,
       at: (phase, subject, setting) =>
         spec.at(phase, subject, setting as Setting<void, unknown>, args),
-      with(next) {
+      with(given) {
+        const next = given as P & Record<string, number | ArrayLike<number> | undefined>;
         for (const n of params)
           if (typeof next[n] !== 'number')
             throw new Error(`blits: with() needs a number for the parameter ${n}`);
-        const given = placed.map((t) => {
-          const v = (next as Record<string, ArrayLike<number> | undefined>)[t.name];
+        const bound = placed.map((t) => {
+          const v = next[t.name] as ArrayLike<number> | undefined;
           if (v === undefined || v.length !== t.width * t.height)
             throw new Error(
               `blits: with() needs ${t.width} × ${t.height} numbers for the table ${t.name}`,
             );
           return Float32Array.from(v);
         });
-        return make(next, given);
+        return make(next, bound);
       },
     };
     descriptors.set(patch, {

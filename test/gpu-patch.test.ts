@@ -68,6 +68,25 @@ describe('shaderPatch', () => {
       return t.at(0, { x: 0 }, undefined as never).y;
     };
 
+    it('refuses a table named as a parameter', () => {
+      expect(() =>
+        shaderPatch<C, P, { a: number }, 'a'>(0, {
+          params: { a: 'f32' },
+          tables: { a: { width: 1, height: 1 } },
+          wgsl: '',
+          at: () => ({}),
+          writes: ['y'],
+        }),
+      ).toThrow('both a parameter and a table');
+    });
+
+    it('types with() by what the patch declares', () => {
+      const none = shaderPatch<C, P>(0, { wgsl: '', at: () => ({}), writes: ['y'] });
+      // @ts-expect-error a patch with no parameters takes none
+      expect(() => none.with({ foo: 1 })).not.toThrow();
+      expect(() => lookup.with({ bitmap: [1, 2, 3, 4, 5, 6, 7, 8] })).not.toThrow();
+    });
+
     it('refuses contents of the wrong length', () => {
       expect(() => lookup.with({ bitmap: [1, 2, 3, 4, 5, 6] })).toThrow(
         'blits: with() needs 2 × 4 numbers for the table bitmap',
