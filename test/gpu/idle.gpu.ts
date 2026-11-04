@@ -36,7 +36,7 @@ async function agrees(device: GpuDevice, g: ReturnType<typeof make>, c: ReturnTy
   return true;
 }
 
-test('idle: a voice at weight 0 leaves its channel on the GPU, and raised, never a stale fold', async (d) => {
+test('idle: a voice at weight 0 leaves its channel on the GPU, and raised, moves it back to the CPU', async (d) => {
   const g = make(gpu({ device: d }));
   const c = make(mixer);
   const side = gpuOf(g.m);
@@ -49,5 +49,5 @@ test('idle: a voice at weight 0 leaves its channel on the GPU, and raised, never
     throw new Error('s is not on the GPU with the fn voice at weight 0');
   g.h.weight = 0.5;
   c.h.weight = 0.5;
-  await agrees(d, g, c);
+  if (await agrees(d, g, c)) throw new Error('s stayed on the GPU after the fn voice was raised');
 });
