@@ -4,6 +4,7 @@ import { f } from '@weasel-js/labkit';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import { FRAME, type Scene } from './kit/scene';
+import { choir } from './score/sing';
 import { K, LINES, type Part, type Pose, SUBJECTS, type Syllable, voices } from './score/song';
 import { stage } from './score/stage';
 
@@ -11,6 +12,7 @@ const DURATION = 24_000;
 const CUT = LINES.findIndex((l) => l.name === 'line 2');
 
 const config = f.schema({
+  sound: f.boolean(false).label('Sound'),
   tempo: f.number(160).range(140, 200).step(5).label('Tempo, beats a minute'),
   lag: f.number(0).range(0, 1).step(0.25).label('Chorus answers late by, beats'),
   cut: f
@@ -28,6 +30,7 @@ function scene(c: Config): Scene<Syllable, Pose, Config> {
     kit: K,
     subjects: () => SUBJECTS,
     voices: () => voices(c),
+    attach: (m) => (c.sound ? choir(m) : { close() {} }),
     events: () =>
       Number.isFinite(c.cut) ? [{ at: c.cut, run: (_m, handles) => handles[CUT]?.fade() }] : [],
   };

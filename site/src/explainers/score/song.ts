@@ -8,6 +8,8 @@ export interface Syllable {
   /** Beats from the start of its line. */
   onset: number;
   beats: number;
+  /** What it is sung on, as a note name. */
+  pitch: string;
 }
 
 /**
@@ -28,10 +30,21 @@ export interface Line {
   beats: number;
 }
 
-/** The tune of "Deck the Halls": a dotted beat, a half, then beats; the answer runs on quicker. */
-const CALL = [1.5, 0.5, 1, 1, 1.5, 0.5, 1, 1];
-const ANSWER = [1.5, 0.5, 1, 1, 1, 0.5, 0.5, 0.5, 1.5];
-const COUNT = [1, 1, 1, 1];
+interface Tune {
+  beats: number[];
+  pitches: string[];
+}
+
+/** "Deck the Halls" in D: the line, and the fa-la answering it an octave down. */
+const CALL: Tune = {
+  beats: [1.5, 0.5, 1, 1, 1, 1, 1, 1],
+  pitches: ['A4', 'G4', 'F#4', 'E4', 'D4', 'E4', 'F#4', 'D4'],
+};
+const ANSWER: Tune = {
+  beats: [1.5, 0.5, 1, 1, 1.5, 0.5, 1, 1, 2],
+  pitches: ['E3', 'F#3', 'G3', 'E3', 'F#3', 'E3', 'D3', 'C#3', 'D3'],
+};
+const COUNT: Tune = { beats: [1, 1, 1, 1], pitches: ['A5', 'A5', 'A5', 'A5'] };
 
 const LEAD = [
   'It rubs the lo- tion on its skin,',
@@ -40,10 +53,16 @@ const LEAD = [
 ];
 const FA_LA = 'Fa la la la la, la la la la.';
 
-function line(name: string, part: Part, words: string, rhythm: number[]): Line {
+function line(name: string, part: Part, words: string, tune: Tune): Line {
   let onset = 0;
   const syllables = words.split(' ').map((text, i) => {
-    const s = { id: `${name}/${i}`, text, onset, beats: rhythm[i] ?? 1 };
+    const s = {
+      id: `${name}/${i}`,
+      text,
+      onset,
+      beats: tune.beats[i] ?? 1,
+      pitch: tune.pitches[i] ?? 'D4',
+    };
     onset += s.beats;
     return s;
   });
@@ -73,6 +92,14 @@ function sung(l: Line, beat: number) {
     },
     { writes: ['lit', 'hop'] },
   );
+}
+
+/** What a syllable's hit carries, for whoever sounds it. */
+export interface Note {
+  part: Part;
+  pitch: string;
+  /** How long it is held, in ms. */
+  ms: number;
 }
 
 export interface SongConfig {
@@ -106,6 +133,10 @@ export function voices(c: SongConfig): VoiceDef<Syllable, Pose>[] {
         loop: false,
         fade: { out: 120 },
         patch: sung(l, beat),
+        hits: l.syllables.map((s) => ({
+          at: s.onset * beat,
+          event: { part: l.part, pitch: s.pitch, ms: s.beats * beat } satisfies Note,
+        })),
         ...(typeof start === 'number' ? { start } : { anchor: { start } }),
       },
     };

@@ -1,7 +1,15 @@
 import type { Handle, Mix } from '@msb235/blits';
 import { css, mix } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
-import { FRAME, type Frame, HISTORY, type Scene, type SceneEvent, type VoiceDef } from './scene';
+import {
+  type Attached,
+  FRAME,
+  type Frame,
+  HISTORY,
+  type Scene,
+  type SceneEvent,
+  type VoiceDef,
+} from './scene';
 
 interface Played<I, O> {
   mix: Mix<I, O>;
@@ -58,6 +66,7 @@ export class Player<I, O, C> {
    * `end`; null once announced, and for an unlisted run.
    */
   private end: number | null;
+  private readonly attached: Attached | null;
 
   constructor(
     private readonly scene: Scene<I, O, C>,
@@ -86,6 +95,7 @@ export class Player<I, O, C> {
       return { mix: m, handles: voices.map((v) => m.cue({ name: v.name, ...v.spec })), seqs: [] };
     };
     this.main = play(this.voices, opts.name);
+    this.attached = listed ? (scene.attach?.(this.main.mix, config) ?? null) : null;
     this.solos = scene.ledger ? this.voices.map((v) => play([v])) : [];
     for (const solo of this.solos) solo.mix.close();
     if (!listed) this.main.mix.close();
@@ -98,6 +108,7 @@ export class Player<I, O, C> {
   close(): void {
     if (this.closed) return;
     this.closed = true;
+    this.attached?.close();
     this.main.mix.close();
   }
 
@@ -108,6 +119,8 @@ export class Player<I, O, C> {
   at(t: number): Frame<I, O> {
     const target = Math.max(0, Math.floor(t / FRAME + 1e-6));
     this.own = true;
+    // Played on in time is a frame or a few ahead; anything else is a jump.
+    this.attached?.moving?.(target > this.k && target - this.k <= 4);
     try {
       if (target < this.k) this.back(target);
       while (this.k < target) {

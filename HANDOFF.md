@@ -238,6 +238,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   now plain fields on the spec. The schema page's Score section, "Spans" and "Joins", is the
   record.
 
+- **A musical layer is a blits companion, on the mix's clock, not Tone's `Transport`** (2026-11-04).
+  Tempo and meter map beats to ms, times are written in bars and beats, notes are hits whose event
+  is a note, bar lines go on the score with `announce`, and a sink fed by `mix.book` sounds them
+  (blits-tone, `@weasel-js/audio`, MIDI). Tone's and weasel's own sequencers keep a second clock that
+  seek, history and the panel cannot reach. Unbuilt: the Score explainer's singalong
+  (`site/src/explainers/score/sing.ts`) sings its hits inline first, and the package is to be cut
+  from it.
+
 ## Next, in order
 
 1. **What the stress demos found** (`apps/stress`, built 2026-10-30; its README says what each

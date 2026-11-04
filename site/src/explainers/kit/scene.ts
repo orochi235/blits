@@ -37,8 +37,19 @@ export interface Scene<I, O, C> {
    * last `HISTORY` frames of them.
    */
   record?(frame: { t: number; subjects: I[]; poses: O[]; alone: O[] }, config: C): number[];
+  /**
+   * Called with the main mix once the player makes it, for a scene that acts on the mix's clock
+   * beside drawing, such as booking sounds. `moving` hears, before each move, whether the player is
+   * playing on in time or jumping (a seek, a scrub, a step back); `close` runs as the player closes.
+   */
+  attach?(mix: Mix<I, O>, config: C): Attached;
   /** The subject the ledger itemizes, and the channels it shows. */
   ledger?: { subject(subjects: I[]): I; channels: readonly (keyof O & string)[] };
+}
+
+export interface Attached {
+  moving?(playing: boolean): void;
+  close(): void;
 }
 
 export interface Frame<I, O> {
