@@ -6,6 +6,7 @@ import {
   gpu,
   gpuOf,
   type Handle,
+  keys,
   kit,
   mix,
   multiply,
@@ -139,23 +140,15 @@ const sweep = (ms: number) =>
 const slowSweep = sweep(5000);
 const fastSweep = sweep(3600);
 
-/** A gel laid over the whole stage. */
-const wash = shaderPatch<Cell, Light, Lab>(0, {
-  params: COLOR,
-  wgsl: 'out.gel = array<f32, 4>(params.L * 0.7, params.A * 0.7, params.B * 0.7, 0.7);',
-  at: (_, __, ___, p) => ({ gel: layer(p, 0.7) }),
-  writes: ['gel'],
-});
+/** A gel of `rgb` laid over the whole stage. */
+const wash = (rgb: number) =>
+  keys<Cell, Light>(0, [{ at: 0, delta: { gel: layer(lab(rgb), 0.7) } }]);
 
-const dark = shaderPatch<Cell, Light>(0, {
-  wgsl: 'out.master = array<f32, 4>(0.0, 0.0, 0.0, 1.0);',
-  at: () => ({ master: layer(lab(0x000000), 1) }),
-  writes: ['master'],
-});
+const dark = keys<Cell, Light>(0, [{ at: 0, delta: { master: [0, 0, 0, 1] } }]);
 
 interface Look {
   name: string;
-  gel?: number;
+  gel?: Patch<Cell, Light>;
   spots: Patch<Cell, Light>[];
   blackout?: boolean;
 }
@@ -163,13 +156,13 @@ interface Look {
 const LOOKS: Look[] = [
   {
     name: 'Warm',
-    gel: 0xffa850,
+    gel: wash(0xffa850),
     spots: [0.25, 0.75].map((cx) => still.with({ ...lab(0xe0c090), cx })),
   },
-  { name: 'Cool', gel: 0x4a78ff, spots: [slowSweep.with({ ...lab(0xa8c0e8), lead: 0 })] },
+  { name: 'Cool', gel: wash(0x4a78ff), spots: [slowSweep.with({ ...lab(0xa8c0e8), lead: 0 })] },
   {
     name: 'Chase',
-    gel: 0xd040c0,
+    gel: wash(0xd040c0),
     spots: [0, 1 / 3, 2 / 3].map((lead) => fastSweep.with({ ...lab(0xd8b0e0), lead })),
   },
   { name: 'Blackout', spots: [], blackout: true },
@@ -230,7 +223,7 @@ export default function run(root: HTMLElement): () => void {
       for (const h of up) h.fade();
       up = look.spots.map((p) => m.cue({ patch: p, subjects: CELLS, loop: true, fade }));
       if (look.gel !== undefined)
-        up.push(m.cue({ patch: wash.with(lab(look.gel)), subjects: CELLS, role: 'gel', fade }));
+        up.push(m.cue({ patch: look.gel, subjects: CELLS, role: 'gel', fade }));
       if (look.blackout) up.push(m.cue({ patch: dark, subjects: CELLS, fade }));
       current = i;
       since = show.now;

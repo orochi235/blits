@@ -10,7 +10,12 @@ stays the design record; the site takes its section order loosely and writes its
 npm run site         # from the repo root: the API JSON, then Astro's dev server on :: port 4880
 npm run site:build   # the API JSON, then a static build to site/dist
 npm run site:smoke   # build, then load every page headless; fails on a console error, a dead link, or no search index
+node site/scripts/panel-check.mjs examples/white-balance:white-balance   # after a build: a demo under ?panel, with WebGPU
 ```
+
+The panel check opens each page named with `?panel`, and fails where the panel does not list the
+mixes named after the colon, where holding the clock leaves the picture moving or a seek leaves it
+still, or on a console error. It needs a GPU for the gpu demos to draw on one, so run it on teitou.
 
 `BLITS_SITE_URL` sets the origin canonical links and the sitemap use (`https://michaelbaker.tech` by
 default). `BLITS_SITE_BASE` sets the base path (`/blits/` on Pages) and `BLITS_SITE_OUT` the output directory,

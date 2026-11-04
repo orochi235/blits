@@ -5,11 +5,11 @@ import {
   gpu,
   gpuOf,
   type Handle,
+  keys,
   kit,
   mix,
   multiply,
   oklab,
-  shaderPatch,
   toHex,
   transport,
 } from '@msb235/blits/gpu';
@@ -58,28 +58,19 @@ for (let y = 0; y < ROWS; y++)
 
 const WARM = oklab(0xffb36b);
 const COOL = oklab(0x9fbfff);
-/** The light's color `phase` of the way through its drift: warm, then cool, then warm again. */
-function light(phase: number): number[] {
-  const u = (1 - Math.cos(2 * Math.PI * phase)) / 2;
-  return WARM.map((w, i) => w + ((COOL[i] as number) - w) * u);
-}
-/** The same drift in WGSL, for the GPU. */
-const LIGHT_WGSL = `fn light(phase: f32) -> array<f32, 4> {
-  let u = (1.0 - cos(6.28318530718 * phase)) / 2.0;
-  return array<f32, 4>(${WARM.map((w, i) => `mix(${w}, ${COOL[i]}, u)`).join(', ')});
-}`;
-const cast = shaderPatch<Cell, Balance>(PERIOD, {
-  helpers: LIGHT_WGSL,
-  wgsl: 'out.cast = light(phase);',
-  at: (phase) => ({ cast: light(phase) }),
-  writes: ['cast'],
-});
-const fix = shaderPatch<Cell, Balance>(PERIOD, {
-  helpers: LIGHT_WGSL,
-  wgsl: 'out.fix = light(phase);',
-  at: (phase) => ({ fix: light(phase) }),
-  writes: ['fix'],
-});
+/** The light drifting warm, then cool, then warm again, into `channel`. */
+const drift = (channel: keyof Balance) =>
+  keys<Cell, Balance>(
+    PERIOD,
+    [
+      { at: 0, delta: { [channel]: WARM } },
+      { at: 0.5, delta: { [channel]: COOL } },
+      { at: 1, delta: { [channel]: WARM } },
+    ],
+    { ease: 'ease-in-out' },
+  );
+const cast = drift('cast');
+const fix = drift('fix');
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
