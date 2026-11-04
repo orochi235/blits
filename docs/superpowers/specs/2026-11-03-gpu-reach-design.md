@@ -1,7 +1,9 @@
 # The gpu engine's reach: stock patches, per-subject timing, and readback
 
-**Status (2026-11-03): designed, not built.** This line changes as phases land; the doc is deleted
-once the last one does, after anything durable has moved into the schema page and the changelog.
+**Status (2026-11-03): phase 1 built (d20940c..30ba0d5), phases 2–4 designed, not built.** What
+phase 1 left open is under item 18 of `HANDOFF.md`, and the schema page's "The gpu engine" says what
+folds now. This line changes as phases land; the doc is deleted once the last one does, after
+anything durable has moved into the schema page and the changelog.
 
 For whoever builds or reviews the next phase of `@msb235/blits/gpu`. It answers: what has to change
 for most of a real mix to fold on the GPU, and in what order.

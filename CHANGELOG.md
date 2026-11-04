@@ -22,6 +22,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - `gpuOf(m).channel()` folds again after a cue, stop or other change made without a sync, and
   after its kernel finishes compiling, rather than giving the last fold until the next frame.
+- The `gpu` engine no longer checks every registered subject against each voice's `subjects`
+  every frame. A frame of four voices over a million subjects took 65 ms, and now takes 0.55.
 
 ## 0.20.0
 

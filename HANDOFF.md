@@ -931,6 +931,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **`project` and `trace` show a body at the last synced world**: a patch cannot read another
       subject's state.
 
+18. **The gpu engine's reach, phases 2–4** (`docs/superpowers/specs/2026-11-03-gpu-reach-design.md`).
+    Phase 1, stock patches on the GPU, is built (d20940c..30ba0d5, branch `gpu-stock`); stagger and
+    partial reach, owners and weight signals, and readback into `pull` are designed and not built.
+    The schema page's "The gpu engine" says what folds now. Open from phase 1:
+    - **Retargets upload one `writeBuffer` per run of changed rows** (`Mirrors.upload`), so 5% of
+      1M springs retargeted, every twentieth row, cost 32 ms preparing the dispatch and 29 ms waiting
+      on the GPU (`bench/runs/2026-11-03-gpu-stock.txt`). Uploading a whole mirror, or merging runs
+      across small gaps, past some share of rows changed is the likely fix; measure where.
+    - **Two mixes folding one motion patch** throw "already watched; stop that watch first" out of
+      the fold, naming a watch the host never started, where they should stay on the CPU with a
+      warning. One motion patch on two voices of one mix rebuilds both mirrors every frame, unwarned.
+    - **A motion whose `from` or `velocity` is not deterministic** can jump on the GPU when a subject
+      is met and whenever its mirror is rebuilt: say so in the docs, or cache the first segment.
+    - While a kernel compiles, a mirror with changes waiting re-runs the dispatch's start on every
+      `channel()` call.
+    - A function easing on a `keys` patch's first stop, which is never evaluated, still sends the
+      patch to the CPU; the `from: 'current'` refusal in `src/gpu/eligible.ts` covers every form.
+    - `Regions` (`src/gpu/region.ts`) has no unit tests for a departure with survivors, compaction,
+      shrink then grow, or its store doubling, though every runner leans on it.
+
 ## Loose ends
 
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**

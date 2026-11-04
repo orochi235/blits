@@ -27,10 +27,27 @@ A mix refuses a voice its engine can't run. The refusal comes at `cue`, not part
 
 `gpu` from `@msb235/blits/gpu` folds voices on the GPU, through WebGPU, for scenes with thousands of subjects all doing the same math: a grid where every pixel is a subject, or a field of instances. Each frame it works out every subject's pose in one compute pass and leaves the result in a GPU buffer, which the host's own shader reads to draw. The site's per-pixel examples run on it.
 
-A patch for it is a `shaderPatch`, written twice: as WGSL for the GPU, and as a JS `at` for everything that runs on the CPU. The WGSL sets `out.<channel>` from `phase`, `pass_index`, `subject.<field>`, and `params.<name>`:
+It folds blits' own patches as they are written for `mixer`: `keys`, `wave`, `tween`, `spring` and `glide`. Register the subjects it folds, in the order their values sit in each buffer, then cue and sync as on any mix:
 
 ```ts
-import { gpu, gpuOf, shaderPatch } from '@msb235/blits/gpu';
+import { gpu, gpuOf } from '@msb235/blits/gpu';
+
+const device = await (await navigator.gpu.requestAdapter())!.requestDevice();
+const m = mix<Cell, Glow>(K, { engine: gpu({ device }) });
+gpuOf(m).subjects(cells, () => ({}));
+m.cue({ patch: keys(2000, PULSE, { ease: 'ease-in-out' }), subjects: cells, loop: true });
+
+// Each frame: sync, then bind the channel's buffer in your render pass.
+m.sync(now);
+const glow = gpuOf(m).channel('glow'); // { buffer, offset, stride, axes }, or null
+```
+
+A `spring`, `glide` or `tween` keeps working as on the CPU: a `to()`, `set()` or `push()` lands at the voice's time, though nothing reads the subject on the CPU.
+
+For math no stock patch does, such as a disc whose position each cell is tested against, write a `shaderPatch`, twice: as WGSL for the GPU, and as a JS `at` for everything that runs on the CPU. The WGSL sets `out.<channel>` from `phase`, `pass_index`, `subject.<field>`, and `params.<name>`:
+
+```ts
+import { shaderPatch } from '@msb235/blits/gpu';
 
 const band = shaderPatch<Cell, Tint, { y: number }>(0, {
   fields: { y: 'f32' },
@@ -43,27 +60,34 @@ const band = shaderPatch<Cell, Tint, { y: number }>(0, {
   writes: ['tint'],
 });
 
-const device = await (await navigator.gpu.requestAdapter())!.requestDevice();
-const m = mix<Cell, Tint>(K, { engine: gpu({ device }) });
 gpuOf(m).subjects(cells, (c) => ({ y: c.y }));
 m.cue({ patch: band.with({ y: 0.25 }), subjects: cells });
-
-// Each frame: sync, then bind the channel's buffer in your render pass.
-m.sync(now);
-const tint = gpuOf(m).channel('tint'); // { buffer, offset, stride, axes }, or null
 ```
 
-`with` binds a patch's parameters, so one shader serves every band. Both halves give every channel a value for every subject; for a subject a shape misses, that is zero coverage or the rule's rest. In development, the first frame a shader runs reads a sample back and warns where its WGSL and its `at` disagree. `OVER_WGSL` gives a host's shader `toHex`'s arithmetic, laying a color pose over a base.
+`with` binds a patch's parameters, so one shader serves every band. Both halves give every channel a value for every subject; for a subject a shape misses, that is zero coverage or the rule's rest. A shader can also read per-voice `tables`, a grid of numbers each voice binds through `with`: WGSL reads one as `table_<name>(x, y)` and `at` as `params.<name>(x, y)`, and new contents don't recompile anything. In development, the first frame a shader runs reads a sample back and warns where its WGSL and its `at` disagree. `OVER_WGSL` gives a host's shader `toHex`'s arithmetic, laying a color pose over a base.
 
 What runs where:
 
 | On the GPU | On the CPU, as `mixer` runs it |
 |---|---|
-| A voice whose patch is a `shaderPatch`, whose weight is a number (fades included), and that reaches every registered subject | Any other voice: a weight signal, `stagger`, a span, a patch with `state`, or one that names only some subjects. Its channels stay on the CPU, with a warning saying why |
-| `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `vec` of those, `color()`, and all 25 color blend modes, roles included | `last`, `quat`, `angle`, `ink`, `affine` |
-| | `probe`, `pull`, `project`, `seek`, history, and the debug panel, through each shader patch's `at` |
+| `keys` eased by a CSS name, a `cubic-bezier` or `steps`; `wave`; `tween`, `spring` and `glide`; `shaderPatch` | `fn` patches. `keys` with an easing function or a `lerpBy` of its own. A motion on an `ink`, which moves round the hue, or eased by a function |
+| A voice whose weight is a number (fades included) and that reaches every registered subject | A weight signal, `stagger`, an owner, a patch with `state`, `from: 'current'`, a bounded voice, or one that names only some subjects |
+| `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `angle`, `vec` of those, `color()`, and all 25 color blend modes on `color` or `ink`, roles included | `last`, `quat`, `ink()` and `ink(last())`, `affine` |
+| | `probe`, `pull`, `project`, `seek`, history, and the debug panel. A motion voice read back through history or by a projection stays on the CPU that frame |
 
-`gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
+A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `it staggers its subjects` or `its easing is a function`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
+
+The GPU computes in 32-bit floats, and agrees with the CPU to that precision. Where a value jumps — a square wave flipping, a `steps` easing, a keyframe, a loop wrapping — a subject whose time rounds to the other side shows the value from one float step away, a tiny fraction of a millisecond early or late. The GPU's agreement tests allow that one step there and nothing more; a bounded `glide`, whose path depends on which side of an edge it stops, decides that on the CPU in 64 bits.
+
+Measured on teitou (Apple M5 Max) in headless Chromium, a whole frame of three looping `keys` voices, a `wave` and a `spring` retargeting 5% of its subjects each frame, read on `mixer` with `pull` and on the gpu engine until the GPU reports the fold done (medians, `bench/runs/2026-11-03-gpu-stock.txt`):
+
+| Subjects | `mixer` | gpu engine | gpu engine, no retargets |
+|---:|---:|---:|---:|
+| 10,000 | 1.59 ms | 0.88 ms | not run |
+| 100,000 | 24.56 ms | 7.14 ms | 0.28 ms |
+| 1,000,000 | 300.76 ms | 75.94 ms | 0.39 ms |
+
+With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which writes each retargeted subject's new path for the GPU, takes 32 ms, and waiting for the GPU 29 ms.
 
 Measured on the site's examples, on an Apple M5 Max in headless Chromium, the main thread's work per frame, drawing on the CPU and then on the gpu engine (`bench/runs/2026-11-02-demos-*.json`):
 
@@ -81,7 +105,7 @@ The last column is each frame's submits timed until the GPU reports them done, s
 
 ## Why the seam exists
 
-A patch written as keyframes is data: its stops stay on the patch as `keys`, and its easing is a CSS name, a `cubic-bezier` or `steps` rather than a function. That is so an engine other than `mixer` can read them. Besides the GPU engine below, these are what the seam is judged against, though neither is being built:
+A patch written as keyframes is data: its stops stay on the patch as `keys`, and its easing is a CSS name, a `cubic-bezier` or `steps` rather than a function. That is so an engine other than `mixer` can read them. Besides the GPU engine above, these are what the seam is judged against, though neither is being built:
 
 - A Web Animations engine that runs `keys` patches only and hands them to the browser, so a page's motion plays off the main thread. It refuses `fn` and `motion` patches at `cue`.
 - A recording engine that wraps another and captures every pose as keyframes, turning a procedural patch into data for the first.

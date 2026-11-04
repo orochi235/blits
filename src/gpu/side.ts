@@ -32,8 +32,8 @@ export interface GpuChannel {
 }
 
 /**
- * The GPU half of a mix the `gpu` engine made: folds the channels its shader patches' voices write
- * into a buffer, once a frame, for the subjects the host registered.
+ * The GPU half of a mix the `gpu` engine made: folds the channels its voices write into a buffer,
+ * once a frame, for the subjects the host registered.
  *
  * @category gpu
  */
@@ -78,7 +78,8 @@ export class GpuSide<I> {
 
   /**
    * The subjects the GPU folds, in the order their values sit in each channel's buffer, and the
-   * numbers each shader patch reads from one, by field name. Call again when the list changes.
+   * numbers each shader patch reads from one, by field name (`() => ({})` where none reads any).
+   * Call again when the list changes.
    */
   subjects(list: readonly I[], fieldsOf: (subject: I) => Record<string, number>): void {
     this.list = list.slice();

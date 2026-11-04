@@ -23,10 +23,10 @@ export interface GpuOptions {
 }
 
 /**
- * An engine that folds the voices of shader patches on the GPU, into buffers a host draws from,
- * and runs everything else as the stock `mixer` does. Each frame, `gpuOf(m).channel(name)` gives
- * the buffer for a channel the GPU folded; `probe`, `pull`, `project`, and `seek` run on the CPU,
- * through each shader patch's `at`.
+ * An engine that folds `keys`, `wave`, `tween`, `spring`, `glide` and shader patch voices on the
+ * GPU, into buffers a host draws from, and runs everything else as the stock `mixer` does. Each
+ * frame, `gpuOf(m).channel(name)` gives the buffer for a channel the GPU folded; `probe`, `pull`,
+ * `project`, and `seek` run on the CPU, through each shader patch's `at`.
  *
  * @category gpu
  */

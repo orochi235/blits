@@ -1,4 +1,5 @@
 # teitou (Apple M5 Max, 18 cores, apple metal-3), 2026-11-03, headless Chromium 153.0.8010.12, node v26.13.0, load 2.9-3.9
+# The node also ran weasel-dev throughout, an onto service job (a vite dev server); what it took of the GPU then is not known.
 # onto do --kind bench --node teitou --solo, at 30ba0d5 (recorded as 3fdbc80, the same tree before its message was amended)
 #   FRAMES=300 WARM=30 node bench/gpu-stock.mjs --out bench/runs/2026-11-03-gpu-stock
 #   then ROWS=gpu:100000,gpu:1000000 with MIX=still and MIX=nospring
