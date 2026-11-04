@@ -2,24 +2,21 @@ import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
 import { production, warnOnce } from '../warn.js';
-import { Answers, varies } from './answers.js';
+import { Answers } from './answers.js';
 import { Buffers } from './buffers.js';
 import { type Built, compile } from './compile.js';
 import { codesOf, eligibility, within } from './eligible.js';
 import { MAX_ROLES } from './kernel.js';
 import { Met } from './met.js';
-import type { Mirror } from './mirror.js';
 import { Mirrors } from './mirrors.js';
+import { prepare, roomOf } from './prepare.js';
 import { Reads } from './reads.js';
-import { type Entry, Regions } from './region.js';
-import { type Packed, packOf, type Runner, unpack } from './runner.js';
+import { Regions } from './region.js';
+import { packOf, type Runner } from './runner.js';
 import { submit } from './submit.js';
-import { elapsedOf, type Slot, voiceTable } from './table.js';
-import { sizeOf, Timings } from './timings.js';
+import { Timings } from './timings.js';
 import { twins } from './twins.js';
-import { unreadOf } from './unread.js';
 import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT } from './webgpu.js';
-import { perSubject, type Weighs, weighsOf } from './weight.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
 /**
@@ -123,19 +120,24 @@ export class GpuSide<I> {
    */
   channel(name: string): GpuChannel | null {
     if (this.off) return null;
-    if (
-      this.mix.frame !== this.frame ||
-      this.mix.stirs !== this.stirs ||
-      reading.inputs !== this.inputs ||
-      this.mirrors.stirred
-    ) {
-      this.frame = this.mix.frame;
-      this.stirs = this.mix.stirs;
-      this.inputs = reading.inputs;
-      this.outputs = new Map();
-      this.dispatch();
-    }
+    this.refresh();
     return this.outputs.get(name) ?? null;
+  }
+
+  /** Folds again if anything the last fold read has moved. */
+  private refresh(): void {
+    if (
+      this.mix.frame === this.frame &&
+      this.mix.stirs === this.stirs &&
+      reading.inputs === this.inputs &&
+      !this.mirrors.stirred
+    )
+      return;
+    this.frame = this.mix.frame;
+    this.stirs = this.mix.stirs;
+    this.inputs = reading.inputs;
+    this.outputs = new Map();
+    this.dispatch();
   }
 
   private dispatch(): void {
@@ -145,19 +147,7 @@ export class GpuSide<I> {
     const e = eligibility(mix, this.answers, this.reads.refused);
     const codes = codesOf(mix);
     const limit = this.device.limits?.maxStorageBufferBindingSize ?? STORAGE_LIMIT;
-    within(
-      e,
-      (v) => {
-        const p = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
-        const rows = p.perSubject === undefined ? 0 : n * (p.runner.stride ?? 0);
-        const u = v as Voice<I, unknown>;
-        const asks = varies(u as Voice<unknown, unknown>);
-        const block = asks ? sizeOf(this.answers.of(u), (v.fade.in ?? 0) > 0) : 0;
-        const reads = perSubject(v) ? n : 0;
-        return { values: p.values.length, persub: rows + block + reads };
-      },
-      limit,
-    );
+    within(e, (v) => roomOf(v, codes, n, this.answers), limit);
     if (!this.reads.read(mix, e.voices as Voice<I, unknown>[], this.list, this.answers)) {
       this.dispatch();
       return;
@@ -196,71 +186,26 @@ export class GpuSide<I> {
       );
     }
     if (b.pipeline === null || b.failed) return;
-    const mirrors: (Mirror<unknown> | undefined)[] = [];
-    const weighs = e.voices.map((v) => weighsOf(mix, v));
-    const entries: Entry[] = e.voices.map((v, k) => {
-      const p = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
-      if (p.perSubject === undefined) {
-        mirrors.push(undefined);
-        return { owner: v, values: p.values };
-      }
-      const u = v as Voice<I, unknown>;
-      const delays = varies(u as Voice<unknown, unknown>) ? this.answers.of(u).delays : null;
-      const m = this.mirrors.of(v, p.perSubject, p.values, this.list, delays);
-      // A host reading only these buffers never samples, so the changes it made are committed here.
-      const now = mix.now;
-      const horizon = mix.horizonFor(v, 0, now);
-      const unread = unreadOf(
-        mix,
-        u,
-        this.answers,
-        this.timings,
-        this.reads.of(u),
-        weighs[k] as Weighs,
-      );
-      if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread);
-      else {
-        const t = v.unstarted(now) && !v.holdsFirst ? Number.NaN : v.rawAt(now, 0);
-        m.prepare(t, horizon, v.holdsFirst, unread);
-      }
-      mirrors.push(m as Mirror<unknown>);
-      return { owner: v, values: m.values() };
+    const voices = e.voices as Voice<I, unknown>[];
+    const prepared = prepare({
+      mix,
+      voices,
+      runners,
+      index: this.index,
+      codes,
+      list: this.list,
+      answers: this.answers,
+      mirrors: this.mirrors,
+      timings: this.timings,
+      reads: this.reads,
+      regions: this.regions,
+      limit,
     });
-    // A patch packed before it met a subject could not check its axes; its mirror has met them now.
-    const unfit = e.voices.filter((_, k) => {
-      const m = mirrors[k];
-      return m !== undefined && m.stride !== (runners[k] as Runner).stride;
-    });
-    if (unfit.length > 0) {
-      for (const v of unfit) unpack(v.patch, codes);
+    if (prepared === 'unfit') {
       this.dispatch();
       return;
     }
-    const subs = this.mirrors.place(mirrors);
-    const voices = e.voices as Voice<I, unknown>[];
-    const timing = this.timings.place(mix, voices, this.answers, this.mirrors.length);
-    const reads = this.reads.place(voices, this.mirrors.length + this.timings.length);
-    // Each fade curve's entry after every voice's, at `curves[k]` for voice k.
-    const curves = voices.map((v) => {
-      const c = this.timings.curveOf(v as Voice<unknown, unknown>);
-      if (c === undefined) return undefined;
-      entries.push(c);
-      return entries.length - 1;
-    });
-    const placed = this.regions.frame(entries, limit / 4);
-    const slots: Slot[] = runners.map((r, k) => {
-      const c = curves[k];
-      const w = reads[k];
-      return {
-        runner: this.index.get(r.key) as number,
-        values: placed.offsets[k] as number,
-        sub: subs[k] as number,
-        timing: timing[k],
-        ...(c === undefined ? {} : { ease: placed.offsets[c] as number }),
-        ...(w === undefined ? {} : { weights: w }),
-      };
-    });
-    const table = voiceTable(mix, e.voices, slots, weighs);
+    const { table, placed } = prepared;
     if (table.roles > MAX_ROLES) {
       this.stale = true;
       warnOnce(
