@@ -8,6 +8,8 @@
 //   ROWS=mixer:1000000,gpu:10000 FRAMES=20 node bench/gpu-stock.mjs  only those rows
 // MIX=still keeps the spring but retargets nothing; MIX=nospring leaves the spring out. MIX=anchor
 // is still played past 2^14 ms of voice time, where the spring's mirror re-anchors (FRAMES=1100).
+// MIX=stagger is full with every voice staggered by (i % 256) * 4 ms, the keys voices fading in
+// over 500 ms, and the first keys voice reaching only the even subjects through `target`.
 //   UPLOAD=1 node bench/gpu-stock.mjs --out <out>    the retarget upload alone: a spring mirror's
 //   rows at 100k and 1M with 0.1%, 1%, 5% and 25% of them changed at random each frame, written as
 //   one writeBuffer per run of changed rows, as one write of the span from the first to the last,
@@ -129,8 +131,16 @@ window.bench = async (engine, n, frames, warm, variant) => {
   ]);
   const sway = wave(1000, { depth: { y: 3 }, shape: 'triangle' });
   const settle = spring('p', { from: 0, to: (c) => c.i % 10, stiffness: 170, damping: 26 });
-  for (const patch of [bounce, rise, drift, sway]) m.cue({ patch, subjects: cells, loop: true });
-  if (variant !== 'nospring') m.cue({ patch: settle, subjects: cells });
+  // Staggered by a rank, as bree writes its per-dot offsets; bounce reaches the even subjects,
+  // asked as met, and the keys voices fade in so the per-subject fade runs in the first frames.
+  const staggered = variant === 'stagger';
+  const lag = staggered ? { stagger: (c) => (c.i % 256) * 4 } : {};
+  const fade = staggered ? { fade: { in: 500 } } : {};
+  const whom = (patch) =>
+    staggered && patch === bounce ? { target: (c) => c.i % 2 === 0 } : { subjects: cells };
+  for (const patch of [bounce, rise, drift, sway])
+    m.cue({ patch, ...whom(patch), loop: true, ...lag, ...(patch === sway ? {} : fade) });
+  if (variant !== 'nospring') m.cue({ patch: settle, subjects: cells, ...lag });
 
   let read;
   let wait;
@@ -155,7 +165,7 @@ window.bench = async (engine, n, frames, warm, variant) => {
   for (let f = 1; f <= warm + frames; f++) {
     const a = performance.now();
     // 5% of the subjects, a different twentieth each frame.
-    if (variant === 'full')
+    if (variant === 'full' || staggered)
       for (let i = f % 20; i < n; i += 20) settle.to(cells[i], (f % 7) * 3 + (i % 5));
     const b = performance.now();
     m.sync(f * FRAME_MS);

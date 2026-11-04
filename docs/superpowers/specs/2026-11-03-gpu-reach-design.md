@@ -1,8 +1,8 @@
 # The gpu engine's reach: stock patches, per-subject timing, and readback
 
-**Status (2026-11-03): phase 1 built (d20940c..21dc031), phases 2–4 designed, not built.** What
-phase 1 left open is under item 18 of `HANDOFF.md`, and the schema page's "The gpu engine" says what
-folds now. This line changes as phases land; the doc is deleted once the last one does, after
+**Status (2026-11-04): phases 1 and 2 built (phase 1 d20940c..21dc031, phase 2 4cad824..ff1cc94 and
+the commit measuring it), phases 3–4 designed, not built.** What phases 1 and 2 left open is under
+item 18 of `HANDOFF.md`, and the schema page's "The gpu engine" says what folds now. This line changes as phases land; the doc is deleted once the last one does, after
 anything durable has moved into the schema page and the changelog.
 
 For whoever builds or reviews the next phase of `@msb235/blits/gpu`. It answers: what has to change
@@ -146,8 +146,12 @@ Each phase lands, is measured, and is released on its own.
   fade-in from `since`/`shownOf`, from flags and constants the row carries.
 - A voice reaching some subjects gets a bit mask over the registered list (`subjects`, or `target`'s
   answers per registered subject).
-- A finite loop that waits for its last-staggered subject is already decided by the CPU, which knows
-  every delay once subjects are met; the row carries the result.
+- The gpu side never moves when a voice ends: it neither raises `voice.latest`, lowers
+  `voice.soonest` nor reschedules a voice (ruled 2026-11-04). Where a voice names its subjects, the
+  CPU knows every delay at cue and has already decided its end. Where its stagger is asked as
+  subjects are met, the CPU's end depends on which subjects were read, so a voice with a finite span
+  stays on the CPU ("its stagger is asked as subjects are met, so when it ends depends on which were
+  read"), and so does one that is not beginless with a negative delay.
 
 ### 3. Owners and weight signals
 
