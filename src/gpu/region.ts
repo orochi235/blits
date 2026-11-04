@@ -36,7 +36,8 @@ export class Regions {
     return this.end;
   }
 
-  frame(entries: readonly Entry[]): Placement {
+  /** Places this frame's entries; past `cap` f32s, all of them afresh, holes dropped. */
+  frame(entries: readonly Entry[], cap = Number.POSITIVE_INFINITY): Placement {
     const live = entries.reduce((n, e) => n + e.values.length, 0);
     // Holes left by departed or resized voices are dropped once they outweigh the live values.
     if (this.end > 2 * live + 64) return this.compact(entries);
@@ -57,6 +58,7 @@ export class Regions {
       offsets.push(offset);
     }
     this.held = next;
+    if (this.end > cap) return this.compact(entries);
     return { offsets, changed: merged(changed) };
   }
 

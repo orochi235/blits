@@ -1,6 +1,6 @@
 import { createHistory } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
-import { eligibility } from '../src/gpu/eligible.js';
+import { eligibility, within } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { Regions } from '../src/gpu/region.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
@@ -83,6 +83,31 @@ describe('voice table', () => {
     expect(eligibility(mixerOf(m), cells).channels.size).toBe(0);
   });
 
+  it('writes the values and per-subject offsets as u32 bits, exact past 2^24', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, subjects: cells, loop: true });
+    m.sync(0);
+    const e = eligibility(mixerOf(m), cells);
+    const far = 2 ** 24 + 1;
+    const t = voiceTable(mixerOf(m), e.voices, [{ runner: 0, values: far, sub: far + 2 }]);
+    const bits = new Uint32Array(t.rows.buffer);
+    expect(bits[Col.VALUES]).toBe(far);
+    expect(bits[Col.SUB]).toBe(far + 2);
+  });
+
+  it('keeps a voice on the CPU, with a reason, where its buffer would pass the device limit', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, subjects: cells, loop: true });
+    m.sync(0);
+    const e = eligibility(mixerOf(m), cells);
+    within(e, () => ({ values: 4, persub: 0 }), 16);
+    expect(e.voices.length).toBe(1);
+    within(e, () => ({ values: 4, persub: 8 }), 16);
+    expect(e.voices).toEqual([]);
+    expect(e.channels.has('y')).toBe(false);
+    expect(e.reasons[0]?.why).toMatch(/per-subject buffer past the largest the device binds/);
+  });
+
   it('folds a channel no playing voice writes on the GPU, at its rest', () => {
     const m = mix<C, P>(K);
     m.sync(0);
@@ -124,5 +149,23 @@ describe('regions', () => {
     expect(next.offsets).toEqual([0, 2]);
     expect(next.changed).toEqual([[8, 20]]);
     expect([...r.data.subarray(0, 5)]).toEqual([1, 2, 6, 7, 8]);
+  });
+
+  it('lays every voice out afresh where the holes would pass the cap', () => {
+    const r = new Regions();
+    r.frame([
+      { owner: a, values: one },
+      { owner: b, values: two },
+    ]);
+    const next = r.frame(
+      [
+        { owner: a, values: one },
+        { owner: b, values: Float32Array.of(6, 7, 8, 9) },
+      ],
+      6,
+    );
+    expect(r.length).toBe(6);
+    expect(next.offsets).toEqual([0, 2]);
+    expect(next.changed).toEqual([[0, 24]]);
   });
 });

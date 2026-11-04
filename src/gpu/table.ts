@@ -9,7 +9,7 @@ export const ROW = 8;
 export enum Col {
   /** The voice's runner, as the kernel indexes its runners. */
   SHADER = 0,
-  /** Where the voice's packed values start in the values buffer, in f32s. */
+  /** Where the voice's packed values start in the values buffer, in f32s, as a u32's bits. */
   VALUES = 1,
   PHASE = 2,
   PASS = 3,
@@ -18,7 +18,7 @@ export enum Col {
   ROLE = 5,
   /** 1 where the voice is its role's first member this frame. */
   FIRST = 6,
-  /** Where the voice's per-subject region starts in the per-subject buffer, in f32s. */
+  /** Where the voice's per-subject region starts in the per-subject buffer, in f32s, as a u32's bits. */
   SUB = 7,
 }
 
@@ -59,14 +59,16 @@ export function voiceTable<I, O>(
 ): Table {
   const now = mix.now;
   const rows = new Float32Array(Math.max(1, voices.length) * ROW);
+  // Offsets go in as u32 bits: an f32 rounds them past 2^24.
+  const bits = new Uint32Array(rows.buffer);
   const roles = new Map<string, number>();
   voices.forEach((voice, k) => {
     const slot = slots[k];
     if (slot === undefined) throw new Error('blits: a voice in the GPU table has no slot');
     const o = k * ROW;
     rows[o + Col.SHADER] = slot.runner;
-    rows[o + Col.VALUES] = slot.values;
-    rows[o + Col.SUB] = slot.sub;
+    bits[o + Col.VALUES] = slot.values;
+    bits[o + Col.SUB] = slot.sub;
     const elapsed = elapsedOf(voice, now);
     if (Number.isNaN(elapsed)) return;
     // A member showing nothing this frame does not meet its role, so the next one leads it.

@@ -301,3 +301,57 @@ test('motion: a list registered again in another order', (d) =>
       },
     ],
   }));
+
+test('motion: a patch cued again on a second gpu mix, the first dropped without closing', async (d) => {
+  const build = () => spring<C, P>('x', { from: (c) => c.id, to: 30, stiffness: 180, damping: 12 });
+  const gp = build();
+  const cp = build();
+  const a = make(gp, gpu({ device: d }), CELLS);
+  const ca = make(cp, mixer, CELLS);
+  const sa = gpuOf(a);
+  sa.subjects(CELLS, () => ({}));
+  sa.channel('x');
+  await sa.ready;
+  for (const m of [a, ca]) m.sync(200);
+  each(
+    CELLS,
+    (i) => i % 2 === 0,
+    (s) => {
+      gp.to(s, 80);
+      cp.to(s, 80);
+    },
+  );
+  const first = sa.channel('x');
+  if (first === null) throw new Error('x is not on the first GPU mix');
+  const seen = await readBack(d, first.buffer, first.offset, CELLS.length * 4);
+  CELLS.forEach((s, i) => {
+    close(seen[i] as number, ca.probe(s).x, `first mix, subject ${s.id}`);
+  });
+  const b = make(gp, gpu({ device: d }), CELLS);
+  const cb = make(cp, mixer, CELLS);
+  const sb = gpuOf(b);
+  sb.subjects(CELLS, () => ({}));
+  sb.channel('x');
+  await sb.ready;
+  for (const t of [0, 150, 400]) {
+    b.sync(t);
+    cb.sync(t);
+    const ch = sb.channel('x');
+    if (ch === null) throw new Error(`x is not on the second GPU mix at ${t}`);
+    const got = await readBack(d, ch.buffer, ch.offset, CELLS.length * 4);
+    CELLS.forEach((s, i) => {
+      close(got[i] as number, cb.probe(s).x, `t ${t} subject ${s.id}`);
+    });
+  }
+});
+
+test('motion: a patch whose subjects move on more axes than its channel stays on the CPU', async (d) => {
+  const p = spring<C, P, number[]>('p', { from: () => [0, 0, 0], to: [1, 2, 3] });
+  const g = make(p, gpu({ device: d }), CELLS);
+  const side = gpuOf(g);
+  side.subjects(CELLS, () => ({}));
+  side.channel('p');
+  await side.ready;
+  g.sync(100);
+  if (side.channel('p') !== null) throw new Error('p went on the GPU');
+});

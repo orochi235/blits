@@ -30,19 +30,24 @@ export class Mirror<I> {
   anchor = Number.NaN;
   /** By row, the subject's number in `motions`; -1 for one the patch has not met. */
   private slots = new Int32Array(0);
-  /** By row, the first stretch of a subject the patch has not met, and its flags. */
+  /**
+   * By row, the first stretch of a subject the patch has not met, and its flags; undefined for a
+   * met one, or an unmet one not worked out yet.
+   */
   private unmet: ({ seg: Segment; flags: number } | undefined)[] = [];
   /** By subject number, its row; undefined for a number not yet matched to a registered subject. */
   private rowOf: (number | undefined)[] = [];
   private bySubject = new Map<I, number>();
-  /** `motions.freed` when the rows were numbered: a number given up since may now be another's. */
-  private freed = 0;
-  /** Subject numbers whose run or pending changes moved since the last `prepare`. */
+  /** Subject numbers whose run or pending changes moved, or that were given up, since the last `prepare`. */
   private touched = new Set<number>();
   /** Subject numbers with a change still to come or an earlier stretch kept, met every frame. */
   private due = new Set<number>();
   /** Rows written since the last `take`. */
   private dirty = new Set<number>();
+  /** Set where every row is written at the next `prepare`, as after numbering. */
+  private rewrite = false;
+  /** Set where `take` hands over every row as one range, as after a rewrite or a new anchor. */
+  private all = false;
   private time = Number.NaN;
   private vals: Float32Array;
   private readonly listen = (s: number) => {
@@ -56,14 +61,19 @@ export class Mirror<I> {
     readonly packed: Float32Array,
   ) {
     this.vals = packed;
-    motions.watch(this.listen);
+    this.watch();
     this.number();
+  }
+
+  /** Takes the patch's one watch, from a mirror on another mix that may never let it go. */
+  private watch(): void {
+    this.motions.watch(null);
+    this.motions.watch(this.listen);
   }
 
   /** Matches every registered subject to its number, working out the first row of one with none. */
   private number(): void {
     const m = this.motions;
-    this.freed = m.freed;
     this.rowOf = [];
     this.bySubject = new Map();
     this.slots = new Int32Array(this.list.length).fill(-1);
@@ -84,11 +94,45 @@ export class Mirror<I> {
     this.stride = m.stride;
     this.rows = new Float32Array(this.list.length * this.stride);
     this.touched.clear();
-    this.every();
+    this.rewrite = true;
+    this.all = true;
   }
 
-  private every(): void {
-    for (let i = 0; i < this.list.length; i++) this.dirty.add(i);
+  /**
+   * Counts every row's release time from a new anchor. Only that number moves, so the rest of the
+   * row stands; a row whose subject has a change this frame is written in full after.
+   */
+  private shift(anchor: number): void {
+    const runs = this.motions.runs;
+    const rows = this.rows;
+    const stride = this.stride;
+    this.anchor = anchor;
+    this.all = true;
+    if (this.rewrite) return;
+    for (let row = 0, o = 0; row < this.list.length; row++, o += stride) {
+      const s = this.slots[row] as number;
+      if (s >= 0) rows[o] = (runs[this.motions.base(s)] as number) - anchor;
+      else {
+        const u = this.unmet[row];
+        if (u !== undefined) rows[o] = u.seg.at - anchor;
+      }
+    }
+  }
+
+  /** Lets go of the number of each touched subject's row where the patch gave it up or to another. */
+  private recheck(): void {
+    const numbers = this.motions.numbers;
+    for (const s of this.touched) {
+      const row = this.rowOf[s];
+      if (row === undefined) continue;
+      const now = numbers.subject(s);
+      if (now !== absent && Object.is(now, this.list[row])) continue;
+      this.rowOf[s] = undefined;
+      this.slots[row] = -1;
+      this.unmet[row] = undefined;
+      this.due.delete(s);
+      this.dirty.add(row);
+    }
   }
 
   private flags(s: number): number {
@@ -116,6 +160,7 @@ export class Mirror<I> {
 
   /** The rows that will be written next, in order. */
   dirtyRows(): number[] {
+    if (this.all) return Array.from(this.list, (_, i) => i);
     const rows = new Set(this.dirty);
     for (const s of this.touched) {
       const row = this.rowFor(s);
@@ -131,11 +176,11 @@ export class Mirror<I> {
    */
   prepare(t: number, horizon: number): void {
     const m = this.motions;
-    if (m.freed !== this.freed) this.number();
-    if (!Number.isNaN(t) && !(Math.abs(t - this.anchor) <= DRIFT)) {
-      this.anchor = t;
-      this.every();
-    }
+    if (m.listener !== this.listen) {
+      this.watch();
+      this.number();
+    } else this.recheck();
+    if (!Number.isNaN(t) && !(Math.abs(t - this.anchor) <= DRIFT)) this.shift(t);
     const work = new Set([...this.touched, ...this.due]);
     this.touched.clear();
     if (!Number.isNaN(t) && reading.live) {
@@ -156,7 +201,10 @@ export class Mirror<I> {
       this.dirty.add(row);
       if (this.flags(s) & (PENDING | OLDER)) this.due.add(s);
     }
-    for (const row of this.dirty) this.write(row, t);
+    if (this.rewrite) {
+      for (let row = 0; row < this.list.length; row++) this.write(row, t);
+      this.rewrite = false;
+    } else for (const row of this.dirty) this.write(row, t);
     if (!Object.is(t - this.anchor, this.time)) {
       this.time = t - this.anchor;
       this.vals = this.packed.slice();
@@ -173,7 +221,12 @@ export class Mirror<I> {
     const m = this.motions;
     const s = this.slots[row] as number;
     if (s < 0) {
-      const u = this.unmet[row] as { seg: Segment; flags: number };
+      let u = this.unmet[row];
+      if (u === undefined) {
+        const run = m.freshRun(this.list[row] as I);
+        u = { seg: run.stretches[0] as Segment, flags: run.flags };
+        this.unmet[row] = u;
+      }
       this.put(row, u.flags, u.seg);
       return;
     }
@@ -218,6 +271,11 @@ export class Mirror<I> {
 
   /** The rows written since the last call, as sorted `[start, end)` byte ranges, touching ones joined. */
   take(): [number, number][] {
+    if (this.all) {
+      this.all = false;
+      this.dirty.clear();
+      return this.rows.length > 0 ? [[0, this.rows.byteLength]] : [];
+    }
     const out: [number, number][] = [];
     const bytes = this.stride * 4;
     for (const row of [...this.dirty].sort((a, b) => a - b)) {

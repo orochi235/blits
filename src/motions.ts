@@ -232,12 +232,12 @@ export class Motions<I> {
   watcher: Watcher | null = null;
   watchId = -1;
 
-  /** What `watch` set; called only here and in `change`. */
+  /** What `watch` set; called only here and in `change`, and with a number given up, in `forget`. */
   listener: ((slot: number) => void) | null = null;
 
   /**
-   * Calls `listener` with a subject's number whenever its run or what is pending for it changes;
-   * null stops. Throws where another listener is attached: there is room for one.
+   * Calls `listener` with a subject's number whenever its run or what is pending for it changes, or
+   * the number is given up; null stops. Throws where another listener is attached: there is room for one.
    */
   watch(listener: ((slot: number) => void) | null): void {
     if (listener !== null && this.listener !== null && this.listener !== listener)
@@ -450,6 +450,7 @@ export class Motions<I> {
 
   forget(s: number): void {
     this.freed++;
+    this.listener?.(s);
     if (this.pending !== null) this.pending[s] = undefined;
     if (this.older !== null) this.older[s] = undefined;
     if (this.causes !== null) this.causes[s] = undefined;

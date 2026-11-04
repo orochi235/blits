@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { codesOf } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { Mirror } from '../src/gpu/mirror.js';
+import { spanned } from '../src/gpu/mirrors.js';
 import { motionPack } from '../src/gpu/runners/motion.js';
 import { kit, mix, spring, sum } from '../src/index.js';
 import { motionOf } from '../src/motion.js';
@@ -130,12 +131,79 @@ describe('motion mirror', () => {
     expect(motions.known(list[0] as C)).toBeUndefined();
   });
 
-  it('refuses a second watch on a patch already watched', () => {
+  it('takes the watch from a mirror on another mix, which takes it back and renumbers', () => {
     const list = cells(2);
-    const { motions, mirror } = setup(list);
-    expect(() => new Mirror(motions, list, mirror.values())).toThrow(/already watched/);
-    mirror.detach();
-    expect(() => new Mirror(motions, list, mirror.values())).not.toThrow();
+    const { s, motions, mirror } = setup(list);
+    mirror.prepare(0, Number.POSITIVE_INFINITY);
+    mirror.take();
+    const other = new Mirror(motions, list, mirror.values());
+    s.to(list[0] as C, 9);
+    expect(other.stirred).toBe(true);
+    expect(mirror.stirred).toBe(false);
+    mirror.prepare(16, Number.POSITIVE_INFINITY);
+    expect(motions.listener).not.toBeNull();
+    expect(mirror.take()).toEqual([[0, 2 * mirror.stride * 4]]);
+    expect(mirror.rows[3 + 2 * motions.n]).toBe(9);
+    s.to(list[1] as C, 4);
+    expect(mirror.stirred).toBe(true);
+  });
+
+  it('hands every row over as one range when it re-anchors, each time counted from the new anchor', () => {
+    const list = cells(50);
+    const { s, m, motions, mirror } = setup(list, list.slice(0, 10));
+    mirror.prepare(0, Number.POSITIVE_INFINITY);
+    mirror.take();
+    const before = Array.from(mirror.rows);
+    const t = 2 ** 14 + 100;
+    m.sync(t);
+    s.to(list[3] as C, 1);
+    mirror.prepare(t, Number.POSITIVE_INFINITY);
+    expect(mirror.anchor).toBe(t);
+    expect(mirror.dirtyRows()).toEqual(list.map((_, i) => i));
+    expect(mirror.take()).toEqual([[0, mirror.rows.byteLength]]);
+    expect(mirror.take()).toEqual([]);
+    const n = motions.n;
+    const st = mirror.stride;
+    // Row 3 was retargeted at t: released now, heading for 1.
+    expect(mirror.rows[3 * st]).toBe(0);
+    expect(mirror.rows[3 * st + 3 + 2 * n]).toBe(1);
+    // Every other row, met (0) or not (20), only moved its release time.
+    for (const row of [0, 20]) {
+      expect(mirror.rows[row * st]).toBe(-t);
+      expect(Array.from(mirror.rows.subarray(row * st + 1, (row + 1) * st))).toEqual(
+        before.slice(row * st + 1, (row + 1) * st),
+      );
+    }
+  });
+
+  it('writes one span where many runs of rows changed, and each run where few did', () => {
+    const run = (k: number): [number, number] => [k * 24, k * 24 + 24];
+    expect(spanned(Array.from({ length: 100 }, (_, k) => run(k * 1000)))).toBe(false);
+    expect(spanned(Array.from({ length: 1000 }, (_, k) => run(k * 100)))).toBe(true);
+    expect(spanned(Array.from({ length: 1000 }, (_, k) => run(k * 1000)))).toBe(false);
+    expect(spanned([])).toBe(false);
+  });
+
+  it('rewrites only the rows whose number was given up or handed to another', () => {
+    const list = cells(10);
+    const { s, m, motions, mirror } = setup(list, list.slice(0, 9));
+    mirror.prepare(0, Number.POSITIVE_INFINITY);
+    mirror.take();
+    const freed = motions.known(list[3] as C) as number;
+    m.drop(list[3] as C);
+    s.to(list[9] as C, 40);
+    expect(motions.known(list[9] as C)).toBe(freed);
+    mirror.prepare(16, Number.POSITIVE_INFINITY);
+    const stride = mirror.stride * 4;
+    expect(mirror.take()).toEqual([
+      [3 * stride, 4 * stride],
+      [9 * stride, 10 * stride],
+    ]);
+    const n = motions.n;
+    expect(mirror.rows[9 * mirror.stride + 3 + 2 * n]).toBe(40);
+    // Subject 3, given up, is back to the run it would start with: at rest on its goal, its id.
+    expect(mirror.rows[3 * mirror.stride + 3]).toBe(3);
+    expect(mirror.rows[3 * mirror.stride + 3 + 2 * n]).toBe(3);
   });
 
   it('stops listening once detached', () => {

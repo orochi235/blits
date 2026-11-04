@@ -125,8 +125,8 @@ export function kernel(
     `    let role = u32(table[o + ${Col.ROLE}u]);`,
     `    let phase = table[o + ${Col.PHASE}u];`,
     `    let pass_index = table[o + ${Col.PASS}u];`,
-    `    let base = u32(table[o + ${Col.VALUES}u]);`,
-    `    let sub = u32(table[o + ${Col.SUB}u]);`,
+    `    let base = bitcast<u32>(table[o + ${Col.VALUES}u]);`,
+    `    let sub = bitcast<u32>(table[o + ${Col.SUB}u]);`,
   ];
   add('  for (var k = 0u; k < frame.x; k++) {', ...read);
   add(

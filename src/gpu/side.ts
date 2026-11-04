@@ -1,12 +1,12 @@
 import type { Mixer } from '../mixer.js';
 import { production, warnOnce } from '../warn.js';
 import { type Built, compile, layoutOf } from './compile.js';
-import { codesOf, eligibility } from './eligible.js';
+import { codesOf, eligibility, within } from './eligible.js';
 import { GROUP, type Kernel, MAX_ROLES } from './kernel.js';
 import type { Mirror } from './mirror.js';
 import { Mirrors } from './mirrors.js';
 import { type Entry, Regions } from './region.js';
-import { type Packed, packOf, type Runner } from './runner.js';
+import { type Packed, packOf, type Runner, unpack } from './runner.js';
 import { elapsedOf, type Slot, voiceTable } from './table.js';
 import { twins } from './twins.js';
 import {
@@ -14,6 +14,7 @@ import {
   type GpuBuffer,
   type GpuComputePipeline,
   type GpuDevice,
+  STORAGE_LIMIT,
   Usage,
 } from './webgpu.js';
 import type { ChannelCode } from './wgsl/channels.js';
@@ -110,6 +111,19 @@ export class GpuSide<I> {
     const n = this.list.length;
     if (n === 0) return;
     const e = eligibility(mix, this.list);
+    const codes = codesOf(mix);
+    const limit = this.device.limits?.maxStorageBufferBindingSize ?? STORAGE_LIMIT;
+    within(
+      e,
+      (v) => {
+        const p = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
+        return {
+          values: p.values.length,
+          persub: p.perSubject === undefined ? 0 : n * (p.runner.stride ?? 0),
+        };
+      },
+      limit,
+    );
     for (const r of e.reasons) {
       const key = `${(r.voice.patch.writes as readonly string[]).join(',')}: ${r.why}`;
       if (this.told.has(key)) continue;
@@ -117,7 +131,6 @@ export class GpuSide<I> {
       warnOnce(r.voice, `${key}, so the gpu engine leaves it on the CPU`);
     }
     if (e.channels.size === 0) return;
-    const codes = codesOf(mix);
     const runners = e.voices.map((v) => {
       const r = (packOf(v.patch, codes) as { runner: Runner }).runner;
       if (!this.index.has(r.key)) {
@@ -158,7 +171,17 @@ export class GpuSide<I> {
       mirrors.push(m as Mirror<unknown>);
       return { owner: v, values: m.values() };
     });
-    const placed = this.regions.frame(entries);
+    // A patch packed before it met a subject could not check its axes; its mirror has met them now.
+    const unfit = e.voices.filter((_, k) => {
+      const m = mirrors[k];
+      return m !== undefined && m.stride !== (runners[k] as Runner).stride;
+    });
+    if (unfit.length > 0) {
+      for (const v of unfit) unpack(v.patch, codes);
+      this.dispatch();
+      return;
+    }
+    const placed = this.regions.frame(entries, limit / 4);
     const subs = this.mirrors.place(mirrors);
     const slots: Slot[] = runners.map((r, k) => ({
       runner: this.index.get(r.key) as number,
@@ -235,7 +258,11 @@ export class GpuSide<I> {
     const have = this.buffers[name];
     if (have !== undefined && have.size >= bytes) return have;
     have?.destroy();
-    const size = Math.max(16, 2 ** Math.ceil(Math.log2(Math.max(bytes, 1))));
+    const limit = this.device.limits?.maxStorageBufferBindingSize ?? STORAGE_LIMIT;
+    const size = Math.max(
+      16,
+      Math.min(2 ** Math.ceil(Math.log2(Math.max(bytes, 1))), Math.max(bytes, limit)),
+    );
     const made = this.device.createBuffer({ size, usage, label: `blits gpu ${name}` });
     this.buffers[name] = made;
     this.group = null;

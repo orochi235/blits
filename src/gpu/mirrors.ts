@@ -3,6 +3,18 @@ import type { PerSubject } from './runner.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
 
 /**
+ * Whether `ranges` go up faster as one write of the span from the first to the last, unchanged rows
+ * included, than one write each. On teitou a write cost about 1 µs, and one write of a span about
+ * 0.5 ms plus 0.075 ms per MB (bench/runs/2026-11-03-gpu-upload*.jsonl).
+ */
+export function spanned(ranges: readonly (readonly [number, number])[]): boolean {
+  const first = ranges[0];
+  const last = ranges[ranges.length - 1];
+  if (first === undefined || last === undefined) return false;
+  return ranges.length > 500 + (last[1] - first[0]) / 13_000;
+}
+
+/**
  * The GPU side's mirrors, one per motion voice it folds, laid end to end in the `persub` buffer in
  * voice order. All made again when the subject list changes.
  */
@@ -80,6 +92,12 @@ export class Mirrors {
       const ranges = mirror.take();
       if (all) {
         if (mirror.rows.length > 0) device.queue.writeBuffer(buffer, offset * 4, mirror.rows);
+        continue;
+      }
+      if (spanned(ranges)) {
+        const from = (ranges[0] as [number, number])[0];
+        const to = (ranges[ranges.length - 1] as [number, number])[1];
+        device.queue.writeBuffer(buffer, offset * 4 + from, mirror.rows.subarray(from / 4, to / 4));
         continue;
       }
       for (const [from, to] of ranges)

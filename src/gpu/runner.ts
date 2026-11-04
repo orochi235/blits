@@ -60,3 +60,8 @@ export function packOf(patch: object, channels: ChannelLookup): Packed | undefin
   by.set(patch, made ?? null);
   return made;
 }
+
+/** Forgets what `patch` packed to, so the next `packOf` packs it again. */
+export function unpack(patch: object, channels: ChannelLookup): void {
+  packs.get(channels)?.delete(patch);
+}

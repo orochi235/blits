@@ -24,6 +24,9 @@ version and everything else the patch. Each release lists its changes as **Break
   after its kernel finishes compiling, rather than giving the last fold until the next frame.
 - The `gpu` engine no longer checks every registered subject against each voice's `subjects`
   every frame. A frame of four voices over a million subjects took 65 ms, and now takes 0.55.
+- The `gpu` engine keeps a voice on the CPU, saying why, where its numbers or its subjects' runs
+  would pass the largest storage buffer the device binds, rather than failing to bind; and it
+  reads a voice's place in those buffers exactly past 2^24 numbers.
 
 ## 0.20.0
 

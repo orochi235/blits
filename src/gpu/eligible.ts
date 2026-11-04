@@ -105,3 +105,45 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
   );
   return { channels, voices, reasons };
 }
+
+/** f32s a voice takes in the values buffer and in the per-subject buffer. */
+export interface Room {
+  readonly values: number;
+  readonly persub: number;
+}
+
+/**
+ * Keeps on the CPU, with a reason, each voice that would take the values or per-subject buffer past
+ * `limit` bytes, the largest storage buffer the device binds, and every channel it writes.
+ */
+export function within<I, O>(
+  e: Eligibility<I, O>,
+  room: (voice: Voice<I, O>) => Room,
+  limit: number,
+): void {
+  let values = 0;
+  let persub = 0;
+  const out = new Set<Voice<I, O>>();
+  for (const voice of e.voices) {
+    const r = room(voice);
+    let why: string | null = null;
+    if ((values + r.values) * 4 > limit)
+      why = 'its numbers would take the values buffer past the largest the device binds';
+    else if ((persub + r.persub) * 4 > limit)
+      why =
+        "its subjects' runs would take the per-subject buffer past the largest the device binds";
+    if (why === null) {
+      values += r.values;
+      persub += r.persub;
+      continue;
+    }
+    out.add(voice);
+    e.reasons.push({ voice, why });
+    for (const name of voice.patch.writes as readonly string[]) e.channels.delete(name);
+  }
+  if (out.size === 0) return;
+  const fits = e.voices.filter(
+    (v) => !out.has(v) && (v.patch.writes as readonly string[]).some((n) => e.channels.has(n)),
+  );
+  e.voices.splice(0, e.voices.length, ...fits);
+}

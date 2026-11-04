@@ -58,6 +58,7 @@ export interface GpuDevice {
     onSubmittedWorkDone(): Promise<void>;
   };
   readonly lost: Promise<unknown>;
+  readonly limits?: { readonly maxStorageBufferBindingSize?: number };
   createBuffer(desc: { size: number; usage: number; label?: string }): GpuBuffer;
   createShaderModule(desc: { code: string; label?: string }): GpuShaderModule;
   createBindGroupLayout(desc: {
@@ -75,6 +76,9 @@ export interface GpuDevice {
   }): GpuBindGroup;
   createCommandEncoder(): GpuCommandEncoder;
 }
+
+/** The least `maxStorageBufferBindingSize` WebGPU lets a device have, for one that does not say. */
+export const STORAGE_LIMIT = 2 ** 27;
 
 /** GPUBufferUsage's flags, which a page without WebGPU does not define. */
 export const Usage = {
