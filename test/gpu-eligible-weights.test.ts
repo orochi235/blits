@@ -1,9 +1,14 @@
 import { createHistory } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
+import { Answers } from '../src/gpu/answers.js';
 import type { Eligibility } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
+import { Reads } from '../src/gpu/reads.js';
+import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { SENDS, setReads } from '../src/gpu/weight.js';
 import { level, type Mix, mix, slew } from '../src/index.js';
+import type { Mixer } from '../src/mixer.js';
+import type { Voice } from '../src/voice.js';
 import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
 
 /** Asserts `e` keeps `y` on the CPU for this one reason. */
@@ -84,10 +89,36 @@ describe('gpu eligibility of owners and weight signals', () => {
     m.cue({ patch: wave, subjects: cells, weight: slew((c: C) => c.x, { riseMs: 100 }) });
     m.sync(0);
     m.probe(cells[0] as C);
+    const mixer = mixerOf(m) as unknown as Mixer<C, unknown>;
+    const answers = new Answers<C>(mixer);
+    answers.register(cells);
+    const reads = new Reads<C>();
+    expect(reads.read(mixer, held(m) as Voice<C, unknown>[], cells, answers)).toBe(false);
     keeps(
-      elig(m),
+      elig(m, cells, reads.refused),
       "its weight signal keeps state for each subject, which only the CPU's records hold",
     );
+  });
+
+  it('gives a voice weighted per subject whose patch keeps state the reason a number weight gets', () => {
+    const keeper = shaderPatch<C, P>(1000, {
+      wgsl: 'out.y = phase;',
+      at: (phase, _c, setting) => {
+        setting.keep(keeper, () => ({}));
+        return { y: phase };
+      },
+      writes: ['y'],
+    });
+    const reasons = (weight: number | ((c: C) => number)) => {
+      const m = mix<C, P>(K);
+      m.cue({ patch: keeper, subjects: cells, weight, loop: true });
+      m.sync(0);
+      m.probe(cells[0] as C);
+      expect((held(m)[0] as Voice<C, P>).keeping).toBe(true);
+      return elig(m).reasons.map((r) => r.why);
+    };
+    expect(reasons((c: C) => c.x + 0.5)).toEqual(reasons(0.5));
+    expect(reasons((c: C) => c.x + 0.5)).toEqual([]);
   });
 
   it('keeps a voice an owner weighs by a per-subject signal on the CPU', () => {

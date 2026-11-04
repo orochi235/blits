@@ -93,7 +93,8 @@ const isInput = (signal: Signal<unknown>): boolean =>
 
 /**
  * Why a voice's weight signal, or an owner's above it, keeps the voice on the CPU, or null where
- * the gpu side can read them. `refused` holds the signals the gpu side's own setting could not read.
+ * the gpu side can read them. `refused` holds the signals the gpu side's own setting could not read:
+ * the only sign a signal keeps state, since `voice.keeping` is also set by a patch that keeps it.
  */
 export function weightWhy<I, O>(
   mix: Mixer<I, O>,
@@ -110,7 +111,6 @@ export function weightWhy<I, O>(
     if (isInput(signal) && !heard(signal))
       return 'its weight signal reads an input that does not report its changes';
     if (!reads && !uniform(signal)) return COSTS;
-    if (!uniform(signal) && voice.keeping) return KEEPS;
     const no = refused?.get(signal);
     if (no !== undefined) return no;
   }
