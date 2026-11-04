@@ -237,7 +237,6 @@ export class GpuSide<I> {
       return;
     }
     const subs = this.mirrors.place(mirrors);
-    this.met.mark(e.voices as Voice<I, unknown>[]);
     const voices = e.voices as Voice<I, unknown>[];
     const timing = this.timings.place(mix, voices, this.answers, this.mirrors.length);
     const reads = this.reads.place(voices, this.mirrors.length + this.timings.length);
@@ -270,6 +269,7 @@ export class GpuSide<I> {
       );
       return;
     }
+    this.met.mark(voices);
     const k = b.kernel;
     const out = submit(
       {

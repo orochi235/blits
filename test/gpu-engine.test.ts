@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Col } from '../src/gpu/columns.js';
 import { gpu, gpuOf, mixerOf } from '../src/gpu/engine.js';
+import { MAX_ROLES } from '../src/gpu/kernel.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import type { GpuBuffer, GpuDevice } from '../src/gpu/webgpu.js';
 import { kit, level, mix, slew, spring, sum } from '../src/index.js';
@@ -205,6 +206,27 @@ describe('gpu engine', () => {
     expect(side.channel('y')).not.toBeNull();
     expect(Array.from(d.write('persub') ?? [])).toEqual([0.5, 1.5]);
     expect(new Uint32Array((d.write('table') as Float32Array).buffer)[Col.WEIGHTS]).toBe(0);
+  });
+
+  it('marks no voice met in a frame with more roles than it folds', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const d = stub();
+    const cells = [{ x: 0 }, { x: 1 }];
+    const m = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: d.device }) });
+    m.sync(0);
+    for (let r = 0; r <= MAX_ROLES; r++)
+      m.cue({ patch: wave, subjects: cells, loop: true, role: `r${r}` });
+    const side = gpuOf(m);
+    side.subjects(cells, () => ({}));
+    side.channel('y');
+    await side.ready;
+    m.sync(16);
+    expect(side.channel('y')).toBeNull();
+    expect(d.dispatched()).toBe(0);
+    const mixer = mixerOf(m);
+    const unheld = mixer.unheld as NonNullable<typeof mixer.unheld>;
+    for (const v of mixer.cued) expect(unheld(v, cells[0] as C)).toBeUndefined();
+    warn.mockRestore();
   });
 
   it('keeps a voice weighted by a slew on the CPU from its first frame, unprobed', async () => {
