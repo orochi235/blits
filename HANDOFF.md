@@ -978,7 +978,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   has met, as `VoiceSpec.stagger` documents (decided 2026-10-29), so a read ahead or a replay with
   no reads can end it earlier than the live mix did, and `waiting` leaves those properties out.
 
-- **weasel gaps blits still works around** (found on weasel 1.12.0, 2026-10-22; not rechecked since the move to 1.16.1, 2026-11-03). A leaf cannot set
+- **weasel gaps blits still works around** (found on weasel 1.12.0, 2026-10-22; not rechecked since the move to 1.16.1, 2026-11-03). Since 1.16, labkit's `ControlPanel` lays rows out inline by default and sets layout only per panel or section, never per row; an inline `PropertyRow` keeps its label at full width, so a long label beside a slider widened three explainer pages at 390 px. The site now lets a slider row wrap (`.explainer-controls label:has(> input[type='range'])` in `site/src/styles/explainer.css`, 2026-11-04), which is close to 1.12 but not the same; worth reporting to weasel as a missing per-row layout. A leaf cannot set
   its own row layout or an accessible name apart from its label, so the booker's two rows and the
   level rows keep `fieldRow` in `CompositionControls.tsx`. The number leaves stay custom, since
   labkit's `.clearable()` takes only a fixed placeholder and a voice's `start` names its default
