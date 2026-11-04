@@ -49,6 +49,26 @@ export function codesOf<I, O>(mix: Mixer<I, O>): ChannelLookup {
   return codes;
 }
 
+/**
+ * Whether a voice's own weight is the number 0 and the CPU does nothing for it at that weight. A
+ * role member still places its role, a voice fading to rest is still asked, and a stepping patch,
+ * a `from: 'current'` voice, an owner's child and a parting one keep state at weight 0.
+ */
+function idle<I, O>(voice: Voice<I, O>): boolean {
+  return (
+    typeof voice.spec.weight !== 'function' &&
+    voice.weight === 0 &&
+    voice.spec.role === undefined &&
+    voice.out?.rest !== true &&
+    voice.patch.state === undefined &&
+    voice.patch.step === undefined &&
+    voice.spec.from !== 'current' &&
+    voice.owner === null &&
+    voice.parts === null &&
+    voice.parted === null
+  );
+}
+
 /** Why a voice cannot run on the GPU, or null where it can. */
 function why<I, O>(
   voice: Voice<I, O>,
@@ -78,7 +98,7 @@ function why<I, O>(
 
 /**
  * Sorts this frame's voices into what the GPU folds and what stays on the CPU. A channel goes on
- * the GPU when its rule has WGSL and every playing voice writing it can run there.
+ * the GPU when its rule has WGSL and every playing voice writing it can run there or is idle.
  */
 export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eligibility<I, O> {
   const channels = new Set<string>();
@@ -86,7 +106,7 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
   const reasons: { voice: Voice<I, O>; why: string }[] = [];
   const codes = codesOf(mix);
   for (const name of mix.names) if (!codes.has(name)) kept.add(name);
-  const playing = mix.cued.filter((v) => PLAYING.has(v.state));
+  const playing = mix.cued.filter((v) => PLAYING.has(v.state) && !idle(v));
   const fit = new Set<Voice<I, O>>();
   for (const voice of playing) {
     const reason = why(voice, subjects, codes);

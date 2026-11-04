@@ -20,6 +20,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- Under the `gpu` engine, a playing voice whose own weight is the number 0 no longer keeps the
+  channels it writes on the CPU, since it folds nothing there either; raising its weight sorts it
+  again.
+  A role member, a voice fading to rest, and one that keeps state at weight 0 are still sorted.
 - `gpuOf(m).channel()` folds again after a cue, stop or other change made without a sync, and
   after its kernel finishes compiling, rather than giving the last fold until the next frame.
 - The `gpu` engine no longer checks every registered subject against each voice's `subjects`

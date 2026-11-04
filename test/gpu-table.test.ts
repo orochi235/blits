@@ -5,7 +5,7 @@ import { mixerOf } from '../src/gpu/engine.js';
 import { Regions } from '../src/gpu/region.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { Col, ROW, voiceTable } from '../src/gpu/table.js';
-import { kit, mix, quat, sum } from '../src/index.js';
+import { kit, mix, patch, quat, sum } from '../src/index.js';
 
 interface C {
   x: number;
@@ -58,6 +58,28 @@ describe('voice table', () => {
     const e = eligibility(mixerOf(m), cells);
     expect(e.channels.has('y')).toBe(false);
     expect(e.reasons[0]?.why).toMatch(/weight signal/);
+  });
+
+  it('leaves a voice at weight 0 out, until its weight is raised', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, subjects: cells, loop: true });
+    const h = m.cue({ patch: patch<C, P>(0, () => ({ y: 1 }), { writes: ['y'] }), weight: 0 });
+    m.sync(0);
+    const e = eligibility(mixerOf(m), cells);
+    expect(e.channels.has('y')).toBe(true);
+    expect(e.voices.length).toBe(1);
+    expect(e.reasons).toEqual([]);
+    h.weight = 0.5;
+    const raised = eligibility(mixerOf(m), cells);
+    expect(raised.channels.has('y')).toBe(false);
+    expect(raised.reasons[0]?.why).toMatch(/no gpu runner/);
+  });
+
+  it('still sorts a role member at weight 0, which places its role', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: patch<C, P>(0, () => ({ y: 1 }), { writes: ['y'] }), weight: 0, role: 'r' });
+    m.sync(0);
+    expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(false);
   });
 
   it('keeps a channel on the CPU when a voice misses a registered subject', () => {
