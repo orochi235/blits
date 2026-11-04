@@ -127,7 +127,12 @@ export function register(mix: Any): void {
         mix.cued.find((c) => c.handle === handle) ?? mix.gone.find((c) => c.handle === handle);
       return v === undefined
         ? undefined
-        : { name: v.spec.name, tags: v.spec.tags ?? [], within: v.bound?.area };
+        : {
+            name: v.spec.name,
+            tags: v.spec.tags ?? [],
+            track: v.spec.track,
+            within: v.bound?.area,
+          };
     },
     label: (subject) => labelOf(mix, subject),
     watch: (fn) => tap(mix, fn),

@@ -259,9 +259,9 @@ export function voices(c: SongConfig): VoiceDef<Syllable, Pose>[] {
     return {
       name: l.name,
       color: COLOR[l.part],
-      track: l.part === 'count' ? 'count-in' : l.part,
       spec: {
         name: l.name,
+        track: l.part === 'count' ? 'count-in' : l.part,
         tags: [l.part],
         subjects: l.syllables,
         loop: false,

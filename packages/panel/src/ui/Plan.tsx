@@ -1,6 +1,6 @@
 import type { MarkInfo, VoiceInfo } from '../protocol.js';
 import { hueColor } from './hue.js';
-import { type Lane, lanesOf } from './lanes.js';
+import { type Lane, lanesOf, type Span } from './lanes.js';
 import { clockText } from './time.js';
 
 const LANE = 30;
@@ -29,8 +29,9 @@ export interface PlanProps {
 }
 
 /**
- * The plan on the plots' time axis: a lane per voice from its start to its end, an arrow where
- * no end is known, a tick at each mark, and what the host announced across them all.
+ * The plan on the plots' time axis: a lane per track, each of its voices a bar from its start to
+ * its end, an arrow where no end is known, a tick at each mark, and what the host announced across
+ * them all. A voice with no track has a lane of its own.
  */
 export function Plan({ marks, voices, range, playhead, width = 320 }: PlanProps) {
   const [xMin, xMax] = range;
@@ -47,7 +48,7 @@ export function Plan({ marks, voices, range, playhead, width = 320 }: PlanProps)
       <style>{CSS}</style>
       <figcaption className="bp-plot-label">
         plan{ahead > 0 ? `, ${clockText(ahead)} ahead` : ''}
-        {lanes.length > shown.length && ` · ${lanes.length - shown.length} more voices`}
+        {lanes.length > shown.length && ` · ${lanes.length - shown.length} more lanes`}
       </figcaption>
       <svg width={width} height={height} role="img" aria-label="plan">
         {head !== null && (
@@ -59,7 +60,7 @@ export function Plan({ marks, voices, range, playhead, width = 320 }: PlanProps)
           </text>
         )}
         {shown.map((l, i) => (
-          <LaneRow key={l.voice} lane={l} y={i * LANE} x={x} xMin={xMin} xMax={xMax} />
+          <LaneRow key={l.key} lane={l} y={i * LANE} x={x} xMin={xMin} xMax={xMax} />
         ))}
         {announced.map((m) => (
           <line
@@ -119,19 +120,44 @@ function LaneRow({
 }) {
   const color = hueColor(lane.hue);
   const x0 = x(lane.from);
-  const open = !(lane.to <= xMax);
-  const x1 = open ? x(xMax) - 6 : x(lane.to);
-  const ends =
-    lane.to === Number.POSITIVE_INFINITY
-      ? 'no end known: plays on'
-      : `gone at ${clockText(lane.to)}`;
   return (
-    <g transform={`translate(0 ${y})`} aria-label={`${lane.label}: ${ends}`}>
+    <g transform={`translate(0 ${y})`} aria-label={lane.label}>
       <text className="bp-plan-name" x={Math.max(2, Math.min(x0, x(xMax) - 60)) + 2} y={9}>
         {lane.label}
       </text>
+      {lane.spans.map((s) => (
+        <SpanBar key={s.voice} span={s} color={color} x={x} xMin={xMin} xMax={xMax} />
+      ))}
+    </g>
+  );
+}
+
+function SpanBar({
+  span,
+  color,
+  x,
+  xMin,
+  xMax,
+}: {
+  span: Span;
+  color: string;
+  x: (t: number) => number;
+  xMin: number;
+  xMax: number;
+}) {
+  const x0 = x(span.from);
+  const open = !(span.to <= xMax);
+  const x1 = open ? x(xMax) - 6 : x(span.to);
+  const ends =
+    span.to === Number.POSITIVE_INFINITY
+      ? 'no end known: plays on'
+      : `gone at ${clockText(span.to)}`;
+  return (
+    <g aria-label={`${span.label}: ${ends}`}>
       {x1 > x0 && (
-        <rect className="bp-plan-bar" x={x0} y={13} width={x1 - x0} height={5} fill={color} />
+        <rect className="bp-plan-bar" x={x0} y={13} width={x1 - x0} height={5} fill={color}>
+          <title>{`${span.label}: ${ends}`}</title>
+        </rect>
       )}
       {open && (
         <path d={`M${x1} 10l6 5.5l-6 5.5z`} fill={color}>
@@ -139,7 +165,7 @@ function LaneRow({
         </path>
       )}
       {labels(
-        lane.marks.filter((m) => m.at >= xMin && m.at <= xMax),
+        span.marks.filter((m) => m.at >= xMin && m.at <= xMax),
         x,
       ).map(({ m, show }) => (
         <g key={`${m.mark}-${m.at}`}>

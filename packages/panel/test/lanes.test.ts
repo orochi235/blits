@@ -3,17 +3,23 @@ import type { MarkInfo, VoiceInfo } from '../src/protocol.js';
 import { AHEAD_CAP_MS, AHEAD_MS } from '../src/store.js';
 import { axisOf, lanesOf } from '../src/ui/lanes.js';
 
-const mark = (at: number, voice: number | null, m: string | null, name = 'v'): MarkInfo => ({
-  at,
-  mark: m,
-  voice,
-  name,
-  tags: [],
-});
-const voice = (id: number, state: string, name: string | null = null): VoiceInfo => ({
+const mark = (
+  at: number,
+  voice: number | null,
+  m: string | null,
+  name = 'v',
+  track: string | null = null,
+): MarkInfo => ({ at, mark: m, voice, name, tags: [], track });
+const voice = (
+  id: number,
+  state: string,
+  name: string | null = null,
+  track: string | null = null,
+): VoiceInfo => ({
   id,
   name,
   tags: [],
+  track,
   state,
   weight: Number.NaN,
   bounded: false,
@@ -30,12 +36,31 @@ describe('the plan', () => {
       ],
       [voice(2, 'live', 'a'), voice(3, 'pending', 'b'), voice(4, 'live', 'c')],
     );
-    expect(lanes.map((l) => [l.label, l.from, l.to])).toEqual([
-      ['c', Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY],
-      ['a', 100, 300],
-      ['b', 200, Number.POSITIVE_INFINITY],
+    expect(lanes.map((l) => [l.label, l.spans.map((s) => [s.from, s.to])])).toEqual([
+      ['c', [[Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY]]],
+      ['a', [[100, 300]]],
+      ['b', [[200, Number.POSITIVE_INFINITY]]],
     ]);
     expect(announced.map((m) => m.name)).toEqual(['beat']);
+  });
+
+  it('puts the voices that share a track on one lane, each its own span', () => {
+    const { lanes } = lanesOf(
+      [
+        mark(100, 2, 'start', 'line 1', 'lead'),
+        mark(300, 2, 'end', 'line 1', 'lead'),
+        mark(300, 3, 'start', 'fa-la 1', 'chorus'),
+        mark(500, 3, 'end', 'fa-la 1', 'chorus'),
+        mark(500, 4, 'start', 'line 2', 'lead'),
+        mark(50, 5, 'start', 'loose'),
+      ],
+      [voice(4, 'pending', 'line 2', 'lead')],
+    );
+    expect(lanes.map((l) => [l.label, l.spans.map((s) => s.label)])).toEqual([
+      ['loose', ['loose']],
+      ['lead', ['line 1', 'line 2']],
+      ['chorus', ['fa-la 1']],
+    ]);
   });
 
   it('runs the axis a little past now, out to the furthest mark within the cap', () => {

@@ -196,6 +196,12 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * Words a source attaches to this voice. They let its events and its handle be taken as a set.
    */
   tags?: readonly string[];
+  /**
+   * The track it plays on: the row a tool that draws the score puts it on, where the voices sharing
+   * one are a part, as the lines a lead sings are. A label blits never reads; without one, a voice
+   * is a track of its own.
+   */
+  track?: string;
   /** What other voices call this one by. A label blits never reads. */
   name?: string;
   /**

@@ -182,6 +182,32 @@ describe('marks', () => {
       '2400 s3 in',
     ]);
   });
+
+  it('carries each voice’s track on its marks and hits, and none on an announced mark', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(100), name: 'line 1', track: 'lead', loop: false });
+    m.cue({ patch: hold(100), name: 'loose', loop: false });
+    m.announce('beat', { at: 50 });
+    const listed = m.marks(0, 100).map((e) => `${e.name} ${e.mark ?? '-'} ${e.track ?? '-'}`);
+    expect(listed).toContain('line 1 start lead');
+    expect(listed).toContain('line 1 end lead');
+    expect(listed).toContain('loose start -');
+    expect(listed).toContain('beat - -');
+    const took: (string | undefined)[] = [];
+    m.cue({ patch: hold(100), track: 'drums', hits: [{ at: 10, event: 'kick' }], loop: false });
+    m.book({
+      clock: () => m.now,
+      ahead: 200,
+      late: 0,
+      take: (item) => {
+        if ('hit' in item) took.push(item.track);
+        return undefined;
+      },
+    });
+    m.sync(1);
+    expect(took).toEqual(['drums']);
+  });
 });
 
 describe('placement read back', () => {

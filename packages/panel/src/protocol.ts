@@ -22,6 +22,8 @@ export interface VoiceInfo {
   id: number;
   name: string | null;
   tags: string[];
+  /** The track it plays on; null for none. */
+  track: string | null;
   state: string;
   /** Its weight on the picked subject, NaN with none picked. */
   weight: number;
@@ -57,6 +59,8 @@ export interface MarkInfo {
   voice: number | null;
   name: string | null;
   tags: string[];
+  /** Its voice's track; null for none, or for an announced mark. */
+  track: string | null;
 }
 
 export interface HoldInfo {

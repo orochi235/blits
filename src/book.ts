@@ -268,6 +268,7 @@ export class Book<I, O> implements Booker {
             score: voice.spec.score,
             name: voice.spec.name,
             tags: voice.spec.tags ?? none,
+            track: voice.spec.track,
             subjects: voice.named?.list,
           };
           this.due.push({ time, item, into: t.booked, key });

@@ -106,6 +106,7 @@ export interface WatchedHistory {
 export interface WatchedVoice {
   readonly name: string | undefined;
   readonly tags: readonly string[];
+  readonly track: string | undefined;
   /**
    * What it is bounded to, by `within` or an `around` weight. It is a circle, read live, or the
    * host's finder; undefined for none.

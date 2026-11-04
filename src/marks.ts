@@ -76,6 +76,7 @@ function announcedMarks(
           score: a.score,
           name: a.name,
           tags: a.tags,
+          track: undefined,
           mix: a.mix,
           order: a.order,
         },
@@ -114,6 +115,7 @@ function listOne<I, O>(
     score: voice.spec.score,
     name: voice.spec.name,
     tags: voice.spec.tags ?? none,
+    track: voice.spec.track,
     mix: mix.name,
     order: voice.id,
   });

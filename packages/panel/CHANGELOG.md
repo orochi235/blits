@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- The plan draws a lane per `track`, each of its voices a bar on it, and a lane of its own for a
+  voice with none. The lane cap and its "more" count now count lanes, not voices.
+
 ## 0.9.0
 
 ### Breaking

@@ -89,6 +89,8 @@ export interface Marked {
   score: string | undefined;
   name: string | undefined;
   tags: readonly string[];
+  /** The voice's {@link VoiceSpec.track | `track`}; undefined for an announced mark or a voice with none. */
+  track: string | undefined;
   /** The `name` of the mix the voice is in, or that announced the mark. Undefined for none. */
   mix: string | undefined;
 }
@@ -125,6 +127,7 @@ export interface BookedHit<E = unknown, I = unknown> {
   score: string | undefined;
   name: string | undefined;
   tags: readonly string[];
+  track: string | undefined;
   /** The subjects its voice names with `subjects`; undefined for a voice that names none. */
   subjects: readonly I[] | undefined;
 }

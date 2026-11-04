@@ -47,6 +47,14 @@ A voice whose anchor has no answer yet waits pending: a name nobody has cued, or
 
 A voice that has left can still be anchored to only while the mix's history reaches it.
 
+## Tracks
+
+A voice can name the [`track`](VoiceSpec.track) it plays on. Voices sharing a track are one part, as the lines the lead sings above are, and a tool that draws the score gives them one row: the lanes above, the explainer's tracks, and the debug panel's plan. The mix never reads it.
+
+```ts
+m.cue({ patch: line1, name: 'line 1', track: 'lead', loop: false });
+```
+
 ## Announcing a mark
 
 Some moments only the host knows: a click, a reply from a server, a beat it has scheduled. The host puts a named mark on the score with [`announce`](Mix.announce), and anchors target it the same way they target a voice's marks.

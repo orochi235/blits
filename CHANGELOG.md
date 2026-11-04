@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- A voice can name the `track` it plays on, so a tool that draws the score puts the voices sharing
+  one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
+  carries it as `track`, and `watched` reports it for each voice.
+
 ## 1.0.0
 
 ### Added

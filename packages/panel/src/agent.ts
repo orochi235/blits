@@ -55,12 +55,13 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   let voicesAt = Number.NEGATIVE_INFINITY;
   let lastMarks = '';
   let owners = new Map<unknown, number>();
-  /** What each voice was cued with, by handle id; a voice's name and tags never change. */
+  /** What each voice was cued with, by handle id; a voice's name, tags and track never change. */
   const named = new Map<
     number,
     {
       name: string | null;
       tags: string[];
+      track: string | null;
       within: Readonly<Omit<Ring, 'voice'>> | Finder | undefined;
     }
   >();
@@ -100,7 +101,12 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       let v = named.get(h.id);
       if (v === undefined) {
         const cued = e.voice(h);
-        v = { name: cued?.name ?? null, tags: [...(cued?.tags ?? [])], within: cued?.within };
+        v = {
+          name: cued?.name ?? null,
+          tags: [...(cued?.tags ?? [])],
+          track: cued?.track ?? null,
+          within: cued?.within,
+        };
         named.set(h.id, v);
       }
       let weight = Number.NaN;
@@ -112,6 +118,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
         id: h.id,
         name: v.name,
         tags: v.tags,
+        track: v.track,
         state: h.state,
         weight,
         bounded: v.within !== undefined,

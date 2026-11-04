@@ -19,6 +19,7 @@ export function marksOf(e: Watched, backMs: number): MarkInfo[] {
       voice: k.voice ?? null,
       name: k.name ?? null,
       tags: [...k.tags],
+      track: k.track ?? null,
     }));
   } catch {
     return [];
