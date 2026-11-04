@@ -1,10 +1,10 @@
 # Changelog
 
-This package follows [semver](https://semver.org). Below 1.0.0, a breaking change bumps the minor
-version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
+This package follows [semver](https://semver.org): a breaking change bumps the major version, an
+addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
-## Unreleased
+## 1.0.0
 
 ### Added
 
