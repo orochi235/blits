@@ -89,7 +89,9 @@ Measured on teitou (Apple M5 Max) in headless Chromium, a whole frame of three l
 | 100,000, staggered | 41.36 ms | 4.48 ms | not run |
 | 1,000,000, staggered | 470.57 ms | 53.55 ms | not run |
 
-The staggered rows give every voice a delay of up to about a second, fade the `keys` voices in, and have one of them reach every other subject through `target` (`bench/runs/2026-11-04-gpu-stagger.txt`). With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which works out each retargeted subject's new path for the GPU, takes 28 ms, and waiting for the GPU 3 ms.
+With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which works out each retargeted subject's new path for the GPU, takes 28 ms, and waiting for the GPU 3 ms.
+
+The staggered rows give every voice a delay of up to about a second, fade the `keys` voices in, and have one of them reach every other subject through `target` (`bench/runs/2026-11-04-gpu-stagger.txt`). Their gpu engine figures come from a later build than the unstaggered rows', so the two don't isolate what staggering costs, and the 1,000,000 median includes the frames where subjects were still fading in.
 
 Measured on the site's examples, on an Apple M5 Max in headless Chromium, the main thread's work per frame, drawing on the CPU and then on the gpu engine (`bench/runs/2026-11-02-demos-*.json`; light board and white balance, as they run on `keys` patches, `bench/runs/2026-11-03-demos-keys-*.json`):
 

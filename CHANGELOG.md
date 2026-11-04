@@ -21,6 +21,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine folds a voice that reaches only some of the registered subjects,
   through `subjects` or `target`.
 - The `gpu` engine folds voices that stagger their subjects, for every patch the gpu engine runs.
+- A shader patch's `wgsl` can read `lag`, how many ms the subject's time trails the voice's.
+  The name is taken in every shader patch body, so one that declares its own `lag` no longer
+  compiles.
 
 ### Fixed
 

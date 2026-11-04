@@ -2,8 +2,9 @@
 
 **Status (2026-11-04): phases 1 and 2 built (phase 1 d20940c..21dc031, phase 2 4cad824..ff1cc94 and
 the commit measuring it), phases 3–4 designed, not built.** What phases 1 and 2 left open is under
-item 18 of `HANDOFF.md`, and the schema page's "The gpu engine" says what folds now. This line changes as phases land; the doc is deleted once the last one does, after
-anything durable has moved into the schema page and the changelog.
+item 18 of `HANDOFF.md`, and the schema page's "The gpu engine" says what folds now. This line
+changes as phases land; the doc is deleted once the last one does, after anything durable has moved
+into the schema page and the changelog.
 
 For whoever builds or reviews the next phase of `@msb235/blits/gpu`. It answers: what has to change
 for most of a real mix to fold on the GPU, and in what order.
