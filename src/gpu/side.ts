@@ -136,13 +136,14 @@ export class GpuSide<I> {
    * Resolves with a channel's values for the registered subjects, copied back from the GPU, from
    * the previous frame, so the frame being folded never waits on it. A sync, a seek, or a control
    * change, drop or touch starts a frame; with several folds in one, the last counts. With no new
-   * frame since, the same `GpuRead` again. A first read of a channel, or the first after a gap or
-   * `subjects()`, waits on the current fold instead. Only channels read since the last frame are
-   * copied. Where the GPU falls behind, a frame's copy is skipped and the read gives an older one,
-   * its `timestamp` saying which. A read waiting across `subjects()` keeps its fold's list, in
-   * `GpuRead.subjects`. Resolves `null`, never rejecting, wherever `channel(name)` is null, and for
-   * reads still waiting at `close()` or device loss, though on a real loss a map that settles with
-   * zeros first may not.
+   * frame since, the same `GpuRead` again. Only where no fold from the previous frame can be
+   * copied does it wait on the current fold: after `subjects()`, after a frame that folded nothing,
+   * and at a channel's first read once this frame has folded. Only channels read since the last
+   * frame are copied. Where the GPU falls behind, a frame's copy is skipped and the read gives an
+   * older one, its `timestamp` saying which. A read waiting across `subjects()` keeps its fold's
+   * list, in `GpuRead.subjects`. Resolves `null`, never rejecting, wherever `channel(name)` is
+   * null, and for reads still waiting at `close()` or device loss, though on a real loss a map that
+   * settles with zeros first may not.
    */
   read(name: string): Promise<GpuRead<I> | null> {
     if (this.off) return Promise.resolve(null);
