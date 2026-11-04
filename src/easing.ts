@@ -9,6 +9,24 @@ export type Curve = (u: number) => number;
 
 const linear: Curve = (u) => u;
 
+/** Width of a curve's numbers: a kind, then what the kind needs, padded with 0. */
+export const CURVE_WIDTH = 5;
+
+const packed = new WeakMap<Curve, number[]>();
+
+function pack(c: Curve, ...nums: number[]): Curve {
+  packed.set(c, [...nums, 0, 0, 0, 0, 0].slice(0, CURVE_WIDTH));
+  return c;
+}
+
+/**
+ * A curve as numbers for the GPU: `[0]` for none or linear, `[1, x1, y1, x2, y2]` for a bezier,
+ * `[2, n, jumpStart]` for steps, each padded to `CURVE_WIDTH`. Undefined for a plain function.
+ */
+export function curveData(c: Curve | undefined): readonly number[] | undefined {
+  return c === undefined ? packed.get(linear) : packed.get(c);
+}
+
 /** Whether a segment eased by `c` runs in a straight line: no easing, or `linear`. */
 export function straight(c: Curve | undefined): boolean {
   return c === undefined || c === linear;
@@ -25,28 +43,37 @@ function bezier(x1: number, y1: number, x2: number, y2: number): Curve {
   const x = (t: number) => ((ax * t + bx) * t + cx) * t;
   const dx = (t: number) => (3 * ax * t + 2 * bx) * t + cx;
   const y = (t: number) => ((ay * t + by) * t + cy) * t;
-  return (u) => {
-    if (u <= 0) return 0;
-    if (u >= 1) return 1;
-    let t = u;
-    for (let i = 0; i < 8; i++) {
-      const err = x(t) - u;
-      if (Math.abs(err) < 1e-7) return y(t);
-      const d = dx(t);
-      if (Math.abs(d) < 1e-6) break;
-      t -= err / d;
-    }
-    let lo = 0;
-    let hi = 1;
-    t = u;
-    while (hi - lo > 1e-7) {
-      if (x(t) < u) lo = t;
-      else hi = t;
-      t = (lo + hi) / 2;
-    }
-    return y(t);
-  };
+  return pack(
+    (u) => {
+      if (u <= 0) return 0;
+      if (u >= 1) return 1;
+      let t = u;
+      for (let i = 0; i < 8; i++) {
+        const err = x(t) - u;
+        if (Math.abs(err) < 1e-7) return y(t);
+        const d = dx(t);
+        if (Math.abs(d) < 1e-6) break;
+        t -= err / d;
+      }
+      let lo = 0;
+      let hi = 1;
+      t = u;
+      while (hi - lo > 1e-7) {
+        if (x(t) < u) lo = t;
+        else hi = t;
+        t = (lo + hi) / 2;
+      }
+      return y(t);
+    },
+    1,
+    x1,
+    y1,
+    x2,
+    y2,
+  );
 }
+
+pack(linear, 0);
 
 const named: Record<Exclude<Easing, object | ((u: number) => number)>, Curve> = {
   linear,
@@ -113,11 +140,16 @@ export function curve(easing: Easing): Curve {
   } else {
     const n = easing.steps;
     const start = easing.jump === 'start';
-    made = (u) => {
-      const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
-      // CSS: jump-start has already taken its first step at 0, and neither form passes n.
-      return (start ? Math.min(n, Math.floor(c * n) + 1) : Math.floor(c * n)) / n;
-    };
+    made = pack(
+      (u) => {
+        const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
+        // CSS: jump-start has already taken its first step at 0, and neither form passes n.
+        return (start ? Math.min(n, Math.floor(c * n) + 1) : Math.floor(c * n)) / n;
+      },
+      2,
+      n,
+      start ? 1 : 0,
+    );
     starts.set(made, start ? Number.POSITIVE_INFINITY : 0);
     stepped.set(made, n);
   }
