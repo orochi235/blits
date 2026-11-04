@@ -54,6 +54,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - Closing a mix the `gpu` engine made destroys its GPU buffers and stops it listening to its
   motion patches and its voices' clocks, rather than leaving the buffers for garbage collection
   and a patch still telling the closed mix of every `to()`.
+- In development, losing the GPU device while the `gpu` engine checked a runner's first fold
+  against the CPU left an unhandled promise rejection (0.18.0 to 0.20.0). The check is now dropped.
 
 ## 0.20.0
 
