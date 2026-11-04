@@ -3,6 +3,7 @@ import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import { Col } from './columns.js';
 import type { Slot } from './table.js';
+import type { Weighs } from './weight.js';
 import { Flag, NONE } from './wgsl/timing.js';
 
 /**
@@ -14,6 +15,7 @@ export function rowClock<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
   slot: Slot,
+  weigh: Weighs,
   rows: Float32Array,
   bits: Uint32Array,
   o: number,
@@ -53,13 +55,16 @@ export function rowClock<I, O>(
   const end = out !== null && !out.rest && out.at < now ? out.at : now;
   // A block with no origins has `latest` -Infinity, which leaves FADE off.
   const fading = fadeIn > 0 && !reduced && end - timing.latest < fadeIn;
-  // The envelope with the fade in taken as done: under FADE the kernel multiplies each subject's.
-  const w = voice.weight * envelope(0, out, voice.ease, reduced, now, 0, voice.back, voice.stalls);
+  // The envelope with the fade in taken as done: under FADE the kernel multiplies each subject's,
+  // and where it reads a per-subject weight, that too, clamping after both.
+  const w =
+    weigh.base *
+    (envelope(0, out, voice.ease, reduced, now, 0, voice.back, voice.stalls) * weigh.owned);
   rows[o + Col.FADE_IN] = fadeIn;
   if (fading) {
     flags |= Flag.FADE;
     rows[o + Col.FADE_END] = end - timing.anchor;
-    rows[o + Col.WEIGHT] = w;
-  } else rows[o + Col.WEIGHT] = clampWeight(w);
+  }
+  rows[o + Col.WEIGHT] = fading || slot.weights !== undefined ? w : clampWeight(w);
   bits[o + Col.FLAGS] = flags;
 }

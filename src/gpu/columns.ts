@@ -1,5 +1,5 @@
 /** How many numbers each voice takes in the table. */
-export const ROW = 20;
+export const ROW = 21;
 
 /**
  * Where each of a row's numbers sits. Offsets and `FLAGS` are a u32's bits; times are ms. A voice
@@ -39,4 +39,6 @@ export enum Col {
   FADE_IN = 18,
   /** Where its fade's curve starts in values; NONE for linear. */
   EASE = 19,
+  /** Where its per-subject weight reads start in `persub`, in f32s; NONE for none. */
+  WEIGHTS = 20,
 }

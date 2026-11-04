@@ -15,6 +15,7 @@ import { sizeOf, Timings } from './timings.js';
 import { twins } from './twins.js';
 import { unreadOf } from './unread.js';
 import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT, Usage } from './webgpu.js';
+import { type Weighs, weighsOf } from './weight.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
 /**
@@ -174,7 +175,8 @@ export class GpuSide<I> {
     }
     if (b.pipeline === null || b.failed) return;
     const mirrors: (Mirror<unknown> | undefined)[] = [];
-    const entries: Entry[] = e.voices.map((v) => {
+    const weighs = e.voices.map((v) => weighsOf(mix, v));
+    const entries: Entry[] = e.voices.map((v, k) => {
       const p = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
       if (p.perSubject === undefined) {
         mirrors.push(undefined);
@@ -186,7 +188,7 @@ export class GpuSide<I> {
       // A host reading only these buffers never samples, so the changes it made are committed here.
       const now = mix.now;
       const horizon = mix.horizonFor(v, 0, now);
-      const unread = unreadOf(mix, u, this.answers, this.timings);
+      const unread = unreadOf(mix, u, this.answers, this.timings, null, weighs[k] as Weighs);
       if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread);
       else {
         const t = v.unstarted(now) && !v.holdsFirst ? Number.NaN : v.rawAt(now, 0);
@@ -226,7 +228,7 @@ export class GpuSide<I> {
         ...(c === undefined ? {} : { ease: placed.offsets[c] as number }),
       };
     });
-    const table = voiceTable(mix, e.voices, slots);
+    const table = voiceTable(mix, e.voices, slots, weighs);
     if (table.roles > MAX_ROLES) {
       this.stale = true;
       warnOnce(

@@ -4,6 +4,7 @@ import type { Voice } from '../voice.js';
 import { Col, ROW } from './columns.js';
 import { rowClock } from './row-clock.js';
 import type { TimingSlot } from './timings.js';
+import { type Weighs, weighsOf } from './weight.js';
 import { Flag, NONE } from './wgsl/timing.js';
 
 export { Col, ROW } from './columns.js';
@@ -17,6 +18,8 @@ export interface Slot {
   readonly timing?: TimingSlot;
   /** Its fade curve's offset in values; absent for linear. */
   readonly ease?: number;
+  /** Where its per-subject weight reads start in `persub`; absent where it has none. */
+  readonly weights?: number;
 }
 
 /** The frame's voices as the kernel reads them. */
@@ -28,11 +31,11 @@ export interface Table {
 }
 
 /**
- * A voice's time at mix time `now`, as the general path's `contribution` gives a subject with no
- * stagger; NaN where it shows nothing then.
+ * A voice's time at mix time `now` for a subject `delay` ms behind, as the general path's
+ * `contribution` gives it; NaN where it shows nothing then.
  */
-export function elapsedOf<I, O>(voice: Voice<I, O>, now: number): number {
-  const raw = voice.rawAt(now, 0);
+export function elapsedOf<I, O>(voice: Voice<I, O>, now: number, delay = 0): number {
+  const raw = voice.rawAt(now, delay);
   return voice.before(raw, now) && !voice.holdsFirst ? Number.NaN : voice.shownAt(raw);
 }
 
@@ -46,6 +49,8 @@ export function voiceTable<I, O>(
   voices: readonly Voice<I, O>[],
   /** Each voice's runner and data, in `voices` order. */
   slots: readonly Slot[],
+  /** Each voice's weight reads, in `voices` order, read here where absent. */
+  weighs: readonly Weighs[] = voices.map((v) => weighsOf(mix, v)),
 ): Table {
   const now = mix.now;
   const rows = new Float32Array(Math.max(1, voices.length) * ROW);
@@ -64,6 +69,8 @@ export function voiceTable<I, O>(
     bits[o + Col.MASK] = timing?.mask ?? NONE;
     bits[o + Col.SHOWN] = timing?.shown ?? NONE;
     bits[o + Col.EASE] = slot.ease ?? NONE;
+    bits[o + Col.WEIGHTS] = slot.weights ?? NONE;
+    const weigh = weighs[k] as Weighs;
     const role = voice.spec.role;
     if (role !== undefined) {
       let r = roles.get(role);
@@ -74,7 +81,7 @@ export function voiceTable<I, O>(
       rows[o + Col.ROLE] = r + 1;
     }
     if (timing !== undefined && timing.delays !== NONE) {
-      rowClock(mix, voice, slot, rows, bits, o);
+      rowClock(mix, voice, slot, weigh, rows, bits, o);
       return;
     }
     const elapsed = elapsedOf(voice, now);
@@ -87,7 +94,9 @@ export function voiceTable<I, O>(
         ? phaseBefore(elapsed, voice.duration)
         : phaseAt(elapsed, voice.duration, voice.passes);
     rows[o + Col.PASS] = passAt(elapsed, voice.duration, voice.passes);
-    rows[o + Col.WEIGHT] = weighed(voice.weight, fade, 1);
+    // Where the kernel multiplies each subject's read in, it clamps after.
+    const owned = fade * weigh.owned;
+    rows[o + Col.WEIGHT] = slot.weights === undefined ? weighed(weigh.base, owned, 1) : owned;
   });
   return { rows, count: voices.length, roles: roles.size };
 }

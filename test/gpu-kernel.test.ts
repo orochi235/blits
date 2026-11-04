@@ -59,6 +59,21 @@ describe('kernel', () => {
     expect(k.code).toContain('fn blits_take(o: u32, i: u32) -> BlitsTake');
     expect(k.code.match(/blits_take\(o, i\)/g)).toHaveLength(2);
   });
+  it("multiplies a subject's read into its weight before the clamp", () => {
+    const take = k.code.slice(
+      k.code.indexOf('fn blits_take('),
+      k.code.indexOf('\n}\n', k.code.indexOf('fn blits_take(')),
+    );
+    const split = take.indexOf('let raw =');
+    const plain = take.slice(0, split);
+    const staggered = take.slice(split);
+    for (const branch of [plain, staggered]) {
+      expect(branch).toContain('persub[weights + i]');
+      expect(branch.match(/clamp\(/g)).toHaveLength(1);
+      expect(branch.indexOf('clamp(')).toBeGreaterThan(branch.indexOf('persub[weights + i]'));
+    }
+    expect(staggered.indexOf('clamp(')).toBeGreaterThan(staggered.indexOf('blits_fade_in('));
+  });
   it("picks each role's leader per subject, reading none from the row", () => {
     expect(k.code).toContain('lead[r] = k;');
     expect(k.code).toContain('if (lead[r] == k)');

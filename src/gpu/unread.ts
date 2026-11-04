@@ -3,6 +3,7 @@ import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
 import type { Timings } from './timings.js';
+import { type Weighs, weighsOf } from './weight.js';
 
 /**
  * Whether a live read this frame leaves a motion voice's registered subject `row` unsampled, so its
@@ -14,6 +15,9 @@ export function unreadOf<I>(
   voice: Voice<I, unknown>,
   answers: Answers<I>,
   timings: Timings,
+  /** The voice's per-subject weight reads, by registration order; null where it has none. */
+  reads: Float32Array | null = null,
+  weigh: Weighs = weighsOf(mix, voice),
 ): (row: number) => boolean {
   const now = mix.now;
   const answer = varies(voice as Voice<unknown, unknown>) ? answers.of(voice) : null;
@@ -30,6 +34,7 @@ export function unreadOf<I>(
       shared ??= mix.shownOf(voice, mix.sinceOf(voice, 0));
       shown = shared;
     }
-    return silent(voice, weighed(voice.weight, mix.envelope(voice, now, shown), 1));
+    const base = reads?.[row] ?? weigh.base;
+    return silent(voice, weighed(base, mix.envelope(voice, now, shown) * weigh.owned, 1));
   };
 }

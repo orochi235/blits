@@ -92,18 +92,30 @@ fn blits_take(o: u32, i: u32) -> BlitsTake {
   if (mask != ${NONE}u && ((bitcast<u32>(persub[mask + (i >> 5u)]) >> (i & 31u)) & 1u) == 0u) { return hidden; }
   let flags = ${u32At(Col.FLAGS)};
   let delays = ${u32At(Col.DELAYS)};
+  let weights = ${u32At(Col.WEIGHTS)};
+  var w = ${col(Col.WEIGHT)};
   if (delays == ${NONE}u) {
     if ((flags & ${Flag.SHOWS}u) == 0u) { return hidden; }
-    return BlitsTake(true, ${col(Col.WEIGHT)}, ${col(Col.PHASE)}, ${col(Col.PASS)}, 0.0);
+    if (weights != ${NONE}u) {
+      w = w * persub[weights + i];
+      w = clamp(w, 0.0, 1.0);
+    }
+    return BlitsTake(true, w, ${col(Col.PHASE)}, ${col(Col.PASS)}, 0.0);
   }
   let raw = ${col(Col.CLOCK)};
   let c = blits_clock(raw - persub[delays + i], flags, ${col(Col.START)}, ${col(Col.SPAN)}, ${col(Col.DURATION)}, ${col(Col.PASS_BASE)}, ${col(Col.LAST_PASS)});
   if (!c.shows) { return hidden; }
-  var w = ${col(Col.WEIGHT)};
+  var held = false;
   if ((flags & ${Flag.FADE}u) != 0u) {
     let shown = ${u32At(Col.SHOWN)};
-    w = clamp(w * blits_fade_in(${col(Col.FADE_END)}, persub[shown + i], ${col(Col.FADE_IN)}, ${u32At(Col.EASE)}), 0.0, 1.0);
+    w = w * blits_fade_in(${col(Col.FADE_END)}, persub[shown + i], ${col(Col.FADE_IN)}, ${u32At(Col.EASE)});
+    held = true;
   }
+  if (weights != ${NONE}u) {
+    w = w * persub[weights + i];
+    held = true;
+  }
+  if (held) { w = clamp(w, 0.0, 1.0); }
   return BlitsTake(true, w, c.phase, c.pass_index, raw - c.elapsed);
 }
 `;

@@ -86,6 +86,25 @@ describe('gpu weight', () => {
     }
   });
 
+  it("keeps an owner's level read for the frame, as the CPU does", () => {
+    const m = mix<C, P>(K);
+    m.sync(0);
+    const gain = level<C>(0.5);
+    const owner = m.owns({ weight: gain });
+    m.cue({ patch: wave, subjects: cells, owner });
+    const mixer = mixerOf(m);
+    const child = leaves(m)[0] as Voice<C, P>;
+    m.sync(100);
+    expect(ownedOf(mixer, child)).toBe(0.5);
+    expect(mixer.ownedBy(child, c0)).toBe(0.5);
+    gain.set(0.25);
+    expect(ownedOf(mixer, child)).toBe(0.5);
+    expect(mixer.ownedBy(child, c0)).toBe(0.5);
+    m.sync(200);
+    expect(ownedOf(mixer, child)).toBe(0.25);
+    expect(mixer.ownedBy(child, c0)).toBe(0.25);
+  });
+
   it('gives the base the kernel needs', () => {
     const m = mix<C, P>(K);
     m.sync(0);

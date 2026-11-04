@@ -6,7 +6,7 @@ import { Regions } from '../src/gpu/region.js';
 import { Col, ROW, type Slot, voiceTable } from '../src/gpu/table.js';
 import { Timings } from '../src/gpu/timings.js';
 import { Flag, NONE } from '../src/gpu/wgsl/timing.js';
-import { mix } from '../src/index.js';
+import { level, mix } from '../src/index.js';
 import type { Mixer } from '../src/mixer.js';
 import type { Voice } from '../src/voice.js';
 import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
@@ -14,7 +14,11 @@ import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
 const slots = Array.from({ length: 3 }, () => ({ runner: 0, values: 0, sub: 0 }));
 
 /** A staggered voice's table, at each sync, with its timing block laid as the gpu side lays it. */
-function staggered(spec: Record<string, unknown>, list: readonly C[] = cells) {
+function staggered(
+  spec: Record<string, unknown>,
+  list: readonly C[] = cells,
+  extra: Partial<Slot> = {},
+) {
   const m = mix<C, P>(K);
   m.sync(0);
   const handle = m.cue({ patch: wave, subjects: list, stagger: (c: C) => c.x * 100, ...spec });
@@ -32,7 +36,7 @@ function staggered(spec: Record<string, unknown>, list: readonly C[] = cells) {
       0,
     );
     const t = voiceTable(mixer, voices, [
-      { runner: 0, values: 0, sub: 0, timing: timing[0], ease },
+      { runner: 0, values: 0, sub: 0, timing: timing[0], ease, ...extra },
     ]);
     return {
       rows: t.rows,
@@ -177,6 +181,71 @@ describe('voice table', () => {
     expect(done.rows[Col.WEIGHT]).toBe(1);
     done.handle.fade();
     expect(at(1200).rows[Col.WEIGHT]).toBeCloseTo(0.75, 6);
+  });
+
+  it('weighs an owned voice by its owners, as the CPU does', () => {
+    const m = mix<C, P>(K, { lanes: false });
+    m.sync(0);
+    const owner = m.owns({ start: 200, weight: 0.5, fade: { in: 300 } });
+    m.cue({ patch: wave, subjects: cells, owner, weight: 0.8, start: 100 });
+    const mixer = mixerOf(m);
+    const voices = mixer.cued.filter((v) => v.holding === null);
+    const child = voices[0] as Voice<C, P>;
+    for (const t of [250, 400, 700]) {
+      m.sync(t);
+      const table = voiceTable(mixer, voices, [{ runner: 0, values: 0, sub: 0 }]);
+      m.probe(cells[0] as C);
+      const held = child.subjects.get(cells[0] as C);
+      // At 250 the child, starting 100 into its owner, has yet to start on either side.
+      if (t === 250) {
+        expect(held).toBeUndefined();
+        expect((new Uint32Array(table.rows.buffer)[Col.FLAGS] as number) & Flag.SHOWS).toBe(0);
+        continue;
+      }
+      const cpu = (held as { weight: number }).weight;
+      expect(cpu).toBeGreaterThan(0);
+      expect(table.rows[Col.WEIGHT]).toBe(Math.fround(cpu));
+    }
+  });
+
+  it('weighs a voice by a level read once', () => {
+    const m = mix<C, P>(K);
+    m.sync(0);
+    m.cue({ patch: wave, subjects: cells, weight: level(0.4), fade: { in: 400 } });
+    m.sync(100);
+    const mixer = mixerOf(m);
+    const voice = mixer.cued[0] as Voice<C, P>;
+    const t = voiceTable(mixer, [voice], [{ runner: 0, values: 0, sub: 0 }]);
+    const fade = mixer.envelope(voice, 100, mixer.shownOf(voice, mixer.sinceOf(voice, 0)));
+    expect(fade).toBeGreaterThan(0);
+    expect(fade).toBeLessThan(1);
+    expect(t.rows[Col.WEIGHT]).toBe(Math.fround(0.4 * fade));
+  });
+
+  it('leaves a per-subject read to the kernel', () => {
+    const m = mix<C, P>(K);
+    m.sync(0);
+    m.cue({ patch: wave, subjects: cells, weight: (c: C) => c.x, fade: { in: 400 } });
+    m.sync(100);
+    const mixer = mixerOf(m);
+    const voices = [...mixer.cued];
+    const t = voiceTable(mixer, voices, [{ runner: 0, values: 0, sub: 0, weights: 64 }]);
+    expect(new Uint32Array(t.rows.buffer)[Col.WEIGHTS]).toBe(64);
+    expect(t.rows[Col.WEIGHT]).toBe(0.25);
+    const plain = voiceTable(mixer, voices, [{ runner: 0, values: 0, sub: 0 }]);
+    expect(new Uint32Array(plain.rows.buffer)[Col.WEIGHTS]).toBe(NONE);
+  });
+
+  it("keeps a staggered row's weight unclamped where reads multiply in", () => {
+    const four = [0, 1, 2, 3].map((x) => ({ x }));
+    const read = staggered({ loop: true, weight: 1.5 }, four, { weights: 0 })(100);
+    expect((read.bits[Col.FLAGS] as number) & Flag.FADE).toBe(0);
+    expect(read.bits[Col.WEIGHTS]).toBe(0);
+    expect(read.rows[Col.WEIGHT]).toBe(1.5);
+    const plain = staggered({ loop: true, weight: 1.5 }, four)(100);
+    expect((plain.bits[Col.FLAGS] as number) & Flag.FADE).toBe(0);
+    expect(plain.bits[Col.WEIGHTS]).toBe(NONE);
+    expect(plain.rows[Col.WEIGHT]).toBe(1);
   });
 
   it('reads offsets back as the u32s written', () => {
