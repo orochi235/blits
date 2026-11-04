@@ -1,0 +1,50 @@
+# teitou (Apple M5 Max, 18 cores, apple metal-3), 2026-11-03, headless Chromium 153.0.8010.12, node v26.13.0, load 2.9-3.9
+# onto do --kind bench --node teitou --solo, at 30ba0d5 (recorded as 3fdbc80, the same tree before its message was amended)
+#   FRAMES=300 WARM=30 node bench/gpu-stock.mjs --out bench/runs/2026-11-03-gpu-stock
+#   then ROWS=gpu:100000,gpu:1000000 with MIX=still and MIX=nospring
+# Raw records, every frame and its parts: 2026-11-03-gpu-stock.jsonl. The same bench at 7eafcee, before
+# the gpu side cached its reach check: 2026-11-03-gpu-stock-7eafcee.jsonl.
+#
+# The mix: three looping keys voices on x and y, a triangle wave on y, a spring on p.
+# full:     the spring retargets 5% of the subjects each frame (a different twentieth each time)
+# still:    the spring is cued but never retargeted
+# nospring: no spring voice
+# A frame is the host's whole frame. Parts, as medians: retarget (the `to` calls), sync, read
+# (`pull` on mixer; the gpu side's dispatch, which uploads the retargeted rows), wait
+# (`onSubmittedWorkDone`).
+
+onto: plan 6
+ 1/6 mixer full        10000  median     1.590 ms  p95     1.890 ms  frames 300  wall    0.6 s
+ 2/6 gpu   full        10000  median     0.880 ms  p95     1.125 ms  frames 300  wall    0.3 s
+ 3/6 mixer full       100000  median    24.555 ms  p95    26.200 ms  frames 300  wall    8.6 s
+ 4/6 gpu   full       100000  median     7.140 ms  p95     9.290 ms  frames 300  wall    2.6 s
+ 5/6 mixer full      1000000  median   300.760 ms  p95   310.525 ms  frames 300  wall  111.3 s
+ 6/6 gpu   full      1000000  median    75.940 ms  p95    86.725 ms  frames 300  wall   27.5 s
+onto: plan 2
+ 1/2 gpu   still      100000  median     0.280 ms  p95     0.390 ms  frames 300  wall    0.2 s
+ 2/2 gpu   still     1000000  median     0.385 ms  p95     0.490 ms  frames 300  wall    1.4 s
+onto: plan 2
+ 1/2 gpu   nospring   100000  median     0.205 ms  p95     0.285 ms  frames 300  wall    0.2 s
+ 2/2 gpu   nospring  1000000  median     0.545 ms  p95     0.685 ms  frames 300  wall    1.1 s
+
+node bench/gpu-stock.mjs --digest bench/runs/2026-11-03-gpu-stock.jsonl
+engine          subjects   median ms     p95 ms  frames   retarget       sync       read       wait
+mixer              10000     1.590      1.890     300      0.115      0.000      1.470      0.000
+gpu                10000     0.880      1.125     300      0.075      0.000      0.270      0.540
+mixer             100000    24.555     26.200     300      2.320      0.010     22.215      0.000
+gpu               100000     7.140      9.290     300      0.975      0.005      2.465      3.695
+mixer            1000000   300.760    310.525     300     27.365      0.010    273.095      0.005
+gpu              1000000    75.940     86.725     300     14.180      0.010     31.860     28.965
+gpu/still         100000     0.280      0.390     300      0.000      0.000      0.015      0.260
+gpu/still        1000000     0.385      0.490     300      0.000      0.000      0.015      0.370
+gpu/nospring      100000     0.205      0.285     300      0.000      0.000      0.010      0.190
+gpu/nospring     1000000     0.545      0.685     300      0.000      0.000      0.010      0.530
+
+# At 7eafcee the GPU rows were 1.070 / 12.770 / 159.285 ms (full) and 3.980 / 64.810 ms (nospring,
+# 100k / 1M): the side checked every subject against every voice's subjects each frame.
+#
+# Measured: with nothing retargeted, the GPU folds 1M subjects in about half a millisecond; a frame
+# that retargets 50k springs costs 76 ms, of which the `to` calls are 14 (on the CPU, as on mixer),
+# the dispatch 32 and the wait 29. Read from the code: the side uploads a mirror's changed rows one
+# writeBuffer per run of adjacent rows (`Mirrors.upload`), so every twentieth row is 50k calls.
+# Inferred, not measured: those calls are where the dispatch and the wait go.
