@@ -7,6 +7,12 @@ const told = new WeakSet<object>();
 /** Whether a change to an input signal reaches `reading.inputs`, so a lane fill can see it. */
 export const heard = (signal: object): boolean => told.has(signal);
 
+/** Signals that read the same for every subject: `level`'s, and `input`'s of a function taking none. */
+const alike = new WeakSet<object>();
+
+/** Whether a signal reads the same for every subject, so one read serves them all. */
+export const subjectFree = (signal: object): boolean => alike.has(signal);
+
 const inputOf = (signals: readonly { readonly input?: boolean }[]): boolean =>
   signals.some((s) => s.input);
 
@@ -90,6 +96,7 @@ export function input<I, H = unknown>(
 ): Input<I, H> {
   if (of !== undefined) return Object.assign(marked(read, of), { touch });
   told.add(read);
+  if (read.length === 0) alike.add(read);
   return Object.assign(read, { input: true, touch });
 }
 
