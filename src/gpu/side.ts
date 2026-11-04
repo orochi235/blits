@@ -1,7 +1,7 @@
 import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
-import { production, warnOnce } from '../warn.js';
+import { warnOnce } from '../warn.js';
 import { Answers } from './answers.js';
 import { Buffers } from './buffers.js';
 import { type Built, compile } from './compile.js';
@@ -12,11 +12,12 @@ import { Mirrors } from './mirrors.js';
 import { prepare, roomOf } from './prepare.js';
 import { type GpuRead, Readback } from './readback.js';
 import { Reads } from './reads.js';
+import { type GpuReason, Reasons } from './reasons.js';
 import { Regions } from './region.js';
 import { packOf, type Runner } from './runner.js';
 import { submit } from './submit.js';
 import { Timings } from './timings.js';
-import { twins } from './twins.js';
+import { Twins } from './twins.js';
 import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT } from './webgpu.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
@@ -31,18 +32,6 @@ export interface GpuChannel {
   readonly offset: number;
   readonly stride: number;
   readonly axes: number;
-}
-
-/**
- * A voice the gpu engine's last fold left on the CPU: its `name` (undefined where it has none), the
- * channels it writes, and why.
- *
- * @category gpu
- */
-export interface GpuReason {
-  readonly voice: string | undefined;
-  readonly channels: readonly string[];
-  readonly why: string;
 }
 
 /**
@@ -66,7 +55,7 @@ export class GpuSide<I> {
   /** Each runner's place in `known`, by key, as the table's runner column gives it. */
   private readonly index = new Map<string, number>();
   private readonly built = new Map<string, Built>();
-  private readonly checked = new Set<string>();
+  private readonly twins = new Twins();
   private readonly regions = new Regions();
   private readonly mirrors = new Mirrors();
   private answers: Answers<I>;
@@ -76,9 +65,7 @@ export class GpuSide<I> {
   private readonly buffers: Buffers;
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
   private stale = true;
-  /** Each channel's reason for staying on the CPU, said once. */
-  private readonly told = new Set<string>();
-  private why: readonly GpuReason[] = [];
+  private readonly why = new Reasons();
   private readonly readback: Readback<I>;
 
   constructor(
@@ -167,7 +154,7 @@ export class GpuSide<I> {
 
   /** Each voice the last fold left on the CPU, and why; empty where every voice folds. Folds nothing. */
   reasons(): readonly GpuReason[] {
-    return this.why;
+    return this.why.list;
   }
 
   /** Folds again if anything the last fold read has moved. */
@@ -199,17 +186,7 @@ export class GpuSide<I> {
       this.dispatch();
       return;
     }
-    this.why = e.reasons.map((r) => ({
-      voice: r.voice.spec.name,
-      channels: [...(r.voice.patch.writes as readonly string[])],
-      why: r.why,
-    }));
-    for (const r of e.reasons) {
-      const key = `${(r.voice.patch.writes as readonly string[]).join(',')}: ${r.why}`;
-      if (this.told.has(key)) continue;
-      this.told.add(key);
-      warnOnce(r.voice, `${key}, so the gpu engine leaves it on the CPU`);
-    }
+    this.why.note(e.reasons as { voice: Voice<I, unknown>; why: string }[]);
     if (e.channels.size === 0) return;
     const runners = e.voices.map((v) => {
       const r = (packOf(v.patch, codes) as { runner: Runner }).runner;
@@ -289,11 +266,6 @@ export class GpuSide<I> {
     const { frame, seq, now, timestamp } = mix;
     this.readback.fold({ out, outputs: this.outputs, frame, seq, now, timestamp, list: this.list });
     this.stale = false;
-    if (production()) return;
-    // Compares a sample of subjects with the CPU's fold, the first time each runner runs.
-    const fresh = runners.filter((r) => !this.checked.has(r.key));
-    if (fresh.length === 0) return;
-    for (const r of fresh) this.checked.add(r.key);
-    twins(this.device, mix, this.list, k, out, fresh[0] as Runner);
+    this.twins.first(this.device, mix, this.list, k, out, runners);
   }
 }

@@ -1,6 +1,7 @@
 import type { Mixer } from '../mixer.js';
-import { warnOnce } from '../warn.js';
+import { production, warnOnce } from '../warn.js';
 import type { Kernel } from './kernel.js';
+import type { Runner } from './runner.js';
 import { type GpuBuffer, type GpuDevice, MAP_READ, Usage } from './webgpu.js';
 
 /** Twin check tolerances: what f32 math and the order of its operations leave apart from f64. */
@@ -60,4 +61,25 @@ export function twins<I>(
   };
   // A device lost before the map settles refuses it; the check is dropped.
   read.mapAsync(MAP_READ).then(check, () => {});
+}
+
+/** Runs `twins` in development the first time each runner folds. */
+export class Twins {
+  private readonly checked = new Set<string>();
+
+  /** Checks the fold `k` wrote to `out` against the CPU where one of `runners` has not run before. */
+  first<I>(
+    device: GpuDevice,
+    mix: Mixer<I, unknown>,
+    list: readonly I[],
+    k: Kernel,
+    out: GpuBuffer,
+    runners: readonly Runner[],
+  ): void {
+    if (production()) return;
+    const fresh = runners.filter((r) => !this.checked.has(r.key));
+    if (fresh.length === 0) return;
+    for (const r of fresh) this.checked.add(r.key);
+    twins(device, mix, list, k, out, fresh[0] as Runner);
+  }
 }
