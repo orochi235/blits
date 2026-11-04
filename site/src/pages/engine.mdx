@@ -64,48 +64,48 @@ gpuOf(m).subjects(cells, (c) => ({ y: c.y }));
 m.cue({ patch: band.with({ y: 0.25 }), subjects: cells });
 ```
 
-`with` binds a patch's parameters, so one shader serves every band. Both halves give every channel a value for every subject; for a subject a shape misses, that is zero coverage or the rule's rest. A shader can also read per-voice `tables`, a grid of numbers each voice binds through `with`: WGSL reads one as `table_<name>(x, y)` and `at` as `params.<name>(x, y)`, and new contents don't recompile anything. In development, the first frame a shader runs reads a sample back and warns where its WGSL and its `at` disagree. `OVER_WGSL` gives a host's shader `toHex`'s arithmetic, laying a color pose over a base.
+`with` binds a patch's parameters, so one shader serves every band. Both halves give every channel a value for every subject; for a subject a shape misses, that is zero coverage or the rule's rest. A shader can also read per-voice `tables`, a grid of numbers each voice binds through `with`: WGSL reads one as `table_<name>(x, y)` and `at` as `params.<name>(x, y)`, and new contents don't recompile anything. In WGSL, `x` and `y` may be `i32` or `f32`; both sides floor them, and a coordinate outside the table reads 0. In development, the first frame a shader runs reads a sample back and warns where its WGSL and its `at` disagree. `OVER_WGSL` gives a host's shader `toHex`'s arithmetic, laying a color pose over a base.
 
 What runs where:
 
 | On the GPU | On the CPU, as `mixer` runs it |
 |---|---|
-| `keys` eased by a CSS name, a `cubic-bezier` or `steps`; `wave`; `tween`, `spring` and `glide`; `shaderPatch` | `fn` patches. `keys` with an easing function or a `lerpBy` of its own. A motion on an `ink`, which moves round the hue, or eased by a function |
-| A voice whose weight is a number (fades included) and that reaches every registered subject | A weight signal, `stagger`, an owner, a patch with `state`, `from: 'current'`, a bounded voice, or one that names only some subjects |
-| `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `angle`, `vec` of those, `color()`, and all 25 color blend modes on `color` or `ink`, roles included | `last`, `quat`, `ink()` and `ink(last())`, `affine` |
+| `keys` eased by a CSS name, a `bezier` or `steps`; `wave`; `tween`, `spring` and `glide`; `shaderPatch` | `fn` patches. `keys` with an easing function or a `lerpBy` of its own. A motion on an `ink`, which moves round the hue, or eased by a function |
+| A voice whose weight is a number (fades included) and that reaches every registered subject | A weight signal, `stagger`, an owner, a patch with `state`, `from: 'current'`, a bounded voice, one parting from subjects, or one that names only some subjects |
+| `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `vec` of those, `angle`, `color()`, and all 25 color blend modes on `color` or `ink`, roles included | `last`, `quat`, `ink()` and `ink(last())`, `affine` |
 | | `probe`, `pull`, `project`, `seek`, history, and the debug panel. A motion voice read back through history or by a projection stays on the CPU that frame |
 
 A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `it staggers its subjects` or `its easing is a function`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
 
 The GPU computes in 32-bit floats, and agrees with the CPU to that precision. Where a value jumps — a square wave flipping, a `steps` easing, a keyframe, a loop wrapping — a subject whose time rounds to the other side shows the value from one float step away, a tiny fraction of a millisecond early or late. The GPU's agreement tests allow that one step there and nothing more; a bounded `glide`, whose path depends on which side of an edge it stops, decides that on the CPU in 64 bits.
 
-Measured on teitou (Apple M5 Max) in headless Chromium, a whole frame of three looping `keys` voices, a `wave` and a `spring` retargeting 5% of its subjects each frame, read on `mixer` with `pull` and on the gpu engine until the GPU reports the fold done (medians, `bench/runs/2026-11-03-gpu-stock.txt`):
+Measured on teitou (Apple M5 Max) in headless Chromium, a whole frame of three looping `keys` voices, a `wave` and a `spring` retargeting 5% of its subjects each frame, read on `mixer` with `pull` and on the gpu engine until the GPU reports the fold done (medians; `bench/runs/2026-11-03-gpu-stock.txt` and, for the gpu engine with retargets, `2026-11-03-gpu-upload.txt`):
 
 | Subjects | `mixer` | gpu engine | gpu engine, no retargets |
 |---:|---:|---:|---:|
-| 10,000 | 1.59 ms | 0.88 ms | not run |
-| 100,000 | 24.56 ms | 7.14 ms | 0.28 ms |
-| 1,000,000 | 300.76 ms | 75.94 ms | 0.39 ms |
+| 10,000 | 1.59 ms | 1.04 ms | not run |
+| 100,000 | 24.56 ms | 4.19 ms | 0.28 ms |
+| 1,000,000 | 300.76 ms | 45.66 ms | 0.39 ms |
 
-With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which writes each retargeted subject's new path for the GPU, takes 32 ms, and waiting for the GPU 29 ms.
+With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which works out each retargeted subject's new path for the GPU, takes 28 ms, and waiting for the GPU 3 ms.
 
-Measured on the site's examples, on an Apple M5 Max in headless Chromium, the main thread's work per frame, drawing on the CPU and then on the gpu engine (`bench/runs/2026-11-02-demos-*.json`):
+Measured on the site's examples, on an Apple M5 Max in headless Chromium, the main thread's work per frame, drawing on the CPU and then on the gpu engine (`bench/runs/2026-11-02-demos-*.json`; light board and white balance, as they run on `keys` patches, `bench/runs/2026-11-03-demos-keys-*.json`):
 
 | Example | Subjects | CPU drawing | gpu engine | GPU work, at most |
 |---|---:|---:|---:|---:|
 | blend modes | 17,136 | 20.83 ms | 1.17 ms | 2.62 ms |
 | number rules | 17,136 | 13.97 ms | 2.27 ms | 2.55 ms |
-| light board | 10,368 | 13.94 ms | 1.35 ms | 1.83 ms |
 | stack order | 14,400 | 9.69 ms | 1.80 ms | 1.01 ms |
-| white balance | 10,368 | 6.40 ms | 0.79 ms | 1.06 ms |
+| light board | 10,368 | 8.30 ms | 1.12 ms | 1.90 ms |
 | threshold wipe | 12,800 | 4.97 ms | 0.74 ms | 0.84 ms |
+| white balance | 10,368 | 4.52 ms | 0.34 ms | 1.23 ms |
 | hit flash | 12,800 | 3.20 ms | 0.27 ms | 0.61 ms |
 
 The last column is each frame's submits timed until the GPU reports them done, so it counts waiting as well as work. Number rules keeps its `last` rule on the CPU, which is most of what is left on its main thread. Scenes of tens or hundreds of subjects gain nothing: the site's other examples spend under 0.4 ms a frame in the mix.
 
 ## Why the seam exists
 
-A patch written as keyframes is data: its stops stay on the patch as `keys`, and its easing is a CSS name, a `cubic-bezier` or `steps` rather than a function. That is so an engine other than `mixer` can read them. Besides the GPU engine above, these are what the seam is judged against, though neither is being built:
+A patch written as keyframes is data: its stops stay on the patch as `keys`, and its easing is a CSS name, a `bezier` or `steps` rather than a function. That is so an engine other than `mixer` can read them. Besides the GPU engine above, these are what the seam is judged against, though neither is being built:
 
 - A Web Animations engine that runs `keys` patches only and hands them to the browser, so a page's motion plays off the main thread. It refuses `fn` and `motion` patches at `cue`.
 - A recording engine that wraps another and captures every pose as keyframes, turning a procedural patch into data for the first.

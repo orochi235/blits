@@ -935,21 +935,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     Phase 1, stock patches on the GPU, is built (d20940c..30ba0d5, branch `gpu-stock`); stagger and
     partial reach, owners and weight signals, and readback into `pull` are designed and not built.
     The schema page's "The gpu engine" says what folds now. Open from phase 1:
-    - **Retargets upload one `writeBuffer` per run of changed rows** (`Mirrors.upload`), so 5% of
-      1M springs retargeted, every twentieth row, cost 32 ms preparing the dispatch and 29 ms waiting
-      on the GPU (`bench/runs/2026-11-03-gpu-stock.txt`). Uploading a whole mirror, or merging runs
-      across small gaps, past some share of rows changed is the likely fix; measure where.
-    - **Two mixes folding one motion patch** throw "already watched; stop that watch first" out of
-      the fold, naming a watch the host never started, where they should stay on the CPU with a
-      warning. One motion patch on two voices of one mix rebuilds both mirrors every frame, unwarned.
+    - **One motion patch folded by two voices at once**, on one mix or two live ones, rebuilds
+      their mirrors every frame, each taking the patch's one watch back from the other, unwarned.
     - **A motion whose `from` or `velocity` is not deterministic** can jump on the GPU when a subject
       is met and whenever its mirror is rebuilt: say so in the docs, or cache the first segment.
     - While a kernel compiles, a mirror with changes waiting re-runs the dispatch's start on every
       `channel()` call.
     - A function easing on a `keys` patch's first stop, which is never evaluated, still sends the
-      patch to the CPU; the `from: 'current'` refusal in `src/gpu/eligible.ts` covers every form.
-    - `Regions` (`src/gpu/region.ts`) has no unit tests for a departure with survivors, compaction,
-      shrink then grow, or its store doubling, though every runner leans on it.
+      patch to the CPU.
+    - `Regions` (`src/gpu/region.ts`) has no unit tests for a departure with survivors, shrink then
+      grow, or its store doubling, though every runner leans on it.
 
 ## Loose ends
 
