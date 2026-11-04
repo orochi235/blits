@@ -931,13 +931,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **`project` and `trace` show a body at the last synced world**: a patch cannot read another
       subject's state.
 
-18. **The gpu engine's reach, phase 4** (`docs/superpowers/specs/2026-11-03-gpu-reach-design.md`).
-    Phase 1, stock patches on the GPU, is built (d20940c..21dc031, on `main`, unreleased). Phase 2,
-    staggered voices and voices reaching some subjects, is built and merged (4cad824..ff1cc94 and
-    the commit measuring it). Phase 3, owner-held voices and voices weighted by a signal, is built
-    on branch `gpu-owners` (1a57524..81624fe and the commit measuring owners), not yet merged.
-    Readback (`gpuOf(m).read`, phase 4) is designed and not built.
-    The schema page's "The gpu engine" says what folds now. Open from phase 3:
+18. **What the gpu engine's reach left open.** All four phases are built: stock patches, staggered
+    voices and voices reaching some subjects, owners and weight signals, and readback
+    (`gpuOf(m).read`). The schema page's `#gpu` ("The gpu engine") says what folds, why, and what
+    each part costs. Open from phase 4:
+    - **Readback copies a frame's fold only when the next frame first refreshes**, so a host that
+      stops calling `channel` or `read` never gets its last frame copied.
+    - **At 1M subjects, 14 of 300 frames awaiting four `read`s took over 16.7 ms**, up to 147 ms,
+      against a 3.155 ms median (`bench/runs/2026-11-04-gpu-readback.txt`); unexplained.
+    Open from phase 3:
     - **A frame where a scene starts costs 195–241 ms at 1M on the gpu engine**, about half in
       `sync` and half in the fold, against a 0.515 ms median (`bench/runs/2026-11-04-gpu-owned.txt`);
       unexplained.
@@ -948,8 +950,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       to `now - since`; `dt` is per voice, not per subject (a subject met late gets the voice's);
       it resets `dt` on every seek, the CPU only on seeks that send back; no test pins `dt`
       within one frame.
-    - `src/gpu/side.ts` is 300 lines: split the mirror and slot preparation into its own module
-      before it grows.
     Open from phase 2:
     - **Answers never forgets a subject.** After a drop, or a part and unpart, a CPU-only mix asks
       `target` again, while one with a gpu side answers from what it kept; they differ only for a

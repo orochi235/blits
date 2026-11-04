@@ -40,7 +40,10 @@ m.cue({ patch: keys(2000, PULSE, { ease: 'ease-in-out' }), subjects: cells, loop
 // Each frame: sync, then bind the channel's buffer in your render pass.
 m.sync(now);
 const glow = gpuOf(m).channel('glow'); // { buffer, offset, stride, axes }, or null
+const r = await gpuOf(m).read('glow'); // r.values, r.axes, r.timestamp — or null
 ```
+
+For the values in JavaScript, `read` copies a channel back from the GPU and resolves with the previous frame's, so the frame being folded never waits on it, except at a channel's first read; `timestamp` says which sync they came from.
 
 A `spring`, `glide` or `tween` keeps working as on the CPU: a `to()`, `set()` or `push()` lands at the voice's time, though nothing reads the subject on the CPU.
 
@@ -90,12 +93,16 @@ Measured on teitou (Apple M5 Max) in headless Chromium, a whole frame of three l
 | 1,000,000, staggered | 470.57 ms | 53.55 ms | not run |
 | 100,000, held by owners | 18.29 ms | 0.27 ms | not run |
 | 1,000,000, held by owners | 226.08 ms | 0.52 ms | not run |
+| 100,000, read back with `read` | 13.31 ms | 0.50 ms | not run |
+| 1,000,000, read back with `read` | 175.61 ms | 3.16 ms | not run |
 
 With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which works out each retargeted subject's new path for the GPU, takes 28 ms, and waiting for the GPU 3 ms.
 
 The staggered rows give every voice a delay of up to about a second, fade the `keys` voices in, and have one of them reach every other subject through `target` (`bench/runs/2026-11-04-gpu-stagger.txt`). Their gpu engine figures come from a later build than the unstaggered rows', so the two don't isolate what staggering costs, and the 1,000,000 median includes the frames where subjects were still fading in.
 
 The rows held by owners are bree's shape: a program owner holding four scene owners 1.25 s apart, each holding a fading `keys` move, a looping `wave` and a staggered `keys` layer over every subject (`bench/runs/2026-11-04-gpu-owned.txt`). They have no `spring` and nothing retargeted. The frame where a scene starts is the slowest on both engines: at a million subjects, about 0.2 s on the gpu engine and about 3 s on `mixer`.
+
+The rows read back with `read` time four looping voices over 8 numbers a subject, with every channel awaited through `read` each frame on the gpu engine and read with `pull` on `mixer` (`bench/runs/2026-11-04-gpu-readback.txt`). Folding the same mix without reading it back took 0.22 ms at 100,000 subjects and 0.43 ms at a million. At a million, 14 of 300 frames took over 16.7 ms waiting on the reads.
 
 Measured on the site's examples, on an Apple M5 Max in headless Chromium, the main thread's work per frame, drawing on the CPU and then on the gpu engine (`bench/runs/2026-11-02-demos-*.json`; light board and white balance, as they run on `keys` patches, `bench/runs/2026-11-03-demos-keys-*.json`):
 
