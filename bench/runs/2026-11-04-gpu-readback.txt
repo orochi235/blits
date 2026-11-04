@@ -42,6 +42,6 @@ mixer/readback   1000000   175.605    181.575    612.845     300      0.010    1
 # Measured: every one of the 600 timed gpuread frames gave the previous frame's values (behind 1).
 # Reading all four channels back cost 0.500 ms a frame at 100k against 0.220 folding without reading,
 # and 3.155 against 0.430 at 1M; mixer, reading the same values with pull, took 13.310 and 175.605.
-# At 1M, 14 of 300 gpuread frames took over 16.7 ms, nearly all of it awaiting the reads; none did at
-# 100k. Where that time goes was not measured. Each 1M frame copies 32 MB out of mapped memory into
+# At 1M, 14 of 300 gpuread frames took over 16.7 ms, 10 of them mostly awaiting the reads and 4 mostly
+# in `onSubmittedWorkDone`; none did at 100k. Where that time goes was not measured. Each 1M frame copies 32 MB out of mapped memory into
 # fresh Float32Arrays on the page's thread, so garbage collection is one guess, not a finding.
