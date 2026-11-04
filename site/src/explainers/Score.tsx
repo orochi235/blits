@@ -4,15 +4,18 @@ import { f } from '@weasel-js/labkit';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import { FRAME, type Scene } from './kit/scene';
-import { choir } from './score/sing';
+import { choir, primeOn } from './score/sing';
 import { K, LINES, type Part, type Pose, SUBJECTS, type Syllable, voices } from './score/song';
 import { stage } from './score/stage';
 
 const DURATION = 24_000;
 const CUT = LINES.findIndex((l) => l.name === 'line 2');
 
+const SOUND = 'Sound';
+primeOn(SOUND);
+
 const config = f.schema({
-  sound: f.boolean(false).label('Sound'),
+  sound: f.boolean(false).label(SOUND),
   tempo: f.number(160).range(140, 200).step(5).label('Tempo, beats a minute'),
   lag: f.number(0).range(0, 1).step(0.25).label('Chorus answers late by, beats'),
   cut: f

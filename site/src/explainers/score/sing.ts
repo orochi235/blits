@@ -27,6 +27,23 @@ function engine(): AudioEngine {
   return e;
 }
 
+/**
+ * Makes the engine inside the click that turns sound on. A browser starts an `AudioContext` only
+ * within a user gesture, and the explainer builds its player after the click, outside it.
+ */
+export function primeOn(label: string): void {
+  if (typeof document === 'undefined') return;
+  document.addEventListener(
+    'click',
+    (event) => {
+      const box = event.target;
+      if (!(box instanceof HTMLInputElement) || box.getAttribute('aria-label') !== label) return;
+      if (box.checked) void engine().unlock().catch(() => undefined);
+    },
+    { capture: true },
+  );
+}
+
 /** A sung "ah": detuned saws through a low, slightly peaked filter, swelling in and out. */
 const AH: Omit<NoteOptions, 'pitch'> = {
   wave: 'sawtooth',
@@ -86,6 +103,7 @@ function sing(e: AudioEngine, n: Note, when: number, sounding: Set<Voice>): Voic
  */
 export function choir(m: Mix<Syllable, Pose>): Attached {
   const e = engine();
+  if (e.state() !== 'running') void e.unlock().catch(() => undefined);
   let playing = true;
   // Each voice leaves this as it ends, so it holds only what is booked or sounding.
   const sounding = new Set<Voice>();
