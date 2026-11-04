@@ -1,3 +1,4 @@
+import { errorOnce } from '../warn.js';
 import type { GpuChannel } from './side.js';
 import { type GpuBuffer, type GpuDevice, MAP_READ, Usage } from './webgpu.js';
 
@@ -206,8 +207,9 @@ export class Readback<I> {
           }
           reads = got;
         }
-      } catch {
+      } catch (err) {
         reads = null;
+        errorOnce(this, `a gpu read could not copy its values out, so it resolves null: ${err}`);
       } finally {
         if (mapped) buffer.unmap();
         if (slot !== null) slot.busy = false;

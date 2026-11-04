@@ -249,6 +249,31 @@ describe('gpu readback ring', () => {
     expect(d.made('readback')).toBe(1);
   });
 
+  it('says why a copy failed to read out, once, in development only', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fail = async (frame: number) => {
+      const { d, r, fold, read } = ring();
+      r.want('s');
+      r.fold(fold(frame));
+      r.turn(frame + 1);
+      const slice = vi.spyOn(ArrayBuffer.prototype, 'slice').mockImplementation(() => {
+        throw new Error('no range');
+      });
+      await d.settle();
+      slice.mockRestore();
+      expect(await read('s', frame + 1)).toBeNull();
+      return r;
+    };
+    await fail(1);
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(String(error.mock.calls[0]?.[0])).toContain('no range');
+    vi.stubEnv('NODE_ENV', 'production');
+    await fail(1);
+    vi.unstubAllEnvs();
+    expect(error).toHaveBeenCalledTimes(1);
+    error.mockRestore();
+  });
+
   it('forget: a waiting read keeps its own list, and the next read copies the current fold', async () => {
     const { d, r, fold, read } = ring();
     r.want('s');
