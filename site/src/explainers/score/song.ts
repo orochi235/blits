@@ -55,9 +55,9 @@ interface Tune {
  * home from B. Each fa-la is sung with a part a third above.
  */
 const A_LINE: Tune = { beats: [1.5, 0.5, 1, 1, 1, 1, 1, 1], steps: [4, 3, 2, 1, 0, 1, 2, 0] };
-/** The last A line, its fourth beat split in two for a ninth syllable. */
+/** The last A line: a short pickup onto a long "dare", and its fourth beat split for a ninth syllable. */
 const LAST_LINE: Tune = {
-  beats: [1.5, 0.5, 1, 0.5, 0.5, 1, 1, 1, 1],
+  beats: [0.5, 1.5, 1, 0.5, 0.5, 1, 1, 1, 1],
   steps: [4, 3, 2, 1, 1, 0, 1, 2, 0],
 };
 const B_LINE: Tune = { beats: [1.5, 0.5, 1, 1, 1.5, 0.5, 1, 1], steps: [1, 2, 3, 1, 2, 3, 4, 2] };
