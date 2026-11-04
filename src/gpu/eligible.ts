@@ -76,7 +76,6 @@ function staggered<I, O>(voice: Voice<I, O>, delays: Float64Array): string | nul
     if (voice.stalls !== null)
       return 'its fade in stalled where a fade out turned back, and its subjects start at different times';
   }
-  if (voice.motion !== undefined) return 'it staggers its subjects';
   return null;
 }
 

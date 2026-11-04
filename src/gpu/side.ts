@@ -13,6 +13,7 @@ import { type Packed, packOf, type Runner, unpack } from './runner.js';
 import { elapsedOf, type Slot, voiceTable } from './table.js';
 import { sizeOf, Timings } from './timings.js';
 import { twins } from './twins.js';
+import { unreadOf } from './unread.js';
 import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT, Usage } from './webgpu.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
@@ -164,9 +165,18 @@ export class GpuSide<I> {
         mirrors.push(undefined);
         return { owner: v, values: p.values };
       }
-      const m = this.mirrors.of(v, p.perSubject, p.values, this.list);
+      const u = v as Voice<I, unknown>;
+      const delays = varies(u as Voice<unknown, unknown>) ? this.answers.of(u).delays : null;
+      const m = this.mirrors.of(v, p.perSubject, p.values, this.list, delays);
       // A host reading only these buffers never samples, so the changes it made are committed here.
-      m.prepare(elapsedOf(v, mix.now), mix.horizonFor(v, 0, mix.now));
+      const now = mix.now;
+      const horizon = mix.horizonFor(v, 0, now);
+      const unread = unreadOf(mix, u, this.answers, this.timings);
+      if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread);
+      else {
+        const t = v.unstarted(now) && !v.holdsFirst ? Number.NaN : v.rawAt(now, 0);
+        m.prepare(t, horizon, v.holdsFirst, unread);
+      }
       mirrors.push(m as Mirror<unknown>);
       return { owner: v, values: m.values() };
     });

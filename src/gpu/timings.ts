@@ -116,6 +116,11 @@ class Block {
     };
   }
 
+  /** Subject `i`'s fade-in origin, a mix time; undefined where the block keeps none. */
+  originOf(i: number): number | undefined {
+    return this.shown?.[i];
+  }
+
   /** The origins' range in `data`, in f32s. */
   get origins(): [number, number] {
     return [this.at, this.data.length];
@@ -160,6 +165,38 @@ export class Timings {
     this.length = 0;
   }
 
+  /** `voice`'s block for this frame, made where it has none for `answer`; undefined where it needs none. */
+  private blockOf<I>(mix: Mixer<I, unknown>, voice: Voice<I, unknown>, answers: Answers<I>) {
+    const m = mix as Mixer<unknown, unknown>;
+    if (this.hooked !== m) {
+      m.reorigined = (voice, t) => this.by.get(voice)?.reorigin(m, t);
+      this.hooked = m;
+    }
+    const v = voice as Voice<unknown, unknown>;
+    if (!varies(v)) return undefined;
+    const answer = answers.of(voice);
+    if (answer.delays === null && answer.reach === null) return undefined;
+    let b = this.by.get(v);
+    if (b === undefined || b.answer !== answer) {
+      b = new Block(m, v, answer, mix.now);
+      this.by.set(v, b);
+    } else b.follow(mix.now);
+    return b;
+  }
+
+  /**
+   * Registered subject `i`'s fade-in origin for `voice` this frame, a mix time, as the GPU fades it
+   * in from; undefined where the voice does not both stagger and fade in.
+   */
+  originOf<I>(
+    mix: Mixer<I, unknown>,
+    voice: Voice<I, unknown>,
+    answers: Answers<I>,
+    i: number,
+  ): number | undefined {
+    return this.blockOf(mix, voice, answers)?.originOf(i);
+  }
+
   /** This frame's blocks, one per voice or undefined for one needing none, laid from `from`. */
   place<I>(
     mix: Mixer<I, unknown>,
@@ -167,26 +204,13 @@ export class Timings {
     answers: Answers<I>,
     from: number,
   ): (TimingSlot | undefined)[] {
-    const m = mix as Mixer<unknown, unknown>;
-    if (this.hooked !== m) {
-      m.reorigined = (voice, t) => this.by.get(voice)?.reorigin(m, t);
-      this.hooked = m;
-    }
-    const now = mix.now;
     const live = new Set<Voice<unknown, unknown>>();
     const placed: { block: Block; offset: number }[] = [];
     let at = from;
     const slots = voices.map((voice) => {
-      const v = voice as Voice<unknown, unknown>;
-      if (!varies(v)) return undefined;
-      const answer = answers.of(voice);
-      if (answer.delays === null && answer.reach === null) return undefined;
-      live.add(v);
-      let b = this.by.get(v);
-      if (b === undefined || b.answer !== answer) {
-        b = new Block(m, v, answer, now);
-        this.by.set(v, b);
-      } else b.follow(now);
+      const b = this.blockOf(mix, voice, answers);
+      if (b === undefined) return undefined;
+      live.add(voice as Voice<unknown, unknown>);
       placed.push({ block: b, offset: at });
       const slot = b.slotAt(at);
       at += b.data.length;

@@ -16,10 +16,11 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine folds `keys()` voices, a blend-mode color channel's stops interpolated as the
   channel does, straight across OKLab or round the hue, and a role of its voices blended the same.
 - The `gpu` engine folds `tween()`, `spring()` and `glide()` voices, committing a `to()`, `set()`
-  or `push()` at the voice's time even where nothing reads the subject on the CPU.
+  or `push()` at the subject's time, as a read on the CPU would, even where nothing reads the
+  subject there.
 - The `gpu` engine folds a voice that reaches only some of the registered subjects,
   through `subjects` or `target`.
-- The `gpu` engine folds voices that stagger their subjects, for shader patches, `wave` and `keys`.
+- The `gpu` engine folds voices that stagger their subjects, for every patch the gpu engine runs.
 
 ### Fixed
 

@@ -291,15 +291,44 @@ describe('voice table', () => {
     expect(e.voices.length).toBe(2);
   });
 
-  it('keeps a staggered motion voice on the CPU', () => {
+  it('folds a staggered motion voice on the GPU, named or asked as met', () => {
     const m = mix<C, P>(K);
-    m.cue({
-      patch: tween<C, P>('y', { from: 0, to: 1, ms: 500 }),
+    const motion = () => tween<C, P>('y', { from: 0, to: 1, ms: 500 });
+    m.cue({ patch: motion(), subjects: cells, stagger: (c: C) => c.x * 100 });
+    m.cue({ patch: motion(), stagger: (c: C) => c.x * 100 });
+    m.sync(0);
+    const e = elig(m);
+    expect(e.reasons).toEqual([]);
+    expect(e.voices.length).toBe(2);
+  });
+
+  it("keeps a staggered motion voice on the CPU for a staggered voice's reasons", () => {
+    const m = mix<C, P>(K);
+    const motion = () => tween<C, P>('y', { from: 0, to: 1, ms: 500 });
+    const h = m.cue({
+      patch: motion(),
       subjects: cells,
       stagger: () => 10,
+      fade: { in: 400, out: 300 },
+    });
+    m.cue({ patch: motion(), stagger: (c: C) => c.x * 100 - 50 });
+    m.cue({
+      patch: motion(),
+      subjects: cells,
+      stagger: () => 10,
+      fade: { in: 400, ease: (u) => u },
     });
     m.sync(0);
-    expect(elig(m).reasons.map((r) => r.why)).toEqual(['it staggers its subjects']);
+    m.sync(100);
+    h.fade();
+    m.sync(200);
+    h.rise();
+    m.sync(250);
+    expect(elig(m).reasons.map((r) => r.why)).toEqual([
+      'its fade in stalled where a fade out turned back, and its subjects start at different times',
+      'its stagger is asked as subjects are met and gives some a negative delay, so where it ends running back depends on which were read',
+      'its fade in eases by a function, which the GPU cannot run',
+    ]);
   });
 
   it('keeps an unnamed staggered voice with an end on the CPU', () => {
