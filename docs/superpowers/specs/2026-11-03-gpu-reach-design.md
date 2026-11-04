@@ -131,8 +131,9 @@ Each phase lands, is measured, and is released on its own.
   read-only f32 tables, each with a width and height; `with` gives their contents per voice, as it
   gives parameters; WGSL reads `table_<name>(x, y)`, which returns 0 out of range, and `at` gets the
   same tables as a lookup with the same rule, so the twin check holds. bree's moves look a message
-  bitmap up at a shifted position (a few hundred to a few thousand cells, different per voice). They
-  go in the per-voice region `keys` stops use, so this falls out of the same buffer work.
+  bitmap up at a shifted position and a row map (a width-1 table) at a shifted row, so a patch
+  declares any number of tables. Sizes run from about 7 × 40 to a few hundred × a few thousand per
+  voice. They go in the per-voice region `keys` stops use, so this falls out of the same buffer work.
 
 ### 2. Per-subject timing and reach
 
