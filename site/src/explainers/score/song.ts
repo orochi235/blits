@@ -13,6 +13,8 @@ export interface Syllable {
   beats: number;
   /** The tune's step; for a chord, its root's degree. */
   step: number;
+  /** Semitones its tune note sits off the scale: 1 for a sharp the key does not carry. */
+  alter: number;
   /** Steps sung with it, a harmony part. */
   harmony: number[];
 }
@@ -41,31 +43,64 @@ export interface Line {
 interface Tune {
   beats: number[];
   steps: number[];
+  /** Semitones off the scale, per note, where the tune leaves it. */
+  alter?: number[];
   harmony?: number[];
 }
 
 /**
- * "Deck the Halls", as steps of the scale from its tonic: 0 the tonic, 7 an octave up, -1 the step
- * below. In D major the line runs A G F# E D E F# D, and the fa-la E F# G E F# E D C# D, sung with a
- * part a third above it.
+ * "Deck the Halls", AABA, as steps of the scale from its tonic: 0 the tonic, 7 an octave up, -1 the
+ * step below. In D major an A line runs A G F# E D E F# D and its fa-la E F# G E F# E D C# D; the B
+ * line climbs from E, and its fa-la runs up through a G# toward the dominant. The last fa-la comes
+ * home from B. Each fa-la is sung with a part a third above.
  */
-const CALL: Tune = { beats: [1.5, 0.5, 1, 1, 1, 1, 1, 1], steps: [4, 3, 2, 1, 0, 1, 2, 0] };
-const ANSWER: Tune = {
+const A_LINE: Tune = { beats: [1.5, 0.5, 1, 1, 1, 1, 1, 1], steps: [4, 3, 2, 1, 0, 1, 2, 0] };
+const B_LINE: Tune = { beats: [1.5, 0.5, 1, 1, 1.5, 0.5, 1, 1], steps: [1, 2, 3, 1, 2, 3, 4, 2] };
+const A_FA_LA: Tune = {
   beats: [0.5, 0.5, 0.5, 0.5, 1.5, 0.5, 1, 1, 2],
   steps: [1, 2, 3, 1, 2, 1, 0, -1, 0],
   harmony: [3, 4, 5, 3, 4, 3, 3, 1, 2],
 };
+const B_FA_LA: Tune = {
+  beats: [0.5, 0.5, 1, 0.5, 0.5, 1, 1, 1, 2],
+  steps: [2, 3, 4, 5, 6, 7, 6, 5, 4],
+  alter: [0, 1, 0, 0, 0, 0, 0, 0, 0],
+  harmony: [4, 5, 6, 7, 8, 9, 8, 7, 6],
+};
+const LAST_FA_LA: Tune = {
+  beats: [0.5, 0.5, 0.5, 0.5, 1.5, 0.5, 1, 1, 2],
+  steps: [5, 5, 5, 5, 4, 3, 2, 1, 0],
+  harmony: [7, 7, 7, 7, 6, 5, 4, 3, 2],
+};
 const COUNT: Tune = { beats: [1, 1, 1, 1], steps: [11, 11, 11, 11] };
-/** The chords under each, by the degree of their root: I under a line, IV I V I under a fa-la. */
-const CALL_CHORDS: Tune = { beats: [8], steps: [0] };
-const ANSWER_CHORDS: Tune = { beats: [2, 2, 2, 2], steps: [3, 0, 4, 0] };
+/** The chords under each, by the degree of their root. */
+const ON_TONIC: Tune = { beats: [8], steps: [0] };
+const ON_DOMINANT: Tune = { beats: [8], steps: [4] };
+const CADENCE: Tune = { beats: [2, 2, 2, 2], steps: [3, 0, 4, 0] };
 
-const LEAD = [
-  'It rubs the lo- tion on its skin,',
-  'Or else it gets the hose a- gain.',
-  'Put the lo- tion in the bas- ket.',
+interface Phrase {
+  words: string;
+  line: Tune;
+  lineChords: Tune;
+  faLa: string;
+  answer: Tune;
+  answerChords: Tune;
+}
+
+const A = { line: A_LINE, lineChords: ON_TONIC, faLa: 'Fa la la la la, la la la la.' };
+const PHRASES: Phrase[] = [
+  { ...A, words: 'It rubs the lo- tion on its skin,', answer: A_FA_LA, answerChords: CADENCE },
+  { ...A, words: "It does this when- ev- er it's told,", answer: A_FA_LA, answerChords: CADENCE },
+  {
+    words: 'Or else it gets the hose a- gain.',
+    line: B_LINE,
+    lineChords: ON_DOMINANT,
+    faLa: 'Fa la la, la la la, la la la.',
+    answer: B_FA_LA,
+    answerChords: ON_DOMINANT,
+  },
+  { ...A, words: 'Put the lo- tion in the bas- ket.', answer: LAST_FA_LA, answerChords: CADENCE },
 ];
-const FA_LA = 'Fa la la la la, la la la la.';
 
 function line(
   name: string,
@@ -78,6 +113,7 @@ function line(
   const syllables = words.map((text, i) => {
     const harmony = tune.harmony?.[i];
     const s = {
+      alter: tune.alter?.[i] ?? 0,
       id: `${name}/${i}`,
       text,
       onset,
@@ -96,15 +132,15 @@ const unnamed = (tune: Tune) => tune.steps.map(() => '');
 
 export const LINES: Line[] = [
   line('count-in', 'count', ['1', '2', '3', '4'], COUNT, {}),
-  ...LEAD.flatMap((words, k) => {
+  ...PHRASES.flatMap((p, k) => {
     const n = k + 1;
     return [
-      line(`line ${n}`, 'lead', words.split(' '), CALL, {
+      line(`line ${n}`, 'lead', p.words.split(' '), p.line, {
         after: k === 0 ? 'count-in' : `fa-la ${k}`,
       }),
-      line(`fa-la ${n}`, 'chorus', FA_LA.split(' '), ANSWER, { after: `line ${n}` }),
-      line(`chords ${n}`, 'chords', unnamed(CALL_CHORDS), CALL_CHORDS, { with: `line ${n}` }),
-      line(`chords ${n}′`, 'chords', unnamed(ANSWER_CHORDS), ANSWER_CHORDS, {
+      line(`fa-la ${n}`, 'chorus', p.faLa.split(' '), p.answer, { after: `line ${n}` }),
+      line(`chords ${n}`, 'chords', unnamed(p.lineChords), p.lineChords, { with: `line ${n}` }),
+      line(`chords ${n}′`, 'chords', unnamed(p.answerChords), p.answerChords, {
         with: `fa-la ${n}`,
       }),
     ];
