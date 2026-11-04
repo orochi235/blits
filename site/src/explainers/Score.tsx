@@ -4,23 +4,41 @@ import { f } from '@weasel-js/labkit';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import { FRAME, type Scene } from './kit/scene';
-import { choir, primeOn } from './score/sing';
-import { K, LINES, type Part, type Pose, SUBJECTS, type Syllable, voices } from './score/song';
+import { choir, primeOn, soundWanted } from './score/sing';
+import {
+  K,
+  KEYS,
+  type Key,
+  LINES,
+  MODES,
+  type Mode,
+  type Part,
+  type Pose,
+  SUBJECTS,
+  type Syllable,
+  songMs,
+  voices,
+} from './score/song';
 import { stage } from './score/stage';
 
-const DURATION = 24_000;
-const CUT = LINES.findIndex((l) => l.name === 'line 2');
+/** The longest the song runs, at the slowest tempo and the latest answers; the cut can fall anywhere in it. */
+const LONGEST = songMs({ tempo: 140, lag: 1 });
+/** The voice the cut fades. */
+const CUT = 'line 2';
 
 const SOUND = 'Sound';
 primeOn(SOUND);
 
 const config = f.schema({
-  sound: f.boolean(false).label(SOUND),
+  sound: f.boolean(soundWanted()).label(SOUND),
   tempo: f.number(160).range(140, 200).step(5).label('Tempo, beats a minute'),
   lag: f.number(0).range(0, 1).step(0.25).label('Chorus answers late by, beats'),
+  key: f.enum<Key>('D', [...KEYS]).label('Key'),
+  mode: f.enum<Mode>('dorian', Object.keys(MODES) as Mode[]).label('Mode'),
+  chords: f.boolean(true).label('Chords'),
   cut: f
     .number(Number.POSITIVE_INFINITY)
-    .range(0, DURATION)
+    .range(0, LONGEST)
     .step(50)
     .suffix('ms')
     .endless('never')
@@ -34,24 +52,27 @@ function scene(c: Config): Scene<Syllable, Pose, Config> {
     subjects: () => SUBJECTS,
     voices: () => voices(c),
     attach: (m) => (c.sound ? choir(m) : { close() {} }),
-    events: () =>
-      Number.isFinite(c.cut) ? [{ at: c.cut, run: (_m, handles) => handles[CUT]?.fade() }] : [],
+    events: () => {
+      if (!Number.isFinite(c.cut)) return [];
+      const i = voices(c).findIndex((v) => v.name === CUT);
+      return [{ at: c.cut, run: (_m, handles) => handles[i]?.fade() }];
+    },
   };
 }
 
 /** The marks the plan holds at time `t`, read off a mix played to it. */
 function marksAt(c: Config, t: number): Marked[] {
   // History keeps the voices that have left, so their marks stay listed.
-  const m = mix<Syllable, Pose>(K, { history: { ms: DURATION } });
+  const m = mix<Syllable, Pose>(K, { history: { ms: songMs(c) } });
   const handles = voices(c).map((v) => m.cue(v.spec));
   if (Number.isFinite(c.cut) && t >= c.cut) {
     // The player runs an event before the first frame at or past it, so the mix last synced a frame earlier.
     const before = Math.ceil(c.cut / FRAME - 1e-6) * FRAME - FRAME;
     if (before >= 0) m.sync(before);
-    handles[CUT]?.fade();
+    handles[voices(c).findIndex((v) => v.name === CUT)]?.fade();
   }
   m.sync(t);
-  const marks = m.marks(0, DURATION);
+  const marks = m.marks(0, songMs(c));
   m.close();
   return marks;
 }
@@ -60,6 +81,7 @@ const LANES: { part: Part; color: string }[] = [
   { part: 'count', color: 'v3' },
   { part: 'lead', color: 'v1' },
   { part: 'chorus', color: 'v2' },
+  { part: 'chords', color: 'v4' },
 ];
 
 export default function Score() {
@@ -67,26 +89,28 @@ export default function Score() {
     <Explainer
       scene={scene}
       schema={config}
-      duration={DURATION}
+      duration={songMs}
       aspect={0.7}
       caption={
         <>
-          Above, the lead sings a line and the chorus answers it, a ball bouncing over each. Below,
-          one lane per part, and each bar on it is one voice: one line, from its <code>start</code>{' '}
-          to its <code>end</code>. Each answer hangs from its line's <code>end</code>, and each line
-          from the answer before it; the dashed lines are those anchors. Cut line 2 short and it
-          fades out there with <code>fade()</code>, and its answer, and everything after, comes in
-          early.
+          Above, the lead sings a line and the chorus answers it, a ball bouncing over each, over
+          the chords. Below, one lane per part, and each bar on it is one voice: one line, from its{' '}
+          <code>start</code> to its <code>end</code>. Each answer hangs from its line's{' '}
+          <code>end</code>, each line from the answer before it, and each run of chords starts{' '}
+          <code>with</code> what it plays under; the dashed lines are those anchors. Cut line 2
+          short and it fades out there with <code>fade()</code>, and its answer, its chords, and
+          everything after come in early.
         </>
       }
       draw={(ctx, frame, size, ink, c) => {
         const box = { x: 12, y: 8, w: size.w - 24, h: Math.round(size.h * 0.5) };
-        stage(ctx, box, ink, frame);
+        stage(ctx, box, ink, frame, c);
         const left = 76;
         const right = size.w - 16;
         const top = box.y + box.h + 28;
         const lane = (size.h - top - 30) / LANES.length;
-        const x = (t: number) => left + (t / DURATION) * (right - left);
+        const span = songMs(c);
+        const x = (t: number) => left + (t / span) * (right - left);
         const laneY = (part: Part) =>
           top + lane * LANES.findIndex((l) => l.part === part) + lane / 2;
         const marks = marksAt(c, frame.t);
@@ -105,18 +129,20 @@ export default function Score() {
           label(ctx, part === 'count' ? 'count-in' : part, 12, y + 4, ink.soft, 'left');
         }
 
-        LINES.forEach((l, i) => {
+        const handleOf = (name: string) =>
+          frame.handles[frame.voices.findIndex((v) => v.name === name)];
+        for (const l of LINES) {
           const s = markOf(l.name, 'start');
-          if (s === undefined) return;
+          if (s === undefined) continue;
           const y = laneY(l.part);
-          const end = markOf(l.name, 'end') ?? DURATION;
+          const end = markOf(l.name, 'end') ?? span;
           const color = ink.voice(LANES.find((n) => n.part === l.part)?.color ?? 'v1');
           ctx.fillStyle = color;
-          ctx.globalAlpha = frame.handles[i]?.state === 'pending' ? 0.35 : 0.85;
+          ctx.globalAlpha = handleOf(l.name)?.state === 'pending' ? 0.35 : 0.85;
           ctx.fillRect(x(s) + 1, y - h / 2, Math.max(1, x(end) - x(s) - 2), h);
           ctx.globalAlpha = 1;
-          // The anchor this voice hangs from: down or up from the lane of the voice before it.
-          const from = LINES[i - 1];
+          // The anchor this voice hangs from: down or up from the lane of the voice it names.
+          const from = LINES.find((o) => o.name === (l.with ?? l.after));
           if (from) {
             ctx.strokeStyle = ink.soft;
             ctx.setLineDash([3, 3]);
@@ -128,7 +154,7 @@ export default function Score() {
             ctx.stroke();
             ctx.setLineDash([]);
           }
-        });
+        }
 
         // Where the cut falls on the lead's lane, so dragging the slider moves a mark you can see.
         const leadY = laneY('lead');

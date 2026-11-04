@@ -7,7 +7,7 @@ import { type Ink, readInk } from './ink';
 import { Ledger } from './Ledger';
 import { coursesOver, Player } from './player';
 import { FRAME, type Frame, type Scene } from './scene';
-import { Timeline } from './Timeline';
+import { Timeline, type Track } from './Timeline';
 
 type Schema<C> = { defaults(): C } & Parameters<typeof resolveConfigSchema>[0];
 
@@ -15,8 +15,8 @@ export interface ExplainerProps<I, O, C> {
   /** Builds the scene from the current config. Called again whenever a control moves. */
   scene: (config: C) => Scene<I, O, C>;
   schema?: Schema<C>;
-  /** Explainer ms one play-through lasts before it repeats. */
-  duration: number;
+  /** Explainer ms one play-through lasts before it repeats, or that worked out from the config. */
+  duration: number | ((config: C) => number);
   /** Stage height as a fraction of its width, up to `MAX_STAGE_H`. */
   aspect?: number;
   draw(
@@ -55,8 +55,14 @@ const TRACKS_KEY = 'blits-explainer-tracks';
 /** Where a viewer's choice of how every explainer repeats is kept. */
 const REPEAT_KEY = 'blits-explainer-repeat';
 
-/** At the end, play back to the start, or start over from it. */
-type Repeat = 'boomerang' | 'loop';
+/** At the end, play back to the start, start over from it, or stop there. */
+type Repeat = 'boomerang' | 'loop' | 'once';
+const REPEATS: readonly Repeat[] = ['boomerang', 'loop', 'once'];
+const REPEAT_SHOWN: Record<Repeat, { label: string; title: string }> = {
+  boomerang: { label: '⇄ Boomerang', title: 'Plays to the end, then back' },
+  loop: { label: '↻ Loop', title: 'Plays to the end, then starts over' },
+  once: { label: '→ Once', title: 'Plays to the end, then stops' },
+};
 
 const noConfig = { defaults: () => ({}) } as unknown as Schema<never>;
 
@@ -71,7 +77,7 @@ export function Explainer<I, O, C>(props: ExplainerProps<I, O, C>) {
 function ExplainerBody<I, O, C>({
   scene,
   schema,
-  duration,
+  duration: length,
   aspect = 0.4,
   draw,
   format,
@@ -84,6 +90,7 @@ function ExplainerBody<I, O, C>({
   const resolved = useMemo(() => (schema ? resolveConfigSchema(schema) : null), [schema]);
   const [config, setConfig] = useState<C>(() => s.defaults());
   const built = useMemo(() => scene(config), [scene, config]);
+  const duration = typeof length === 'function' ? length(config) : length;
   const player = useMemo(() => {
     const page = document.title.replace(/^blits: /, '');
     const voices = built.voices(config).map((v) => v.name);
@@ -102,11 +109,24 @@ function ExplainerBody<I, O, C>({
     const voices = built.voices(config);
     // A scene that cues its voices from events still needs something to scrub along.
     if (voices.length === 0) return [{ name: '', color: '', weights: [1, 1] }];
-    return voices.map((v, i) => ({
-      name: v.name,
-      color: v.color,
-      ...(courses[i] ?? { weights: [] }),
-    }));
+    const byTrack = new Map<string, Track>();
+    voices.forEach((v, i) => {
+      const course = courses[i] ?? { weights: [] };
+      const key = v.track ?? v.name;
+      const held = byTrack.get(key);
+      if (!held) {
+        byTrack.set(key, { name: key, color: v.color, ...course });
+        return;
+      }
+      // Voices sharing a track show as one: the larger weight at each time, and no channel line,
+      // since that line belongs to one voice.
+      byTrack.set(key, {
+        name: key,
+        color: held.color,
+        weights: held.weights.map((w, k) => Math.max(w, course.weights[k] ?? 0)),
+      });
+    });
+    return [...byTrack.values()];
   }, [built, config, duration]);
 
   const [open, setOpen] = useState(() => {
@@ -126,14 +146,15 @@ function ExplainerBody<I, O, C>({
 
   const [repeat, setRepeat] = useState<Repeat>(() => {
     try {
-      return localStorage.getItem(REPEAT_KEY) === 'loop' ? 'loop' : 'boomerang';
+      const kept = localStorage.getItem(REPEAT_KEY);
+      return REPEATS.find((r) => r === kept) ?? 'boomerang';
     } catch {
       return 'boomerang';
     }
   });
   const flip = () =>
     setRepeat((was) => {
-      const next = was === 'loop' ? 'boomerang' : 'loop';
+      const next = REPEATS[(REPEATS.indexOf(was) + 1) % REPEATS.length] ?? 'boomerang';
       try {
         localStorage.setItem(REPEAT_KEY, next);
       } catch {}
@@ -159,8 +180,14 @@ function ExplainerBody<I, O, C>({
     let id = requestAnimationFrame(function tick(now) {
       const dt = Math.min(now - last, 100);
       last = now;
-      if (repeat === 'loop') way.current = 1;
+      if (repeat !== 'boomerang') way.current = 1;
       let next = at.current + dt * way.current;
+      if (next >= duration && repeat === 'once') {
+        at.current = duration;
+        setT(duration);
+        setPlaying(false);
+        return;
+      }
       if (next >= duration && repeat === 'loop') next %= duration;
       else if (next >= duration) {
         way.current = -1;
@@ -214,7 +241,15 @@ function ExplainerBody<I, O, C>({
   return (
     <figure className="explainer">
       <div className="explainer-stage">
-        <button type="button" className="stage-control" onClick={() => setPlaying(!running)}>
+        <button
+          type="button"
+          className="stage-control"
+          onClick={() => {
+            // Played once to the end, Play starts it over.
+            if (!running && repeat === 'once' && at.current >= duration) setT(0);
+            setPlaying(!running);
+          }}
+        >
           {running ? 'Pause' : playing ? 'Paused — focus to resume' : 'Play'}
         </button>
         <canvas
@@ -247,12 +282,10 @@ function ExplainerBody<I, O, C>({
         <button
           type="button"
           className="repeat-toggle"
-          title={
-            repeat === 'loop' ? 'Plays to the end, then starts over' : 'Plays to the end, then back'
-          }
+          title={REPEAT_SHOWN[repeat].title}
           onClick={flip}
         >
-          {repeat === 'loop' ? '↻ Loop' : '⇄ Boomerang'}
+          {REPEAT_SHOWN[repeat].label}
         </button>
         <output className="explainer-time">{(t / 1000).toFixed(2).padStart(5, ' ')} s</output>
       </div>

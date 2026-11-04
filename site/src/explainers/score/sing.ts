@@ -19,7 +19,7 @@ function engine(): AudioEngine {
   if (shared) return shared;
   const e = createAudioEngine({ buses: ['choir'] });
   const inserts = e.bus('choir').inserts;
-  inserts.add(createDelayEffect(e.context, { time: 420, feedback: 0.42, mix: 0.3 }));
+  inserts.add(createDelayEffect(e.context, { time: 420, feedback: 0.25, mix: 0.18 }));
   const impulse = impulseResponse(e.context, 6, { decayDb: 60 });
   inserts.add(createReverbEffect(e.context, { impulse, mix: 0.65 }));
   e.bus('choir').setGain(0.8);
@@ -27,9 +27,23 @@ function engine(): AudioEngine {
   return e;
 }
 
+/** Where a viewer's choice of sound on or off is kept. */
+const SOUND_KEY = 'blits-score-sound';
+
+/** Whether the viewer last left sound on. */
+export function soundWanted(): boolean {
+  try {
+    return localStorage.getItem(SOUND_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Makes the engine inside the click that turns sound on. A browser starts an `AudioContext` only
- * within a user gesture, and the explainer builds its player after the click, outside it.
+ * Watches the checkbox labeled `label`: it keeps the viewer's choice, and makes the engine inside
+ * the click that turns sound on. A browser starts an `AudioContext` only within a user gesture, and
+ * the explainer builds its player after the click, outside it. Sound left on from a last visit
+ * starts at the first click or key on the page instead.
  */
 export function primeOn(label: string): void {
   if (typeof document === 'undefined') return;
@@ -38,21 +52,27 @@ export function primeOn(label: string): void {
     (event) => {
       const box = event.target;
       if (!(box instanceof HTMLInputElement) || box.getAttribute('aria-label') !== label) return;
-      if (box.checked) void engine().unlock().catch(() => undefined);
+      try {
+        localStorage.setItem(SOUND_KEY, box.checked ? 'on' : 'off');
+      } catch {}
+      if (box.checked)
+        void engine()
+          .unlock()
+          .catch(() => undefined);
     },
     { capture: true },
   );
 }
 
-/** A sung "ah": detuned saws through a low, slightly peaked filter, swelling in and out. */
+/** A sung "ah": detuned saws through a soft low-pass filter, swelling in and out. */
 const AH: Omit<NoteOptions, 'pitch'> = {
   wave: 'sawtooth',
-  filter: { type: 'lowpass', frequency: 700, Q: 2 },
+  filter: { type: 'lowpass', frequency: 1600, Q: 1.2 },
   envelope: { attack: 70, decay: 200, sustain: 0.75, release: 450 },
   bus: 'choir',
 };
 
-/** The voices one note is sung by: the lead alone, the chorus doubled an octave down, both spread. */
+/** The voices one hit is sounded by: a click, a chord on the organ, or the tune in a detuned pair with its harmony. */
 function sing(e: AudioEngine, n: Note, when: number, sounding: Set<Voice>): Voice[] {
   const ms = Math.max(60, n.ms * 0.92);
   const play = (o: NoteOptions): Voice => {
@@ -67,10 +87,11 @@ function sing(e: AudioEngine, n: Note, when: number, sounding: Set<Voice>): Voic
     if (!ended) sounding.add(v);
     return v;
   };
+  const [tune = 60, ...rest] = n.midi;
   if (n.part === 'count') {
     return [
       play({
-        pitch: n.pitch,
+        pitch: { midi: tune },
         wave: 'triangle',
         duration: 40,
         gain: 0.25,
@@ -80,20 +101,27 @@ function sing(e: AudioEngine, n: Note, when: number, sounding: Set<Voice>): Voic
       }),
     ];
   }
-  const parts =
-    n.part === 'lead'
-      ? [
-          { detune: -6, pan: -0.2, gain: 0.22 },
-          { detune: 6, pan: 0.2, gain: 0.22 },
-        ]
-      : [
-          { detune: -10, pan: -0.6, gain: 0.2 },
-          { detune: 0, pan: 0, gain: 0.2 },
-          { detune: 10, pan: 0.6, gain: 0.2 },
-          { detune: -1200, pan: -0.3, gain: 0.26 },
-          { detune: -1195, pan: 0.3, gain: 0.26 },
-        ];
-  return parts.map((p) => play({ ...AH, ...p, pitch: n.pitch, duration: ms, when }));
+  if (n.part === 'chords') {
+    // A soft organ under the singing: the root low, the triad above it, slow to swell.
+    return n.midi.map((midi, i) =>
+      play({
+        pitch: { midi },
+        wave: [1, 0.4, 0.2, 0.1],
+        gain: i === 0 ? 0.12 : 0.07,
+        pan: [0, -0.35, 0.35, 0][i] ?? 0,
+        duration: ms,
+        when,
+        bus: 'choir',
+        envelope: { attack: 160, decay: 300, sustain: 0.8, release: 600 },
+      }),
+    );
+  }
+  const parts = [
+    { midi: tune, detune: -6, pan: -0.3, gain: 0.2 },
+    { midi: tune, detune: 6, pan: 0.3, gain: 0.2 },
+    ...rest.map((midi, i) => ({ midi, detune: i % 2 === 0 ? -4 : 4, pan: 0.4, gain: 0.16 })),
+  ];
+  return parts.map(({ midi, ...p }) => play({ ...AH, ...p, pitch: { midi }, duration: ms, when }));
 }
 
 /**

@@ -7,6 +7,8 @@ export interface VoiceDef<I, O> {
   name: string;
   /** A CSS color, or one of the voice slots, `v1`..`v5`. */
   color: string;
+  /** The track it shows on, where several voices share one. Default: its own, by `name`. */
+  track?: string;
   spec: VoiceSpec<I, O>;
 }
 

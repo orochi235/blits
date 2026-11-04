@@ -119,8 +119,9 @@ export class Player<I, O, C> {
   at(t: number): Frame<I, O> {
     const target = Math.max(0, Math.floor(t / FRAME + 1e-6));
     this.own = true;
-    // Played on in time is a frame or a few ahead; anything else is a jump.
-    this.attached?.moving?.(target > this.k && target - this.k <= 4);
+    // Played on in time is a frame or a few ahead; anything else is a jump. Asked for the frame it
+    // is on, which a display faster than the frame grid does, the player has not moved at all.
+    if (target !== this.k) this.attached?.moving?.(target > this.k && target - this.k <= 4);
     try {
       if (target < this.k) this.back(target);
       while (this.k < target) {

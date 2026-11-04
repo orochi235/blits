@@ -14,7 +14,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <Score client:only="react" />
 <Source of="Score.tsx" />
 
-Every voice has five **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. Above, a lead sings each line to the tune of "Deck the Halls", and a chorus answers it. Each line is one voice, a bar on its part's lane, and its syllables are the subjects it lights.
+Every voice has five **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. Above, a lead sings each line to the tune of "Deck the Halls", a chorus answers it, and chords play under both. Each line is one voice, a bar on its part's lane, and its syllables are the subjects it lights.
 
 ## Placing a voice
 
@@ -25,6 +25,7 @@ m.cue({ patch: countIn, name: 'count-in', start: 300, loop: false });
 m.cue({ patch: line1, name: 'line 1', loop: false, anchor: { start: { after: 'count-in' } } });
 m.cue({ patch: answer, name: 'fa-la 1', loop: false, anchor: { start: { after: 'line 1' } } });
 m.cue({ patch: line2, name: 'line 2', loop: false, anchor: { start: { after: 'fa-la 1' } } });
+m.cue({ patch: chords1, name: 'chords 1', loop: false, anchor: { start: { with: 'line 1' } } });
 ```
 
 Nothing above says when line 2 starts. It waits on the answer before it, which waits on line 1, so a change anywhere up the chain moves everything after it. Give the answers a `by` and each comes in that much after its line ends.
