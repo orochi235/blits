@@ -8,6 +8,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- A shader patch can declare per-voice `tables`, read in WGSL as `table_<name>(x, y)` and in `at` as
+  `params.<name>(x, y)`, with contents bound through `with`.
 - The `gpu` engine folds `angle()` channels, each value taken the short way round as on the CPU,
   and a role's members blended the short way too.
 - The `gpu` engine folds `wave()` voices.

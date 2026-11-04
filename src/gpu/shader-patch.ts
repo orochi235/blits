@@ -13,7 +13,7 @@ export type Scalar = 'f32';
  *
  * @category gpu
  */
-export interface ShaderSpec<I, O, P extends Record<string, number>> {
+export interface ShaderSpec<I, O, P extends Record<string, number>, T extends string = never> {
   /**
    * WGSL statements setting fields of `out`, one per channel in `writes`, from `phase`, `pass_index`,
    * `subject` (the fields named in `fields`), and `params` (those named in `params`).
@@ -25,8 +25,21 @@ export interface ShaderSpec<I, O, P extends Record<string, number>> {
   fields?: Record<string, Scalar>;
   /** Per-voice values the shader reads, bound with `with`. */
   params?: { [K in keyof P]: Scalar };
-  /** The same math in JS, for every path that runs on the CPU. Handed the parameter values last. */
-  at(phase: number, subject: I, setting: Setting<void, unknown>, params: P): Partial<O>;
+  /**
+   * Per-voice tables the shader reads, their contents bound with `with` as `width * height` numbers,
+   * row-major (row `y` starts at `y * width`). WGSL reads one as `table_<name>(x, y)` and `at` as
+   * `params.<name>(x, y)`; both floor their coordinates and give 0 outside `[0, width)` by
+   * `[0, height)`. Only the contents are per-voice: re-giving them through `with` does not
+   * recompile the kernel.
+   */
+  tables?: { [K in T]: { width: number; height: number } };
+  /** The same math in JS, for every path that runs on the CPU. Handed the parameter and table values last. */
+  at(
+    phase: number,
+    subject: I,
+    setting: Setting<void, unknown>,
+    params: P & { [K in T]: (x: number, y: number) => number },
+  ): Partial<O>;
   writes: readonly (keyof O & string)[];
 }
 
@@ -36,6 +49,7 @@ export interface Shader {
   readonly helpers: string;
   readonly fields: readonly string[];
   readonly params: readonly string[];
+  readonly tables: readonly { name: string; width: number; height: number }[];
   readonly writes: readonly string[];
 }
 
@@ -44,6 +58,8 @@ export interface GpuDescriptor {
   readonly shader: Shader;
   readonly runner: Runner;
   readonly values: readonly number[];
+  /** Each declared table's contents, in `shader.tables` order, placed after `values`. */
+  readonly tables: readonly Float32Array[];
 }
 
 /**
@@ -52,8 +68,9 @@ export interface GpuDescriptor {
  *
  * @category gpu
  */
-export interface ShaderPatch<I, O, P extends Record<string, number>> extends Patch<I, O> {
-  with(values: P): ShaderPatch<I, O, P>;
+export interface ShaderPatch<I, O, P extends Record<string, number>, T extends string = never>
+  extends Patch<I, O> {
+  with(values: P & { [K in T]: ArrayLike<number> }): ShaderPatch<I, O, P, T>;
 }
 
 const descriptors = new WeakMap<object, GpuDescriptor>();
@@ -66,7 +83,15 @@ export function gpuDescriptor(patch: object): GpuDescriptor | undefined {
 /** A shader patch's runner and parameter values; undefined for a patch `shaderPatch` did not make. */
 export function shaderPack(patch: object): Packed | undefined {
   const d = descriptors.get(patch);
-  return d === undefined ? undefined : { runner: d.runner, values: Float32Array.from(d.values) };
+  if (d === undefined) return undefined;
+  const values = new Float32Array(d.values.length + d.tables.reduce((n, t) => n + t.length, 0));
+  values.set(d.values);
+  let at = d.values.length;
+  for (const t of d.tables) {
+    values.set(t, at);
+    at += t.length;
+  }
+  return { runner: d.runner, values };
 }
 
 let made = 0;
@@ -78,6 +103,56 @@ function check(kind: string, names: readonly string[]): void {
     if (!IDENT.test(n) || n.startsWith('__'))
       throw new Error(`blits: ${kind} name ${JSON.stringify(n)} is not a WGSL identifier`);
 }
+
+/** The `)` closing the `(` at `open`, and the top-level argument texts between them. */
+function callArgs(src: string, open: number): { args: string[]; end: number } {
+  const args: string[] = [];
+  let depth = 0;
+  let from = open + 1;
+  for (let i = open; i < src.length; i++) {
+    const c = src[i];
+    if (c === '(') depth++;
+    else if (c === ')' && --depth === 0) {
+      args.push(src.slice(from, i));
+      return { args, end: i + 1 };
+    } else if (c === ',' && depth === 1) {
+      args.push(src.slice(from, i));
+      from = i + 1;
+    }
+  }
+  throw new Error('blits: a table call in the WGSL has no closing parenthesis');
+}
+
+/**
+ * Rewrites each `table_<name>(x, y)` into a call of the shared `blits_table`, with the table's
+ * place in `values` and its size written in; helpers are shared across runners, so a table
+ * cannot be a function of its own.
+ */
+function withTables(
+  wgsl: string,
+  tables: readonly { name: string; width: number; height: number; at: number }[],
+): string {
+  if (tables.length === 0) return wgsl;
+  const call = /\btable_([A-Za-z_][A-Za-z0-9_]*)\s*\(/g;
+  let out = '';
+  let last = 0;
+  for (let m = call.exec(wgsl); m !== null; m = call.exec(wgsl)) {
+    const t = tables.find((x) => x.name === m[1]);
+    if (t === undefined) continue;
+    const { args, end } = callArgs(wgsl, m.index + m[0].length - 1);
+    if (args.length !== 2) throw new Error(`blits: table_${t.name} takes two arguments, x and y`);
+    const [x, y] = args.map((a) => withTables(a.trim(), tables));
+    out += `${wgsl.slice(last, m.index)}blits_table(base + ${t.at}u, ${t.width}u, ${t.height}u, f32(${x}), f32(${y}))`;
+    last = end;
+    call.lastIndex = end;
+  }
+  return out + wgsl.slice(last);
+}
+
+const TABLE_HELPER = `fn blits_table(at: u32, w: u32, h: u32, x: f32, y: f32) -> f32 {
+  if (!(x >= 0.0 && x < f32(w) && y >= 0.0 && y < f32(h))) { return 0.0; }
+  return values[at + u32(floor(y)) * w + u32(floor(x))];
+}`;
 
 /**
  * A patch written twice: as WGSL, which the `gpu` engine runs on the GPU, and as a JS `at`, which
@@ -91,45 +166,92 @@ function check(kind: string, names: readonly string[]): void {
  *
  * @category gpu
  */
-export function shaderPatch<I, O, P extends Record<string, number> = Record<string, never>>(
-  duration: number,
-  spec: ShaderSpec<I, O, P>,
-): ShaderPatch<I, O, P> {
+export function shaderPatch<
+  I,
+  O,
+  P extends Record<string, number> = Record<never, never>,
+  T extends string = never,
+>(duration: number, spec: ShaderSpec<I, O, P, T>): ShaderPatch<I, O, P, T> {
   const fields = Object.keys(spec.fields ?? {});
   const params = Object.keys(spec.params ?? {});
   check('field', fields);
   check('parameter', params);
   check('channel', spec.writes);
+  const declared = Object.entries<{ width: number; height: number }>(spec.tables ?? {});
+  check(
+    'table',
+    declared.map(([n]) => n),
+  );
+  let end = params.length;
+  const placed = declared.map(([name, { width, height }]) => {
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1)
+      throw new Error(`blits: the table ${name} needs a whole width and height of at least 1`);
+    const t = { name, width, height, at: end };
+    end += width * height;
+    return t;
+  });
   const shader: Shader = {
     wgsl: spec.wgsl,
     helpers: spec.helpers ?? '',
     fields,
     params,
+    tables: declared.map(([name, { width, height }]) => ({ name, width, height })),
     writes: spec.writes,
   };
   const runner: Runner = {
     key: `shader:${made++}`,
-    helpers: shader.helpers,
-    wgsl: [...params.map((n, k) => `let params_${n} = values[base + ${k}u];`), spec.wgsl].join(' '),
+    helpers: placed.length === 0 ? shader.helpers : [shader.helpers, TABLE_HELPER],
+    wgsl: [
+      ...params.map((n, k) => `let params_${n} = values[base + ${k}u];`),
+      withTables(spec.wgsl, placed),
+    ].join(' '),
     writes: spec.writes,
     fields,
   };
-  const make = (p: P): ShaderPatch<I, O, P> => {
-    const patch: ShaderPatch<I, O, P> = {
+  const make = (p: P, contents: Float32Array[]): ShaderPatch<I, O, P, T> => {
+    const lookups = Object.fromEntries(
+      placed.map((t, k) => [
+        t.name,
+        (x: number, y: number) => {
+          const cx = Math.floor(x);
+          const cy = Math.floor(y);
+          if (!(cx >= 0 && cx < t.width && cy >= 0 && cy < t.height)) return 0;
+          return contents[k]?.[cy * t.width + cx] ?? 0;
+        },
+      ]),
+    );
+    const args = { ...p, ...lookups } as P & { [K in T]: (x: number, y: number) => number };
+    const patch: ShaderPatch<I, O, P, T> = {
       form: 'fn',
       duration,
       writes: spec.writes,
       at: (phase, subject, setting) =>
-        spec.at(phase, subject, setting as Setting<void, unknown>, p),
-      with(next: P) {
+        spec.at(phase, subject, setting as Setting<void, unknown>, args),
+      with(next) {
         for (const n of params)
           if (typeof next[n] !== 'number')
             throw new Error(`blits: with() needs a number for the parameter ${n}`);
-        return make(next);
+        const given = placed.map((t) => {
+          const v = (next as Record<string, ArrayLike<number> | undefined>)[t.name];
+          if (v === undefined || v.length !== t.width * t.height)
+            throw new Error(
+              `blits: with() needs ${t.width} × ${t.height} numbers for the table ${t.name}`,
+            );
+          return Float32Array.from(v);
+        });
+        return make(next, given);
       },
     };
-    descriptors.set(patch, { shader, runner, values: params.map((n) => p[n] ?? 0) });
+    descriptors.set(patch, {
+      shader,
+      runner,
+      values: params.map((n) => p[n] ?? 0),
+      tables: contents,
+    });
     return patch;
   };
-  return make({} as P);
+  return make(
+    {} as P,
+    placed.map((t) => new Float32Array(t.width * t.height)),
+  );
 }
