@@ -4,5 +4,10 @@ import type { Voice } from './voice.js';
 export function delayOf<I, O>(voice: Voice<I, O>, subject: I): number {
   const known = voice.named?.delays?.get(subject);
   if (known !== undefined) return known;
+  const a = voice.asked;
+  if (a !== null) {
+    const d = a.delay(subject);
+    if (d !== undefined) return d;
+  }
   return voice.spec.stagger ? voice.spec.stagger(subject) : 0;
 }
