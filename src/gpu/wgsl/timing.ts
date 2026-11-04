@@ -37,12 +37,12 @@ fn blits_clock(raw: f32, flags: u32, start: f32, span: f32, duration: f32, pass_
   var e = raw;
   var at_start = false;
   if (!beginless) {
-    if (finite && raw > span && (flags & ${Flag.HIDES_PAST}u) != 0u) { return hidden; }
     if (no_clock || raw < start) {
       e = start;
       at_start = true;
-    } else if (finite && raw > span && (flags & ${Flag.FREEZES_AFTER}u) != 0u) {
-      e = span;
+    } else if (finite && raw > span) {
+      if ((flags & ${Flag.HIDES_PAST}u) != 0u) { return hidden; }
+      if ((flags & ${Flag.FREEZES_AFTER}u) != 0u) { e = span; }
     }
   }
   if (!(duration > 0.0)) { return Clock(true, e, 0.0, 0.0); }
@@ -64,6 +64,7 @@ fn blits_clock(raw: f32, flags: u32, start: f32, span: f32, duration: f32, pass_
  */
 export const FADE_WGSL = /* wgsl */ `
 fn blits_fade_in(end: f32, shown: f32, fade_in: f32, ease_at: u32) -> f32 {
+  if (!(fade_in > 0.0)) { return 1.0; }
   let u = (end - shown) / fade_in;
   if (u >= 1.0) { return 1.0; }
   let c = max(0.0, u);

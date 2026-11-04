@@ -1,11 +1,12 @@
-import { fadeInAt, passAt, phaseAt, phaseBefore } from '../../src/clock.js';
+import { fadeInAt, passAt } from '../../src/clock.js';
+import { phaseOf } from '../../src/contribution.js';
 import { CURVE_WIDTH, type Curve, curve, curveData } from '../../src/easing.js';
 import type { GpuDevice } from '../../src/gpu/webgpu.js';
 import { EASING_WGSL } from '../../src/gpu/wgsl/easing.js';
 import { CLOCK_WGSL, FADE_WGSL, Flag, NONE } from '../../src/gpu/wgsl/timing.js';
 import type { Easing } from '../../src/index.js';
 import { Voice } from '../../src/voice.js';
-import { close, closeNear, readBack, test } from './harness.js';
+import { close, closeNear, closeNearAll, nudge, readBack, test } from './harness.js';
 
 /** Runs `call` (a WGSL expression of `ins[IN * i ..]`, giving `OUT` f32s) once per input row. */
 async function run(
@@ -57,19 +58,7 @@ async function run(
   return readBack(device, c, 0, total * OUT * 4);
 }
 
-const f32 = new Float32Array(1);
-const u32 = new Uint32Array(f32.buffer);
-/**
- * The f32 one step from `t` toward `dir`'s sign, as WGSL sees it: it may flush subnormals, so the
- * steps either side of 0 are the least normals.
- */
-function step(t: number, dir: number): number {
-  f32[0] = t;
-  if (f32[0] === 0) return dir * 2 ** -126;
-  u32[0] = (u32[0] as number) + ((f32[0] as number) > 0 === dir > 0 ? 1 : -1);
-  return Math.abs(f32[0] as number) < 2 ** -126 ? 0 : (f32[0] as number);
-}
-const around = (t: number) => [step(t, -1), Math.fround(t), step(t, 1)];
+const around = (t: number) => [nudge(t, -1), Math.fround(t), nudge(t, 1)];
 
 interface Case {
   duration: number;
@@ -98,7 +87,7 @@ function reference(c: Case, raw: number) {
   return {
     shows: true,
     elapsed: e - c.B,
-    phase: e < 0 ? phaseBefore(e, c.duration) : phaseAt(e, c.duration, c.passes),
+    phase: phaseOf(e, c.duration, c.passes),
     pass: passAt(e, c.duration, c.passes),
   };
 }
@@ -142,7 +131,8 @@ test('blits_clock matches before, shownAt, phaseAt, passAt and phaseBefore', asy
     if (c.duration > 0) for (let k = -2; k <= 3; k++) edges.push(k * c.duration);
     for (const e of edges)
       for (const raw of around(e)) samples.push({ c, raw, near: true, noClock: false });
-    samples.push({ c, raw: 0, near: false, noClock: true });
+    for (const raw of [0, ...(finite ? [span + 1] : [])])
+      samples.push({ c, raw, near: false, noClock: true });
   }
 
   const IN = 8;
@@ -185,18 +175,16 @@ test('blits_clock matches before, shownAt, phaseAt, passAt and phaseBefore', asy
       const shows = got[i * 4] === 1;
       if (shows !== want.shows) throw new Error(`${what}: GPU shows ${shows}, CPU ${want.shows}`);
       if (!shows) return;
-      const fields = ['elapsed', 'phase', 'pass'] as const;
-      const matches = (w: ReturnType<typeof at>) => {
-        for (const [k, name] of fields.entries())
-          close(got[i * 4 + 1 + k] as number, w[name], `${what} ${name}`);
+      const g = [1, 2, 3].map((k) => got[i * 4 + k] as number);
+      const read = (r: ReturnType<typeof at>) => [r.elapsed, r.phase, r.pass];
+      const match = (a: readonly number[], w: readonly number[]) => {
+        close(a[0] as number, w[0] as number, `${what} elapsed`);
+        close(a[1] as number, w[1] as number, `${what} phase`);
+        // An integer f32 holds exactly here, where `close` would let a pass off by 100 through.
+        if (a[2] !== w[2]) throw new Error(`${what} pass: GPU ${a[2]}, CPU ${w[2]}`);
       };
-      // Near a branch, one reading one f32 step either way may explain all three instead.
-      for (const t of s.near ? [step(s.raw, -1), step(s.raw, 1)] : [])
-        try {
-          matches(at(t));
-          return;
-        } catch {}
-      matches(want);
+      if (s.near) closeNearAll(g, (t) => read(at(t)), s.raw, what, match);
+      else match(g, read(want));
     } catch (e) {
       failures++;
       if (errors.length < 20) errors.push((e as Error).message);
