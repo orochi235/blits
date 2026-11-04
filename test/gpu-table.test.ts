@@ -67,6 +67,16 @@ describe('voice table', () => {
     expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(false);
   });
 
+  it('asks again whether a voice reaches every subject when the list changes', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, subjects: [cells[0] as C] });
+    m.sync(0);
+    const one = [cells[0] as C];
+    expect(eligibility(mixerOf(m), one).channels.has('y')).toBe(true);
+    expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(false);
+    expect(eligibility(mixerOf(m), one).channels.has('y')).toBe(true);
+  });
+
   it('keeps a channel whose rule has no WGSL on the CPU', () => {
     const m = mix<C, { r: number[] }>(kit({ r: quat() }));
     m.sync(0);

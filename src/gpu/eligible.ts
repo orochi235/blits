@@ -18,6 +18,22 @@ const PLAYING = new Set(['live', 'frozen', 'fading']);
 
 const lookups = new WeakMap<object, ChannelLookup>();
 
+/** Per voice's `named`: whether it holds every subject of the list last asked about. It never changes. */
+const covered = new WeakMap<object, { list: readonly unknown[]; all: boolean }>();
+
+function coversAll<I>(named: { has(subject: I): boolean }, subjects: readonly I[]): boolean {
+  const had = covered.get(named);
+  if (had?.list === subjects) return had.all;
+  let all = true;
+  for (const s of subjects)
+    if (!named.has(s)) {
+      all = false;
+      break;
+    }
+  covered.set(named, { list: subjects, all });
+  return all;
+}
+
 /** The WGSL of each of the mix's channels whose rule has some, one map per mix. */
 export function codesOf<I, O>(mix: Mixer<I, O>): ChannelLookup {
   let codes = lookups.get(mix);
@@ -56,8 +72,7 @@ function why<I, O>(
     return 'its patch keeps state';
   if (voice.parts !== null || voice.parted !== null) return 'it is parting from subjects';
   if (voice.bound !== null) return 'it is bounded';
-  const named = voice.named;
-  if (named !== null) for (const s of subjects) if (!named.has(s)) return 'it misses a subject';
+  if (voice.named !== null && !coversAll(voice.named, subjects)) return 'it misses a subject';
   return null;
 }
 
