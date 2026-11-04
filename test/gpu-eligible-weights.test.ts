@@ -2,6 +2,7 @@ import { createHistory } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import type { Eligibility } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
+import { SENDS } from '../src/gpu/weight.js';
 import { level, type Mix, mix, slew } from '../src/index.js';
 import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
 
@@ -116,10 +117,24 @@ describe('gpu eligibility of owners and weight signals', () => {
     keeps(elig(m), 'an owner above it is weighted by an input that does not report its changes');
   });
 
-  it('keeps a per-subject signal on the CPU until reads land', () => {
+  it('folds a voice weighted per subject', () => {
     const m = mix<C, P>(K);
     m.cue({ patch: wave, subjects: cells, weight: (c: C) => c.x });
     m.sync(0);
-    keeps(elig(m), 'its weight signal is read per subject, which the gpu engine does not fold yet');
+    const e = elig(m);
+    expect(e.channels.has('y')).toBe(true);
+    expect(e.reasons).toEqual([]);
+  });
+
+  it('keeps a voice whose signal a read refused on the CPU', () => {
+    const m = mix<C, P>(K);
+    const signal = (c: C) => c.x;
+    m.cue({ patch: wave, subjects: cells, weight: signal });
+    m.sync(0);
+    const refused = new WeakMap<object, string>([[signal, SENDS]]);
+    keeps(
+      elig(m, cells, refused),
+      'its weight signal sends events, which only a probe on the CPU delivers',
+    );
   });
 });

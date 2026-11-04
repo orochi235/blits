@@ -4,20 +4,22 @@ import type { Voice } from '../voice.js';
 import { production, warnOnce } from '../warn.js';
 import { Answers, varies } from './answers.js';
 import { Buffers } from './buffers.js';
-import { type Built, compile, layoutOf } from './compile.js';
+import { type Built, compile } from './compile.js';
 import { codesOf, eligibility, within } from './eligible.js';
-import { GROUP, MAX_ROLES } from './kernel.js';
+import { MAX_ROLES } from './kernel.js';
 import { Met } from './met.js';
 import type { Mirror } from './mirror.js';
 import { Mirrors } from './mirrors.js';
+import { Reads } from './reads.js';
 import { type Entry, Regions } from './region.js';
 import { type Packed, packOf, type Runner, unpack } from './runner.js';
+import { submit } from './submit.js';
 import { elapsedOf, type Slot, voiceTable } from './table.js';
 import { sizeOf, Timings } from './timings.js';
 import { twins } from './twins.js';
 import { unreadOf } from './unread.js';
-import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT, Usage } from './webgpu.js';
-import { type Weighs, weighsOf } from './weight.js';
+import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT } from './webgpu.js';
+import { perSubject, type Weighs, weighsOf } from './weight.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
 /**
@@ -59,6 +61,7 @@ export class GpuSide<I> {
   private readonly mirrors = new Mirrors();
   private answers: Answers<I>;
   private readonly timings = new Timings();
+  private readonly reads = new Reads<I>();
   private readonly met: Met<I>;
   private readonly buffers: Buffers;
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
@@ -94,6 +97,7 @@ export class GpuSide<I> {
     this.outputs.clear();
     this.mirrors.clear();
     this.timings.close();
+    this.reads.clear();
     this.met.close();
   }
 
@@ -109,6 +113,7 @@ export class GpuSide<I> {
     this.mirrors.clear();
     this.answers.register(this.list);
     this.timings.clear();
+    this.reads.clear();
   }
 
   /**
@@ -137,7 +142,7 @@ export class GpuSide<I> {
     const mix = this.mix;
     const n = this.list.length;
     if (n === 0) return;
-    const e = eligibility(mix, this.answers);
+    const e = eligibility(mix, this.answers, this.reads.refused);
     const codes = codesOf(mix);
     const limit = this.device.limits?.maxStorageBufferBindingSize ?? STORAGE_LIMIT;
     within(
@@ -148,10 +153,15 @@ export class GpuSide<I> {
         const u = v as Voice<I, unknown>;
         const asks = varies(u as Voice<unknown, unknown>);
         const block = asks ? sizeOf(this.answers.of(u), (v.fade.in ?? 0) > 0) : 0;
-        return { values: p.values.length, persub: rows + block };
+        const reads = perSubject(v) ? n : 0;
+        return { values: p.values.length, persub: rows + block + reads };
       },
       limit,
     );
+    if (!this.reads.read(mix, e.voices as Voice<I, unknown>[], this.list, this.answers)) {
+      this.dispatch();
+      return;
+    }
     for (const r of e.reasons) {
       const key = `${(r.voice.patch.writes as readonly string[]).join(',')}: ${r.why}`;
       if (this.told.has(key)) continue;
@@ -200,7 +210,14 @@ export class GpuSide<I> {
       // A host reading only these buffers never samples, so the changes it made are committed here.
       const now = mix.now;
       const horizon = mix.horizonFor(v, 0, now);
-      const unread = unreadOf(mix, u, this.answers, this.timings, null, weighs[k] as Weighs);
+      const unread = unreadOf(
+        mix,
+        u,
+        this.answers,
+        this.timings,
+        this.reads.of(u),
+        weighs[k] as Weighs,
+      );
       if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread);
       else {
         const t = v.unstarted(now) && !v.holdsFirst ? Number.NaN : v.rawAt(now, 0);
@@ -223,6 +240,7 @@ export class GpuSide<I> {
     this.met.mark(e.voices as Voice<I, unknown>[]);
     const voices = e.voices as Voice<I, unknown>[];
     const timing = this.timings.place(mix, voices, this.answers, this.mirrors.length);
+    const reads = this.reads.place(voices, this.mirrors.length + this.timings.length);
     // Each fade curve's entry after every voice's, at `curves[k]` for voice k.
     const curves = voices.map((v) => {
       const c = this.timings.curveOf(v as Voice<unknown, unknown>);
@@ -233,12 +251,14 @@ export class GpuSide<I> {
     const placed = this.regions.frame(entries, limit / 4);
     const slots: Slot[] = runners.map((r, k) => {
       const c = curves[k];
+      const w = reads[k];
       return {
         runner: this.index.get(r.key) as number,
         values: placed.offsets[k] as number,
         sub: subs[k] as number,
         timing: timing[k],
         ...(c === undefined ? {} : { ease: placed.offsets[c] as number }),
+        ...(w === undefined ? {} : { weights: w }),
       };
     });
     const table = voiceTable(mix, e.voices, slots, weighs);
@@ -251,52 +271,30 @@ export class GpuSide<I> {
       return;
     }
     const k = b.kernel;
-    const buf = this.buffers;
-    buf.subjects(this.list, this.fieldsOf, k.fields);
-    const dev = this.device;
-    const t = buf.sized('table', table.rows.byteLength, Usage.STORAGE | Usage.COPY_DST);
-    const had = buf.of('values');
-    const v = buf.sized('values', this.regions.length * 4, Usage.STORAGE | Usage.COPY_DST);
-    const f = buf.sized('frame', 16, Usage.UNIFORM | Usage.COPY_DST);
-    const out = buf.sized('out', k.size * 4, Usage.STORAGE | Usage.COPY_SRC);
-    const hadSub = buf.of('persub');
-    const persub = buf.sized(
-      'persub',
-      (this.mirrors.length + this.timings.length) * 4,
-      Usage.STORAGE | Usage.COPY_DST,
+    const out = submit(
+      {
+        device: this.device,
+        buffers: this.buffers,
+        kernel: k,
+        pipeline: b.pipeline,
+        list: this.list,
+        fieldsOf: this.fieldsOf,
+        table,
+        regions: this.regions,
+        placed,
+        stale: this.stale,
+        mirrors: this.mirrors,
+        timings: this.timings,
+        reads: this.reads,
+      },
+      this.outputs,
     );
-    dev.queue.writeBuffer(t, 0, table.rows);
-    const data = this.regions.data;
-    if (this.stale || v !== had) {
-      if (this.regions.length > 0)
-        dev.queue.writeBuffer(v, 0, data.subarray(0, this.regions.length));
-      this.stale = false;
-    } else
-      for (const [from, to] of placed.changed)
-        dev.queue.writeBuffer(v, from, data.subarray(from / 4, to / 4));
-    this.mirrors.upload(dev, persub, persub !== hadSub);
-    this.timings.upload(dev, persub, persub !== hadSub);
-    dev.queue.writeBuffer(f, 0, new Uint32Array([table.count, n, 0, 0]));
-    const group = buf.bind(b.pipeline, layoutOf(dev));
-    const enc = dev.createCommandEncoder();
-    const pass = enc.beginComputePass();
-    pass.setPipeline(b.pipeline);
-    pass.setBindGroup(0, group);
-    pass.dispatchWorkgroups(Math.ceil(n / GROUP));
-    pass.end();
-    dev.queue.submit([enc.finish()]);
-    for (const o of k.outputs)
-      this.outputs.set(o.name, {
-        buffer: out,
-        offset: o.offset * 4,
-        stride: o.axes * 4,
-        axes: o.axes,
-      });
+    this.stale = false;
     if (production()) return;
     // Compares a sample of subjects with the CPU's fold, the first time each runner runs.
     const fresh = runners.filter((r) => !this.checked.has(r.key));
     if (fresh.length === 0) return;
     for (const r of fresh) this.checked.add(r.key);
-    twins(dev, mix, this.list, k, out, fresh[0] as Runner);
+    twins(this.device, mix, this.list, k, out, fresh[0] as Runner);
   }
 }

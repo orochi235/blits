@@ -20,10 +20,17 @@ export const wave = shaderPatch<C, P>(1000, {
 });
 export const cells = [{ x: 0 }, { x: 1 }];
 
-/** `eligibility` for `m`'s voices over `list`, with an `Answers` registered as the gpu side's is. */
-export function elig<O>(m: Mix<C, O>, list: readonly C[] = cells) {
+/**
+ * `eligibility` for `m`'s voices over `list`, with an `Answers` registered as the gpu side's is,
+ * and the signals its reads refused.
+ */
+export function elig<O>(
+  m: Mix<C, O>,
+  list: readonly C[] = cells,
+  refused?: WeakMap<object, string>,
+) {
   const mixer = mixerOf(m);
   const answers = new Answers<C>(mixer as unknown as Mixer<C, unknown>);
   answers.register(list);
-  return eligibility(mixer, answers);
+  return eligibility(mixer, answers, refused);
 }

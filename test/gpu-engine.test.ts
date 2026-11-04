@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Col } from '../src/gpu/columns.js';
 import { gpu, gpuOf, mixerOf } from '../src/gpu/engine.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import type { GpuBuffer, GpuDevice } from '../src/gpu/webgpu.js';
-import { kit, level, mix, spring, sum } from '../src/index.js';
+import { kit, level, mix, slew, spring, sum } from '../src/index.js';
 import { motionOf } from '../src/motion.js';
 
 interface C {
@@ -189,6 +189,42 @@ describe('gpu engine', () => {
     expect(d.write('table')?.[Col.WEIGHT]).toBe(0.25);
     side.channel('y');
     expect(d.dispatched()).toBe(2);
+  });
+
+  it("writes each subject's weight read after the other per-subject data", async () => {
+    const d = stub();
+    const cells = [{ x: 0 }, { x: 1 }];
+    const m = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: d.device }) });
+    m.sync(0);
+    m.cue({ patch: wave, subjects: cells, loop: true, weight: (c) => c.x + 0.5 });
+    const side = gpuOf(m);
+    side.subjects(cells, () => ({}));
+    side.channel('y');
+    await side.ready;
+    m.sync(16);
+    expect(side.channel('y')).not.toBeNull();
+    expect(Array.from(d.write('persub') ?? [])).toEqual([0.5, 1.5]);
+    expect(new Uint32Array((d.write('table') as Float32Array).buffer)[Col.WEIGHTS]).toBe(0);
+  });
+
+  it('keeps a voice weighted by a slew on the CPU from its first frame, unprobed', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const d = stub();
+    const cells = [{ x: 0 }, { x: 1 }];
+    const m = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: d.device }) });
+    m.sync(0);
+    m.cue({ patch: wave, subjects: cells, loop: true, weight: slew((c) => c.x, { riseMs: 100 }) });
+    const side = gpuOf(m);
+    side.subjects(cells, () => ({}));
+    expect(side.channel('y')).toBeNull();
+    await side.ready;
+    m.sync(16);
+    expect(side.channel('y')).toBeNull();
+    expect(d.dispatched()).toBe(0);
+    expect(warn).toHaveBeenCalledWith(
+      "blits: y: its weight signal keeps state for each subject, which only the CPU's records hold, so the gpu engine leaves it on the CPU",
+    );
+    warn.mockRestore();
   });
 
   it('plays on the CPU as mixer does while nothing asks for a channel', () => {

@@ -4,7 +4,7 @@ import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
 import { type ChannelLookup, packOf } from './runner.js';
-import { perSubject, weightWhy } from './weight.js';
+import { weightWhy } from './weight.js';
 import { type ChannelCode, codeFor } from './wgsl/channels.js';
 
 /** What can go on the GPU this frame, and why the rest cannot. */
@@ -76,8 +76,6 @@ function why<I, O>(
   if (voice.spec.from === 'current') return "it starts from the subject's current pose";
   const weight = weightWhy(mix, voice, refused);
   if (weight !== null) return weight;
-  if (perSubject(voice))
-    return 'its weight signal is read per subject, which the gpu engine does not fold yet';
   if (voice.patch.state !== undefined || voice.patch.step !== undefined)
     return 'its patch keeps state';
   if (voice.parts !== null || voice.parted !== null) return 'it is parting from subjects';

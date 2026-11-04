@@ -70,6 +70,13 @@ export const weighsOf = <I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Weighs => 
 const signalOf = <I, O>(voice: Voice<I, O>): Signal<unknown> | null =>
   typeof voice.spec.weight === 'function' ? (voice.spec.weight as Signal<unknown>) : null;
 
+/** Why a voice stays on the CPU whose weight signal keeps state per subject. */
+export const KEEPS =
+  "its weight signal keeps state for each subject, which only the CPU's records hold";
+
+/** Why a voice stays on the CPU whose weight signal sends events. */
+export const SENDS = 'its weight signal sends events, which only a probe on the CPU delivers';
+
 const isInput = (signal: Signal<unknown>): boolean =>
   (signal as { input?: boolean }).input === true;
 
@@ -91,8 +98,7 @@ export function weightWhy<I, O>(
       return "its weight signal is an input the mix's history records, which a seek plays back";
     if (isInput(signal) && !heard(signal))
       return 'its weight signal reads an input that does not report its changes';
-    if (!uniform(signal) && voice.keeping)
-      return "its weight signal keeps state for each subject, which only the CPU's records hold";
+    if (!uniform(signal) && voice.keeping) return KEEPS;
     const no = refused?.get(signal);
     if (no !== undefined) return no;
   }

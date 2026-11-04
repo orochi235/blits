@@ -1,9 +1,8 @@
-import { BOUND } from '../closed.js';
 import type { Motions } from '../motions.js';
 import { absent } from '../numbers.js';
 import { reading } from '../reading.js';
 import { RunFlag, type Segment } from '../stretch.js';
-import { BRANCH_SHIFT, Branch } from './wgsl/closed.js';
+import { putRun, rangesOf } from './run-row.js';
 
 const PENDING = RunFlag.PENDING;
 const OLDER = RunFlag.OLDER;
@@ -262,35 +261,8 @@ export class Mirror<I> {
     else this.put(row, flags, m.latest(s));
   }
 
-  /**
-   * Writes `seg` into `row`. A bounded glide's branch on each axis is decided here in f64, as the
-   * CPU decides it, and carried in the flags word: f32 could take a different one.
-   */
   private put(row: number, flags: number, seg: Segment): void {
-    const n = this.motions.n;
-    const law = this.motions.shape.law;
-    const rows = this.rows;
-    const o = row * this.stride;
-    let word = flags;
-    if (law[0] === BOUND) {
-      const tau = law[2] as number;
-      for (let i = 0; i < n; i++) {
-        const x0 = seg.x0[i] as number;
-        const goal = seg.to[i] as number;
-        const y0 = x0 - goal;
-        const over = x0 + (seg.v0[i] as number) * tau - goal;
-        const branch = over === 0 ? Branch.COAST : y0 * over > 0 ? Branch.BACK : Branch.CROSS;
-        word += branch * 2 ** (BRANCH_SHIFT + 2 * i);
-      }
-    }
-    rows[o] = seg.at - this.anchor;
-    rows[o + 1] = word;
-    rows[o + 2] = seg.ms;
-    for (let i = 0; i < n; i++) {
-      rows[o + 3 + i] = seg.x0[i] as number;
-      rows[o + 3 + n + i] = seg.v0[i] as number;
-      rows[o + 3 + 2 * n + i] = seg.to[i] as number;
-    }
+    putRun(this.rows, row * this.stride, this.motions, flags, seg, this.anchor);
   }
 
   /** The rows written since the last call, as sorted `[start, end)` byte ranges, touching ones joined. */
@@ -300,13 +272,7 @@ export class Mirror<I> {
       this.dirty.clear();
       return this.rows.length > 0 ? [[0, this.rows.byteLength]] : [];
     }
-    const out: [number, number][] = [];
-    const bytes = this.stride * 4;
-    for (const row of [...this.dirty].sort((a, b) => a - b)) {
-      const last = out[out.length - 1];
-      if (last !== undefined && last[1] === row * bytes) last[1] += bytes;
-      else out.push([row * bytes, (row + 1) * bytes]);
-    }
+    const out = rangesOf(this.dirty, this.stride * 4);
     this.dirty.clear();
     return out;
   }
