@@ -37,6 +37,9 @@ gives back any clock it holds.
     `scaleY`); any other channel is one plot per number.
     A plot is marked "read, not shown" when the app did not read the subject that frame, so the
     panel read it.
+  - **The plan**, above the plots: what the mix has scheduled around now, a lane per voice
+    `track` with each of its voices a bar on it, and a lane of its own for a voice with none. A
+    tick marks each of a voice's marks, and a dashed line each mark the host announced.
   - **◯ circles**, beside the voices: draws each bounded voice's circle (its `within`, or its
     `around` weight's) on the page, in the voice's hue. A bounded voice is marked ◯ in the list.
 

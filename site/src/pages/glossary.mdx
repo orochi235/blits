@@ -678,6 +678,17 @@ dots.cue({ patch: bob, loop: true, start: now + 500 }); // starts in half a seco
 
 In depth: [Time](../time/). Reference: [`Setting`](../state/#api-Setting).
 
+## `track`
+
+A voice's [`track`](VoiceSpec.track) names the row it plays on, so the voices sharing one read as one part: the lines a lead sings, the bars a drum pattern plays. A tool that draws the score gives each track one row, as the debug panel's plan and the site's explainers do. The mix never reads it, and it is not a [lane](#lane), which is something else. A voice carries one track; for a set of voices to pick out, use [tags](#tag).
+
+```ts
+song.cue({ patch: line1, name: 'line 1', track: 'lead', loop: false });
+song.cue({ patch: line2, name: 'line 2', track: 'lead', loop: false, anchor: { start: { after: 'line 1' } } });
+```
+
+In depth: [Score](../score/#tracks). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
 ## voice
 
 A voice is a [patch](#patch) playing: the patch plus a clock, a [weight](#weight), and the subjects it reaches. Two voices of the same patch are two clocks and two weights, and neither knows about the other. You start one with [`cue`](#cue) and steer it through its [handle](#handle).
