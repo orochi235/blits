@@ -127,7 +127,8 @@ describe('gpu eligibility', () => {
       return c.x * 100;
     };
     m.cue({ patch: wave, stagger: counted, loop: 2 });
-    m.cue({ patch: wave, target: counted, stagger: counted });
+    const reaches = (c: C) => counted(c) > 0;
+    m.cue({ patch: wave, target: reaches, stagger: counted });
     m.sync(0);
     const mixer = mixerOf(m);
     const answers = new Answers<C>(mixer as unknown as Mixer<C, unknown>);
