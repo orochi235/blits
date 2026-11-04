@@ -4,7 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## Unreleased
+## 0.9.0
+
+### Breaking
+
+- `@msb235/blits` is a peer at `^1.0.0`, where it was `^0.20.0`. Built and tested against engine
+  1.0.0; nothing here uses what that release changed.
+
+### Changed
 
 - Takes `@weasel-js/history`, `theme` and `ui` at 1.16.1, where they were 1.12.0.
 
