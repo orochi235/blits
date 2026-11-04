@@ -2,7 +2,7 @@ import { createHistory } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import type { Eligibility } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
-import { SENDS } from '../src/gpu/weight.js';
+import { SENDS, setReads } from '../src/gpu/weight.js';
 import { level, type Mix, mix, slew } from '../src/index.js';
 import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
 
@@ -136,5 +136,20 @@ describe('gpu eligibility of owners and weight signals', () => {
       elig(m, cells, refused),
       'its weight signal sends events, which only a probe on the CPU delivers',
     );
+  });
+
+  it('keeps a voice weighted per subject on the CPU while reads are off', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, subjects: cells, weight: (c: C) => c.x });
+    m.sync(0);
+    setReads(false);
+    try {
+      keeps(
+        elig(m),
+        'its weight signal is read per subject, which costs more on the GPU than folding it on the CPU',
+      );
+    } finally {
+      setReads(true);
+    }
   });
 });

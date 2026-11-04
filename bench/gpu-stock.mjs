@@ -19,34 +19,13 @@
 // ran under, appended to <out>.jsonl as the row finishes.
 //   node bench/gpu-stock.mjs --digest <out>.jsonl     medians and p95 from those records, and each
 //   part's median: the retargets, sync, the read (`pull`, or the dispatch), the wait for the GPU
-import { execFileSync } from 'node:child_process';
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { cpus, hostname, loadavg, totalmem } from 'node:os';
-import { build } from 'esbuild';
-import { chromium } from 'playwright';
-
-const FRAMES = Number(process.env.FRAMES ?? 120);
-const WARM = Number(process.env.WARM ?? 20);
-const arg = (name) => {
-  const i = process.argv.indexOf(name);
-  return i < 0 ? undefined : process.argv[i + 1];
-};
-const out = arg('--out');
+import { appendFileSync, writeFileSync } from 'node:fs';
+import { digest, digested, FRAMES, launch, ms, out, quantile, run, WARM } from './gpu-harness.mjs';
 
 const UPLOAD = process.env.UPLOAD === '1';
-const quantile = (xs, q) => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.floor(q * s.length))];
-};
-const ms = (x) => x.toFixed(3).padStart(9);
 
-const digest = arg('--digest');
-if (digest) {
-  const recs = readFileSync(digest, 'utf8')
-    .trim()
-    .split('\n')
-    .map((l) => JSON.parse(l));
+const recs = digested();
+if (recs) {
   if (recs[0]?.kind === 'upload') {
     console.log(
       'subjects   changed   ranges  span MB  ranges ms    span ms   whole ms    rule ms   (medians: issue + GPU wait)',
@@ -63,23 +42,7 @@ if (digest) {
         `${String(r.n).padStart(8)} ${`${r.pct}%`.padStart(9)} ${String(Math.round(quantile(r.counts, 0.5))).padStart(8)} ${(quantile(r.spans, 0.5) / 2 ** 20).toFixed(2).padStart(8)} ${med('ranges')}  ${med('span')}  ${med('whole')}  ${med(r.chosen ? 'chosen' : 'gaps')}`,
       );
     }
-    process.exit(0);
-  }
-  console.log(
-    'engine          subjects   median ms     p95 ms     max ms  frames   retarget       sync       read       wait',
-  );
-  for (const r of recs) {
-    const part = (k) =>
-      ms(
-        quantile(
-          r.parts.map((p) => p[k]),
-          0.5,
-        ),
-      );
-    console.log(
-      `${`${r.engine}${r.mix && r.mix !== 'full' ? `/${r.mix}` : ''}`.padEnd(14)} ${String(r.n).padStart(9)} ${ms(quantile(r.frames, 0.5))}  ${ms(quantile(r.frames, 0.95))}  ${ms(Math.max(...r.frames))}  ${String(r.frames.length).padStart(6)}  ${part(0)}  ${part(1)}  ${part(2)}  ${part(3)}`,
-    );
-  }
+  } else digest(recs, ['retarget', 'sync', 'read', 'wait']);
   process.exit(0);
 }
 
@@ -247,67 +210,12 @@ window.upload = async (n, pct, frames, warm) => {
 };
 `;
 
-const root = new URL('..', import.meta.url).pathname;
-const js = (
-  await build({
-    stdin: { contents: PAGE, resolveDir: root, loader: 'ts' },
-    bundle: true,
-    format: 'esm',
-    write: false,
-    // Production, as a shipped bundle runs: no development-mode twin checks or warnings.
-    define: { 'process.env.NODE_ENV': '"production"' },
-    logLevel: 'error',
-  })
-).outputFiles[0].text;
-// Cross-origin isolated, so performance.now() reads to 5 µs rather than 100.
-const server = createServer((req, res) => {
-  const headers = {
-    'cross-origin-opener-policy': 'same-origin',
-    'cross-origin-embedder-policy': 'require-corp',
-  };
-  if (req.url === '/bench.js')
-    return res.writeHead(200, { ...headers, 'content-type': 'text/javascript' }).end(js);
-  res
-    .writeHead(200, { ...headers, 'content-type': 'text/html' })
-    .end('<!doctype html><script type="module" src="/bench.js"></script>');
-});
-await new Promise((r) => server.listen(0, 'localhost', r));
-const browser = await chromium.launch({
-  headless: true,
-  channel: 'chromium',
-  args: ['--enable-unsafe-webgpu'],
-});
-let commit = 'unknown';
-try {
-  commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' })
-    .trim()
-    .concat(
-      execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim()
-        ? '+dirty'
-        : '',
-    );
-} catch {}
-
-const conditions = () => ({
-  host: hostname(),
-  cpu: cpus()[0]?.model,
-  cpus: cpus().length,
-  memGB: Math.round(totalmem() / 2 ** 30),
-  load: loadavg(),
-  node: process.version,
-  browser: browser.version(),
-  commit,
-  at: new Date().toISOString(),
-});
-
-if (out) writeFileSync(`${out}.jsonl`, '');
 if (UPLOAD) {
+  const b = await launch(PAGE);
+  if (out) writeFileSync(`${out}.jsonl`, '');
   console.log(`onto: plan ${upRows.length}`);
   for (const [k, { n, pct }] of upRows.entries()) {
-    const page = await browser.newPage();
-    page.on('pageerror', (e) => console.log(`  [page error] ${e.message}`));
-    await page.goto(`http://localhost:${server.address().port}/`);
-    await page.waitForFunction(() => typeof window.upload === 'function');
+    const page = await b.open('upload');
     const started = Date.now();
     const got = await page.evaluate(
       ([n, p, f, w]) => window.upload(n, p, f, w),
@@ -321,7 +229,7 @@ if (UPLOAD) {
       warm: WARM,
       ...got,
       wallMs: Date.now() - started,
-      ...conditions(),
+      ...b.conditions(),
     };
     if (out) appendFileSync(`${out}.jsonl`, `${JSON.stringify(rec)}\n`);
     const med = (w) =>
@@ -335,48 +243,5 @@ if (UPLOAD) {
       `${String(k + 1).padStart(2)}/${upRows.length} ${String(n).padStart(8)} ${`${pct}%`.padStart(5)}  ranges ${String(Math.round(quantile(got.counts, 0.5))).padStart(7)}  per-range ${med('ranges')} ms  span ${med('span')} ms  whole ${med('whole')} ms  chosen ${med('chosen')} ms  wall ${(rec.wallMs / 1000).toFixed(1).padStart(6)} s`,
     );
   }
-  await browser.close();
-  server.close();
-  process.exit(0);
-}
-console.log(`onto: plan ${rows.length}`);
-for (const [k, { engine, n }] of rows.entries()) {
-  const page = await browser.newPage();
-  page.on('pageerror', (e) => console.log(`  [page error] ${e.message}`));
-  await page.goto(`http://localhost:${server.address().port}/`);
-  await page.waitForFunction(() => typeof window.bench === 'function');
-  const started = Date.now();
-  const got = await page.evaluate(
-    ([e, n, f, w, v]) => window.bench(e, n, f, w, v),
-    [engine, n, FRAMES, WARM, MIX],
-  );
-  await page.close();
-  const rec = {
-    engine,
-    n,
-    mix: MIX,
-    warm: WARM,
-    frames: got.frames,
-    parts: got.parts,
-    wallMs: Date.now() - started,
-    host: hostname(),
-    cpu: cpus()[0]?.model,
-    cpus: cpus().length,
-    memGB: Math.round(totalmem() / 2 ** 30),
-    load: loadavg(),
-    node: process.version,
-    browser: browser.version(),
-    ua: got.ua,
-    adapter: got.adapter,
-    isolated: got.isolated,
-    commit,
-    at: new Date().toISOString(),
-  };
-  if (out) appendFileSync(`${out}.jsonl`, `${JSON.stringify(rec)}\n`);
-  const top = Math.max(...got.frames);
-  console.log(
-    `${String(k + 1).padStart(2)}/${rows.length} ${engine.padEnd(5)} ${MIX.padEnd(8)} ${String(n).padStart(8)}  median ${ms(quantile(got.frames, 0.5))} ms  p95 ${ms(quantile(got.frames, 0.95))} ms  max ${ms(top)} ms at frame ${String(got.frames.indexOf(top) + WARM + 1).padStart(5)}  frames ${got.frames.length}  wall ${(rec.wallMs / 1000).toFixed(1).padStart(6)} s`,
-  );
-}
-await browser.close();
-server.close();
+  await b.close();
+} else await run(PAGE, rows, MIX);

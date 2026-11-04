@@ -1,0 +1,38 @@
+# teitou (Apple M5 Max, 18 cores, apple metal-3), 2026-11-04, headless Chromium 153.0.8010.12, node v26.13.0, load 2.8-5.1
+# onto do --kind bench --node teitou --solo, at 0fcd500 with the bench split and setReads uncommitted (recorded as
+# 0fcd500+dirty; the change is in the commit that adds this file)
+#   MIX=signal ROWS=gpu:100000,gpucpu:100000,mixer:100000,gpu:1000000,gpucpu:1000000,mixer:1000000 \
+#     FRAMES=300 WARM=30 node bench/gpu-reach.mjs --out bench/runs/2026-11-04-gpu-signal
+# Raw records, every frame and its parts: 2026-11-04-gpu-signal.jsonl.
+#
+# The mix: the full mix of 2026-11-03-gpu-stock.txt with no spring (three looping keys voices on x and
+# y, a triangle wave on y), the first keys voice weighted per subject by
+# `(c) => 0.5 + 0.5 * Math.sin(c.i * 0.37)`. Rows: `mixer` pulls x and y; `gpu` folds both on the GPU,
+# reading the signal for every subject on the CPU each frame; `gpucpu` is the gpu engine with
+# `setReads(false)`, so the weighted voice and with it all of x stay on the CPU and are pulled, and y
+# folds on the GPU. Each gpu row checks before timing that the channels it leaves null are exactly those.
+# A frame is the host's whole frame. Parts, as medians: sync, fold (the gpu side's `channel` calls,
+# which dispatch), pull (the channels the side leaves null; every channel on mixer), wait
+# (`onSubmittedWorkDone`).
+
+onto: plan 6
+ 1/6 gpu    signal     100000  median     1.375 ms  p95     1.575 ms  max     2.245 ms at frame    32  frames 300  wall    0.6 s
+ 2/6 gpucpu signal     100000  median    23.835 ms  p95    25.225 ms  max    26.755 ms at frame   295  frames 300  wall    8.2 s
+ 3/6 mixer  signal     100000  median    22.800 ms  p95    23.985 ms  max    25.140 ms at frame   293  frames 300  wall    7.8 s
+ 4/6 gpu    signal    1000000  median    12.660 ms  p95    13.520 ms  max    14.015 ms at frame   169  frames 300  wall    5.1 s
+ 5/6 gpucpu signal    1000000  median   274.015 ms  p95   289.755 ms  max   716.515 ms at frame   318  frames 300  wall   97.8 s
+ 6/6 mixer  signal    1000000  median   271.105 ms  p95   295.530 ms  max   677.290 ms at frame    33  frames 300  wall   96.7 s
+
+node bench/gpu-reach.mjs --digest bench/runs/2026-11-04-gpu-signal.jsonl
+engine          subjects   median ms     p95 ms     max ms  frames       sync       fold       pull       wait
+gpu/signal        100000     1.375      1.575      2.245     300      0.000      1.035      0.000      0.335
+gpucpu/signal     100000    23.835     25.225     26.755     300      0.010      0.055     23.475      0.120
+mixer/signal      100000    22.800     23.985     25.140     300      0.005      0.000     22.790      0.000
+gpu/signal       1000000    12.660     13.520     14.015     300      0.005     11.075      0.000      1.520
+gpucpu/signal    1000000   274.015    289.755    716.515     300      0.010      0.090    273.200      0.140
+mixer/signal     1000000   271.105    295.530    677.290     300      0.010      0.000    271.095      0.005
+
+# Measured: reading the signal per subject on the CPU and folding on the GPU took 1.375 ms a frame at
+# 100k against 23.835 for leaving the voice's channel on the CPU (17x), and 12.660 against 274.015 at
+# 1M (22x). Per-subject reads stay. Leaving one of the two channels on the CPU cost as much as pulling
+# both on mixer; why `pull` of x alone costs about what x and y together do was not measured.

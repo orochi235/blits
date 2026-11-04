@@ -77,6 +77,17 @@ export const KEEPS =
 /** Why a voice stays on the CPU whose weight signal sends events. */
 export const SENDS = 'its weight signal sends events, which only a probe on the CPU delivers';
 
+/** Why a voice weighted per subject stays on the CPU while `setReads(false)` holds. */
+export const COSTS =
+  'its weight signal is read per subject, which costs more on the GPU than folding it on the CPU';
+
+let reads = true;
+
+/** Whether the gpu side folds voices weighted per subject: a bench switch, as `setShareFrames` is. */
+export function setReads(on: boolean): void {
+  reads = on;
+}
+
 const isInput = (signal: Signal<unknown>): boolean =>
   (signal as { input?: boolean }).input === true;
 
@@ -98,6 +109,7 @@ export function weightWhy<I, O>(
       return "its weight signal is an input the mix's history records, which a seek plays back";
     if (isInput(signal) && !heard(signal))
       return 'its weight signal reads an input that does not report its changes';
+    if (!reads && !uniform(signal)) return COSTS;
     if (!uniform(signal) && voice.keeping) return KEEPS;
     const no = refused?.get(signal);
     if (no !== undefined) return no;
