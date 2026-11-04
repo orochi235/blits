@@ -88,6 +88,10 @@ export interface Input<I, H = unknown> extends Signal<I, H> {
  * signal `read` calls, and the result is an input where any of them is, and reports its changes
  * where they all do.
  *
+ * In `input(read)`, a `read` that declares no parameter is taken to read the same for every
+ * subject, and the gpu engine reads it once a frame, so a `read` that uses the subject must
+ * declare it as a parameter.
+ *
  * @category signal
  */
 export function input<I, H = unknown>(

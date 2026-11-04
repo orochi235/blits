@@ -21,6 +21,12 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine folds a voice that reaches only some of the registered subjects,
   through `subjects` or `target`.
 - The `gpu` engine folds voices that stagger their subjects, for every patch the gpu engine runs.
+- The `gpu` engine folds voices that owners hold, spans and arcs included, and voices weighted by a
+  signal: a `level()`, or an `input(read)` whose `read` declares no parameter, is read once a frame,
+  and any other signal is read for each subject on the CPU. A voice stays on the CPU, with its reason
+  warned once in development, where its signal keeps state per subject or sends events, it is a blend
+  member, its signal or an owner's is an input that `history.inputs` records or that does not report
+  its changes, or an owner above it is weighted by a signal read per subject.
 - A shader patch's `wgsl` can read `lag`, how many ms the subject's time trails the voice's.
   The name is taken in every shader patch body, so one that declares its own `lag` no longer
   compiles.

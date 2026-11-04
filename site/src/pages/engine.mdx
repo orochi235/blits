@@ -71,11 +71,11 @@ What runs where:
 | On the GPU | On the CPU, as `mixer` runs it |
 |---|---|
 | `keys` eased by a CSS name, a `bezier` or `steps`; `wave`; `tween`, `spring` and `glide`; `shaderPatch` | `fn` patches. `keys` with an easing function or a `lerpBy` of its own. A motion on an `ink`, which moves round the hue, or eased by a function |
-| A voice whose weight is a number (fades included), staggered or not, reaching every registered subject or some of them (`subjects`, `target`) | A weight signal, an owner, a patch with `state`, `from: 'current'`, a bounded voice, or one parting from subjects. A stagger asked as subjects are met (no `subjects` at `cue`) on a voice that ends |
+| A voice weighted by a number or a weight signal (fades included), staggered or not, reaching every registered subject or some of them (`subjects`, `target`), held by owners, spans and arcs | A weight signal that keeps state per subject (`slew`, `lag`, `gate`) or sends events, a blend member, an input the mix's history records or one that doesn't report its changes, and every voice under an owner weighted per subject. A patch with `state`, `from: 'current'`, a bounded voice, or one parting from subjects. A stagger asked as subjects are met (no `subjects` at `cue`) on a voice that ends |
 | `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `vec` of those, `angle`, `color()`, and all 25 color blend modes on `color` or `ink`, roles included | `last`, `quat`, `ink()` and `ink(last())`, `affine` |
 | | `probe`, `pull`, `project`, `seek`, history, and the debug panel. A motion voice read back through history or by a projection stays on the CPU that frame |
 
-A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `its weight is a weight signal` or `its easing is a function`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
+A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `its weight signal keeps state for each subject, which only the CPU's records hold` or `its easing is a function`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
 
 The GPU computes in 32-bit floats, and agrees with the CPU to that precision. Where a value jumps — a square wave flipping, a `steps` easing, a keyframe, a loop wrapping — a subject whose time rounds to the other side shows the value from one float step away, a tiny fraction of a millisecond early or late. The GPU's agreement tests allow that one step there and nothing more; a bounded `glide`, whose path depends on which side of an edge it stops, decides that on the CPU in 64 bits.
 
@@ -88,10 +88,14 @@ Measured on teitou (Apple M5 Max) in headless Chromium, a whole frame of three l
 | 1,000,000 | 300.76 ms | 45.66 ms | 0.39 ms |
 | 100,000, staggered | 41.36 ms | 4.48 ms | not run |
 | 1,000,000, staggered | 470.57 ms | 53.55 ms | not run |
+| 100,000, held by owners | 18.29 ms | 0.27 ms | not run |
+| 1,000,000, held by owners | 226.08 ms | 0.52 ms | not run |
 
 With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which works out each retargeted subject's new path for the GPU, takes 28 ms, and waiting for the GPU 3 ms.
 
 The staggered rows give every voice a delay of up to about a second, fade the `keys` voices in, and have one of them reach every other subject through `target` (`bench/runs/2026-11-04-gpu-stagger.txt`). Their gpu engine figures come from a later build than the unstaggered rows', so the two don't isolate what staggering costs, and the 1,000,000 median includes the frames where subjects were still fading in.
+
+The rows held by owners are bree's shape: a program owner holding four scene owners 1.25 s apart, each holding a fading `keys` move, a looping `wave` and a staggered `keys` layer over every subject (`bench/runs/2026-11-04-gpu-owned.txt`). They have no `spring` and nothing retargeted. The frame where a scene starts is the slowest on both engines: at a million subjects, about 0.2 s on the gpu engine and about 3 s on `mixer`.
 
 Measured on the site's examples, on an Apple M5 Max in headless Chromium, the main thread's work per frame, drawing on the CPU and then on the gpu engine (`bench/runs/2026-11-02-demos-*.json`; light board and white balance, as they run on `keys` patches, `bench/runs/2026-11-03-demos-keys-*.json`):
 

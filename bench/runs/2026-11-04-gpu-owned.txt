@@ -1,0 +1,38 @@
+# teitou (Apple M5 Max, 18 cores, apple metal-3), 2026-11-04, headless Chromium 153.0.8010.12, node v26.13.0, load 1.8-5.9
+# onto do --kind bench --node teitou --solo, at 81624fe with only bench/gpu-reach.mjs changed (recorded as
+# 81624fe+dirty; the change adds MIX=owned and is in the commit that adds this file)
+#   MIX=owned ROWS=mixer:100000,gpu:100000,mixer:1000000,gpu:1000000 FRAMES=300 WARM=30 \
+#     node bench/gpu-reach.mjs --out bench/runs/2026-11-04-gpu-owned
+# Raw records, every frame and its parts: 2026-11-04-gpu-owned.jsonl.
+#
+# The mix, in bree's shape: a program owner holding four scene owners starting 0, 1250, 2500 and 3750 ms
+# in; on each scene, over every subject, a 1250 ms keys move on x and y fading in and out over 200 ms, a
+# 250 ms sine wave on y looping 5 passes, and a 1000 ms keys layer on x staggered by `(c.i % 256) * 4`
+# and fading in over 300 ms. Everything is cued before frame 1. Rows: `mixer` pulls x and y; `gpu` folds
+# both, and throws if either is left on the CPU in any frame (neither was). Frames 31-330 are timed,
+# 517-5500 ms of mix time, so scene 0 starts during the warm-up and scenes 1-3 start at frames 75, 150
+# and 225. Parts, as medians: sync, fold (the gpu side's `channel` calls), pull, wait
+# (`onSubmittedWorkDone`).
+
+onto: plan 4
+ 1/4 mixer owned      100000  median    18.285 ms  p95    22.510 ms  max   241.650 ms at frame    75  frames 300  wall    7.0 s
+ 2/4 gpu   owned      100000  median     0.270 ms  p95     0.500 ms  max    25.415 ms at frame    75  frames 300  wall    0.5 s
+ 3/4 mixer owned     1000000  median   226.075 ms  p95   524.220 ms  max  3163.255 ms at frame   150  frames 300  wall   86.3 s
+ 4/4 gpu   owned     1000000  median     0.515 ms  p95     1.745 ms  max   240.780 ms at frame    75  frames 300  wall    3.4 s
+
+node bench/gpu-reach.mjs --digest bench/runs/2026-11-04-gpu-owned.jsonl
+engine          subjects   median ms     p95 ms     max ms  frames       sync       fold       pull       wait
+mixer/owned       100000    18.285     22.510    241.650     300      0.015      0.000     18.265      0.000
+gpu/owned         100000     0.270      0.500     25.415     300      0.005      0.015      0.000      0.250
+mixer/owned      1000000   226.075    524.220   3163.255     300      0.020      0.000    226.055      0.005
+gpu/owned        1000000     0.515      1.745    240.780     300      0.005      0.020      0.000      0.490
+
+# The frames where a scene starts, at 1M (ms: whole frame, then sync, fold, pull, wait):
+#   frame  75   mixer  2791.385   497.035    0.000  2294.345  0.005    gpu  240.780  131.410  105.830  0.000  3.540
+#   frame 150   mixer  3163.255   373.880    0.000  2789.370  0.005    gpu  216.125  106.180  108.065  0.000  1.880
+#   frame 225   mixer  2610.285   335.345    0.000  2274.935  0.005    gpu  194.535   87.215  104.350  0.005  2.965
+#
+# Measured: owner-held voices folded on the GPU in 0.270 ms a frame at 100k against 18.285 on mixer, and
+# 0.515 against 226.075 at 1M. The slowest frames on both engines are those where a scene starts; at 1M
+# the gpu engine took 195-241 ms there, split about evenly between sync and the fold. Where that time goes
+# was not measured.

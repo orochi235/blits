@@ -1,7 +1,8 @@
 # The gpu engine's reach: stock patches, per-subject timing, and readback
 
-**Status (2026-11-04): phases 1 and 2 built (phase 1 d20940c..21dc031, phase 2 4cad824..ff1cc94 and
-the commit measuring it), phases 3–4 designed, not built.** What phases 1 and 2 left open is under
+**Status (2026-11-04): phases 1–3 built (phase 1 d20940c..21dc031, phase 2 4cad824..ff1cc94 and
+the commit measuring it, phase 3 1a57524..81624fe and the commit measuring owners), phase 4 designed,
+not built.** What phases 1–3 left open is under
 item 18 of `HANDOFF.md`, and the schema page's "The gpu engine" says what folds now. This line
 changes as phases land; the doc is deleted once the last one does, after anything durable has moved
 into the schema page and the changelog.
@@ -156,12 +157,26 @@ Each phase lands, is measured, and is released on its own.
 
 ### 3. Owners and weight signals
 
-- An owner's timing is shared by its children's subjects except where the owner itself staggers or
-  carries a per-subject signal. The CPU reads the owner chain once per voice per frame into the row; an
-  owner with per-subject parts keeps its voices on the CPU until a later phase, said once.
-- A weight signal read the same for every subject is sampled once on the CPU into the row. A signal
-  read per subject is evaluated on the CPU into a per-subject weight array uploaded each frame; the
-  builder measures whether that beats leaving the voice on the CPU and keeps whichever wins.
+Built. The schema page's "Owners and weight signals" says how it works and what stays on the CPU.
+
+- Once a frame, the CPU works out what a voice's owners multiply into its weight (`ownersWeight`,
+  with each owner's signal read once per `mix.frame`) and writes it into the voice's row.
+- A weight signal is read once a frame only where blits made it subject-free: `level()`, and
+  `input(read)` whose `read` declares no parameter. Every other signal is read on the CPU per
+  registered subject into the per-subject buffer each frame. That beat leaving the voice on the CPU
+  17–22× (`bench/runs/2026-11-04-gpu-signal.txt`), so it stays.
+- bree's shape (a program owner, four scene owners, faded, looping and staggered voices under them)
+  folds in 0.270 and 0.515 ms a frame at 100k and 1M against 18.285 and 226.075 on `mixer`
+  (`bench/runs/2026-11-04-gpu-owned.txt`).
+- Decided (2026-11-04), resolving three conflicts the phase-3 plan found in this section:
+  - Owners cannot stagger or part, so the only owner reason is "an owner above it weighs it by a
+    signal read per subject".
+  - A signal counts as read the same for every subject only where blits marks it so (`level()`;
+    `input(fn)` with `fn.length === 0`), not wherever `signal.length === 0`, since a function with
+    rest or default parameters reports length 0 and still reads the subject.
+  - The gpu side reads signals through a setting of its own whose `keep` and `send` refuse the
+    signal; refused signals, blend members, inputs recorded by `history.inputs` and inputs that do
+    not report their changes stay on the CPU, each with its own reason.
 
 ### 4. Readback
 

@@ -9,7 +9,10 @@
 //     node bench/gpu-reach.mjs --out bench/runs/<date>-gpu-signal     writes <out>.jsonl
 //   node bench/gpu-reach.mjs --digest <out>.jsonl     medians, p95, and each part's median
 // MIX=signal is gpu-stock's full mix with no spring, the first keys voice weighted per subject by
-// `(c) => 0.5 + 0.5 * Math.sin(c.i * 0.37)`.
+// `(c) => 0.5 + 0.5 * Math.sin(c.i * 0.37)`. MIX=owned is bree's shape: a program owner holding four
+// scene owners 1250 ms apart, each scene's voices cued on it over every subject before frame 1: a
+// faded keys move on x and y, a wave on y looping for the scene's length, and a keys layer on x
+// staggered by `(c.i % 256) * 4` that fades in. Rows `mixer` and `gpu` only.
 // One line per row as it finishes; one JSON line per row, every frame's time and parts and the
 // conditions it ran under, appended to <out>.jsonl as the row finishes.
 import { digest, digested, run } from './gpu-harness.mjs';
@@ -70,11 +73,37 @@ const mixes = {
       for (const patch of [rise, drift, sway]) m.cue({ patch, subjects: cells, loop: true });
     },
   },
+  owned: {
+    names: ['x', 'y'],
+    cpu: null,
+    cue(m, cells) {
+      const SCENE = 1250;
+      const move = keys(SCENE, [
+        { at: 0, delta: { x: 0, y: 0 } },
+        { at: 0.6, delta: { x: 8, y: -4 }, ease: 'ease-in-out' },
+        { at: 1, delta: { x: 12, y: 0 }, ease: 'ease-out' },
+      ]);
+      const bob = wave(250, { depth: { y: 2 }, shape: 'sine' });
+      const nudge = keys(1000, [
+        { at: 0, delta: { x: 0 } },
+        { at: 0.5, delta: { x: 3 }, ease: 'ease-in-out' },
+        { at: 1, delta: { x: 0 } },
+      ]);
+      const program = m.owns({ name: 'program' });
+      for (let k = 0; k < 4; k++) {
+        const scene = m.owns({ owner: program, start: k * SCENE, name: 'scene' + k });
+        m.cue({ patch: move, owner: scene, subjects: cells, fade: { in: 200, out: 200 } });
+        m.cue({ patch: bob, owner: scene, subjects: cells, loop: SCENE / 250 });
+        m.cue({ patch: nudge, owner: scene, subjects: cells, stagger: (c) => (c.i % 256) * 4, fade: { in: 300 } });
+      }
+    },
+  },
 };
 
 window.bench = async (engine, n, frames, warm, variant) => {
   const spec = mixes[variant];
   if (!spec) throw new Error('no mix ' + variant);
+  if (engine === 'gpucpu' && spec.cpu === null) throw new Error('mix ' + variant + ' has no gpucpu row');
   const onGpu = engine !== 'mixer';
   setReads(engine !== 'gpucpu');
   const g = onGpu ? await device() : null;
@@ -93,15 +122,17 @@ window.bench = async (engine, n, frames, warm, variant) => {
     m.sync(FRAME_MS / 2);
     for (const name of spec.names) side.channel(name);
     await side.ready;
-    // The fold dispatched; what it leaves null is pulled on the CPU.
-    fold = () => {
+    // The fold dispatched; what it leaves null is pulled on the CPU. On gpu, nothing may be.
+    fold = (f) => {
       const rest = {};
       for (const name of spec.names) if (side.channel(name) === null) rest[name] = all[name];
+      if (engine === 'gpu' && Object.keys(rest).length > 0)
+        throw new Error(Object.keys(rest).join(',') + ' left the GPU at frame ' + f);
       return rest;
     };
     wait = () => g.device.queue.onSubmittedWorkDone();
     m.sync(FRAME_MS * 0.75);
-    const left = Object.keys(fold()).sort().join(',');
+    const left = Object.keys(fold(0)).sort().join(',');
     const want = engine === 'gpucpu' ? [...spec.cpu].sort().join(',') : '';
     if (left !== want) throw new Error(engine + ' leaves [' + left + '] on the CPU, not [' + want + ']');
   }
@@ -112,7 +143,7 @@ window.bench = async (engine, n, frames, warm, variant) => {
     const a = performance.now();
     m.sync(f * FRAME_MS);
     const b = performance.now();
-    const rest = fold();
+    const rest = fold(f);
     const c = performance.now();
     if (Object.keys(rest).length > 0) m.pull(cells, rest);
     const d = performance.now();

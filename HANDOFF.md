@@ -931,13 +931,28 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **`project` and `trace` show a body at the last synced world**: a patch cannot read another
       subject's state.
 
-18. **The gpu engine's reach, phases 3–4** (`docs/superpowers/specs/2026-11-03-gpu-reach-design.md`).
+18. **The gpu engine's reach, phase 4** (`docs/superpowers/specs/2026-11-03-gpu-reach-design.md`).
     Phase 1, stock patches on the GPU, is built (d20940c..21dc031, on `main`, unreleased). Phase 2,
-    staggered voices and voices reaching some subjects, is built on branch `gpu-timing`
-    (4cad824..ff1cc94 and the commit measuring it), not yet merged. Owners and weight signals
-    (phase 3; bree needs owner-held voices, 2026-11-04) and readback (`gpuOf(m).read`, phase 4) are
-    designed and not built.
-    The schema page's "The gpu engine" says what folds now. Open from phase 2:
+    staggered voices and voices reaching some subjects, is built and merged (4cad824..ff1cc94 and
+    the commit measuring it). Phase 3, owner-held voices and voices weighted by a signal, is built
+    on branch `gpu-owners` (1a57524..81624fe and the commit measuring owners), not yet merged.
+    Readback (`gpuOf(m).read`, phase 4) is designed and not built.
+    The schema page's "The gpu engine" says what folds now. Open from phase 3:
+    - **A frame where a scene starts costs 195–241 ms at 1M on the gpu engine**, about half in
+      `sync` and half in the fold, against a 0.515 ms median (`bench/runs/2026-11-04-gpu-owned.txt`);
+      unexplained.
+    - An `input(read)` whose `read` declares no parameter but reads `arguments` is read once for
+      every subject, so the GPU folds the wrong weight. Documented, not detected.
+    - `Met` keeps a voice met after `park()` (a seek back before its cue) and after a subject is
+      dropped, where the CPU drops its records; storing `voice.seeks` with the mark would fix it.
+      `read()`/`landed()` answering from that hook on a gpu mix is untested.
+    - `Reads` forgets a voice's read times when it is absent from one read, so its next `dt` jumps
+      to `now - since`; `dt` is per voice, not per subject (a subject met late gets the voice's);
+      it resets `dt` on every seek, the CPU only on seeks that send back; no test pins `dt`
+      within one frame.
+    - `src/gpu/side.ts` is 300 lines: split the mirror and slot preparation into its own module
+      before it grows.
+    Open from phase 2:
     - **Answers never forgets a subject.** After a drop, or a part and unpart, a CPU-only mix asks
       `target` again, while one with a gpu side answers from what it kept; they differ only for a
       `target` that is not deterministic.
@@ -949,8 +964,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       where the CPU's `shownAt` gives `anchorElapsed - delay`. Untested.
     - The timing-block span test compares against records made at the end; probing each frame
       would test records that moved.
-    - `src/gpu/mirror.ts` is 319 lines and `Mirror.prepare` takes positional optionals: split it
-      before it grows.
+    - `Mirror.prepare` takes positional optionals (`holds`, `unread`).
     Open from phase 1:
     - **One motion patch folded by two voices at once**, on one mix or two live ones, rebuilds
       their mirrors every frame, each taking the patch's one watch back from the other, unwarned.
