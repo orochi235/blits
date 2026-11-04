@@ -56,6 +56,7 @@
     "test:gpu": "node test/gpu/run.mjs",
     "test:watch": "vitest",
     "test:general": "BLITS_LANES=off vitest run",
+    "test:bundles": "npm run build && node test/bundle-guard.mjs",
     "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -b packages/quarks && tsc -p packages/quarks/tsconfig.test.json && tsc -b packages/tone && tsc -p packages/tone/tsconfig.test.json && tsc -b packages/panel && tsc -p packages/panel/tsconfig.test.json && tsc -b packages/rapier && tsc -p packages/rapier/tsconfig.test.json && npm --prefix site run typecheck",
     "lint": "biome check .",
     "check": "npm run lint && npm run typecheck && npm run test",
