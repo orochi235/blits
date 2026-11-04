@@ -4,12 +4,7 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## 0.10.0
-
-### Breaking
-
-- `@msb235/blits` is a peer at `^1.1.0`, where it was `^1.0.0`. Built and tested against engine
-  1.1.0; the plan reads each voice's `track` from it.
+## Unreleased
 
 ### Added
 
