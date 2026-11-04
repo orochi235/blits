@@ -50,7 +50,7 @@ function sentBack<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unkn
 }
 
 /** The phase `elapsed` voice ms puts a voice at, before its start included. */
-function phaseOf(elapsed: number, duration: number, passes: number): number {
+export function phaseOf(elapsed: number, duration: number, passes: number): number {
   return elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, passes);
 }
 

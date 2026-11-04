@@ -176,6 +176,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   reducedNow = false;
   /** Something was changed since the last sync, so the next frame may differ from this one. */
   stirred = false;
+  /** The gpu side's: told at each `reorigin`, with its `now`. Null with no gpu engine attached. */
+  reorigined: ((voice: Voice<I, O>, now: number) => void) | null = null;
   /**
    * The host read `inert` as true since the last sync, so its frame loop may be asleep until a
    * change wakes it; a host that never asks keeps no loop asleep on it.

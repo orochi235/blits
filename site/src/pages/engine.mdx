@@ -71,11 +71,11 @@ What runs where:
 | On the GPU | On the CPU, as `mixer` runs it |
 |---|---|
 | `keys` eased by a CSS name, a `bezier` or `steps`; `wave`; `tween`, `spring` and `glide`; `shaderPatch` | `fn` patches. `keys` with an easing function or a `lerpBy` of its own. A motion on an `ink`, which moves round the hue, or eased by a function |
-| A voice whose weight is a number (fades included) and that reaches every registered subject | A weight signal, `stagger`, an owner, a patch with `state`, `from: 'current'`, a bounded voice, one parting from subjects, or one that names only some subjects |
+| A voice whose weight is a number (fades included), staggered or not, reaching every registered subject or some of them (`subjects`, `target`) | A weight signal, an owner, a patch with `state`, `from: 'current'`, a bounded voice, or one parting from subjects. A stagger asked as subjects are met (no `subjects` at `cue`) on a voice that ends |
 | `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `vec` of those, `angle`, `color()`, and all 25 color blend modes on `color` or `ink`, roles included | `last`, `quat`, `ink()` and `ink(last())`, `affine` |
 | | `probe`, `pull`, `project`, `seek`, history, and the debug panel. A motion voice read back through history or by a projection stays on the CPU that frame |
 
-A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `it staggers its subjects` or `its easing is a function`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
+A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `its weight is a weight signal` or `its easing is a function`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
 
 The GPU computes in 32-bit floats, and agrees with the CPU to that precision. Where a value jumps — a square wave flipping, a `steps` easing, a keyframe, a loop wrapping — a subject whose time rounds to the other side shows the value from one float step away, a tiny fraction of a millisecond early or late. The GPU's agreement tests allow that one step there and nothing more; a bounded `glide`, whose path depends on which side of an edge it stops, decides that on the CPU in 64 bits.
 
@@ -86,8 +86,12 @@ Measured on teitou (Apple M5 Max) in headless Chromium, a whole frame of three l
 | 10,000 | 1.59 ms | 1.04 ms | not run |
 | 100,000 | 24.56 ms | 4.19 ms | 0.28 ms |
 | 1,000,000 | 300.76 ms | 45.66 ms | 0.39 ms |
+| 100,000, staggered | 41.36 ms | 4.48 ms | not run |
+| 1,000,000, staggered | 470.57 ms | 53.55 ms | not run |
 
 With nothing retargeted, a million subjects fold in under half a millisecond. With 5% retargeted, at a million subjects the `to()` calls take 14 ms, as they do on `mixer`; preparing the fold, which works out each retargeted subject's new path for the GPU, takes 28 ms, and waiting for the GPU 3 ms.
+
+The staggered rows give every voice a delay of up to about a second, fade the `keys` voices in, and have one of them reach every other subject through `target` (`bench/runs/2026-11-04-gpu-stagger.txt`). Their gpu engine figures come from a later build than the unstaggered rows', so the two don't isolate what staggering costs, and the 1,000,000 median includes the frames where subjects were still fading in.
 
 Measured on the site's examples, on an Apple M5 Max in headless Chromium, the main thread's work per frame, drawing on the CPU and then on the gpu engine (`bench/runs/2026-11-02-demos-*.json`; light board and white balance, as they run on `keys` patches, `bench/runs/2026-11-03-demos-keys-*.json`):
 

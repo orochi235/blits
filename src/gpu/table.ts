@@ -1,32 +1,22 @@
 import { passAt, phaseAt, phaseBefore, weighed } from '../clock.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
+import { Col, ROW } from './columns.js';
+import { rowClock } from './row-clock.js';
+import type { TimingSlot } from './timings.js';
+import { Flag, NONE } from './wgsl/timing.js';
 
-/** How many numbers each voice takes in the table. */
-export const ROW = 8;
-
-/** Where each of a row's numbers sits. */
-export enum Col {
-  /** The voice's runner, as the kernel indexes its runners. */
-  SHADER = 0,
-  /** Where the voice's packed values start in the values buffer, in f32s, as a u32's bits. */
-  VALUES = 1,
-  PHASE = 2,
-  PASS = 3,
-  WEIGHT = 4,
-  /** 0 for no role, else 1 + the role's index among this frame's roles. */
-  ROLE = 5,
-  /** 1 where the voice is its role's first member this frame. */
-  FIRST = 6,
-  /** Where the voice's per-subject region starts in the per-subject buffer, in f32s, as a u32's bits. */
-  SUB = 7,
-}
+export { Col, ROW } from './columns.js';
 
 /** Where a voice's runner and data sit, as the table records them. */
 export interface Slot {
   readonly runner: number;
   readonly values: number;
   readonly sub: number;
+  /** Its timing block, for a voice that staggers or leaves some registered subject unreached. */
+  readonly timing?: TimingSlot;
+  /** Its fade curve's offset in values; absent for linear. */
+  readonly ease?: number;
 }
 
 /** The frame's voices as the kernel reads them. */
@@ -47,9 +37,9 @@ export function elapsedOf<I, O>(voice: Voice<I, O>, now: number): number {
 }
 
 /**
- * Each voice's numbers for this frame, worked out once for every subject: a voice the GPU runs
- * plays the same for all of them. The time, phase, and weight come out as the general path's
- * `contribution` and `weigh` give them.
+ * Each voice's numbers for this frame. A voice with no delays plays the same for every subject, so
+ * its time, phase, and weight are worked out once, as the general path's `contribution` and `weigh`
+ * give them; one with delays carries its clock for the kernel to work out each subject's.
  */
 export function voiceTable<I, O>(
   mix: Mixer<I, O>,
@@ -66,21 +56,30 @@ export function voiceTable<I, O>(
     const slot = slots[k];
     if (slot === undefined) throw new Error('blits: a voice in the GPU table has no slot');
     const o = k * ROW;
+    const timing = slot.timing;
     rows[o + Col.SHADER] = slot.runner;
     bits[o + Col.VALUES] = slot.values;
     bits[o + Col.SUB] = slot.sub;
-    const elapsed = elapsedOf(voice, now);
-    if (Number.isNaN(elapsed)) return;
-    // A member showing nothing this frame does not meet its role, so the next one leads it.
+    bits[o + Col.DELAYS] = timing?.delays ?? NONE;
+    bits[o + Col.MASK] = timing?.mask ?? NONE;
+    bits[o + Col.SHOWN] = timing?.shown ?? NONE;
+    bits[o + Col.EASE] = slot.ease ?? NONE;
     const role = voice.spec.role;
     if (role !== undefined) {
-      const known = roles.get(role);
-      rows[o + Col.ROLE] = (known ?? roles.size) + 1;
-      if (known === undefined) {
-        roles.set(role, roles.size);
-        rows[o + Col.FIRST] = 1;
+      let r = roles.get(role);
+      if (r === undefined) {
+        r = roles.size;
+        roles.set(role, r);
       }
+      rows[o + Col.ROLE] = r + 1;
     }
+    if (timing !== undefined && timing.delays !== NONE) {
+      rowClock(mix, voice, slot, rows, bits, o);
+      return;
+    }
+    const elapsed = elapsedOf(voice, now);
+    if (Number.isNaN(elapsed)) return;
+    bits[o + Col.FLAGS] = Flag.SHOWS;
     const since = mix.sinceOf(voice, 0);
     const fade = mix.envelope(voice, now, mix.shownOf(voice, since));
     rows[o + Col.PHASE] =

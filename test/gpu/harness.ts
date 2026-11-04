@@ -18,13 +18,18 @@ export function close(got: number, want: number, what: string, absolute = 1e-5):
 const f32 = new Float32Array(1);
 const bits = new Uint32Array(f32.buffer);
 
-/** The f32 `step` places from `t` (negative for down), as the GPU might have rounded it. */
-function nudge(t: number, step: number): number {
+const NORMAL = 2 ** -126;
+
+/**
+ * The f32 one step from `t` (`step` negative for down), as the GPU might have rounded it. The GPU
+ * may flush subnormals, so the steps either side of 0 are the least normals and a subnormal is 0.
+ */
+export function nudge(t: number, step: number): number {
   f32[0] = Math.fround(t);
-  if (f32[0] === 0) return step > 0 ? 2 ** -149 : -(2 ** -149);
+  if (f32[0] === 0) return step > 0 ? NORMAL : -NORMAL;
   const b = bits[0] as number;
   bits[0] = (f32[0] as number) > 0 === step > 0 ? b + 1 : b - 1;
-  return f32[0] as number;
+  return Math.abs(f32[0] as number) < NORMAL ? 0 : (f32[0] as number);
 }
 
 /**
@@ -36,15 +41,37 @@ export function closeNear(
   cpuAt: (t: number) => number,
   t: number,
   what: string,
+  absolute?: number,
 ): void {
   const tries = [t, nudge(t, -1), nudge(t, 1)];
   for (const at of tries) {
     try {
-      close(got, cpuAt(at), what);
+      close(got, cpuAt(at), what, absolute);
       return;
     } catch {}
   }
   throw new Error(`${what}: GPU ${got}, CPU ${cpuAt(t)} at ${t} (and one f32 step either way)`);
+}
+
+/**
+ * Like `closeNear` for several outputs of one input: they pass where one reading of the CPU, at `t`
+ * or one f32 step either way, gives all of them. `match` throws where `got` and the CPU's differ.
+ */
+export function closeNearAll(
+  got: readonly number[],
+  cpuAt: (t: number) => readonly number[],
+  t: number,
+  what: string,
+  match = (g: readonly number[], want: readonly number[]) => {
+    for (const [k, x] of g.entries()) close(x, want[k] as number, `${what} [${k}]`);
+  },
+): void {
+  for (const at of [nudge(t, -1), nudge(t, 1)])
+    try {
+      match(got, cpuAt(at));
+      return;
+    } catch {}
+  match(got, cpuAt(t));
 }
 
 export async function runAll(): Promise<void> {

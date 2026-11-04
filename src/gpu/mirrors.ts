@@ -34,21 +34,27 @@ export class Mirrors {
     return false;
   }
 
-  /** `voice`'s mirror of `list`, made where it has none or the list changed. */
-  of<I>(voice: object, p: PerSubject, packed: Float32Array, list: readonly I[]): Mirror<I> {
+  /** `voice`'s mirror of `list` at `delays`, made where it has none or the list changed. */
+  of<I>(
+    voice: object,
+    p: PerSubject,
+    packed: Float32Array,
+    list: readonly I[],
+    delays: Float64Array | null,
+  ): Mirror<I> {
     if (list !== this.list) {
       this.clear();
       this.list = list;
     }
     let m = this.by.get(voice);
-    if (m === undefined || m.motions !== p.motions || m.packed !== packed) {
+    if (m === undefined || m.motions !== p.motions || m.packed !== packed || m.delays !== delays) {
       // A patch has room for one watch: a voice cued again on it hands it over.
       for (const [v, other] of this.by)
         if (other.motions === p.motions) {
           other.detach();
           this.by.delete(v);
         }
-      m = new Mirror(p.motions, list, packed);
+      m = new Mirror(p.motions, list, packed, delays);
       this.by.set(voice, m);
     }
     return m as Mirror<I>;

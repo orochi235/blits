@@ -1,6 +1,8 @@
+import { Col, ROW } from './columns.js';
 import type { Runner } from './runner.js';
-import { Col, ROW } from './table.js';
 import { type ChannelCode, helpersOf, lerpWgsl } from './wgsl/channels.js';
+import { EASING_WGSL } from './wgsl/easing.js';
+import { CLOCK_WGSL, FADE_WGSL, NONE, TAKE_WGSL } from './wgsl/timing.js';
 
 /** The most roles one frame's GPU voices may play; a frame with more keeps its channels on the CPU. */
 export const MAX_ROLES = 8;
@@ -45,8 +47,9 @@ const arr = (axes: number, e: string) => (axes === 1 ? `array<f32, 1>(${e})` : e
 
 /**
  * The compute shader folding `channels` from `runners` for `subjects` subjects: one invocation per
- * subject, reading the voice table, gathering roles in a first pass over it and folding every voice
- * in voice order in a second, a role at its first member's place.
+ * subject, taking each voice's clock, reach and fade for that subject, gathering roles in a first
+ * pass over the table and folding every voice in voice order in a second, a role at the place of
+ * its first member showing for the subject.
  */
 export function kernel(
   runners: readonly Runner[],
@@ -75,6 +78,10 @@ export function kernel(
   add('@group(0) @binding(5) var<storage, read> persub: array<f32>;');
   const codes = [...channels.values()];
   const helpers = [
+    EASING_WGSL,
+    CLOCK_WGSL,
+    FADE_WGSL,
+    TAKE_WGSL,
     ...codes.flatMap((c) => helpersOf(c.helpers)),
     ...runners.flatMap((r) => helpersOf(r.helpers)),
   ];
@@ -93,7 +100,7 @@ export function kernel(
     const writes = r.writes.map((n) => ({ n, axes: inputOf(types.get(n)) }));
     add(`struct Out_${i} { ${writes.map((w) => `o_${w.n}: ${ty(w.axes)},`).join(' ')} }`);
     add(
-      `fn run_${i}(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32) -> Out_${i} {`,
+      `fn run_${i}(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32, lag: f32) -> Out_${i} {`,
     );
     add(`  var out: Out_${i};`, `  ${prefixed(r.wgsl)}`, '  return out;', '}');
   });
@@ -106,7 +113,7 @@ export function kernel(
           .map((n) => body(n, index.get(n) as number, inputOf(channels.get(n))))
           .join(' ');
         const sub = r.stride ? `sub + i * ${r.stride}u` : '0u';
-        return `      case ${i}u: { let d = run_${i}(phase, pass_index, subject, base, ${sub}); ${inner} }`;
+        return `      case ${i}u: { let d = run_${i}(tk.phase, tk.pass_index, subject, base, ${sub}, tk.lag); ${inner} }`;
       })
       .join('\n');
   add(`@compute @workgroup_size(${GROUP})`, 'fn main(@builtin(global_invocation_id) id: vec3u) {');
@@ -121,17 +128,22 @@ export function kernel(
   });
   const read = [
     `    let o = k * ${ROW}u;`,
-    `    let w = table[o + ${Col.WEIGHT}u];`,
     `    let role = u32(table[o + ${Col.ROLE}u]);`,
-    `    let phase = table[o + ${Col.PHASE}u];`,
-    `    let pass_index = table[o + ${Col.PASS}u];`,
     `    let base = bitcast<u32>(table[o + ${Col.VALUES}u]);`,
     `    let sub = bitcast<u32>(table[o + ${Col.SUB}u]);`,
   ];
+  const none = `${NONE}u`;
+  add(`  var lead = array<u32, ${MAX_ROLES}>(${Array(MAX_ROLES).fill(none).join(', ')});`);
   add('  for (var k = 0u; k < frame.x; k++) {', ...read);
   add(
-    '    if (role == 0u || !(w > 0.0)) { continue; }',
+    '    if (role == 0u) { continue; }',
+    '    let tk = blits_take(o, i);',
+    '    if (!tk.shows) { continue; }',
     '    let r = role - 1u;',
+    // A member at weight 0 still leads its role, as on the CPU.
+    `    if (lead[r] == ${none}) { lead[r] = k; }`,
+    '    let w = tk.w;',
+    '    if (!(w > 0.0)) { continue; }',
     `    switch u32(table[o + ${Col.SHADER}u]) {`,
   );
   add(
@@ -142,11 +154,7 @@ export function kernel(
   );
   add('      default: {}', '    }', '  }');
   add('  for (var k = 0u; k < frame.x; k++) {', ...read);
-  add(
-    '    if (role != 0u) {',
-    `      if (table[o + ${Col.FIRST}u] == 1.0) {`,
-    '        let r = role - 1u;',
-  );
+  add('    if (role != 0u) {', '      let r = role - 1u;', '      if (lead[r] == k) {');
   outputs.forEach((_, c) => {
     add(
       `        if (rt_${c}[r] > 0.0) { acc_${c} = fold_${c}(acc_${c}, rv_${c}[r], min(rt_${c}[r], 1.0)); }`,
@@ -156,7 +164,9 @@ export function kernel(
     '      }',
     '      continue;',
     '    }',
-    '    if (!(w > 0.0)) { continue; }',
+    '    let tk = blits_take(o, i);',
+    '    let w = tk.w;',
+    '    if (!tk.shows || !(w > 0.0)) { continue; }',
     `    switch u32(table[o + ${Col.SHADER}u]) {`,
   );
   add(arms((n, c, axes) => `acc_${c} = fold_${c}(acc_${c}, ${arr(axes, `d.o_${n}`)}, w);`));

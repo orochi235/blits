@@ -36,7 +36,14 @@ export function gpu(opts: GpuOptions): Engine {
     runs: new Set<'fn' | 'keys' | 'motion'>(['fn', 'keys', 'motion']),
     create<I, O, H = unknown>(kit: Kit<O>, mixOpts: MixOptions<H>): Mix<I, O, H> {
       const m = made<I, O, H>(kit, mixOpts, Lanes);
-      sides.set(m, new GpuSide<I>(mixerOf(m) as never, opts.device) as GpuSide<unknown>);
+      const side = new GpuSide<I>(mixerOf(m) as never, opts.device);
+      sides.set(m, side as GpuSide<unknown>);
+      const close = m.close.bind(m);
+      m.close = () => {
+        side.close();
+        sides.delete(m);
+        close();
+      };
       return m;
     },
   };

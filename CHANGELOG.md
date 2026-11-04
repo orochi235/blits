@@ -16,7 +16,14 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine folds `keys()` voices, a blend-mode color channel's stops interpolated as the
   channel does, straight across OKLab or round the hue, and a role of its voices blended the same.
 - The `gpu` engine folds `tween()`, `spring()` and `glide()` voices, committing a `to()`, `set()`
-  or `push()` at the voice's time even where nothing reads the subject on the CPU.
+  or `push()` at the subject's time, as a read on the CPU would, even where nothing reads the
+  subject there.
+- The `gpu` engine folds a voice that reaches only some of the registered subjects,
+  through `subjects` or `target`.
+- The `gpu` engine folds voices that stagger their subjects, for every patch the gpu engine runs.
+- A shader patch's `wgsl` can read `lag`, how many ms the subject's time trails the voice's.
+  The name is taken in every shader patch body, so one that declares its own `lag` no longer
+  compiles.
 
 ### Fixed
 
@@ -31,6 +38,11 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine keeps a voice on the CPU, saying why, where its numbers or its subjects' runs
   would pass the largest storage buffer the device binds, rather than failing to bind; and it
   reads a voice's place in those buffers exactly past 2^24 numbers.
+- The `gpu` engine folded a `target` voice into every registered subject, including those its
+  `target` turned away.
+- Closing a mix the `gpu` engine made destroys its GPU buffers and stops it listening to its
+  motion patches and its voices' clocks, rather than leaving the buffers for garbage collection
+  and a patch still telling the closed mix of every `to()`.
 
 ## 0.20.0
 

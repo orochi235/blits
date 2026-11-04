@@ -931,11 +931,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **`project` and `trace` show a body at the last synced world**: a patch cannot read another
       subject's state.
 
-18. **The gpu engine's reach, phases 2–4** (`docs/superpowers/specs/2026-11-03-gpu-reach-design.md`).
-    Phase 1, stock patches on the GPU, is built (d20940c..21dc031, on `main`, unreleased); stagger
-    and partial reach, owners and weight signals, and readback (`gpuOf(m).read`) are designed and
-    not built.
-    The schema page's "The gpu engine" says what folds now. Open from phase 1:
+18. **The gpu engine's reach, phases 3–4** (`docs/superpowers/specs/2026-11-03-gpu-reach-design.md`).
+    Phase 1, stock patches on the GPU, is built (d20940c..21dc031, on `main`, unreleased). Phase 2,
+    staggered voices and voices reaching some subjects, is built on branch `gpu-timing`
+    (4cad824..ff1cc94 and the commit measuring it), not yet merged. Owners and weight signals
+    (phase 3; bree needs owner-held voices, 2026-11-04) and readback (`gpuOf(m).read`, phase 4) are
+    designed and not built.
+    The schema page's "The gpu engine" says what folds now. Open from phase 2:
+    - **Answers never forgets a subject.** After a drop, or a part and unpart, a CPU-only mix asks
+      `target` again, while one with a gpu side answers from what it kept; they differ only for a
+      `target` that is not deterministic.
+    - `Answer.reach` shows a faded-out named subject as reached. Harmless while parting voices stay
+      on the CPU; lifting "it is parting from subjects" has to fix it first.
+    - The kernel's pass index is `pass_base + q` in f32, exact only to 2^24 passes (a short loop
+      played for many hours).
+    - An unstarted voice that holds its first frame, after a seek ahead, shows time 0 in the kernel
+      where the CPU's `shownAt` gives `anchorElapsed - delay`. Untested.
+    - The timing-block span test compares against records made at the end; probing each frame
+      would test records that moved.
+    - `src/gpu/mirror.ts` is 319 lines and `Mirror.prepare` takes positional optionals: split it
+      before it grows.
+    Open from phase 1:
     - **One motion patch folded by two voices at once**, on one mix or two live ones, rebuilds
       their mirrors every frame, each taking the patch's one watch back from the other, unwarned.
     - **A motion whose `from` or `velocity` is not deterministic** can jump on the GPU when a subject
@@ -944,8 +960,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       `channel()` call.
     - A function easing on a `keys` patch's first stop, which is never evaluated, still sends the
       patch to the CPU.
-    - `Regions` (`src/gpu/region.ts`) has no unit tests for a departure with survivors, shrink then
-      grow, or its store doubling, though every runner leans on it.
     - The binding-size guard keeps a voice on the CPU when `values` or `persub` would pass the
       device's `maxStorageBufferBindingSize`, but not the `out` and `subjects` buffers, whose
       `createBindGroup` still fails.
@@ -964,7 +978,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   has met, as `VoiceSpec.stagger` documents (decided 2026-10-29), so a read ahead or a replay with
   no reads can end it earlier than the live mix did, and `waiting` leaves those properties out.
 
-- **weasel gaps blits still works around** (found on weasel 1.12.0, 2026-10-22; not rechecked since the move to 1.16.1, 2026-11-03). A leaf cannot set
+- **weasel gaps blits still works around** (found on weasel 1.12.0, 2026-10-22; not rechecked since the move to 1.16.1, 2026-11-03). Since 1.16, labkit's `ControlPanel` lays rows out inline by default and sets layout only per panel or section, never per row; an inline `PropertyRow` keeps its label at full width, so a long label beside a slider widened three explainer pages at 390 px. The site now lets a slider row wrap (`.explainer-controls label:has(> input[type='range'])` in `site/src/styles/explainer.css`, 2026-11-04), which is close to 1.12 but not the same; worth reporting to weasel as a missing per-row layout. A leaf cannot set
   its own row layout or an accessible name apart from its label, so the booker's two rows and the
   level rows keep `fieldRow` in `CompositionControls.tsx`. The number leaves stay custom, since
   labkit's `.clearable()` takes only a fixed placeholder and a voice's `start` names its default

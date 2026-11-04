@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import { Answers } from '../src/gpu/answers.js';
 import { codesOf } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { Mirror } from '../src/gpu/mirror.js';
 import { spanned } from '../src/gpu/mirrors.js';
 import { motionPack } from '../src/gpu/runners/motion.js';
-import { kit, mix, spring, sum } from '../src/index.js';
+import { Timings } from '../src/gpu/timings.js';
+import { unreadOf } from '../src/gpu/unread.js';
+import { kit, mix, spring, sum, tween } from '../src/index.js';
+import type { Mixer } from '../src/mixer.js';
 import { motionOf } from '../src/motion.js';
 import type { Motions } from '../src/motions.js';
+import type { Voice } from '../src/voice.js';
 
 interface C {
   id: number;
@@ -16,8 +21,8 @@ interface P {
 }
 const K = kit<P>({ x: sum() });
 
-/** A spring cued on a mix at time 0, its `Motions`, and a mirror of `list`. */
-function setup(list: C[], meet: C[] = []) {
+/** A spring cued on a mix at time 0, its `Motions`, and a mirror of `list` with `delays`. */
+function setup(list: C[], meet: C[] = [], delays: Float64Array | null = null) {
   const s = spring<C, P>('x', { to: (c) => c.id });
   const m = mix<C, P>(K, { name: 'mirror' });
   m.sync(0);
@@ -26,7 +31,7 @@ function setup(list: C[], meet: C[] = []) {
   const motions = motionOf<C>(s) as Motions<C>;
   const packed = motionPack(s, codesOf(mixerOf(m)));
   if (packed === undefined || 'why' in packed) throw new Error('the spring did not pack');
-  const mirror = new Mirror(motions, list, packed.values);
+  const mirror = new Mirror(motions, list, packed.values, delays);
   return { s, m, motions, mirror };
 }
 
@@ -76,6 +81,89 @@ describe('motion mirror', () => {
     expect(motions.runs[b]).toBe(100);
     expect(mirror.rows[2 * mirror.stride]).toBe(100 - mirror.anchor);
     expect(mirror.rows[2 * mirror.stride + 3 + 2 * motions.n]).toBe(50);
+  });
+
+  it("commits an untimed retarget at each subject's own time", () => {
+    const list = cells(2);
+    const { s, m, motions, mirror } = setup(list, [], Float64Array.of(0, 100));
+    m.sync(150);
+    for (const c of list) s.to(c, 50);
+    mirror.prepare(150, Number.POSITIVE_INFINITY);
+    const [b0, b1] = list.map((c) => motions.base(motions.known(c) as number));
+    expect(motions.runs[b0 as number]).toBe(150);
+    expect(motions.runs[b1 as number]).toBe(50);
+    expect(mirror.rows[mirror.stride]).toBe(50 - mirror.anchor);
+    // The voice's time is the one at delay 0; the kernel takes each subject's delay off.
+    expect(mirror.values()[0]).toBe(150 - mirror.anchor);
+  });
+
+  it('keeps a retarget pending for a subject still inside its delay', () => {
+    const list = cells(2);
+    const { s, motions, mirror } = setup(list, [], Float64Array.of(0, 100));
+    mirror.prepare(100, Number.POSITIVE_INFINITY);
+    for (const c of list) s.to(c, 50, 80);
+    const [s0, s1] = list.map((c) => motions.known(c) as number) as [number, number];
+    mirror.prepare(150, Number.POSITIVE_INFINITY);
+    expect(motions.pending?.[s0]).toBeUndefined();
+    expect(motions.runs[motions.base(s0)]).toBe(80);
+    expect(motions.pending?.[s1]?.length).toBe(1);
+    expect(motions.runs[motions.base(s1)]).toBe(0);
+    mirror.prepare(190, Number.POSITIVE_INFINITY);
+    expect(motions.pending?.[s1]).toBeUndefined();
+    expect(motions.runs[motions.base(s1)]).toBe(80);
+    expect(mirror.rows[mirror.stride]).toBe(80 - mirror.anchor);
+  });
+
+  it('leaves an untimed retarget unstamped for a subject yet to start', () => {
+    const list = cells(2);
+    const { s, m, motions, mirror } = setup(list, [], Float64Array.of(0, 200));
+    m.sync(150);
+    for (const c of list) s.to(c, 50);
+    const s1 = motions.known(list[1] as C) as number;
+    mirror.prepare(150, Number.POSITIVE_INFINITY);
+    expect(motions.pending?.[s1]?.[0]?.at).toBeUndefined();
+    mirror.prepare(260, Number.POSITIVE_INFINITY);
+    expect(motions.pending?.[s1]).toBeUndefined();
+    expect(motions.runs[motions.base(s1)]).toBe(60);
+  });
+
+  it('commits a subject before its start at 0 where the voice holds its first frame', () => {
+    const list = cells(2);
+    const { s, m, motions, mirror } = setup(list, [], Float64Array.of(0, 200));
+    m.sync(150);
+    for (const c of list) s.to(c, 50);
+    mirror.prepare(150, Number.POSITIVE_INFINITY, true);
+    expect(motions.runs[motions.base(motions.known(list[1] as C) as number)]).toBe(0);
+  });
+
+  it('commits nothing for a row a live read would leave unsampled', () => {
+    const list = cells(2);
+    const { s, m, motions, mirror } = setup(list);
+    m.sync(150);
+    for (const c of list) s.to(c, 50);
+    mirror.prepare(150, Number.POSITIVE_INFINITY, false, (row) => row === 1);
+    const s1 = motions.known(list[1] as C) as number;
+    expect(motions.runs[motions.base(motions.known(list[0] as C) as number)]).toBe(150);
+    expect(motions.pending?.[s1]?.[0]?.at).toBeUndefined();
+  });
+
+  it('reads a subject as unread where unreached, or at its first frame of a fade in', () => {
+    const list = cells(3);
+    const m = mix<C, P>(K);
+    m.sync(0);
+    m.cue({
+      patch: tween<C, P>('x', { from: 0, to: 1, ms: 500 }),
+      subjects: list.slice(0, 2),
+      stagger: (c: C) => c.id * 100,
+      fade: { in: 400 },
+    });
+    const mixer = mixerOf(m) as unknown as Mixer<C, unknown>;
+    const voice = mixer.cued[0] as Voice<C, unknown>;
+    const answers = new Answers(mixer);
+    answers.register(list);
+    m.sync(100);
+    const unread = unreadOf(mixer, voice, answers, new Timings());
+    expect([0, 1, 2].map(unread)).toEqual([false, true, true]);
   });
 
   it('keeps a retarget timed ahead pending until the frame reaching it', () => {

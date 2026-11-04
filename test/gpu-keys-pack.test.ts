@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Answers } from '../src/gpu/answers.js';
 import { eligibility } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { packOf } from '../src/gpu/runner.js';
@@ -102,7 +103,9 @@ describe('a keys voice from the current pose', () => {
     });
     m.sync(0);
     m.sync(10);
-    expect(eligibility(mixerOf(m), cells).reasons.map((r) => r.why)).toEqual([
+    const answers = new Answers<object>(mixerOf(m) as never);
+    answers.register(cells);
+    expect(eligibility(mixerOf(m), answers).reasons.map((r) => r.why)).toEqual([
       "it starts from the subject's current pose",
     ]);
   });

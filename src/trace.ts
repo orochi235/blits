@@ -1,3 +1,4 @@
+import { delayOf } from './delay.js';
 import { type Curve, stepsOf, straight } from './easing.js';
 import type { Mixer } from './mixer.js';
 import type { Bend, NumberChannel, Projection, Run, Trace, TraceOptions } from './types.js';
@@ -341,7 +342,7 @@ function shapeOf<I, O>(
   };
   const reduced = mix.reduced;
   const held = voice.sharing ? undefined : voice.subjects.get(subject);
-  const delay = held?.delay ?? (spec.stagger ? spec.stagger(subject) : 0);
+  const delay = held?.delay ?? delayOf(voice, subject);
   const time = (raw: number): number => voice.timeAt(raw + delay);
   // The subject's own time on the voice's clock runs straight through the window.
   const e0 = voice.elapsedAt(from) - delay;

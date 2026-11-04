@@ -19,7 +19,7 @@ function motionRunner(form: number, axes: number, writes: string): Runner {
       wgsl: [
         'let k = base;',
         'let r = sub;',
-        'let t = values[k];',
+        'let t = values[k] - lag;',
         `var x: array<f32, ${axes}>;`,
         c.body,
         `out.${writes} = ${axes === 1 ? 'x[0]' : 'x'};`,

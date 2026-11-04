@@ -1,4 +1,5 @@
 import type { Arc } from './arcs.js';
+import type { Asked } from './asked.js';
 import type { Blend } from './blend.js';
 import type { Bound } from './bound.js';
 import {
@@ -334,6 +335,8 @@ export class Voice<I, O> {
    * copies its probes keep next to be written over; null until a seek cuts one.
    */
   spares: Snap<unknown>[] | null = null;
+  /** Its `stagger` and `target` answers as a gpu side keeps them; null without one. `park` keeps it. */
+  asked: Asked<I> | null = null;
   /** The one record of every subject it does not reach. */
   unreached: Subject<unknown> | null = null;
   /** By subject number, a bit set where `unreached` stands for the subject; null until one is. */

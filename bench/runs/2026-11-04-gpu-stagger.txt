@@ -1,0 +1,38 @@
+# teitou (Apple M5 Max, 18 cores, apple metal-3), 2026-11-04, headless Chromium 153.0.8010.12, node v26.13.0, load 3.7-4.7
+# onto do --kind bench --node teitou --solo, at ff1cc94 with only bench/gpu-stock.mjs changed (recorded as
+# ff1cc94+dirty; the change adds MIX=stagger and is in the commit that adds this file)
+#   MIX=stagger ROWS=mixer:100000,gpu:100000,mixer:1000000,gpu:1000000 FRAMES=300 WARM=30 \
+#     node bench/gpu-stock.mjs --out bench/runs/2026-11-04-gpu-stagger
+# Raw records, every frame and its parts: 2026-11-04-gpu-stagger.jsonl.
+#
+# The mix: the full mix of 2026-11-03-gpu-stock.txt (three looping keys voices on x and y, a triangle
+# wave on y, a spring on p retargeting 5% of the subjects each frame), with every voice cued
+# `stagger: (c) => (c.i % 256) * 4` (0 to 1020 ms), the first keys voice cued with no `subjects` and
+# `target: (c) => c.i % 2 === 0` (asked as met, looping for good), and the three keys voices fading in
+# over 500 ms. The last subjects finish fading in near 1520 ms, frame 91: the first 60 recorded frames.
+# A frame is the host's whole frame. Parts, as medians: retarget (the `to` calls), sync, read
+# (`pull` on mixer; the gpu side's dispatch), wait (`onSubmittedWorkDone`).
+
+onto: plan 4
+ 1/4 mixer stagger    100000  median    41.355 ms  p95    45.575 ms  max    60.620 ms at frame   140  frames 300  wall   13.4 s
+ 2/4 gpu   stagger    100000  median     4.475 ms  p95    10.490 ms  max    14.230 ms at frame    33  frames 300  wall    2.2 s
+ 3/4 mixer stagger   1000000  median   470.570 ms  p95   518.665 ms  max  1074.685 ms at frame   317  frames 300  wall  158.2 s
+ 4/4 gpu   stagger   1000000  median    53.545 ms  p95   141.630 ms  max   194.760 ms at frame   283  frames 300  wall   25.1 s
+
+node bench/gpu-stock.mjs --digest bench/runs/2026-11-04-gpu-stagger.jsonl
+engine          subjects   median ms     p95 ms     max ms  frames   retarget       sync       read       wait
+mixer/stagger     100000    41.355     45.575     60.620     300      2.470      0.005     39.000      0.000
+gpu/stagger       100000     4.475     10.490     14.230     300      0.945      0.005      2.895      0.525
+mixer/stagger    1000000   470.570    518.665   1074.685     300     28.245      0.010    441.785      0.005
+gpu/stagger      1000000    53.545    141.630    194.760     300     14.685      0.010     35.845      2.930
+
+# Medians of the recorded frames, split at frame 91 (subjects still fading in / after), from the records:
+#   mixer 100k   39.270 /  41.620 ms     gpu 100k     7.835 /  4.395 ms
+#   mixer 1M    457.155 / 472.610 ms     gpu 1M     101.760 / 53.370 ms
+#
+# Measured: against the unstaggered full mix, mixer took 1.68x as long at 100k (41.355 against
+# 24.555 ms, 2026-11-03-gpu-stock.txt) and 1.56x at 1M (470.570 against 300.760), nearly all of it
+# in `pull`. The gpu engine took 4.475 and 53.545 ms against 4.190 and 45.655 for the full mix at
+# fba6842 (2026-11-03-gpu-stock-after.jsonl), a phase-1 tree, so the two do not separate the
+# stagger's cost from other changes since. While subjects fade in, the gpu side's 1M frame is about
+# twice its later median; where that time goes was not measured.

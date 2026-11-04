@@ -139,7 +139,13 @@ function aimsAt<I, O>(
   const left = voice.parted?.get(subject);
   if (left !== undefined && !(now < left.at) && left.seq <= seq) return false;
   if (voice.named !== null) return voice.named.has(subject);
-  return voice.spec.target ? voice.spec.target(subject) : true;
+  if (!voice.spec.target) return true;
+  const a = voice.asked;
+  if (a !== null) {
+    const r = a.reaches(subject);
+    if (r !== undefined) return r;
+  }
+  return voice.spec.target(subject);
 }
 
 /**

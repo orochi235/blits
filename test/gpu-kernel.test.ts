@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { kernel, prefixed } from '../src/gpu/kernel.js';
 import { packOf, type Runner } from '../src/gpu/runner.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
+import { spring } from '../src/index.js';
 
 type O = { y: number; z: number; v: number };
 const helper = 'fn twice(x: f32) -> f32 { return 2.0 * x; }';
@@ -50,6 +51,26 @@ describe('kernel', () => {
   it('gives the same code for the same runner keys', () => {
     const again = kernel([runnerOf(a), stub], channels, 100);
     expect(again.code).toBe(kernel([runnerOf(a), stub], channels, 100).code);
+  });
+  it('gives every runner the lag of the subject it runs for', () => {
+    expect(k.code).toContain(
+      'fn run_0(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32, lag: f32) -> Out_0',
+    );
+    expect(k.code).toContain('fn blits_take(o: u32, i: u32) -> BlitsTake');
+    expect(k.code.match(/blits_take\(o, i\)/g)).toHaveLength(2);
+  });
+  it("picks each role's leader per subject, reading none from the row", () => {
+    expect(k.code).toContain('lead[r] = k;');
+    expect(k.code).toContain('if (lead[r] == k)');
+    expect(k.code).not.toMatch(/table\[o \+ \d+u\] == 1\.0/);
+  });
+  it('gives the same code for two frames whose voices differ only in data', () => {
+    const near = spring<{ id: number }, O>('y', { to: (c) => c.id });
+    const far = spring<{ id: number }, O>('y', { to: (c) => 10 * c.id, stiffness: 400 });
+    expect(runnerOf(near).wgsl).toContain('let t = values[k] - lag;');
+    expect(kernel([runnerOf(near), stub], channels, 100).code).toBe(
+      kernel([runnerOf(far), stub], channels, 100).code,
+    );
   });
   it('includes a shared helper once', () => {
     expect(k.code.split(helper)).toHaveLength(2);

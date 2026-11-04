@@ -18,9 +18,9 @@ const DRIFT = 2 ** 14;
  * A motion voice's runs as the GPU reads them: each registered subject's run, in registration
  * order, kept in step with its `Motions` by `watch`. A subject the patch has not met yet gets the
  * row its first stretch would have, without the patch numbering it: registering is not meeting.
- * Before each dispatch, `prepare` commits the changes due by the voice's time, as a live `sample`
- * would, since a host reading only the GPU's buffers makes none; `take` then hands over the rows
- * that changed.
+ * Before each dispatch, `prepare` commits the changes due by each subject's time, as a live
+ * `sample` would, since a host reading only the GPU's buffers makes none; `take` then hands over
+ * the rows that changed.
  */
 export class Mirror<I> {
   /** Each registered subject's run, `stride` numbers apiece, its release time counted from `anchor`. */
@@ -60,6 +60,8 @@ export class Mirror<I> {
     readonly list: readonly I[],
     /** The voice's numbers as the runner packed them, the first a place for its time. */
     readonly packed: Float32Array,
+    /** Each registered subject's delay, in registration order; null where the voice does not stagger. */
+    readonly delays: Float64Array | null = null,
   ) {
     this.vals = packed;
     this.watch();
@@ -176,9 +178,12 @@ export class Mirror<I> {
   /**
    * Commits each registered subject's changes due by voice time `t`, letting go of stretches
    * older than `horizon`, as a live sample at `t` does, and writes the rows that changed. A change
-   * timed later waits on `due` for the frame it falls due in.
+   * timed later waits on `due` for the frame it falls due in. With `delays`, `t` and `horizon` are
+   * at delay 0 and each row's are its delay less; a row before its start commits nothing, or
+   * commits at 0 where `holds`, as a sample of a voice holding its first frame does. A row
+   * `unread` says the CPU would not sample this frame, unreached or silent, commits nothing.
    */
-  prepare(t: number, horizon: number): void {
+  prepare(t: number, horizon: number, holds = false, unread?: (row: number) => boolean): void {
     const m = this.motions;
     if (m.listener !== this.listen) {
       this.watch();
@@ -191,7 +196,14 @@ export class Mirror<I> {
       const was = reading.horizon;
       reading.horizon = horizon;
       try {
-        for (const s of work) if (this.rowFor(s) !== undefined) m.advance(s, t);
+        for (const s of work) {
+          const row = this.rowFor(s);
+          if (row === undefined) continue;
+          const at = this.at(row, t, holds);
+          if (Number.isNaN(at) || unread?.(row)) continue;
+          reading.horizon = horizon - (this.delays?.[row] ?? 0);
+          m.advance(s, at);
+        }
       } finally {
         reading.horizon = was;
       }
@@ -206,14 +218,22 @@ export class Mirror<I> {
       if (this.flags(s) & (PENDING | OLDER)) this.due.add(s);
     }
     if (this.rewrite) {
-      for (let row = 0; row < this.list.length; row++) this.write(row, t);
+      for (let row = 0; row < this.list.length; row++) this.write(row, this.at(row, t, holds));
       this.rewrite = false;
-    } else for (const row of this.dirty) this.write(row, t);
+    } else for (const row of this.dirty) this.write(row, this.at(row, t, holds));
     if (!Object.is(t - this.anchor, this.time)) {
       this.time = t - this.anchor;
       this.vals = this.packed.slice();
       this.vals[0] = this.time;
     }
+  }
+
+  /** Row `row`'s time at voice time `t`; NaN before its start, or 0 there where `holds`. */
+  private at(row: number, t: number, holds: boolean): number {
+    const d = this.delays;
+    if (d === null) return t;
+    const x = t - (d[row] as number);
+    return x >= 0 || Number.isNaN(x) ? x : holds ? 0 : Number.NaN;
   }
 
   /** The voice's numbers this frame, its time counted from `anchor`; a new array when it moved. */
