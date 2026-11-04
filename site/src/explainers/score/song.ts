@@ -99,7 +99,12 @@ const PHRASES: Phrase[] = [
     answer: B_FA_LA,
     answerChords: ON_DOMINANT,
   },
-  { ...A, words: "Or you're go- ing in a cas- ket.", answer: LAST_FA_LA, answerChords: CADENCE },
+  {
+    ...A,
+    words: 'Lined with sat- in, like a cas- ket.',
+    answer: LAST_FA_LA,
+    answerChords: CADENCE,
+  },
 ];
 
 function line(
