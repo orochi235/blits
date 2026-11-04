@@ -1,4 +1,5 @@
-import type { Shader } from './shader-patch.js';
+import type { Runner } from './runner.js';
+import { Col, ROW } from './table.js';
 import type { ChannelCode } from './wgsl/channels.js';
 
 /** The most roles one frame's GPU voices may play; a frame with more keeps its channels on the CPU. */
@@ -27,14 +28,14 @@ export interface Kernel {
 const lit = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
 
 /**
- * A shader body with the names its author wrote made safe: \`out.cast\` becomes \`out.o_cast\`, and
- * \`subject.\` and \`params.\` fields likewise, since WGSL reserves many plain words.
+ * A runner body with the names its author wrote made safe: \`out.cast\` becomes \`out.o_cast\`,
+ * \`subject.\` fields likewise, and \`params.k\` the local \`params_k\`, since WGSL reserves many plain words.
  */
 export function prefixed(wgsl: string): string {
   return wgsl
     .replace(/\bout\.([A-Za-z_][A-Za-z0-9_]*)/g, 'out.o_$1')
     .replace(/\bsubject\.([A-Za-z_][A-Za-z0-9_]*)/g, 'subject.s_$1')
-    .replace(/\bparams\.([A-Za-z_][A-Za-z0-9_]*)/g, 'params.p_$1');
+    .replace(/\bparams\.([A-Za-z_][A-Za-z0-9_]*)/g, 'params_$1');
 }
 
 const ty = (axes: number) => (axes === 1 ? 'f32' : `array<f32, ${axes}>`);
@@ -48,18 +49,18 @@ const blendOf = (c: ChannelCode | undefined, into: string) =>
 const arr = (axes: number, e: string) => (axes === 1 ? `array<f32, 1>(${e})` : e);
 
 /**
- * The compute shader folding `channels` from `shaders` for `subjects` subjects: one invocation per
+ * The compute shader folding `channels` from `runners` for `subjects` subjects: one invocation per
  * subject, reading the voice table, gathering roles in a first pass over it and folding every voice
  * in voice order in a second, a role at its first member's place.
  */
 export function kernel(
-  shaders: readonly Shader[],
+  runners: readonly Runner[],
   channels: ReadonlyMap<string, ChannelCode>,
   subjects: number,
-  /** Every channel a shader may write, folded this frame or not, so each output has its type. */
+  /** Every channel a runner may write, folded this frame or not, so each output has its type. */
   types: ReadonlyMap<string, ChannelCode> = channels,
 ): Kernel {
-  const fields = [...new Set(shaders.flatMap((s) => s.fields))].sort();
+  const fields = [...new Set(runners.flatMap((r) => r.fields))].sort();
   const outputs: Output[] = [];
   let size = 0;
   for (const [name, c] of channels) {
@@ -76,8 +77,9 @@ export function kernel(
   add('@group(0) @binding(2) var<storage, read> values: array<f32>;');
   add('@group(0) @binding(3) var<uniform> frame: vec4u;');
   add('@group(0) @binding(4) var<storage, read_write> outv: array<f32>;');
+  add('@group(0) @binding(5) var<storage, read> persub: array<f32>;');
   const codes = [...channels.values()];
-  const helpers = [...codes.map((c) => c.helpers ?? ''), ...shaders.map((s) => s.helpers)];
+  const helpers = [...codes.map((c) => c.helpers ?? ''), ...runners.map((r) => r.helpers)];
   for (const h of new Set(helpers.filter((h) => h !== ''))) add(h);
   outputs.forEach((o, c) => {
     const code = channels.get(o.name) as ChannelCode;
@@ -89,27 +91,24 @@ export function kernel(
       '}',
     );
   });
-  shaders.forEach((s, i) => {
-    const writes = s.writes.map((n) => ({ n, axes: inputOf(types.get(n)) }));
+  runners.forEach((r, i) => {
+    const writes = r.writes.map((n) => ({ n, axes: inputOf(types.get(n)) }));
     add(`struct Out_${i} { ${writes.map((w) => `o_${w.n}: ${ty(w.axes)},`).join(' ')} }`);
-    if (s.params.length > 0)
-      add(`struct Params_${i} { ${s.params.map((p) => `p_${p}: f32,`).join(' ')} }`);
-    add(`fn patch_${i}(phase: f32, pass_index: f32, subject: Subject, base: u32) -> Out_${i} {`);
-    if (s.params.length > 0)
-      add(
-        `  let params = Params_${i}(${s.params.map((_, k) => `values[base + ${k}u]`).join(', ')});`,
-      );
-    add(`  var out: Out_${i};`, `  ${prefixed(s.wgsl)}`, '  return out;', '}');
+    add(
+      `fn run_${i}(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32) -> Out_${i} {`,
+    );
+    add(`  var out: Out_${i};`, `  ${prefixed(r.wgsl)}`, '  return out;', '}');
   });
   const index = new Map(outputs.map((o, c) => [o.name, c]));
   const arms = (body: (name: string, c: number, axes: number) => string) =>
-    shaders
-      .map((s, i) => {
-        const inner = s.writes
+    runners
+      .map((r, i) => {
+        const inner = r.writes
           .filter((n) => index.has(n))
           .map((n) => body(n, index.get(n) as number, inputOf(channels.get(n))))
           .join(' ');
-        return `      case ${i}u: { let d = patch_${i}(phase, pass_index, subject, base); ${inner} }`;
+        const sub = r.stride ? `sub + i * ${r.stride}u` : '0u';
+        return `      case ${i}u: { let d = run_${i}(phase, pass_index, subject, base, ${sub}); ${inner} }`;
       })
       .join('\n');
   add(`@compute @workgroup_size(${GROUP})`, 'fn main(@builtin(global_invocation_id) id: vec3u) {');
@@ -123,18 +122,19 @@ export function kernel(
     );
   });
   const read = [
-    '    let o = k * 8u;',
-    '    let w = table[o + 4u];',
-    '    let role = u32(table[o + 5u]);',
-    '    let phase = table[o + 2u];',
-    '    let pass_index = table[o + 3u];',
-    '    let base = u32(table[o + 1u]);',
+    `    let o = k * ${ROW}u;`,
+    `    let w = table[o + ${Col.WEIGHT}u];`,
+    `    let role = u32(table[o + ${Col.ROLE}u]);`,
+    `    let phase = table[o + ${Col.PHASE}u];`,
+    `    let pass_index = table[o + ${Col.PASS}u];`,
+    `    let base = u32(table[o + ${Col.VALUES}u]);`,
+    `    let sub = u32(table[o + ${Col.SUB}u]);`,
   ];
   add('  for (var k = 0u; k < frame.x; k++) {', ...read);
   add(
     '    if (role == 0u || !(w > 0.0)) { continue; }',
     '    let r = role - 1u;',
-    '    switch u32(table[o]) {',
+    `    switch u32(table[o + ${Col.SHADER}u]) {`,
   );
   add(
     arms(
@@ -144,7 +144,11 @@ export function kernel(
   );
   add('      default: {}', '    }', '  }');
   add('  for (var k = 0u; k < frame.x; k++) {', ...read);
-  add('    if (role != 0u) {', '      if (table[o + 6u] == 1.0) {', '        let r = role - 1u;');
+  add(
+    '    if (role != 0u) {',
+    `      if (table[o + ${Col.FIRST}u] == 1.0) {`,
+    '        let r = role - 1u;',
+  );
   outputs.forEach((_, c) => {
     add(
       `        if (rt_${c}[r] > 0.0) { acc_${c} = fold_${c}(acc_${c}, rv_${c}[r], min(rt_${c}[r], 1.0)); }`,
@@ -155,7 +159,7 @@ export function kernel(
     '      continue;',
     '    }',
     '    if (!(w > 0.0)) { continue; }',
-    '    switch u32(table[o]) {',
+    `    switch u32(table[o + ${Col.SHADER}u]) {`,
   );
   add(arms((n, c, axes) => `acc_${c} = fold_${c}(acc_${c}, ${arr(axes, `d.o_${n}`)}, w);`));
   add('      default: {}', '    }', '  }');

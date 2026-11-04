@@ -2,7 +2,8 @@ import { createHistory } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { eligibility } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
-import { gpuDescriptor, shaderPatch } from '../src/gpu/shader-patch.js';
+import { Regions } from '../src/gpu/region.js';
+import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { Col, ROW, voiceTable } from '../src/gpu/table.js';
 import { kit, mix, quat, sum } from '../src/index.js';
 
@@ -18,7 +19,7 @@ const wave = shaderPatch<C, P>(1000, {
   at: (phase) => ({ y: phase }),
   writes: ['y'],
 });
-const shaders = new Map([[gpuDescriptor(wave)?.shader as never, 0]]);
+const slots = Array.from({ length: 3 }, () => ({ runner: 0, values: 0, sub: 0 }));
 const cells = [{ x: 0 }, { x: 1 }];
 
 describe('voice table', () => {
@@ -28,7 +29,7 @@ describe('voice table', () => {
     m.sync(0);
     m.sync(250);
     const e = eligibility(mixerOf(m), cells);
-    const t = voiceTable(mixerOf(m), e.voices, shaders);
+    const t = voiceTable(mixerOf(m), e.voices, slots);
     m.probe(cells[0] as C);
     expect(t.count).toBe(1);
     expect(t.rows[Col.PHASE]).toBeCloseTo(0.25, 6);
@@ -43,7 +44,7 @@ describe('voice table', () => {
     m.cue({ patch: wave, subjects: cells, role: 'a' });
     m.cue({ patch: wave, subjects: cells });
     m.sync(0);
-    const t = voiceTable(mixerOf(m), eligibility(mixerOf(m), cells).voices, shaders);
+    const t = voiceTable(mixerOf(m), eligibility(mixerOf(m), cells).voices, slots);
     expect([t.rows[Col.ROLE], t.rows[ROW + Col.ROLE], t.rows[2 * ROW + Col.ROLE]]).toEqual([
       1, 1, 0,
     ]);
@@ -76,5 +77,42 @@ describe('voice table', () => {
     const m = mix<C, P>(K);
     m.sync(0);
     expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(true);
+  });
+});
+
+describe('regions', () => {
+  const a = {};
+  const b = {};
+  const one = Float32Array.of(1, 2);
+  const two = Float32Array.of(3, 4, 5);
+
+  it('reports nothing changed the second frame with the same voices', () => {
+    const r = new Regions();
+    const first = r.frame([
+      { owner: a, values: one },
+      { owner: b, values: two },
+    ]);
+    expect(first.changed).toEqual([[0, 20]]);
+    const second = r.frame([
+      { owner: a, values: one },
+      { owner: b, values: two },
+    ]);
+    expect(second.offsets).toEqual(first.offsets);
+    expect(second.changed).toEqual([]);
+  });
+
+  it("reports only a voice's range when its patch is replaced", () => {
+    const r = new Regions();
+    r.frame([
+      { owner: a, values: one },
+      { owner: b, values: two },
+    ]);
+    const next = r.frame([
+      { owner: a, values: one },
+      { owner: b, values: Float32Array.of(6, 7, 8) },
+    ]);
+    expect(next.offsets).toEqual([0, 2]);
+    expect(next.changed).toEqual([[8, 20]]);
+    expect([...r.data.subarray(0, 5)]).toEqual([1, 2, 6, 7, 8]);
   });
 });

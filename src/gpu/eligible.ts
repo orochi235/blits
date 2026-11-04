@@ -1,7 +1,7 @@
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
-import { gpuDescriptor } from './shader-patch.js';
-import { codeFor } from './wgsl/channels.js';
+import { type ChannelLookup, packOf } from './runner.js';
+import { type ChannelCode, codeFor } from './wgsl/channels.js';
 
 /** What can go on the GPU this frame, and why the rest cannot. */
 export interface Eligibility<I, O> {
@@ -15,15 +15,34 @@ export interface Eligibility<I, O> {
 
 const PLAYING = new Set(['live', 'frozen', 'fading']);
 
+const lookups = new WeakMap<object, ChannelLookup>();
+
+/** The WGSL of each of the mix's channels whose rule has some, one map per mix. */
+export function codesOf<I, O>(mix: Mixer<I, O>): ChannelLookup {
+  let codes = lookups.get(mix);
+  if (codes === undefined) {
+    const made = new Map<string, ChannelCode>();
+    mix.names.forEach((name, i) => {
+      const code = codeFor(mix.channels[i] as never);
+      if (code !== undefined) made.set(name, code);
+    });
+    codes = made;
+    lookups.set(mix, codes);
+  }
+  return codes;
+}
+
 /** Why a voice cannot run on the GPU, or null where it can. */
 function why<I, O>(
   voice: Voice<I, O>,
   subjects: readonly I[],
-  ruled: ReadonlySet<string>,
+  codes: ChannelLookup,
 ): string | null {
-  if (gpuDescriptor(voice.patch) === undefined) return 'its patch is not a shaderPatch';
+  const packed = packOf(voice.patch, codes);
+  if (packed === undefined) return `no gpu runner takes a ${voice.patch.form} patch`;
+  if ('why' in packed) return packed.why;
   for (const name of voice.patch.writes as readonly string[])
-    if (!ruled.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
+    if (!codes.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
   if (typeof voice.spec.weight === 'function') return 'its weight is a weight signal';
   if (voice.spec.stagger !== undefined) return 'it staggers its subjects';
   if (voice.owner !== null) return 'an owner lays it out';
@@ -44,27 +63,24 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
   const channels = new Set<string>();
   const kept = new Set<string>();
   const reasons: { voice: Voice<I, O>; why: string }[] = [];
-  const ruled = new Set<string>();
-  mix.names.forEach((name, i) => {
-    if (codeFor(mix.channels[i] as never) === undefined) kept.add(name);
-    else ruled.add(name);
-  });
+  const codes = codesOf(mix);
+  for (const name of mix.names) if (!codes.has(name)) kept.add(name);
   const playing = mix.cued.filter((v) => PLAYING.has(v.state));
+  const fit = new Set<Voice<I, O>>();
   for (const voice of playing) {
-    const reason = why(voice, subjects, ruled);
+    const reason = why(voice, subjects, codes);
     for (const name of voice.patch.writes as readonly string[]) {
       if (reason === null) channels.add(name);
       else kept.add(name);
     }
-    if (reason !== null) reasons.push({ voice, why: reason });
+    if (reason === null) fit.add(voice);
+    else reasons.push({ voice, why: reason });
   }
   // A channel no playing voice writes folds to its rest, which the GPU gives as well as any.
-  for (const name of ruled) channels.add(name);
+  for (const name of codes.keys()) channels.add(name);
   for (const name of kept) channels.delete(name);
   const voices = playing.filter(
-    (v) =>
-      gpuDescriptor(v.patch) !== undefined &&
-      (v.patch.writes as readonly string[]).some((n) => channels.has(n)),
+    (v) => fit.has(v) && (v.patch.writes as readonly string[]).some((n) => channels.has(n)),
   );
   return { channels, voices, reasons };
 }

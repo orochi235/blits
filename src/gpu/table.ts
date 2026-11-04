@@ -1,14 +1,15 @@
 import { passAt, phaseAt, phaseBefore, weighed } from '../clock.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
-import { gpuDescriptor, type Shader } from './shader-patch.js';
 
 /** How many numbers each voice takes in the table. */
 export const ROW = 8;
 
 /** Where each of a row's numbers sits. */
 export enum Col {
+  /** The voice's runner, as the kernel indexes its runners. */
   SHADER = 0,
+  /** Where the voice's packed values start in the values buffer, in f32s. */
   VALUES = 1,
   PHASE = 2,
   PASS = 3,
@@ -17,12 +18,20 @@ export enum Col {
   ROLE = 5,
   /** 1 where the voice is its role's first member this frame. */
   FIRST = 6,
+  /** Where the voice's per-subject region starts in the per-subject buffer, in f32s. */
+  SUB = 7,
 }
 
-/** The frame's voices as the kernel reads them, and their parameter values end to end. */
+/** Where a voice's runner and data sit, as the table records them. */
+export interface Slot {
+  readonly runner: number;
+  readonly values: number;
+  readonly sub: number;
+}
+
+/** The frame's voices as the kernel reads them. */
 export interface Table {
   readonly rows: Float32Array;
-  readonly values: Float32Array;
   readonly count: number;
   /** How many roles this frame's voices play. */
   readonly roles: number;
@@ -36,19 +45,19 @@ export interface Table {
 export function voiceTable<I, O>(
   mix: Mixer<I, O>,
   voices: readonly Voice<I, O>[],
-  shaders: ReadonlyMap<Shader, number>,
+  /** Each voice's runner and data, in `voices` order. */
+  slots: readonly Slot[],
 ): Table {
   const now = mix.now;
   const rows = new Float32Array(Math.max(1, voices.length) * ROW);
-  const values: number[] = [];
   const roles = new Map<string, number>();
   voices.forEach((voice, k) => {
-    const d = gpuDescriptor(voice.patch);
-    if (d === undefined) throw new Error('blits: a voice in the GPU table has no shader');
+    const slot = slots[k];
+    if (slot === undefined) throw new Error('blits: a voice in the GPU table has no slot');
     const o = k * ROW;
-    rows[o + Col.SHADER] = shaders.get(d.shader) ?? 0;
-    rows[o + Col.VALUES] = values.length;
-    values.push(...d.values);
+    rows[o + Col.SHADER] = slot.runner;
+    rows[o + Col.VALUES] = slot.values;
+    rows[o + Col.SUB] = slot.sub;
     const raw = voice.rawAt(now, 0);
     const early = voice.before(raw, now);
     const elapsed = early && !voice.holdsFirst ? Number.NaN : voice.shownAt(raw);
@@ -72,10 +81,5 @@ export function voiceTable<I, O>(
     rows[o + Col.PASS] = passAt(elapsed, voice.duration, voice.passes);
     rows[o + Col.WEIGHT] = weighed(voice.weight, fade, 1);
   });
-  return {
-    rows,
-    values: new Float32Array(values.length > 0 ? values : [0]),
-    count: voices.length,
-    roles: roles.size,
-  };
+  return { rows, count: voices.length, roles: roles.size };
 }

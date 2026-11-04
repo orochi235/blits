@@ -19,11 +19,15 @@ export interface ChannelCode {
   /** The channel's bounds, which its folded value is clamped to, as the CPU's `clamp` does. */
   readonly bounds?: readonly [number, number];
   /**
-   * How a role's members blend on axis `a`, where a straight `mix` would differ from the channel's
-   * `lerp`: a WGSL expression of `x` (so far), `y` (the next member) and `u` (its share).
+   * The channel's `lerp` on one axis, as a WGSL expression of `x`, `y` and `u`: how a role's members
+   * blend, and how keyframes interpolate. Undefined where the GPU has none yet; a role then mixes
+   * straight.
    */
   readonly lerp?: string;
 }
+
+/** The `lerp` of every rule whose values interpolate as plain numbers. */
+const STRAIGHT = 'mix(x, y, u)';
 
 /** A number as a WGSL f32 literal. */
 const f = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
@@ -41,6 +45,7 @@ function stock(op: string, axes: number): ChannelCode {
     axes,
     rest: Array.from({ length: axes }, () => o.rest),
     fold: `for (var a = 0u; a < ${axes}u; a++) { ${o.fold} }`,
+    lerp: STRAIGHT,
   };
 }
 
@@ -89,9 +94,15 @@ function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
       axes: 1,
       rest: [x.top],
       fold: `acc[0] = min(acc[0], ${f(x.top)} + (v[0] - ${f(x.top)}) * w);`,
+      lerp: STRAIGHT,
     };
   if (x?.op === 'screen')
-    return { axes: 1, rest: [0], fold: 'let s = v[0] * w; acc[0] = acc[0] + s - acc[0] * s;' };
+    return {
+      axes: 1,
+      rest: [0],
+      fold: 'let s = v[0] * w; acc[0] = acc[0] + s - acc[0] * s;',
+      lerp: STRAIGHT,
+    };
   if (x?.op === 'norm') {
     const p = f(x.power);
     const q = f(1 / x.power);
@@ -99,6 +110,7 @@ function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
       axes: 1,
       rest: [0],
       fold: `let s = v[0] * w; if (acc[0] == 0.0) { acc[0] = s; } else if (s != 0.0) { let u = sign(acc[0]) * pow(abs(acc[0]), ${p}) + sign(s) * pow(abs(s), ${p}); acc[0] = sign(u) * pow(abs(u), ${q}); }`,
+      lerp: STRAIGHT,
     };
   }
   return undefined;

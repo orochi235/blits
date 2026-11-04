@@ -1,4 +1,5 @@
 import type { Patch, Setting } from '../types.js';
+import type { Packed, Runner } from './runner.js';
 
 /**
  * A WGSL scalar type a subject field or a patch parameter can have.
@@ -38,9 +39,10 @@ export interface Shader {
   readonly writes: readonly string[];
 }
 
-/** A shader patch's GPU half: its shader, and its parameter values in `shader.params` order. */
+/** A shader patch's GPU half: its shader, the runner the kernel runs it by, and its parameter values in `shader.params` order. */
 export interface GpuDescriptor {
   readonly shader: Shader;
+  readonly runner: Runner;
   readonly values: readonly number[];
 }
 
@@ -60,6 +62,14 @@ const descriptors = new WeakMap<object, GpuDescriptor>();
 export function gpuDescriptor(patch: object): GpuDescriptor | undefined {
   return descriptors.get(patch);
 }
+
+/** A shader patch's runner and parameter values; undefined for a patch `shaderPatch` did not make. */
+export function shaderPack(patch: object): Packed | undefined {
+  const d = descriptors.get(patch);
+  return d === undefined ? undefined : { runner: d.runner, values: Float32Array.from(d.values) };
+}
+
+let made = 0;
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
@@ -97,6 +107,13 @@ export function shaderPatch<I, O, P extends Record<string, number> = Record<stri
     params,
     writes: spec.writes,
   };
+  const runner: Runner = {
+    key: `shader:${made++}`,
+    helpers: shader.helpers,
+    wgsl: [...params.map((n, k) => `let params_${n} = values[base + ${k}u];`), spec.wgsl].join(' '),
+    writes: spec.writes,
+    fields,
+  };
   const make = (p: P): ShaderPatch<I, O, P> => {
     const patch: ShaderPatch<I, O, P> = {
       form: 'fn',
@@ -111,7 +128,7 @@ export function shaderPatch<I, O, P extends Record<string, number> = Record<stri
         return make(next);
       },
     };
-    descriptors.set(patch, { shader, values: params.map((n) => p[n] ?? 0) });
+    descriptors.set(patch, { shader, runner, values: params.map((n) => p[n] ?? 0) });
     return patch;
   };
   return make({} as P);

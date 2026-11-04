@@ -1,21 +1,20 @@
 import type { Mixer } from '../mixer.js';
 import { production, warnOnce } from '../warn.js';
-import { eligibility } from './eligible.js';
-import { GROUP, type Kernel, kernel, MAX_ROLES } from './kernel.js';
-import { gpuDescriptor, type Shader } from './shader-patch.js';
-import { voiceTable } from './table.js';
+import { type Built, compile, layoutOf } from './compile.js';
+import { codesOf, eligibility } from './eligible.js';
+import { GROUP, type Kernel, MAX_ROLES } from './kernel.js';
+import { type Entry, Regions } from './region.js';
+import { packOf, type Runner } from './runner.js';
+import { type Slot, voiceTable } from './table.js';
+import { twins } from './twins.js';
 import {
   type GpuBindGroup,
-  type GpuBindGroupLayout,
   type GpuBuffer,
   type GpuComputePipeline,
   type GpuDevice,
-  MAP_READ,
   Usage,
 } from './webgpu.js';
-import { type ChannelCode, codeFor } from './wgsl/channels.js';
-
-declare const console: { error(message: string): void };
+import type { ChannelCode } from './wgsl/channels.js';
 
 /**
  * Where a channel's folded values sit in the GPU side's output buffer: each subject's `axes`
@@ -29,18 +28,6 @@ export interface GpuChannel {
   readonly stride: number;
   readonly axes: number;
 }
-
-interface Built {
-  readonly kernel: Kernel;
-  pipeline: GpuComputePipeline | null;
-  failed: boolean;
-}
-
-/** Twin check tolerances: what f32 math and the order of its operations leave apart from f64. */
-const RELATIVE = 1e-4;
-/** Absolute tolerance: a color's trip through linear sRGB and back leaves about 4e-4 in f32. */
-const ABSOLUTE = 1e-3;
-const SAMPLES = 16;
 
 /**
  * The GPU half of a mix the `gpu` engine made: folds the channels its shader patches' voices write
@@ -56,15 +43,20 @@ export class GpuSide<I> {
   private off = false;
   private frame = Number.NaN;
   private outputs = new Map<string, GpuChannel>();
-  private readonly known: Shader[] = [];
-  private readonly index = new Map<Shader, number>();
+  private readonly known: Runner[] = [];
+  /** Each runner's place in `known`, by key, as the table's runner column gives it. */
+  private readonly index = new Map<string, number>();
   private readonly built = new Map<string, Built>();
-  private readonly checked = new Set<Shader>();
+  private readonly checked = new Set<string>();
+  private readonly regions = new Regions();
+  /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
+  private stale = true;
   /** Each channel's reason for staying on the CPU, said once. */
   private readonly told = new Set<string>();
   private uploaded: { list: readonly I[]; fields: readonly string[] } | null = null;
-  private buffers: Partial<Record<'subjects' | 'table' | 'values' | 'frame' | 'out', GpuBuffer>> =
-    {};
+  private buffers: Partial<
+    Record<'subjects' | 'table' | 'values' | 'frame' | 'out' | 'persub', GpuBuffer>
+  > = {};
   private group: { of: GpuComputePipeline; group: GpuBindGroup } | null = null;
 
   constructor(
@@ -117,32 +109,41 @@ export class GpuSide<I> {
       warnOnce(r.voice, `${key}, so the gpu engine leaves it on the CPU`);
     }
     if (e.channels.size === 0) return;
-    for (const v of e.voices) {
-      const shader = gpuDescriptor(v.patch)?.shader as Shader;
-      if (!this.index.has(shader)) {
-        this.index.set(shader, this.known.length);
-        this.known.push(shader);
+    const codes = codesOf(mix);
+    const runners = e.voices.map((v) => {
+      const r = (packOf(v.patch, codes) as { runner: Runner }).runner;
+      if (!this.index.has(r.key)) {
+        this.index.set(r.key, this.known.length);
+        this.known.push(r);
       }
-    }
+      return r;
+    });
     const channels = new Map<string, ChannelCode>();
-    mix.names.forEach((name, i) => {
-      if (e.channels.has(name))
-        channels.set(name, codeFor(mix.channels[i] as never) as ChannelCode);
-    });
-    const types = new Map<string, ChannelCode>();
-    mix.names.forEach((name, i) => {
-      const code = codeFor(mix.channels[i] as never);
-      if (code !== undefined) types.set(name, code);
-    });
+    for (const name of mix.names)
+      if (e.channels.has(name)) channels.set(name, codes.get(name) as ChannelCode);
     const key = `${this.known.length}|${[...channels.keys()].join(',')}|${n}`;
     let b = this.built.get(key);
     if (b === undefined) {
-      b = this.build(key, channels, n, types);
+      const made = compile(this.device, key, this.known.slice(), channels, n, codes);
+      b = made.built;
       this.built.set(key, b);
+      this.ready = made.compiled;
+      made.compiled.catch(() => {});
     }
     if (b.pipeline === null || b.failed) return;
-    const table = voiceTable(mix, e.voices, this.index);
+    const entries: Entry[] = e.voices.map((v) => ({
+      owner: v,
+      values: (packOf(v.patch, codes) as { values: Float32Array }).values,
+    }));
+    const placed = this.regions.frame(entries);
+    const slots: Slot[] = runners.map((r, k) => ({
+      runner: this.index.get(r.key) as number,
+      values: placed.offsets[k] as number,
+      sub: 0,
+    }));
+    const table = voiceTable(mix, e.voices, slots);
     if (table.roles > MAX_ROLES) {
+      this.stale = true;
       warnOnce(
         this,
         `the gpu engine folds at most ${MAX_ROLES} roles a frame; the rest stay on the CPU`,
@@ -154,18 +155,28 @@ export class GpuSide<I> {
     const dev = this.device;
     const buf = this.buffers;
     const t = this.sized('table', table.rows.byteLength, Usage.STORAGE | Usage.COPY_DST);
-    const v = this.sized('values', table.values.byteLength, Usage.STORAGE | Usage.COPY_DST);
+    const had = buf.values;
+    const v = this.sized('values', this.regions.length * 4, Usage.STORAGE | Usage.COPY_DST);
     const f = this.sized('frame', 16, Usage.UNIFORM | Usage.COPY_DST);
     const out = this.sized('out', k.size * 4, Usage.STORAGE | Usage.COPY_SRC);
+    // Bound to a placeholder until a runner reads per-subject data.
+    const persub = this.sized('persub', 16, Usage.STORAGE | Usage.COPY_DST);
     dev.queue.writeBuffer(t, 0, table.rows);
-    dev.queue.writeBuffer(v, 0, table.values);
+    const data = this.regions.data;
+    if (this.stale || v !== had) {
+      if (this.regions.length > 0)
+        dev.queue.writeBuffer(v, 0, data.subarray(0, this.regions.length));
+      this.stale = false;
+    } else
+      for (const [from, to] of placed.changed)
+        dev.queue.writeBuffer(v, from, data.subarray(from / 4, to / 4));
     dev.queue.writeBuffer(f, 0, new Uint32Array([table.count, n, 0, 0]));
     if (this.group === null || this.group.of !== b.pipeline) {
       this.group = {
         of: b.pipeline,
         group: dev.createBindGroup({
-          layout: this.layout(),
-          entries: [buf.subjects, t, v, f, out].map((buffer, binding) => ({
+          layout: layoutOf(dev),
+          entries: [buf.subjects, t, v, f, out, persub].map((buffer, binding) => ({
             binding,
             resource: { buffer: buffer as GpuBuffer },
           })),
@@ -186,12 +197,12 @@ export class GpuSide<I> {
         stride: o.axes * 4,
         axes: o.axes,
       });
-    if (!production())
-      this.twins(
-        e.voices.map((x) => gpuDescriptor(x.patch)?.shader as Shader),
-        k,
-        out,
-      );
+    if (production()) return;
+    // Compares a sample of subjects with the CPU's fold, the first time each runner runs.
+    const fresh = runners.filter((r) => !this.checked.has(r.key));
+    if (fresh.length === 0) return;
+    for (const r of fresh) this.checked.add(r.key);
+    twins(dev, mix, this.list, k, out, fresh[0] as Runner);
   }
 
   /** A buffer at least `bytes` long, made again (and the bind group with it) when it is too small. */
@@ -221,102 +232,5 @@ export class GpuSide<I> {
     const b = this.sized('subjects', data.byteLength, Usage.STORAGE | Usage.COPY_DST);
     this.device.queue.writeBuffer(b, 0, data);
     this.uploaded = { list: this.list, fields: k.fields };
-  }
-
-  private bound: GpuBindGroupLayout | null = null;
-
-  /** The kernel's bindings, given outright: 'auto' would drop the values buffer a kernel with no parameters never reads. */
-  private layout(): GpuBindGroupLayout {
-    const COMPUTE = 4;
-    const type = [
-      'read-only-storage',
-      'read-only-storage',
-      'read-only-storage',
-      'uniform',
-      'storage',
-    ];
-    this.bound ??= this.device.createBindGroupLayout({
-      entries: type.map((t, binding) => ({ binding, visibility: COMPUTE, buffer: { type: t } })),
-    });
-    return this.bound;
-  }
-
-  private build(
-    key: string,
-    channels: Map<string, ChannelCode>,
-    n: number,
-    types: Map<string, ChannelCode>,
-  ): Built {
-    const k = kernel(this.known.slice(), channels, n, types);
-    const b: Built = { kernel: k, pipeline: null, failed: false };
-    const module = this.device.createShaderModule({ code: k.code, label: `blits gpu ${key}` });
-    const compiled = this.device
-      .createComputePipelineAsync({
-        layout: this.device.createPipelineLayout({ bindGroupLayouts: [this.layout()] }),
-        compute: { module, entryPoint: 'main' },
-        label: key,
-      })
-      .then(
-        (p) => {
-          b.pipeline = p;
-        },
-        async (err: unknown) => {
-          b.failed = true;
-          const info = await module.getCompilationInfo?.();
-          const said =
-            info?.messages.map((m) => `line ${m.lineNum}: ${m.message}`).join('\n') ?? String(err);
-          console.error(
-            `blits: the gpu engine's kernel did not compile; its channels stay on the CPU\n${said}`,
-          );
-          throw err;
-        },
-      );
-    this.ready = compiled;
-    compiled.catch(() => {});
-    return b;
-  }
-
-  /** Compares a sample of subjects with the CPU's fold, the first time each shader runs. */
-  private twins(shaders: readonly Shader[], k: Kernel, out: GpuBuffer): void {
-    const fresh = shaders.filter((s) => !this.checked.has(s));
-    if (fresh.length === 0) return;
-    for (const s of fresh) this.checked.add(s);
-    const n = this.list.length;
-    const picks = [
-      ...new Set(
-        Array.from({ length: Math.min(SAMPLES, n) }, (_, j) =>
-          Math.floor((j * (n - 1)) / Math.max(1, SAMPLES - 1)),
-        ),
-      ),
-    ];
-    const read = this.device.createBuffer({
-      size: k.size * 4,
-      usage: Usage.MAP_READ | Usage.COPY_DST,
-    });
-    const enc = this.device.createCommandEncoder();
-    enc.copyBufferToBuffer(out, 0, read, 0, k.size * 4);
-    this.device.queue.submit([enc.finish()]);
-    const subjects = picks.map((i) => this.list[i] as I);
-    const cpu = subjects.map((s) => ({ ...(this.mix.probe(s) as Record<string, unknown>) }));
-    void read.mapAsync(MAP_READ).then(() => {
-      const got = new Float32Array(read.getMappedRange().slice(0));
-      read.unmap();
-      read.destroy();
-      for (const o of k.outputs)
-        picks.forEach((i, j) => {
-          const want = cpu[j]?.[o.name];
-          const wants =
-            typeof want === 'number' ? [want] : Array.isArray(want) ? (want as number[]) : [];
-          for (let a = 0; a < o.axes; a++) {
-            const g = got[o.offset + i * o.axes + a] as number;
-            const w = wants[a] ?? Number.NaN;
-            if (Math.abs(g - w) > ABSOLUTE + RELATIVE * Math.abs(w))
-              warnOnce(
-                fresh[0] as Shader,
-                `a shader patch writing ${o.name} gives ${g} on the GPU and ${w} on the CPU for subject ${i}; its wgsl and at disagree`,
-              );
-          }
-        });
-    });
   }
 }
