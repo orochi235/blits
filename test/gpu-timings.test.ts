@@ -1,8 +1,10 @@
+import { createHistory } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { Answers } from '../src/gpu/answers.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { type TimingSlot, Timings } from '../src/gpu/timings.js';
+import { unreadOf } from '../src/gpu/unread.js';
 import type { GpuBuffer, GpuDevice } from '../src/gpu/webgpu.js';
 import { NONE } from '../src/gpu/wgsl/timing.js';
 import { kit, mix, spring, sum } from '../src/index.js';
@@ -249,14 +251,19 @@ describe('Timings', () => {
       hook(v, t);
     };
     m.sync(100);
+    for (const c of list) m.probe(c);
     m.cue({ patch: wave, loop: false, owner: s, faster: 4 });
     m.cue({ patch: wave, loop: false, owner: s, faster: 4 });
     m.sync(150);
+    for (const c of list) m.probe(c);
     s.rate = -1;
     m.sync(250);
+    for (const c of list) m.probe(c);
     s.rate = 1;
     m.sync(400);
+    for (const c of list) m.probe(c);
     m.sync(420);
+    for (const c of list) m.probe(c);
     expect(heard).toContain(400);
     const slot = timings.place(mixer, [voice], answers, 0)[0] as TimingSlot;
     const r = uploaded(timings);
@@ -281,18 +288,66 @@ describe('Timings', () => {
     const answers = new Answers<C>(mixer);
     answers.register(list);
     const timings = new Timings();
-    for (const c of list.slice(0, 4)) m.probe(c);
+    for (const c of list) m.probe(c);
     timings.place(mixer, voices, answers, 0);
     m.sync(250);
+    for (const c of list) m.probe(c);
     h.rate = 2;
     m.sync(270);
+    for (const c of list) m.probe(c);
     h.rate = 3;
     m.sync(290);
+    for (const c of list) m.probe(c);
     h.seek(100);
     m.sync(300);
+    for (const c of list) m.probe(c);
     const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
     const r = uploaded(timings);
     for (const o of origins(m, voice, list, slot, r.f32)) expect(o.gpu).toBe(o.cpu);
+  });
+
+  it("follows a mix-level seek back to before a rate change, as the records' origins do", () => {
+    const list = cells(10);
+    const m = mix<C, P>(K, { name: 'seek', history: { ms: 1e5, tape: createHistory } });
+    m.sync(0);
+    const h = m.cue({ patch: wave, loop: true, stagger: (c: C) => c.i * 100, fade: { in: 300 } });
+    const mixer = mixerOf(m) as unknown as Mixer<C, unknown>;
+    const voices = [...mixer.cued] as Voice<C, unknown>[];
+    const answers = new Answers<C>(mixer);
+    answers.register(list);
+    const timings = new Timings();
+    const frame = (t: number) => {
+      m.sync(t);
+      for (const c of list) m.probe(c);
+      const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
+      const r = uploaded(timings);
+      for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r.f32))
+        expect(o.gpu).toBe(o.cpu);
+    };
+    for (let t = 0; t <= 300; t += 50) frame(t);
+    h.rate = 0.5;
+    for (let t = 350; t <= 1000; t += 50) frame(t);
+    m.seek(200);
+    for (let t = 1050; t <= 2500; t += 50) frame(t);
+  });
+
+  it("reads a voice's block once per unreadOf, not once per subject", () => {
+    const list = cells(50);
+    const { m, mixer, voices, answers, timings } = setup(list, {
+      stagger: (c: C) => c.i * 10,
+      fade: { in: 300 },
+    });
+    m.sync(100);
+    let asked = 0;
+    const of = answers.of.bind(answers);
+    answers.of = (v) => {
+      asked++;
+      return of(v);
+    };
+    const unread = unreadOf(mixer, voices[0] as Voice<C, unknown>, answers, timings);
+    const silent = list.map((_, i) => unread(i));
+    expect(silent.filter(Boolean).length).toBe(40);
+    expect(asked).toBeLessThanOrEqual(2);
   });
 
   it('writes nothing when nothing moved', () => {

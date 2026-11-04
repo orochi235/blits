@@ -20,11 +20,12 @@ export function unreadOf<I>(
   const reach = answer?.reach ?? null;
   // Staggered and fading in, each subject fades in from its own origin, which its timing block keeps.
   const own = (answer?.delays ?? null) !== null && (voice.fade.in ?? 0) > 0;
+  const origins = own ? timings.originsOf(mix, voice, answers) : null;
   let shared: number | undefined;
   return (row) => {
     if (reach !== null && (((reach[row >>> 5] as number) >>> (row & 31)) & 1) === 0) return true;
     let shown: number;
-    if (own) shown = timings.originOf(mix, voice, answers, row) ?? Number.NaN;
+    if (own) shown = origins?.[row] ?? Number.NaN;
     else {
       shared ??= mix.shownOf(voice, mix.sinceOf(voice, 0));
       shown = shared;

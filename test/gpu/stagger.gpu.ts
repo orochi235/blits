@@ -166,6 +166,30 @@ const CASES: [string, Script][] = [
     },
   ],
   [
+    'a mix-level seek back to before a rate change, then a new rate, inside the delays',
+    {
+      cues: [{ stagger: STAGGER, fade: { in: 400 } }],
+      history: true,
+      acts: [
+        {
+          at: 300,
+          act: (h) => {
+            if (h[0]) h[0].rate = 0.5;
+          },
+        },
+        {
+          at: 1000,
+          // The new rate cuts the tape, so subjects the change at 300 passed start again here.
+          act: (h, _p, m) => {
+            m.seek(200);
+            if (h[0]) h[0].rate = 2;
+          },
+        },
+      ],
+      times: [...new Set([300, 1000, ...Array.from({ length: 150 }, (_, k) => 16 * (k + 1))])],
+    },
+  ],
+  [
     'subjects() called again in another order mid-play',
     {
       cues: [

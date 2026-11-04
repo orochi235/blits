@@ -62,6 +62,16 @@ export class Buffers {
     this.uploaded = { list, fields };
   }
 
+  /** Destroys every buffer made, and forgets the bind group and what was uploaded. */
+  destroy(): void {
+    for (const name of NAMES) {
+      this.made[name]?.destroy();
+      delete this.made[name];
+    }
+    this.group = null;
+    this.uploaded = null;
+  }
+
   /** The bind group over every buffer for `pipeline`, made again where a buffer or it changed. */
   bind(pipeline: GpuComputePipeline, layout: GpuBindGroupLayout): GpuBindGroup {
     if (this.group === null || this.group.of !== pipeline)

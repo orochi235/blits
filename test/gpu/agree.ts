@@ -1,6 +1,7 @@
+import { createHistory } from '@weasel-js/history';
 import { gpu, gpuOf, mixerOf } from '../../src/gpu/engine.js';
 import type { GpuDevice } from '../../src/gpu/webgpu.js';
-import { type Easing, type Kit, mix, mixer } from '../../src/index.js';
+import { type Easing, type Kit, type Mix, mix, mixer } from '../../src/index.js';
 import type { Voice } from '../../src/voice.js';
 import { close, closeNear, nudge, readBack } from './harness.js';
 
@@ -77,10 +78,12 @@ export interface Script {
   cues: Cue[];
   times: number[];
   /**
-   * Done to both mixes' handles and patches right after the sync at `at`, before that time is
-   * compared.
+   * Done to both mixes, their handles and patches right after the sync at `at`, before that time
+   * is compared.
    */
-  acts?: { at: number; act: (h: Handle[], p: Moving[]) => void }[];
+  acts?: { at: number; act: (h: Handle[], p: Moving[], m: Mix<C, never>) => void }[];
+  /** Gives both mixes a history, so a mix-level `seek` can move them. */
+  history?: boolean;
   /** From this time on the voices stay on the CPU, so the GPU folds no channel. */
   cpuFrom?: number;
   /** After the reading at this time, the subjects are registered again in another order. */
@@ -88,9 +91,19 @@ export interface Script {
 }
 
 /** The kind's voices cued by `cues` on a mix made by `engine`, named or asked as met. */
-export function make(kind: Kind, cues: Cue[], named: boolean, engine: typeof mixer) {
+export function make(
+  kind: Kind,
+  cues: Cue[],
+  named: boolean,
+  engine: typeof mixer,
+  history = false,
+) {
   const kt = kind.kit();
-  const m = mix<C, never>(kt, { engine, name: 'agree' });
+  const m = mix<C, never>(kt, {
+    engine,
+    name: 'agree',
+    ...(history ? { history: { ms: 1e5, tape: createHistory } } : {}),
+  });
   m.sync(0);
   const patches: Moving[] = [];
   const handles = cues.map((c, k) => {
@@ -151,8 +164,8 @@ export function probed(m: { probe(s: C): unknown }, s: C, channel: string, a: nu
  * times, with `closeNear` only where a subject's time is on a pass edge or its start.
  */
 export async function agree(device: GpuDevice, kind: Kind, script: Script, named: boolean) {
-  const g = make(kind, script.cues, named, gpu({ device }));
-  const c = make(kind, script.cues, named, mixer);
+  const g = make(kind, script.cues, named, gpu({ device }), script.history);
+  const c = make(kind, script.cues, named, mixer, script.history);
   const cpuVoices = [...mixerOf(c.m).cued] as unknown as Voice<C, never>[];
   const side = gpuOf(g.m);
   let list = CELLS;
@@ -166,11 +179,15 @@ export async function agree(device: GpuDevice, kind: Kind, script: Script, named
     c.m.sync(t);
     for (const a of acts)
       if (a.at === t) {
-        a.act(g.handles, g.patches);
-        a.act(c.handles, c.patches);
+        a.act(g.handles, g.patches, g.m);
+        a.act(c.handles, c.patches, c.m);
       }
-    if (!script.times.includes(t)) continue;
+    // Every frame as a host drawing every subject sees it: the GPU folds, the CPU probes each.
     const ch = side.channel(kind.channel);
+    if (!script.times.includes(t)) {
+      for (const s of list) c.m.probe(s);
+      continue;
+    }
     if (script.cpuFrom !== undefined && t >= script.cpuFrom) {
       if (ch !== null) throw new Error(`the channel is on the GPU at ${t}, past ${script.cpuFrom}`);
       continue;

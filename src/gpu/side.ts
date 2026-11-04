@@ -68,11 +68,24 @@ export class GpuSide<I> {
     this.answers = new Answers(mix);
     this.buffers = new Buffers(device);
     void device.lost.then(() => {
-      this.off = true;
-      this.outputs.clear();
+      this.release();
       this.ready = Promise.reject(new Error('blits: the GPU device was lost'));
       this.ready.catch(() => {});
     });
+  }
+
+  /** Destroys the GPU buffers and lets go of the patches and the mix; the side folds nothing after. */
+  close(): void {
+    this.release();
+    this.buffers.destroy();
+  }
+
+  /** Stops folding, and lets go of every mirror's watch and the mix's `reorigined`. */
+  private release(): void {
+    this.off = true;
+    this.outputs.clear();
+    this.mirrors.clear();
+    this.timings.close();
   }
 
   /**

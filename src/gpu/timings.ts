@@ -39,6 +39,8 @@ class Block {
   private readonly at: number;
   /** 1 where a subject's record would be on its voice's `early` list. */
   private readonly early: Uint8Array | null;
+  /** How many of `early` are 1. */
+  private listed = 0;
   private readonly shown: Float64Array | null;
   /** Set where an origin moved since `data` last took them, so the next `place` lays them again. */
   private stale = false;
@@ -47,6 +49,8 @@ class Block {
   anchor: number;
   latest = Number.NEGATIVE_INFINITY;
   dirty = Dirty.ALL;
+  /** The voice's `seeks` when this was made: a seek puts its records back, which origins follow. */
+  readonly seeks: number;
 
   constructor(
     mix: Mixer<unknown, unknown>,
@@ -56,6 +60,7 @@ class Block {
   ) {
     const { delays, reach } = answer;
     const fades = (voice.fade.in ?? 0) > 0;
+    this.seeks = voice.seeks;
     this.data = new Float32Array(sizeOf(answer, fades));
     const n = delays?.length ?? 0;
     if (delays !== null) this.data.set(delays);
@@ -74,6 +79,7 @@ class Block {
     for (let i = 0; i < n; i++) {
       const since = mix.sinceOf(voice, delays[i] as number);
       this.early[i] = since <= now ? 0 : 1;
+      this.listed += this.early[i] as number;
       this.shown[i] = mix.shownOf(voice, since);
     }
     this.lay(now);
@@ -86,12 +92,15 @@ class Block {
   reorigin(mix: Mixer<unknown, unknown>, now: number): void {
     const { early, shown } = this;
     const delays = this.answer.delays;
-    if (early === null || shown === null || delays === null) return;
+    if (early === null || shown === null || delays === null || this.listed === 0) return;
     for (let i = 0; i < early.length; i++) {
       if (early[i] === 0) continue;
       const s = mix.sinceOf(this.voice, delays[i] as number);
       // A motion voice's record stays listed until read past its origin, which the GPU never does.
-      if (this.voice.motion === undefined && s <= now) early[i] = 0;
+      if (this.voice.motion === undefined && s <= now) {
+        early[i] = 0;
+        this.listed--;
+      }
       shown[i] = mix.shownOf(this.voice, s);
       this.stale = true;
     }
@@ -116,13 +125,13 @@ class Block {
     };
   }
 
-  /** Subject `i`'s fade-in origin, a mix time; undefined where the block keeps none. */
-  originOf(i: number): number | undefined {
-    return this.shown?.[i];
+  /** Each subject's fade-in origin by registration order, mix times; null where the block keeps none. */
+  get origins(): Float64Array | null {
+    return this.shown;
   }
 
   /** The origins' range in `data`, in f32s. */
-  get origins(): [number, number] {
+  get range(): [number, number] {
     return [this.at, this.data.length];
   }
 
@@ -152,8 +161,9 @@ export class Timings {
   private placed: { block: Block; offset: number }[] = [];
   /** Set where `placed` moved since the last upload, so all of it is written next. */
   private moved = true;
-  /** The mix whose clock changes this hears, through its `reorigined`. */
+  /** The mix whose clock changes this hears, and the `reorigined` hook it set there. */
   private hooked: Mixer<unknown, unknown> | null = null;
+  private hook: Mixer<unknown, unknown>['reorigined'] = null;
   /** f32s the blocks take. */
   length = 0;
 
@@ -165,11 +175,21 @@ export class Timings {
     this.length = 0;
   }
 
+  /** Lets go of every block and stops hearing the mix's clock changes. */
+  close(): void {
+    this.clear();
+    const m = this.hooked;
+    if (m !== null && m.reorigined === this.hook) m.reorigined = null;
+    this.hooked = null;
+    this.hook = null;
+  }
+
   /** `voice`'s block for this frame, made where it has none for `answer`; undefined where it needs none. */
   private blockOf<I>(mix: Mixer<I, unknown>, voice: Voice<I, unknown>, answers: Answers<I>) {
     const m = mix as Mixer<unknown, unknown>;
     if (this.hooked !== m) {
-      m.reorigined = (voice, t) => this.by.get(voice)?.reorigin(m, t);
+      this.hook = (voice, t) => this.by.get(voice)?.reorigin(m, t);
+      m.reorigined = this.hook;
       this.hooked = m;
     }
     const v = voice as Voice<unknown, unknown>;
@@ -177,7 +197,7 @@ export class Timings {
     const answer = answers.of(voice);
     if (answer.delays === null && answer.reach === null) return undefined;
     let b = this.by.get(v);
-    if (b === undefined || b.answer !== answer) {
+    if (b === undefined || b.answer !== answer || b.seeks !== v.seeks) {
       b = new Block(m, v, answer, mix.now);
       this.by.set(v, b);
     } else b.follow(mix.now);
@@ -185,16 +205,15 @@ export class Timings {
   }
 
   /**
-   * Registered subject `i`'s fade-in origin for `voice` this frame, a mix time, as the GPU fades it
-   * in from; undefined where the voice does not both stagger and fade in.
+   * Each registered subject's fade-in origin for `voice` this frame, mix times by registration
+   * order, as the GPU fades them in from; null where the voice does not both stagger and fade in.
    */
-  originOf<I>(
+  originsOf<I>(
     mix: Mixer<I, unknown>,
     voice: Voice<I, unknown>,
     answers: Answers<I>,
-    i: number,
-  ): number | undefined {
-    return this.blockOf(mix, voice, answers)?.originOf(i);
+  ): Float64Array | null {
+    return this.blockOf(mix, voice, answers)?.origins ?? null;
   }
 
   /** This frame's blocks, one per voice or undefined for one needing none, laid from `from`. */
@@ -241,7 +260,7 @@ export class Timings {
       if (all || block.dirty === Dirty.ALL) {
         if (block.data.length > 0) device.queue.writeBuffer(buffer, offset * 4, block.data);
       } else if (block.dirty === Dirty.SHOWN) {
-        const [from, to] = block.origins;
+        const [from, to] = block.range;
         device.queue.writeBuffer(buffer, (offset + from) * 4, block.data.subarray(from, to));
       }
       block.dirty = Dirty.NONE;

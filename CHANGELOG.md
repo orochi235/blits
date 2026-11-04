@@ -33,6 +33,9 @@ version and everything else the patch. Each release lists its changes as **Break
   reads a voice's place in those buffers exactly past 2^24 numbers.
 - The `gpu` engine folded a `target` voice into every registered subject, including those its
   `target` turned away.
+- Closing a mix the `gpu` engine made destroys its GPU buffers and stops it listening to its
+  motion patches and its voices' clocks, rather than leaving the buffers for garbage collection
+  and a patch still telling the closed mix of every `to()`.
 
 ## 0.20.0
 
