@@ -38,7 +38,7 @@ export function twins<I>(
   device.queue.submit([enc.finish()]);
   const subjects = picks.map((i) => list[i] as I);
   const cpu = subjects.map((s) => ({ ...(mix.probe(s) as Record<string, unknown>) }));
-  void read.mapAsync(MAP_READ).then(() => {
+  const check = () => {
     const got = new Float32Array(read.getMappedRange().slice(0));
     read.unmap();
     read.destroy();
@@ -57,5 +57,7 @@ export function twins<I>(
             );
         }
       });
-  });
+  };
+  // A device lost before the map settles refuses it; the check is dropped.
+  read.mapAsync(MAP_READ).then(check, () => {});
 }

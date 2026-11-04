@@ -87,6 +87,23 @@ describe('gpu engine', () => {
     expect(mixerOf(m).unheld).toBeNull();
   });
 
+  it('drops a twin check whose map a lost device refuses, rejecting nothing unhandled', async () => {
+    const d = fakeDevice();
+    const seen: unknown[] = [];
+    const hear = (e: unknown) => seen.push(e);
+    process.on('unhandledRejection', hear);
+    try {
+      // The first fold of a runner maps a sample back to check against the CPU.
+      await folding(d.device);
+      expect(d.log).toContain('map ');
+      d.refuse();
+      await new Promise((r) => setTimeout(r, 0));
+    } finally {
+      process.off('unhandledRejection', hear);
+    }
+    expect(seen).toEqual([]);
+  });
+
   it("times a change as the CPU's record would, once a fold has met the voice", async () => {
     const d = stub();
     const cells = Array.from({ length: 4 }, (_, x) => ({ x }));
