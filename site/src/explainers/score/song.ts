@@ -90,16 +90,16 @@ interface Phrase {
 const A = { line: A_LINE, lineChords: ON_TONIC, faLa: 'Fa la la la la, la la la la.' };
 const PHRASES: Phrase[] = [
   { ...A, words: 'It rubs the lo- tion on its skin,', answer: A_FA_LA, answerChords: CADENCE },
-  { ...A, words: "It does this when- ev- er it's told,", answer: A_FA_LA, answerChords: CADENCE },
+  { ...A, words: 'Or else it gets the hose a- gain,', answer: A_FA_LA, answerChords: CADENCE },
   {
-    words: 'Or else it gets the hose a- gain.',
+    words: 'Put the lo- tion in the bas- ket,',
     line: B_LINE,
     lineChords: ON_DOMINANT,
     faLa: 'Fa la la, la la la, la la la.',
     answer: B_FA_LA,
     answerChords: ON_DOMINANT,
   },
-  { ...A, words: 'Put the lo- tion in the bas- ket.', answer: LAST_FA_LA, answerChords: CADENCE },
+  { ...A, words: "Or you're go- ing in a cas- ket.", answer: LAST_FA_LA, answerChords: CADENCE },
 ];
 
 function line(
