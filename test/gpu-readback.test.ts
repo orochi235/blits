@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gpu, gpuOf } from '../src/gpu/engine.js';
+import { MAX_ROLES } from '../src/gpu/kernel.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { kit, level, mix, patch, slew, spring, sum } from '../src/index.js';
 import { fakeDevice } from './gpu-device.js';
@@ -298,5 +299,63 @@ describe('gpu read', () => {
     expect(side.reasons()).toEqual(reasons);
     expect(dispatched()).toBe(before);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  /** `folding()` with a second voice, `drift`, that the next fold leaves on the CPU. */
+  async function drifting() {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const f = await folding();
+    const weight = slew((c: C) => c.x, { riseMs: 100 });
+    f.m.cue({ patch: wave, subjects: f.cells, loop: true, name: 'drift', weight });
+    expect(await f.side.read('y')).toBeNull();
+    expect(f.side.reasons()).toHaveLength(1);
+    return f;
+  }
+
+  it('reasons() empties at subjects()', async () => {
+    const { side, cells } = await drifting();
+    side.subjects(cells, () => ({}));
+    expect(side.reasons()).toEqual([]);
+  });
+
+  it('reasons() empties at close()', async () => {
+    const { m, side } = await drifting();
+    m.close();
+    expect(side.reasons()).toEqual([]);
+  });
+
+  it('reasons() empties at device loss', async () => {
+    const { fake, side } = await drifting();
+    fake.lose();
+    await fake.device.lost;
+    expect(side.reasons()).toEqual([]);
+  });
+
+  it('reasons() is frozen, entries and channels too', async () => {
+    const { side } = await drifting();
+    const reasons = side.reasons();
+    expect(Object.isFrozen(reasons)).toBe(true);
+    for (const r of reasons) {
+      expect(Object.isFrozen(r)).toBe(true);
+      expect(Object.isFrozen(r.channels)).toBe(true);
+    }
+  });
+
+  it('reasons() says why when a frame has more roles than the gpu engine folds', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { m, side, cells } = await folding();
+    for (let r = 0; r <= MAX_ROLES; r++)
+      m.cue({ patch: wave, subjects: cells, loop: true, role: `r${r}` });
+    side.channel('y');
+    await side.ready;
+    m.sync(16);
+    expect(side.channel('y')).toBeNull();
+    expect(side.reasons()).toEqual([
+      {
+        voice: undefined,
+        channels: ['y', 'z'],
+        why: `the gpu engine folds at most ${MAX_ROLES} roles a frame, so in a frame with more every channel stays on the CPU`,
+      },
+    ]);
   });
 });

@@ -34,7 +34,8 @@ version and everything else the patch. Each release lists its changes as **Break
   subjects, from the previous frame, without waiting on the fold being made; `null` where the GPU
   does not fold that channel.
 - `gpuOf(m).reasons()` lists each voice the `gpu` engine's last fold left on the CPU, by its
-  `name`, with the channels it writes and why, in production builds too.
+  `name`, with the channels it writes and why, in production builds too, and gives one entry with
+  no voice where a frame has more roles than the GPU folds.
 
 ### Fixed
 

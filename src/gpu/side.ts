@@ -101,6 +101,7 @@ export class GpuSide<I> {
     this.timings.close();
     this.reads.clear();
     this.met.close();
+    this.why.clear();
   }
 
   /**
@@ -117,6 +118,7 @@ export class GpuSide<I> {
     this.timings.clear();
     this.reads.clear();
     this.readback.forget();
+    this.why.clear();
   }
 
   /**
@@ -152,7 +154,11 @@ export class GpuSide<I> {
     return this.readback.read(name, this.mix.frame, this.mix.seq);
   }
 
-  /** Each voice the last fold left on the CPU, and why; empty where every voice folds. Folds nothing. */
+  /**
+   * Each voice the last fold left on the CPU and why, plus an entry with no voice where a frame had
+   * more roles than the GPU folds. Empty where everything folds, and after `subjects()`, `close()`
+   * or device loss. Frozen; asking folds nothing.
+   */
   reasons(): readonly GpuReason[] {
     return this.why.list;
   }
@@ -237,10 +243,9 @@ export class GpuSide<I> {
     const { table, placed } = prepared;
     if (table.roles > MAX_ROLES) {
       this.stale = true;
-      warnOnce(
-        this,
-        `the gpu engine folds at most ${MAX_ROLES} roles a frame; the rest stay on the CPU`,
-      );
+      const why = `the gpu engine folds at most ${MAX_ROLES} roles a frame, so in a frame with more every channel stays on the CPU`;
+      this.why.all([...channels.keys()], why);
+      warnOnce(this, why);
       return;
     }
     this.met.mark(voices);
