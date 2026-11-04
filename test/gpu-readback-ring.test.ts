@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { type Fold, type GpuRead, Readback } from '../src/gpu/readback.js';
 import type { GpuChannel } from '../src/gpu/side.js';
 import { Usage } from '../src/gpu/webgpu.js';
@@ -230,6 +230,23 @@ describe('gpu readback ring', () => {
     }
     expect(d.made('readback')).toBe(1);
     expect(Array.from(held.values)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('a copy that fails to read out resolves null and frees its slot', async () => {
+    const { d, r, fold, read } = ring();
+    r.want('s');
+    r.fold(fold(1));
+    r.turn(2);
+    const slice = vi.spyOn(ArrayBuffer.prototype, 'slice').mockImplementationOnce(() => {
+      throw new Error('no range');
+    });
+    await d.settle();
+    slice.mockRestore();
+    expect(await read('s', 2)).toBeNull();
+    r.want('s');
+    r.fold(fold(2));
+    r.turn(3);
+    expect(d.made('readback')).toBe(1);
   });
 
   it('forget: a waiting read keeps its own list, and the next read copies the current fold', async () => {

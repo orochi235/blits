@@ -3,6 +3,10 @@ import type { GpuBuffer, GpuDevice } from '../src/gpu/webgpu.js';
 interface Fake extends GpuBuffer {
   readonly label: string;
   readonly data: ArrayBuffer;
+  /** A map is pending. */
+  mapping: boolean;
+  mapped: boolean;
+  destroyed: boolean;
 }
 
 type Command =
@@ -34,8 +38,16 @@ export function fakeDevice(opts: { compile?: 'held' } = {}) {
   const nameOf = (label: string | undefined) =>
     label === undefined ? '' : label.startsWith(prefix) ? label.slice(prefix.length) : label;
 
+  /** Throws where WebGPU would refuse the submit: a destroyed buffer, or one mapped or mapping. */
+  const usable = (b: Fake) => {
+    if (b.destroyed) throw new Error(`a copy used ${b.label}, which was destroyed`);
+    if (b.mapped || b.mapping) throw new Error(`a copy used ${b.label} while it was mapped`);
+  };
+
   const run = (c: Command) => {
     if (c.kind === 'copy') {
+      usable(c.src);
+      usable(c.dst);
       log.push(`copy ${c.src.label}->${c.dst.label} ${c.at}+${c.size}`);
       new Uint8Array(c.dst.data, c.to, c.size).set(new Uint8Array(c.src.data, c.at, c.size));
       return;
@@ -77,32 +89,45 @@ export function fakeDevice(opts: { compile?: 'held' } = {}) {
     createBuffer(desc: { size: number; usage: number; label?: string }): GpuBuffer {
       const label = nameOf(desc.label);
       count.set(label, (count.get(label) ?? 0) + 1);
-      let mapped = false;
       const made: Fake = {
         label,
         data: new ArrayBuffer(desc.size),
         size: desc.size,
+        mapping: false,
+        mapped: false,
+        destroyed: false,
         mapAsync() {
           log.push(`map ${label}`);
+          if (made.destroyed || made.mapping || made.mapped)
+            return Promise.reject(
+              new Error(`${label} cannot map: it is destroyed, mapping or mapped`),
+            );
+          made.mapping = true;
           return new Promise<void>((resolve, reject) => {
             maps.push({
               resolve: () => {
-                mapped = true;
+                made.mapping = false;
+                made.mapped = true;
                 resolve();
               },
-              reject,
+              reject: (e) => {
+                made.mapping = false;
+                reject(e);
+              },
               buffer: made,
             });
           });
         },
         getMappedRange() {
-          if (!mapped) throw new Error(`${label} is not mapped`);
+          if (!made.mapped) throw new Error(`${label} is not mapped`);
           return made.data;
         },
         unmap() {
-          mapped = false;
+          made.mapped = false;
         },
         destroy() {
+          made.destroyed = true;
+          made.mapped = false;
           if (desc.label?.startsWith(prefix)) destroyed.push(label);
           for (let i = maps.length - 1; i >= 0; i--) {
             const m = maps[i] as (typeof maps)[number];

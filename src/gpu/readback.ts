@@ -195,22 +195,28 @@ export class Readback<I> {
       this.waiting.delete(resolve);
       if (this.closed) return resolve(null);
       let reads: Map<string, GpuRead<I>> | null = null;
-      if (mapped) {
-        const range = buffer.getMappedRange();
-        reads = new Map();
-        for (const p of parts) {
-          const values = new Float32Array(range.slice(p.at, p.at + p.bytes));
-          const { now, timestamp, list: subjects } = f;
-          reads.set(p.name, { values, axes: p.axes, now, timestamp, subjects });
+      try {
+        if (mapped) {
+          const range = buffer.getMappedRange();
+          const got = new Map<string, GpuRead<I>>();
+          for (const p of parts) {
+            const values = new Float32Array(range.slice(p.at, p.at + p.bytes));
+            const { now, timestamp, list: subjects } = f;
+            got.set(p.name, { values, axes: p.axes, now, timestamp, subjects });
+          }
+          reads = got;
         }
-        buffer.unmap();
+      } catch {
+        reads = null;
+      } finally {
+        if (mapped) buffer.unmap();
+        if (slot !== null) slot.busy = false;
+        else {
+          this.loose.delete(buffer);
+          buffer.destroy();
+        }
+        resolve(reads);
       }
-      if (slot !== null) slot.busy = false;
-      else {
-        this.loose.delete(buffer);
-        buffer.destroy();
-      }
-      resolve(reads);
     };
     buffer.mapAsync(MAP_READ).then(
       () => end(true),
