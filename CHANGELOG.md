@@ -30,6 +30,11 @@ version and everything else the patch. Each release lists its changes as **Break
 - A shader patch's `wgsl` can read `lag`, how many ms the subject's time trails the voice's.
   The name is taken in every shader patch body, so one that declares its own `lag` no longer
   compiles.
+- `gpuOf(m).read(channel)` resolves with a channel's values from the GPU for the registered
+  subjects, from the previous frame, without waiting on the fold being made; `null` where the GPU
+  does not fold that channel.
+- `gpuOf(m).reasons()` lists each voice the `gpu` engine's last fold left on the CPU, by its
+  `name`, with the channels it writes and why, in production builds too.
 
 ### Fixed
 

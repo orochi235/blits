@@ -10,6 +10,7 @@ import { MAX_ROLES } from './kernel.js';
 import { Met } from './met.js';
 import { Mirrors } from './mirrors.js';
 import { prepare, roomOf } from './prepare.js';
+import { type GpuRead, Readback } from './readback.js';
 import { Reads } from './reads.js';
 import { Regions } from './region.js';
 import { packOf, type Runner } from './runner.js';
@@ -30,6 +31,18 @@ export interface GpuChannel {
   readonly offset: number;
   readonly stride: number;
   readonly axes: number;
+}
+
+/**
+ * A voice the gpu engine's last fold left on the CPU: its `name` (undefined where it has none), the
+ * channels it writes, and why.
+ *
+ * @category gpu
+ */
+export interface GpuReason {
+  readonly voice: string | undefined;
+  readonly channels: readonly string[];
+  readonly why: string;
 }
 
 /**
@@ -65,6 +78,8 @@ export class GpuSide<I> {
   private stale = true;
   /** Each channel's reason for staying on the CPU, said once. */
   private readonly told = new Set<string>();
+  private why: readonly GpuReason[] = [];
+  private readonly readback: Readback<I>;
 
   constructor(
     private readonly mix: Mixer<I, unknown>,
@@ -73,7 +88,9 @@ export class GpuSide<I> {
     this.answers = new Answers(mix);
     this.met = new Met(mix, () => this.answers);
     this.buffers = new Buffers(device);
+    this.readback = new Readback(device);
     void device.lost.then(() => {
+      this.readback.close(false);
       this.release();
       this.ready = Promise.reject(new Error('blits: the GPU device was lost'));
       this.ready.catch(() => {});
@@ -82,6 +99,7 @@ export class GpuSide<I> {
 
   /** Destroys the GPU buffers and lets go of the patches and the mix; the side folds nothing after. */
   close(): void {
+    this.readback.close(true);
     this.release();
     this.buffers.destroy();
     this.answers = new Answers(this.mix);
@@ -104,13 +122,14 @@ export class GpuSide<I> {
    * Call again when the list changes.
    */
   subjects(list: readonly I[], fieldsOf: (subject: I) => Record<string, number>): void {
-    this.list = list.slice();
+    this.list = Object.freeze(list.slice());
     this.fieldsOf = fieldsOf;
     this.frame = Number.NaN;
     this.mirrors.clear();
     this.answers.register(this.list);
     this.timings.clear();
     this.reads.clear();
+    this.readback.forget();
   }
 
   /**
@@ -122,6 +141,33 @@ export class GpuSide<I> {
     if (this.off) return null;
     this.refresh();
     return this.outputs.get(name) ?? null;
+  }
+
+  /**
+   * Resolves with a channel's values for the registered subjects, copied back from the GPU, from
+   * the previous frame, so the frame being folded never waits on it. A sync, a seek, or a control
+   * change, drop or touch starts a frame; with several folds in one, the last counts. With no new
+   * frame since, the same `GpuRead` again. A first read of a channel, or the first after a gap or
+   * `subjects()`, waits on the current fold instead. Only channels read since the last frame are
+   * copied. Where the GPU falls behind, a frame's copy is skipped and the read gives an older one,
+   * its `timestamp` saying which. A read waiting across `subjects()` keeps its fold's list, in
+   * `GpuRead.subjects`. Resolves `null`, never rejecting, wherever `channel(name)` is null, and for
+   * reads still waiting at `close()` or device loss, though on a real loss a map that settles with
+   * zeros first may not.
+   */
+  read(name: string): Promise<GpuRead<I> | null> {
+    if (this.off) return Promise.resolve(null);
+    this.readback.want(name);
+    this.refresh();
+    // Wanted again: this frame's turn took the first, and the next frame's copies it.
+    this.readback.want(name);
+    if (!this.outputs.has(name)) return Promise.resolve(null);
+    return this.readback.read(name, this.mix.frame, this.mix.seq);
+  }
+
+  /** Each voice the last fold left on the CPU, and why; empty where every voice folds. Folds nothing. */
+  reasons(): readonly GpuReason[] {
+    return this.why;
   }
 
   /** Folds again if anything the last fold read has moved. */
@@ -137,6 +183,7 @@ export class GpuSide<I> {
     this.stirs = this.mix.stirs;
     this.inputs = reading.inputs;
     this.outputs = new Map();
+    this.readback.turn(this.mix.frame);
     this.dispatch();
   }
 
@@ -152,6 +199,11 @@ export class GpuSide<I> {
       this.dispatch();
       return;
     }
+    this.why = e.reasons.map((r) => ({
+      voice: r.voice.spec.name,
+      channels: [...(r.voice.patch.writes as readonly string[])],
+      why: r.why,
+    }));
     for (const r of e.reasons) {
       const key = `${(r.voice.patch.writes as readonly string[]).join(',')}: ${r.why}`;
       if (this.told.has(key)) continue;
@@ -234,6 +286,8 @@ export class GpuSide<I> {
       },
       this.outputs,
     );
+    const { frame, seq, now, timestamp } = mix;
+    this.readback.fold({ out, outputs: this.outputs, frame, seq, now, timestamp, list: this.list });
     this.stale = false;
     if (production()) return;
     // Compares a sample of subjects with the CPU's fold, the first time each runner runs.
