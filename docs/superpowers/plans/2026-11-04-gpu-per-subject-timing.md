@@ -224,9 +224,9 @@ Each test counts `stagger`/`target` calls with a spy (`(c) => { calls++; return 
   4, `register` a reordered list of 6, `of`: calls `4 + 2` in total over the whole test, the 2 met
   ones' delays the records'.
 - `'gives null reach for a voice reaching every subject, and a mask for a named subset'`.
-- `'plays a never-probed staggered finite voice until its last subject ends'` (Review Focus 3):
-  `loop: 2`, duration 1000, stagger to 900; after `of`, `m.sync(2500)` → the voice is still in
-  `mixerOf(m).cued` with state `live`; `m.sync(2901)` → it is not.
+- `'leaves a never-probed staggered finite voice's end as mixer has it'` (Review Focus 3): `loop: 2`,
+  duration 1000, unnamed stagger (by `target`) to 900; after `of`, `voice.latest` and the voice's
+  state at `m.sync(2500)` match the same mix with no gpu side.
 - `'leaves a mix with no gpu side as it was'`: a mixer-made mix's voices have `asked === null`.
 
 - [ ] **Step 2: Run** `npx vitest run test/gpu-answers.test.ts` — Expected: FAIL (`answers.js` missing).
@@ -545,7 +545,9 @@ and the patch, run once per runner kind: a `shaderPatch`, a `wave`, a `keys` wit
 - `'a looping staggered voice'` at the times of Task 7 plus 1e6 ms (B large).
 - `'a staggered voice with negative delays'` and `'a staggered voice cued backward'` (Review Focus 4).
 - `'a staggered finite loop played past its last subject's end'`, with and without `freeze: 'after'`,
-  on a mix whose gpu side is never probed until the comparison (Review Focus 3).
+  for a voice whose subjects are named at cue (its delays known then), on a mix whose gpu side is
+  never probed until the comparison. An unnamed finite stagger stays on the CPU (Spec conflict 1),
+  pinned by an `eligible` unit test in Task 7 alongside Review Focus 1's.
 - `'a staggered voice fading in, then out, then in again'` (`fade: { in: 400, out: 300 }`), easing
   linear and `ease-in-out`.
 - `'staggered role members whose leader moves from subject to subject'`.
