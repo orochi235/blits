@@ -1,7 +1,7 @@
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import { production, warnOnce } from '../warn.js';
-import { Answers } from './answers.js';
+import { Answers, varies } from './answers.js';
 import { Buffers } from './buffers.js';
 import { type Built, compile, layoutOf } from './compile.js';
 import { codesOf, eligibility, within } from './eligible.js';
@@ -116,11 +116,10 @@ export class GpuSide<I> {
       (v) => {
         const p = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
         const rows = p.perSubject === undefined ? 0 : n * (p.runner.stride ?? 0);
-        const fades = (v.fade.in ?? 0) > 0;
-        return {
-          values: p.values.length,
-          persub: rows + sizeOf(this.answers.of(v as Voice<I, unknown>), fades),
-        };
+        const u = v as Voice<I, unknown>;
+        const asks = varies(u as Voice<unknown, unknown>);
+        const block = asks ? sizeOf(this.answers.of(u), (v.fade.in ?? 0) > 0) : 0;
+        return { values: p.values.length, persub: rows + block };
       },
       limit,
     );

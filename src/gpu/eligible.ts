@@ -1,7 +1,7 @@
 import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
-import type { Answers } from './answers.js';
+import { type Answers, varies } from './answers.js';
 import { type ChannelLookup, packOf } from './runner.js';
 import { type ChannelCode, codeFor } from './wgsl/channels.js';
 
@@ -52,8 +52,7 @@ function why<I, O>(voice: Voice<I, O>, codes: ChannelLookup, answers: Answers<I>
     return 'its patch keeps state';
   if (voice.parts !== null || voice.parted !== null) return 'it is parting from subjects';
   if (voice.bound !== null) return 'it is bounded';
-  const { stagger, target } = voice.spec;
-  if (stagger === undefined && target === undefined && voice.named === null) return null;
+  if (!varies(voice as Voice<unknown, unknown>)) return null;
   const answer = answers.of(voice as Voice<I, unknown>);
   if (!answer.finite) return 'its stagger gives a subject a delay that is not a finite number';
   if (answer.delays !== null) return 'it staggers its subjects';

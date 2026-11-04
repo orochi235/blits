@@ -16,6 +16,15 @@ export interface Answer {
 }
 
 /**
+ * Whether a voice's delays or reach can differ by subject: it staggers, has a `target`, or names its
+ * subjects. One that does none of these reaches every subject at delay 0, with nothing to ask.
+ */
+export function varies(voice: Voice<unknown, unknown>): boolean {
+  const { stagger, target } = voice.spec;
+  return stagger !== undefined || target !== undefined || voice.named !== null;
+}
+
+/**
  * The gpu side's table of `stagger` and `target` answers: each asked once per voice per subject,
  * and handed to the voice's `asked` so the CPU takes them rather than asking again.
  */

@@ -13,7 +13,7 @@ export interface Slot {
   readonly runner: number;
   readonly values: number;
   readonly sub: number;
-  /** Its timing block, for a voice that staggers or misses a subject. */
+  /** Its timing block, for a voice that staggers or leaves some registered subject unreached. */
   readonly timing?: TimingSlot;
   /** Its fade curve's offset in values; absent for linear. */
   readonly ease?: number;

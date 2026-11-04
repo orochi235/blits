@@ -1,7 +1,7 @@
 import { curveData, straight } from '../easing.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
-import type { Answer, Answers } from './answers.js';
+import { type Answer, type Answers, varies } from './answers.js';
 import type { Entry } from './region.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
 import { NONE } from './wgsl/timing.js';
@@ -18,8 +18,8 @@ export interface TimingSlot {
 }
 
 /**
- * f32s a voice's timing block takes: its delays, its reach mask where it misses a subject, and its
- * subjects' fade-in origins where it staggers and `fades` in.
+ * f32s a voice's timing block takes: its delays, its reach mask where some registered subject is
+ * not reached, and its subjects' fade-in origins where it staggers and `fades` in.
  */
 export function sizeOf(answer: Answer, fades: boolean): number {
   const n = answer.delays?.length ?? 0;
@@ -178,6 +178,7 @@ export class Timings {
     let at = from;
     const slots = voices.map((voice) => {
       const v = voice as Voice<unknown, unknown>;
+      if (!varies(v)) return undefined;
       const answer = answers.of(voice);
       if (answer.delays === null && answer.reach === null) return undefined;
       live.add(v);

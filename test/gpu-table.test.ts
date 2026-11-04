@@ -249,6 +249,27 @@ describe('voice table', () => {
     expect(e.reasons).toEqual([]);
   });
 
+  it('never asks Answers about a voice with no stagger, target or named subjects', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, loop: true });
+    m.sync(0);
+    const mixer = mixerOf(m);
+    const answers = new Answers<C>(mixer as unknown as Mixer<C, unknown>);
+    answers.register(cells);
+    let asked = 0;
+    const of = answers.of.bind(answers);
+    answers.of = (v) => {
+      asked++;
+      return of(v);
+    };
+    const e = eligibility(mixer, answers);
+    expect(e.voices.length).toBe(1);
+    const voices = e.voices as unknown as Voice<C, unknown>[];
+    const slots = new Timings().place(mixer as unknown as Mixer<C, unknown>, voices, answers, 0);
+    expect(slots).toEqual([undefined]);
+    expect(asked).toBe(0);
+  });
+
   it('keeps a voice on the CPU whose stagger answers NaN for a subject', () => {
     const m = mix<C, P>(K);
     m.cue({ patch: wave, subjects: cells, stagger: (c: C) => (c.x === 1 ? Number.NaN : 0) });

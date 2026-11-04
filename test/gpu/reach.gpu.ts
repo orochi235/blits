@@ -104,12 +104,16 @@ function make(kind: Kind, cues: Cue[], engine: typeof mixer) {
   return { m, patches, handles };
 }
 
-/** Plays the same voices on the GPU and the CPU and compares every subject at `TIMES`. */
-async function agree(device: GpuDevice, kind: Kind, cues: Cue[]) {
+/**
+ * Plays the same voices on the GPU and the CPU and compares every subject at `TIMES`; after the
+ * reading at `reorder`, registers the list again reversed.
+ */
+async function agree(device: GpuDevice, kind: Kind, cues: Cue[], reorder?: number) {
   const g = make(kind, cues, gpu({ device }));
   const c = make(kind, cues, mixer);
   const side = gpuOf(g.m);
-  side.subjects(CELLS, (s) => ({ id: s.id }));
+  let list = CELLS;
+  side.subjects(list, (s) => ({ id: s.id }));
   side.channel('v');
   await side.ready;
   const acts = kind.acts ?? [];
@@ -127,9 +131,13 @@ async function agree(device: GpuDevice, kind: Kind, cues: Cue[]) {
     const ch = side.channel('v');
     if (ch === null) throw new Error(`v is not on the GPU at ${t}`);
     const got = await readBack(device, ch.buffer, ch.offset, N * 4);
-    CELLS.forEach((s, i) => {
-      close(got[i] as number, c.m.probe(s).v, `t ${t} subject ${i}`);
+    list.forEach((s, i) => {
+      close(got[i] as number, c.m.probe(s).v, `t ${t} subject ${s.id}`);
     });
+    if (t === reorder) {
+      list = CELLS.slice().reverse();
+      side.subjects(list, (s) => ({ id: s.id }));
+    }
   }
 }
 
@@ -165,6 +173,17 @@ const CASES: [string, Cue[]][] = [
   ],
 ];
 
-for (const kind of KINDS)
+for (const kind of KINDS) {
   for (const [name, cues] of CASES)
     test(`reach (${kind.name}): ${name}`, (d) => agree(d, kind, cues));
+  test(`reach (${kind.name}): a target voice, the list registered again reversed after 999`, (d) =>
+    agree(
+      d,
+      kind,
+      [
+        { reach: (i) => i % 2 === 0, by: 'target' },
+        { reach: () => true, by: 'subjects', weight: 0.3 },
+      ],
+      999,
+    ));
+}
