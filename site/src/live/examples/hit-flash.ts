@@ -197,7 +197,7 @@ export default function run(root: HTMLElement): () => void {
     let drawn = -1;
     let last = 0;
     choose('difference');
-    const stop = loop(show, (now) => {
+    const stop = loop(show, root, (now) => {
       show.sync(now);
       if (autoOn && show.now - last >= EVERY) {
         last = show.now;

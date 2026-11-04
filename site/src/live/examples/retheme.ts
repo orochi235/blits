@@ -161,7 +161,7 @@ export default function run(root: HTMLElement): () => void {
   const NONE = [0, 0, 0, 0];
   const pose: Theme = {};
   let drawn = -1;
-  const stop = loop(show, (now) => {
+  const stop = loop(show, root, (now) => {
     show.sync(now);
     if (show.seq === drawn) return;
     drawn = show.seq;

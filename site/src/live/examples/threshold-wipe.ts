@@ -237,7 +237,7 @@ export default function run(root: HTMLElement): () => void {
         ctx.putImageData(image, 0, 0);
       };
     }
-    const halt = loop(show, (t) => {
+    const halt = loop(show, root, (t) => {
       show.sync(t);
       scrub.value = String(place());
       if (show.seq === drawn) return;

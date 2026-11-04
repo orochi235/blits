@@ -362,7 +362,7 @@ export default function run(root: HTMLElement): () => void {
     let seen = '';
     choose(chosen);
     showRate();
-    const stop = loop(show, (now) => {
+    const stop = loop(show, root, (now) => {
       show.sync(now);
       scrub.value = String(place());
       const key = `${show.seq} ${chosen}`;

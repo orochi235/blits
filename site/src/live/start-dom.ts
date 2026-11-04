@@ -49,7 +49,7 @@ export default function run(root: HTMLElement): () => void {
 
   // Once a frame: tell the mix the time, then read each dot's pose and draw it.
   const pose = m.pose();
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     for (const dot of dots) {
       m.probe(dot, pose);

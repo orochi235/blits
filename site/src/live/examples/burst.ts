@@ -62,7 +62,7 @@ export default function run(root: HTMLElement): () => void {
   }, 1400);
 
   const pose = { dx: 0, dy: 0, alpha: 1 };
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = HEIGHT * devicePixelRatio;

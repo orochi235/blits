@@ -61,7 +61,7 @@ export default function run(root: HTMLElement): () => void {
   m.cue({ patch: blue, subjects: [mixed], loop: true });
 
   const pose: SwatchPose = { color: [0, 0, 0, 0], ink: [0, 0, 0, 0, 0] };
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     swatches.forEach((s, i) => {
       m.probe(s, pose);

@@ -84,7 +84,7 @@ export default function run(root: HTMLElement): () => void {
   const pose = { x: 0 };
   // The cues' starts count from the first frame, which the mix synced to as 0.
   let first = Number.NaN;
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     if (Number.isNaN(first)) first = now;
     if (!held) {
       m.sync(now - first);

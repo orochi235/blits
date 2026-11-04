@@ -85,7 +85,7 @@ export default function run(root: HTMLElement): () => void {
   scrubber.addEventListener('change', release);
 
   const pose: DotPose = { y: 0 };
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     if (!held) {
       m.sync(now);
       latest = m.now;

@@ -131,7 +131,7 @@ export default function run(root: HTMLElement): () => void {
   const panelCheck = setTimeout(showPanel, 1000);
 
   const pose = m.pose();
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     for (const el of lamps) {
       m.probe(el, pose);

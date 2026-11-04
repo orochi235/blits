@@ -83,7 +83,7 @@ export default function run(root: HTMLElement): () => void {
     });
 
     const pose = sim.mix.pose();
-    stop = loop(sim.mix, (now) => {
+    stop = loop(sim.mix, root, (now) => {
       sim.sync(now);
       canvas.width = canvas.clientWidth * devicePixelRatio;
       canvas.height = HEIGHT * devicePixelRatio;

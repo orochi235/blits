@@ -212,7 +212,7 @@ export default function run(root: HTMLElement): () => void {
     },
   });
 
-  const stop = loop(show, (now) => {
+  const stop = loop(show, root, (now) => {
     show.sync(now);
 
     for (const part of parts) {

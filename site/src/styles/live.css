@@ -43,3 +43,17 @@
 .live-stage:has(canvas) {
   color: var(--voice-1);
 }
+
+/* Pause and Run again side by side, where a lone stage control sits. */
+.stage-controls {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.6rem;
+  z-index: 1;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.stage-controls .stage-control {
+  position: static;
+}

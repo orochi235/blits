@@ -25,7 +25,7 @@ export default function run(root: HTMLElement): () => void {
   };
 
   const app = createRoot(host);
-  app.render(createElement(StrictMode, null, createElement(Demo, { onRender, onFrame })));
+  app.render(createElement(StrictMode, null, createElement(Demo, { root, onRender, onFrame })));
   return () => {
     // Live stops this from inside its own React commit, where a synchronous unmount is refused.
     queueMicrotask(() => app.unmount());

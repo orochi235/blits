@@ -31,7 +31,15 @@ function useStage(): Stage {
   return stage;
 }
 
-function StageProvider({ children, onFrame }: { children: ReactNode; onFrame: () => void }) {
+function StageProvider({
+  children,
+  root,
+  onFrame,
+}: {
+  children: ReactNode;
+  root: Element;
+  onFrame: () => void;
+}) {
   const elements = useRef(new Set<HTMLElement>()).current;
   const [m, setMix] = useState<Mix<HTMLElement, CardPose> | null>(null);
   useRendered();
@@ -43,7 +51,7 @@ function StageProvider({ children, onFrame }: { children: ReactNode; onFrame: ()
     });
     setMix(m);
     const pose = { y: 0, scale: 1 };
-    const stop = loop(m, (now) => {
+    const stop = loop(m, root, (now) => {
       m.sync(now);
       for (const el of elements) {
         m.probe(el, pose);
@@ -55,7 +63,7 @@ function StageProvider({ children, onFrame }: { children: ReactNode; onFrame: ()
       stop();
       m.close();
     };
-  }, [elements, onFrame]);
+  }, [elements, onFrame, root]);
 
   const stage = useMemo<Stage>(
     () => ({
@@ -169,10 +177,18 @@ function useRendered() {
   });
 }
 
-export function Demo({ onRender, onFrame }: { onRender: () => void; onFrame: () => void }) {
+export function Demo({
+  root,
+  onRender,
+  onFrame,
+}: {
+  root: Element;
+  onRender: () => void;
+  onFrame: () => void;
+}) {
   return (
     <RenderCount.Provider value={onRender}>
-      <StageProvider onFrame={onFrame}>
+      <StageProvider root={root} onFrame={onFrame}>
         <div className="cards">
           {['Channel', 'Patch', 'Voice', 'Mix'].map((title) => (
             <Card key={title} title={title} />

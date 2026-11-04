@@ -159,7 +159,7 @@ export default function run(root: HTMLElement): () => void {
   refused.textContent = ' ';
 
   const pose = m.pose();
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     for (const b of bulbs) {
       m.probe(b, pose);

@@ -346,7 +346,7 @@ export default function run(root: HTMLElement): () => void {
     };
 
     rebuild();
-    const halt = loop(show, (now) => {
+    const halt = loop(show, root, (now) => {
       show.sync(now);
       const key = `${show.seq}`;
       if (key === drawn) return;

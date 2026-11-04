@@ -148,7 +148,7 @@ export default function run(root: HTMLElement): () => void {
   const pose: Pose = { reveal: 0, under: 0, glow: 0 };
   let first = Number.NaN;
   let far = 0;
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     if (Number.isNaN(first)) first = now;
     if (!held) {
       m.sync(now - first);

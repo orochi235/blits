@@ -69,7 +69,7 @@ export default function run(root: HTMLElement): () => void {
   button.addEventListener('click', onClick);
 
   const pose: DotPose = { y: 0, scale: 1, color: [0, 0, 0, 0] };
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     for (const dot of dots) {
       m.probe(dot, pose);

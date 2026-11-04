@@ -55,7 +55,7 @@ export default function run(root: HTMLElement): () => void {
   play();
 
   const pose = { rise: 0, show: 0 };
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     for (const letter of letters) {
       m.probe(letter, pose);

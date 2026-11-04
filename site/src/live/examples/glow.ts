@@ -46,7 +46,7 @@ export default function run(root: HTMLElement): () => void {
   m.cue({ patch: raised, weight: lag(over, { riseMs: 80, fallMs: 350, floor: 0.01 }) });
 
   const pose = { lift: 0, glow: 0 };
-  const stop = loop(m, (now) => {
+  const stop = loop(m, root, (now) => {
     m.sync(now);
     for (const card of cards) {
       m.probe(card, pose);

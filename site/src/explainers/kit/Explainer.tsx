@@ -7,6 +7,7 @@ import { type Ink, readInk } from './ink';
 import { Ledger } from './Ledger';
 import { coursesOver, Player } from './player';
 import { FRAME, type Frame, type Scene } from './scene';
+import { onSpace } from './space';
 import { Timeline, type Track } from './Timeline';
 
 type Schema<C> = { defaults(): C } & Parameters<typeof resolveConfigSchema>[0];
@@ -235,21 +236,25 @@ function ExplainerBody<I, O, C>({
 
   // Paused by the window losing focus reads as paused, though it plays again on its own when focus returns.
   const running = playing && focused;
+  const playPause = () => {
+    // Played once to the end, Play starts it over.
+    if (!running && repeat === 'once' && at.current >= duration) setT(0);
+    setPlaying(!running);
+  };
+  const latest = useRef(playPause);
+  latest.current = playPause;
+  const figure = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = figure.current;
+    return el === null ? undefined : onSpace({ el, toggle: () => latest.current() });
+  }, []);
   const ledger = built.ledger;
   const toggled = new Set<string>(toggles?.map((g) => g.key));
   const panel = resolved && Object.keys(s.defaults() as object).some((k) => !toggled.has(k));
   return (
-    <figure className="explainer">
+    <figure className="explainer" ref={figure}>
       <div className="explainer-stage">
-        <button
-          type="button"
-          className="stage-control"
-          onClick={() => {
-            // Played once to the end, Play starts it over.
-            if (!running && repeat === 'once' && at.current >= duration) setT(0);
-            setPlaying(!running);
-          }}
-        >
+        <button type="button" className="stage-control" onClick={playPause}>
           {running ? 'Pause' : playing ? 'Paused — focus to resume' : 'Play'}
         </button>
         <canvas
