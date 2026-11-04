@@ -53,7 +53,7 @@ export class GpuSide<I> {
   private readonly checked = new Set<string>();
   private readonly regions = new Regions();
   private readonly mirrors = new Mirrors();
-  private readonly answers: Answers<I>;
+  private answers: Answers<I>;
   private readonly timings = new Timings();
   private readonly buffers: Buffers;
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
@@ -78,6 +78,8 @@ export class GpuSide<I> {
   close(): void {
     this.release();
     this.buffers.destroy();
+    this.answers = new Answers(this.mix);
+    this.built.clear();
   }
 
   /** Stops folding, and lets go of every mirror's watch and the mix's `reorigined`. */
