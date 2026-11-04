@@ -932,8 +932,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       subject's state.
 
 18. **The gpu engine's reach, phases 2–4** (`docs/superpowers/specs/2026-11-03-gpu-reach-design.md`).
-    Phase 1, stock patches on the GPU, is built (d20940c..30ba0d5, branch `gpu-stock`); stagger and
-    partial reach, owners and weight signals, and readback into `pull` are designed and not built.
+    Phase 1, stock patches on the GPU, is built (d20940c..21dc031, on `main`, unreleased); stagger
+    and partial reach, owners and weight signals, and readback (`gpuOf(m).read`) are designed and
+    not built.
     The schema page's "The gpu engine" says what folds now. Open from phase 1:
     - **One motion patch folded by two voices at once**, on one mix or two live ones, rebuilds
       their mirrors every frame, each taking the patch's one watch back from the other, unwarned.
@@ -945,6 +946,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       patch to the CPU.
     - `Regions` (`src/gpu/region.ts`) has no unit tests for a departure with survivors, shrink then
       grow, or its store doubling, though every runner leans on it.
+    - The binding-size guard keeps a voice on the CPU when `values` or `persub` would pass the
+      device's `maxStorageBufferBindingSize`, but not the `out` and `subjects` buffers, whose
+      `createBindGroup` still fails.
+    - At 1M subjects a motion voice's re-anchor, every 2^14 ms of voice time, still costs one
+      6.6 ms frame against a 0.4 ms median (`bench/runs/2026-11-03-gpu-anchor-after.jsonl`), most
+      of it uploading every row's new time.
+    - The light-board demo on the gpu engine still probes about 1,230 subjects a frame on the CPU
+      (`bench/runs/2026-11-03-demos-keys-gpu.json`); unexplained.
 
 ## Loose ends
 

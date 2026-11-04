@@ -1,6 +1,6 @@
 # The gpu engine's reach: stock patches, per-subject timing, and readback
 
-**Status (2026-11-03): phase 1 built (d20940c..30ba0d5), phases 2–4 designed, not built.** What
+**Status (2026-11-03): phase 1 built (d20940c..21dc031), phases 2–4 designed, not built.** What
 phase 1 left open is under item 18 of `HANDOFF.md`, and the schema page's "The gpu engine" says what
 folds now. This line changes as phases land; the doc is deleted once the last one does, after
 anything durable has moved into the schema page and the changelog.
@@ -27,7 +27,7 @@ A voice reaches the GPU without being rewritten for it. In order:
 2. **Per-subject timing and reach.** A voice that staggers its subjects, or reaches only some of
    them (`subjects`, `target`), folds on the GPU.
 3. **Owners and weight signals.** A voice an owner lays out, or weighted by a signal, folds on the GPU.
-4. **Readback.** A host that reads poses in JS (`pull`, `probe`) can take them from the GPU.
+4. **Readback.** A host that reads poses in JS can take a channel's values from the GPU.
 
 Each phase lands, is measured, and is released on its own.
 
@@ -160,8 +160,8 @@ Each phase lands, is measured, and is released on its own.
 
 ### 4. Readback
 
-- `GpuSide` copies the folded channels into a mapped buffer, double-buffered, and `pull` reads the
-  previous frame's values when the host opts in. The spike measured this at 0.23 ms for 100k × 8 in
+- `GpuSide` copies the folded channels into a mapped buffer, double-buffered, and
+  `gpuOf(m).read(channel)` resolves with the previous frame's values. The spike measured this at 0.23 ms for 100k × 8 in
   Dawn under Node; a browser adds its own IPC, so the builder measures it in Chromium on teitou.
 
 ## How each phase is checked
