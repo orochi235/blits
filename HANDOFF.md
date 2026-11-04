@@ -944,8 +944,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       `channel()` call.
     - A function easing on a `keys` patch's first stop, which is never evaluated, still sends the
       patch to the CPU.
-    - `Regions` (`src/gpu/region.ts`) has no unit tests for a departure with survivors, shrink then
-      grow, or its store doubling, though every runner leans on it.
     - The binding-size guard keeps a voice on the CPU when `values` or `persub` would pass the
       device's `maxStorageBufferBindingSize`, but not the `out` and `subjects` buffers, whose
       `createBindGroup` still fails.
