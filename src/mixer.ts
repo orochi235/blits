@@ -179,6 +179,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** The gpu side's: told at each `reorigin`, with its `now`. Null with no gpu engine attached. */
   reorigined: ((voice: Voice<I, O>, now: number) => void) | null = null;
   /**
+   * The gpu side's: a subject's delay where it folded `voice` in an earlier frame, which the CPU,
+   * holding no record of the subject, times a change by. Null with no gpu engine attached.
+   */
+  unheld: ((voice: Voice<I, O>, subject: I) => number | undefined) | null = null;
+  /**
    * The host read `inert` as true since the last sync, so its frame loop may be asleep until a
    * change wakes it; a host that never asks keeps no loop asleep on it.
    */

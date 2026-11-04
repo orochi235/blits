@@ -49,8 +49,6 @@ export class Mirror<I> {
   /** Set where `take` hands over every row as one range, as after a rewrite or a new anchor. */
   private all = false;
   private time = Number.NaN;
-  /** Whether a frame has prepared it, so the CPU would hold a record of each subject it reaches. */
-  private met = false;
   private detached = false;
   private vals: Float32Array;
   private readonly listen = (s: number) => {
@@ -183,24 +181,15 @@ export class Mirror<I> {
    * timed later waits on `due` for the frame it falls due in. With `delays`, `t` and `horizon` are
    * at delay 0 and each row's are its delay less; a row before its start commits nothing, or
    * commits at 0 where `holds`, as a sample of a voice holding its first frame does. A row
-   * `unread` says the CPU would not sample this frame, unreached or silent, commits nothing; one
-   * `reached` says it reaches, met by an earlier frame, stamps a change made since with its time,
-   * as the CPU's record of it does.
+   * `unread` says the CPU would not sample this frame, unreached or silent, commits nothing.
    */
-  prepare(
-    t: number,
-    horizon: number,
-    holds = false,
-    unread?: (row: number) => boolean,
-    reached?: (row: number) => boolean,
-  ): void {
+  prepare(t: number, horizon: number, holds = false, unread?: (row: number) => boolean): void {
     const m = this.motions;
     if (m.listener !== this.listen) {
       this.watch();
       this.number();
     } else this.recheck();
     if (!Number.isNaN(t) && !(Math.abs(t - this.anchor) <= DRIFT)) this.shift(t);
-    const made = this.met ? new Set(this.touched) : null;
     const work = new Set([...this.touched, ...this.due]);
     this.touched.clear();
     if (!Number.isNaN(t) && reading.live) {
@@ -211,12 +200,7 @@ export class Mirror<I> {
           const row = this.rowFor(s);
           if (row === undefined) continue;
           const at = this.at(row, t, holds);
-          if (Number.isNaN(at)) continue;
-          if (unread?.(row)) {
-            const own = t - (this.delays?.[row] ?? 0);
-            if (made?.has(s) && own >= 0 && reached?.(row)) m.stamp(s, own);
-            continue;
-          }
+          if (Number.isNaN(at) || unread?.(row)) continue;
           reading.horizon = horizon - (this.delays?.[row] ?? 0);
           m.advance(s, at);
         }
@@ -226,7 +210,6 @@ export class Mirror<I> {
     }
     for (const s of this.touched) work.add(s);
     this.touched.clear();
-    this.met = true;
     this.due = new Set();
     for (const s of work) {
       const row = this.rowFor(s);

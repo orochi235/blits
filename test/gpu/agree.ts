@@ -65,7 +65,7 @@ export interface Cue {
   role?: string;
   weight?: number | Signal<C>;
   fade?: { in?: number; out?: number; ease?: Easing };
-  freeze?: 'after';
+  freeze?: 'before' | 'after';
   /** The owner it plays under, as an index into the script's `owners`. */
   owner?: number;
   /** When it starts, on its owner's clock where it has one. */
@@ -230,6 +230,7 @@ export async function agree(device: GpuDevice, kind: Kind, script: Script, named
         }
     };
     run(false);
+    const compiled = side.ready;
     // Every frame as a host drawing every subject sees it: the GPU folds, the CPU probes each.
     let ch = side.channel(kind.channel);
     if (acts.some((a) => a.at === t && a.after)) {
@@ -245,7 +246,7 @@ export async function agree(device: GpuDevice, kind: Kind, script: Script, named
       if (ch !== null) throw new Error(`the channel is on the GPU at ${t}, past ${script.cpuFrom}`);
       continue;
     }
-    if (ch === null) {
+    if (ch === null && side.ready !== compiled) {
       // A voice starting late brings a runner the first kernel lacked; it folds once that compiles.
       await side.ready;
       ch = side.channel(kind.channel);

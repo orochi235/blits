@@ -160,7 +160,11 @@ export function cuedById<I, O>(mix: Mixer<I, O>, id: number): Voice<I, O> | unde
  */
 export function frameOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): number {
   const held = voice.subjects.get(subject);
-  if (held === undefined || !held.reaches) return Number.NaN;
+  if (held === undefined) {
+    const delay = mix.unheld?.(voice, subject);
+    return delay === undefined ? Number.NaN : timeIn(mix, voice, delay);
+  }
+  if (!held.reaches) return Number.NaN;
   return timeIn(mix, voice, held.delay);
 }
 

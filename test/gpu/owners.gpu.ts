@@ -7,6 +7,7 @@ import {
   type C,
   CELLS,
   fieldsOf,
+  type Handle,
   type Kind,
   N,
   nearEdge,
@@ -182,23 +183,74 @@ test(`owners (${STACKED.name}, named): role members under an owner`, (d) =>
     true,
   ));
 
-const retargets = (kind: Motion): Script => ({
-  owners: [{ weight: 0 }],
-  cues: [{ owner: 0 }],
-  acts: [
-    { at: 250, act: moving(kind, [0], (i) => i % 2 === 0) },
-    {
-      at: 999,
-      act: (_h, _p, _m, o) => {
-        if (o[0]) o[0].weight = 1;
-      },
-    },
-  ],
-  times: [1, 250, 450, 999, 1300, 2100],
+const weighs = (at: number, w: number) => ({
+  at,
+  act: (_h: unknown, _p: unknown, _m: unknown, o: Handle[]) => {
+    if (o[0]) o[0].weight = w;
+  },
 });
+const turns = (at: number, rate: number) => ({
+  at,
+  act: (_h: unknown, _p: unknown, _m: unknown, o: Handle[]) => {
+    if (o[0]) o[0].rate = rate;
+  },
+});
+
+/** Retargets made while an owner's weight is 0, which the GPU leaves unsampled as the CPU does. */
+const RETARGETS: [string, (kind: Motion) => Script][] = [
+  [
+    "retargets while an owner's weight is 0",
+    (kind) => ({
+      owners: [{ weight: 0 }],
+      cues: [{ owner: 0 }],
+      acts: [{ at: 250, act: moving(kind, [0], (i) => i % 2 === 0) }, weighs(999, 1)],
+      times: [1, 250, 450, 999, 1300, 2100],
+    }),
+  ],
+  [
+    "retargets while an owner's weight is 0, on the frame after it turns forward past the start again",
+    (kind) => ({
+      history: true,
+      owners: [{ weight: 0 }],
+      // The second keeps the owner playing while the first is back before its start.
+      cues: [{ owner: 0, start: 200 }, { owner: 0 }],
+      acts: [
+        turns(450, -1),
+        turns(800, 1),
+        { at: 901, act: moving(kind, [0], (i) => i % 2 === 0) },
+        weighs(1300, 1),
+      ],
+      times: [1, 250, 450, 700, 800, 900, 901, 999, 1300, 2100],
+    }),
+  ],
+  [
+    "retargets while an owner's weight is 0 before a start it freezes before",
+    (kind) => ({
+      owners: [{ weight: 0 }],
+      cues: [{ owner: 0, start: 500, freeze: 'before' }],
+      acts: [{ at: 250, act: moving(kind, [0], (i) => i % 2 === 0) }, weighs(999, 1)],
+      times: [1, 250, 450, 999, 1300, 2100],
+    }),
+  ],
+  [
+    "retargets while an owner's weight is 0, sought back before it and forward past it",
+    (kind) => ({
+      history: true,
+      owners: [{ weight: 0 }],
+      cues: [{ owner: 0 }],
+      acts: [
+        { at: 250, act: moving(kind, [0], (i) => i % 2 === 0) },
+        { at: 450, act: (_h, _p, m) => m.seek(200) },
+        { at: 451, act: (_h, _p, m) => m.seek(600) },
+        weighs(999, 1),
+      ],
+      times: [1, 250, 450, 451, 999, 1300, 2100],
+    }),
+  ],
+];
 for (const kind of MOTIONS)
-  test(`owners (${kind.name}, named): retargets while an owner's weight is 0`, (d) =>
-    agree(d, kind, retargets(kind), true));
+  for (const [name, script] of RETARGETS)
+    test(`owners (${kind.name}, named): ${name}`, (d) => agree(d, kind, script(kind), true));
 
 /** An arc whose parts are the kind's patches 0, 1 and 2, compared on the GPU and the CPU. */
 async function arc(device: GpuDevice, kind: Kind) {

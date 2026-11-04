@@ -7,6 +7,7 @@ import { Buffers } from './buffers.js';
 import { type Built, compile, layoutOf } from './compile.js';
 import { codesOf, eligibility, within } from './eligible.js';
 import { GROUP, MAX_ROLES } from './kernel.js';
+import { Met } from './met.js';
 import type { Mirror } from './mirror.js';
 import { Mirrors } from './mirrors.js';
 import { type Entry, Regions } from './region.js';
@@ -14,7 +15,7 @@ import { type Packed, packOf, type Runner, unpack } from './runner.js';
 import { elapsedOf, type Slot, voiceTable } from './table.js';
 import { sizeOf, Timings } from './timings.js';
 import { twins } from './twins.js';
-import { reachedOf, unreadOf } from './unread.js';
+import { unreadOf } from './unread.js';
 import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT, Usage } from './webgpu.js';
 import { type Weighs, weighsOf } from './weight.js';
 import type { ChannelCode } from './wgsl/channels.js';
@@ -58,6 +59,7 @@ export class GpuSide<I> {
   private readonly mirrors = new Mirrors();
   private answers: Answers<I>;
   private readonly timings = new Timings();
+  private readonly met: Met<I>;
   private readonly buffers: Buffers;
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
   private stale = true;
@@ -69,6 +71,7 @@ export class GpuSide<I> {
     private readonly device: GpuDevice,
   ) {
     this.answers = new Answers(mix);
+    this.met = new Met(mix, () => this.answers);
     this.buffers = new Buffers(device);
     void device.lost.then(() => {
       this.release();
@@ -91,6 +94,7 @@ export class GpuSide<I> {
     this.outputs.clear();
     this.mirrors.clear();
     this.timings.close();
+    this.met.close();
   }
 
   /**
@@ -197,11 +201,10 @@ export class GpuSide<I> {
       const now = mix.now;
       const horizon = mix.horizonFor(v, 0, now);
       const unread = unreadOf(mix, u, this.answers, this.timings, null, weighs[k] as Weighs);
-      const reached = reachedOf(u, this.answers);
-      if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread, reached);
+      if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread);
       else {
         const t = v.unstarted(now) && !v.holdsFirst ? Number.NaN : v.rawAt(now, 0);
-        m.prepare(t, horizon, v.holdsFirst, unread, reached);
+        m.prepare(t, horizon, v.holdsFirst, unread);
       }
       mirrors.push(m as Mirror<unknown>);
       return { owner: v, values: m.values() };
@@ -217,6 +220,7 @@ export class GpuSide<I> {
       return;
     }
     const subs = this.mirrors.place(mirrors);
+    this.met.mark(e.voices as Voice<I, unknown>[]);
     const voices = e.voices as Voice<I, unknown>[];
     const timing = this.timings.place(mix, voices, this.answers, this.mirrors.length);
     // Each fade curve's entry after every voice's, at `curves[k]` for voice k.

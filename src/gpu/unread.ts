@@ -5,17 +5,9 @@ import { type Answers, varies } from './answers.js';
 import type { Timings } from './timings.js';
 import { type Weighs, weighsOf } from './weight.js';
 
-const reaches = (reach: Uint32Array | null, row: number): boolean =>
+/** Whether a voice's reach mask, null for every subject, holds registered subject `row`. */
+export const reaches = (reach: Uint32Array | null, row: number): boolean =>
   reach === null || (((reach[row >>> 5] as number) >>> (row & 31)) & 1) === 1;
-
-/** Whether a voice reaches its registered subject `row`. */
-export function reachedOf<I>(
-  voice: Voice<I, unknown>,
-  answers: Answers<I>,
-): (row: number) => boolean {
-  const reach = varies(voice as Voice<unknown, unknown>) ? answers.of(voice).reach : null;
-  return (row) => reaches(reach, row);
-}
 
 /**
  * Whether a live read this frame leaves a motion voice's registered subject `row` unsampled, so its

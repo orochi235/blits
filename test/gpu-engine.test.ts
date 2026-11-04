@@ -125,6 +125,7 @@ describe('gpu engine', () => {
     expect(mixerOf(m).reorigined).toBeNull();
     h.rate = 2;
     expect(mixerOf(m).reorigined).toBeNull();
+    expect(mixerOf(m).unheld).toBeNull();
   });
 
   it('lets go of the patch and the clock, and destroys nothing, when the device is lost', async () => {
@@ -137,6 +138,35 @@ describe('gpu engine', () => {
     expect(side.channel('y')).toBeNull();
     expect(motions?.listener).toBeNull();
     expect(mixerOf(m).reorigined).toBeNull();
+    expect(mixerOf(m).unheld).toBeNull();
+  });
+
+  it("times a change as the CPU's record would, once a fold has met the voice", async () => {
+    const d = stub();
+    const cells = Array.from({ length: 4 }, (_, x) => ({ x }));
+    const m = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: d.device }) });
+    m.sync(0);
+    const s = spring<C, P>('y', { to: (c) => c.x });
+    // Weight 0 under its owner, so no read commits a change and only its stamp shows.
+    const owner = m.owns({ weight: 0 });
+    const named = [cells[0], cells[1], cells[3]] as C[];
+    m.cue({ patch: s, owner, subjects: named, stagger: (c) => c.x * 100 });
+    const side = gpuOf(m);
+    side.subjects(cells, () => ({}));
+    const at = (c: C) => {
+      const motions = motionOf<C>(s);
+      const list = motions?.pending?.[motions.known(c) as number];
+      return list?.[0]?.at;
+    };
+    // No fold has met it, as no probe has on the CPU.
+    s.to(cells[0] as C, 5);
+    expect(at(cells[0] as C)).toBeUndefined();
+    side.channel('y');
+    await side.ready;
+    m.sync(150);
+    side.channel('y');
+    for (const c of cells) s.to(c, 5);
+    expect(cells.map(at)).toEqual([150, 50, undefined, undefined]);
   });
 
   it('folds again after a level is set between syncs', async () => {
