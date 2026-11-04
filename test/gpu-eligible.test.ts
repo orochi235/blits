@@ -3,19 +3,19 @@ import { Answers } from '../src/gpu/answers.js';
 import { eligibility, within } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { Timings } from '../src/gpu/timings.js';
-import { kit, mix, patch, quat, tween } from '../src/index.js';
+import { input, kit, mix, patch, quat, tween } from '../src/index.js';
 import type { Mixer } from '../src/mixer.js';
 import type { Voice } from '../src/voice.js';
 import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
 
 describe('gpu eligibility', () => {
-  it('keeps a channel on the CPU, with a reason, when a voice reads a weight signal', () => {
+  it('folds a voice weighted by an input that reads no subject', () => {
     const m = mix<C, P>(K);
-    m.cue({ patch: wave, subjects: cells, weight: () => 0.5 });
+    m.cue({ patch: wave, subjects: cells, weight: input(() => 0.5) });
     m.sync(0);
     const e = elig(m);
-    expect(e.channels.has('y')).toBe(false);
-    expect(e.reasons[0]?.why).toMatch(/weight signal/);
+    expect(e.channels.has('y')).toBe(true);
+    expect(e.reasons).toEqual([]);
   });
 
   it('leaves a voice at weight 0 out, until its weight is raised', () => {

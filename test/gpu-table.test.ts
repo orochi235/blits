@@ -5,11 +5,21 @@ import { mixerOf } from '../src/gpu/engine.js';
 import { Regions } from '../src/gpu/region.js';
 import { Col, ROW, type Slot, voiceTable } from '../src/gpu/table.js';
 import { Timings } from '../src/gpu/timings.js';
+import { weighsOf } from '../src/gpu/weight.js';
 import { Flag, NONE } from '../src/gpu/wgsl/timing.js';
 import { level, mix } from '../src/index.js';
 import type { Mixer } from '../src/mixer.js';
 import type { Voice } from '../src/voice.js';
 import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
+
+/** `voiceTable` with each voice's weights read as the gpu side reads them. */
+const tableOf = (mixer: Mixer<C, P>, voices: readonly Voice<C, P>[], slots: readonly Slot[]) =>
+  voiceTable(
+    mixer,
+    voices,
+    slots,
+    voices.map((v) => weighsOf(mixer, v)),
+  );
 
 const slots = Array.from({ length: 3 }, () => ({ runner: 0, values: 0, sub: 0 }));
 
@@ -35,7 +45,7 @@ function staggered(
       answers,
       0,
     );
-    const t = voiceTable(mixer, voices, [
+    const t = tableOf(mixer, voices, [
       { runner: 0, values: 0, sub: 0, timing: timing[0], ease, ...extra },
     ]);
     return {
@@ -54,7 +64,7 @@ describe('voice table', () => {
     m.sync(0);
     m.sync(250);
     const e = elig(m);
-    const t = voiceTable(mixerOf(m), e.voices, slots);
+    const t = tableOf(mixerOf(m), e.voices, slots);
     m.probe(cells[0] as C);
     expect(t.count).toBe(1);
     expect(t.rows[Col.PHASE]).toBeCloseTo(0.25, 6);
@@ -74,7 +84,7 @@ describe('voice table', () => {
     const voices = elig(m).voices;
     expect(voices.length).toBe(4);
     const four = Array.from({ length: 4 }, () => ({ runner: 0, values: 0, sub: 0 }));
-    const t = voiceTable(mixerOf(m), voices, four);
+    const t = tableOf(mixerOf(m), voices, four);
     const col = (c: Col) => [0, 1, 2, 3].map((k) => t.rows[k * ROW + c]);
     expect(col(Col.ROLE)).toEqual([1, 1, 1, 0]);
     const flags = new Uint32Array(t.rows.buffer);
@@ -193,7 +203,7 @@ describe('voice table', () => {
     const child = voices[0] as Voice<C, P>;
     for (const t of [250, 400, 700]) {
       m.sync(t);
-      const table = voiceTable(mixer, voices, [{ runner: 0, values: 0, sub: 0 }]);
+      const table = tableOf(mixer, voices, [{ runner: 0, values: 0, sub: 0 }]);
       m.probe(cells[0] as C);
       const held = child.subjects.get(cells[0] as C);
       // At 250 the child, starting 100 into its owner, has yet to start on either side.
@@ -215,7 +225,7 @@ describe('voice table', () => {
     m.sync(100);
     const mixer = mixerOf(m);
     const voice = mixer.cued[0] as Voice<C, P>;
-    const t = voiceTable(mixer, [voice], [{ runner: 0, values: 0, sub: 0 }]);
+    const t = tableOf(mixer, [voice], [{ runner: 0, values: 0, sub: 0 }]);
     const fade = mixer.envelope(voice, 100, mixer.shownOf(voice, mixer.sinceOf(voice, 0)));
     expect(fade).toBeGreaterThan(0);
     expect(fade).toBeLessThan(1);
@@ -229,10 +239,10 @@ describe('voice table', () => {
     m.sync(100);
     const mixer = mixerOf(m);
     const voices = [...mixer.cued];
-    const t = voiceTable(mixer, voices, [{ runner: 0, values: 0, sub: 0, weights: 64 }]);
+    const t = tableOf(mixer, voices, [{ runner: 0, values: 0, sub: 0, weights: 64 }]);
     expect(new Uint32Array(t.rows.buffer)[Col.WEIGHTS]).toBe(64);
     expect(t.rows[Col.WEIGHT]).toBe(0.25);
-    const plain = voiceTable(mixer, voices, [{ runner: 0, values: 0, sub: 0 }]);
+    const plain = tableOf(mixer, voices, [{ runner: 0, values: 0, sub: 0 }]);
     expect(new Uint32Array(plain.rows.buffer)[Col.WEIGHTS]).toBe(NONE);
   });
 
@@ -248,6 +258,73 @@ describe('voice table', () => {
     expect(plain.rows[Col.WEIGHT]).toBe(1);
   });
 
+  it("carries a staggered row's weight unclamped through a fade in, for each subject's read", () => {
+    const four = [0, 1, 2, 3].map((x) => ({ x }));
+    const m = mix<C, P>(K, { lanes: false });
+    m.sync(0);
+    const owner = m.owns({ weight: 0.5 });
+    m.cue({
+      patch: wave,
+      subjects: four,
+      owner,
+      loop: true,
+      stagger: (c: C) => c.x * 100,
+      fade: { in: 400 },
+      weight: (c: C) => c.x + 0.5,
+    });
+    m.sync(300);
+    const mixer = mixerOf(m);
+    const voices = mixer.cued.filter((v) => v.holding === null);
+    const voice = voices[0] as Voice<C, P>;
+    const answers = new Answers<C>(mixer as unknown as Mixer<C, unknown>);
+    answers.register(four);
+    const timing = new Timings().place(
+      mixer as unknown as Mixer<C, unknown>,
+      voices as unknown as Voice<C, unknown>[],
+      answers,
+      0,
+    );
+    const t = tableOf(mixer, voices, [
+      { runner: 0, values: 0, sub: 0, timing: timing[0], weights: 0 },
+    ]);
+    const bits = new Uint32Array(t.rows.buffer);
+    expect((bits[Col.FLAGS] as number) & Flag.FADE).not.toBe(0);
+    expect(bits[Col.WEIGHTS]).toBe(0);
+    expect(t.rows[Col.WEIGHT]).toBe(0.5);
+    // As the kernel takes it: the row's weight, times the subject's fade in and its read, clamped.
+    for (const c of four.slice(0, 2)) {
+      m.probe(c);
+      const fade = mixer.envelope(
+        voice,
+        300,
+        mixer.shownOf(voice, mixer.sinceOf(voice, c.x * 100)),
+      );
+      expect(fade).toBeGreaterThan(0);
+      expect(fade).toBeLessThan(1);
+      const cpu = (voice.subjects.get(c) as { weight: number }).weight;
+      expect(Math.min(1, (t.rows[Col.WEIGHT] as number) * fade * (c.x + 0.5))).toBeCloseTo(cpu, 6);
+    }
+  });
+
+  it("leaves the clamp to the kernel where a subject's read times its owners' weight passes 1", () => {
+    const m = mix<C, P>(K, { lanes: false });
+    m.sync(0);
+    const owner = m.owns({ weight: 0.5 });
+    m.cue({ patch: wave, subjects: cells, owner, loop: true, weight: (c: C) => c.x * 3 });
+    m.sync(100);
+    const mixer = mixerOf(m);
+    const voices = mixer.cued.filter((v) => v.holding === null);
+    const t = tableOf(mixer, voices, [{ runner: 0, values: 0, sub: 0, weights: 0 }]);
+    const cell = cells[1] as C;
+    m.probe(cell);
+    const cpu = ((voices[0] as Voice<C, P>).subjects.get(cell) as { weight: number }).weight;
+    const row = t.rows[Col.WEIGHT] as number;
+    expect(row).toBe(0.5);
+    expect(row * 3).toBeGreaterThan(1);
+    expect(cpu).toBe(1);
+    expect(Math.min(1, row * 3)).toBe(cpu);
+  });
+
   it('reads offsets back as the u32s written', () => {
     const m = mix<C, P>(K);
     m.cue({ patch: wave, subjects: cells, loop: true, stagger: (c: C) => c.x * 100 });
@@ -260,7 +337,7 @@ describe('voice table', () => {
       timing: { delays: far, mask: far + 2, shown: far + 4, anchor: 0, latest: 0 },
       ease: far + 6,
     };
-    const t = voiceTable(mixerOf(m), [...mixerOf(m).cued], [slot]);
+    const t = tableOf(mixerOf(m), [...mixerOf(m).cued], [slot]);
     const bits = new Uint32Array(t.rows.buffer);
     expect([Col.DELAYS, Col.MASK, Col.SHOWN, Col.EASE].map((c) => bits[c])).toEqual([
       far,
@@ -268,7 +345,7 @@ describe('voice table', () => {
       far + 4,
       far + 6,
     ]);
-    const plain = voiceTable(mixerOf(m), [...mixerOf(m).cued], [{ runner: 0, values: 0, sub: 0 }]);
+    const plain = tableOf(mixerOf(m), [...mixerOf(m).cued], [{ runner: 0, values: 0, sub: 0 }]);
     const none = new Uint32Array(plain.rows.buffer);
     expect([Col.DELAYS, Col.MASK, Col.SHOWN, Col.EASE].map((c) => none[c])).toEqual([
       NONE,
@@ -284,7 +361,7 @@ describe('voice table', () => {
     m.sync(0);
     const e = elig(m);
     const far = 2 ** 24 + 1;
-    const t = voiceTable(mixerOf(m), e.voices, [{ runner: 0, values: far, sub: far + 2 }]);
+    const t = tableOf(mixerOf(m), e.voices, [{ runner: 0, values: far, sub: far + 2 }]);
     const bits = new Uint32Array(t.rows.buffer);
     expect(bits[Col.VALUES]).toBe(far);
     expect(bits[Col.SUB]).toBe(far + 2);

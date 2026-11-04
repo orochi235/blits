@@ -4,7 +4,7 @@ import type { Voice } from '../voice.js';
 import { Col, ROW } from './columns.js';
 import { rowClock } from './row-clock.js';
 import type { TimingSlot } from './timings.js';
-import { type Weighs, weighsOf } from './weight.js';
+import type { Weighs } from './weight.js';
 import { Flag, NONE } from './wgsl/timing.js';
 
 export { Col, ROW } from './columns.js';
@@ -49,8 +49,8 @@ export function voiceTable<I, O>(
   voices: readonly Voice<I, O>[],
   /** Each voice's runner and data, in `voices` order. */
   slots: readonly Slot[],
-  /** Each voice's weight reads, in `voices` order, read here where absent. */
-  weighs: readonly Weighs[] = voices.map((v) => weighsOf(mix, v)),
+  /** Each voice's weight reads, in `voices` order, as `weighsOf` gives them once per fold. */
+  weighs: readonly Weighs[],
 ): Table {
   const now = mix.now;
   const rows = new Float32Array(Math.max(1, voices.length) * ROW);

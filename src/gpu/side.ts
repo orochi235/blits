@@ -1,4 +1,5 @@
 import type { Mixer } from '../mixer.js';
+import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
 import { production, warnOnce } from '../warn.js';
 import { Answers, varies } from './answers.js';
@@ -43,9 +44,10 @@ export class GpuSide<I> {
   private list: readonly I[] = [];
   private fieldsOf: (subject: I) => Record<string, number> = () => ({});
   private off = false;
-  /** The mix's frame and change count the last fold was for: a fold is good until either moves. */
+  /** The mix's frame, change count and input count the last fold was for: good until one moves. */
   private frame = Number.NaN;
   private stirs = Number.NaN;
+  private inputs = Number.NaN;
   private outputs = new Map<string, GpuChannel>();
   private readonly known: Runner[] = [];
   /** Each runner's place in `known`, by key, as the table's runner column gives it. */
@@ -112,9 +114,15 @@ export class GpuSide<I> {
    */
   channel(name: string): GpuChannel | null {
     if (this.off) return null;
-    if (this.mix.frame !== this.frame || this.mix.stirs !== this.stirs || this.mirrors.stirred) {
+    if (
+      this.mix.frame !== this.frame ||
+      this.mix.stirs !== this.stirs ||
+      reading.inputs !== this.inputs ||
+      this.mirrors.stirred
+    ) {
       this.frame = this.mix.frame;
       this.stirs = this.mix.stirs;
+      this.inputs = reading.inputs;
       this.outputs = new Map();
       this.dispatch();
     }

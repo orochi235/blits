@@ -4,6 +4,7 @@ import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
 import { type ChannelLookup, packOf } from './runner.js';
+import { perSubject, weightWhy } from './weight.js';
 import { type ChannelCode, codeFor } from './wgsl/channels.js';
 
 /** What can go on the GPU this frame, and why the rest cannot. */
@@ -56,7 +57,13 @@ function idle<I, O>(voice: Voice<I, O>): boolean {
 }
 
 /** Why a voice cannot run on the GPU, or null where it can. */
-function why<I, O>(voice: Voice<I, O>, codes: ChannelLookup, answers: Answers<I>): string | null {
+function why<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  codes: ChannelLookup,
+  answers: Answers<I>,
+  refused?: WeakMap<object, string>,
+): string | null {
   for (const name of voice.patch.writes as readonly string[])
     if (!codes.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
   const packed = packOf(voice.patch, codes);
@@ -67,8 +74,10 @@ function why<I, O>(voice: Voice<I, O>, codes: ChannelLookup, answers: Answers<I>
   if (voice.motion !== undefined && !reading.live)
     return 'it is a motion read by a projection, which commits nothing';
   if (voice.spec.from === 'current') return "it starts from the subject's current pose";
-  if (typeof voice.spec.weight === 'function') return 'its weight is a weight signal';
-  if (voice.owner !== null) return 'an owner lays it out';
+  const weight = weightWhy(mix, voice, refused);
+  if (weight !== null) return weight;
+  if (perSubject(voice))
+    return 'its weight signal is read per subject, which the gpu engine does not fold yet';
   if (voice.patch.state !== undefined || voice.patch.step !== undefined)
     return 'its patch keeps state';
   if (voice.parts !== null || voice.parted !== null) return 'it is parting from subjects';
@@ -102,16 +111,21 @@ function staggered<I, O>(voice: Voice<I, O>, delays: Float64Array): string | nul
  * Sorts this frame's voices into what the GPU folds and what stays on the CPU. A channel goes on
  * the GPU when its rule has WGSL and every playing voice writing it can run there or is idle.
  */
-export function eligibility<I, O>(mix: Mixer<I, O>, answers: Answers<I>): Eligibility<I, O> {
+export function eligibility<I, O>(
+  mix: Mixer<I, O>,
+  answers: Answers<I>,
+  refused?: WeakMap<object, string>,
+): Eligibility<I, O> {
   const channels = new Set<string>();
   const kept = new Set<string>();
   const reasons: { voice: Voice<I, O>; why: string }[] = [];
   const codes = codesOf(mix);
   for (const name of mix.names) if (!codes.has(name)) kept.add(name);
-  const playing = mix.cued.filter((v) => PLAYING.has(v.state) && !idle(v));
+  // An owner writes nothing itself: its weight and clock reach the GPU through its children's rows.
+  const playing = mix.cued.filter((v) => v.holding === null && PLAYING.has(v.state) && !idle(v));
   const fit = new Set<Voice<I, O>>();
   for (const voice of playing) {
-    const reason = why(voice, codes, answers);
+    const reason = why(mix, voice, codes, answers, refused);
     for (const name of voice.patch.writes as readonly string[]) {
       if (reason === null) channels.add(name);
       else kept.add(name);

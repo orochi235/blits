@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { gpu, gpuOf, mixerOf } from '../src/gpu/engine.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import type { GpuBuffer, GpuDevice } from '../src/gpu/webgpu.js';
-import { kit, mix, spring, sum } from '../src/index.js';
+import { kit, level, mix, spring, sum } from '../src/index.js';
 import { motionOf } from '../src/motion.js';
 
 interface C {
@@ -31,11 +31,19 @@ const untouched = new Proxy(
 /** A device that does nothing, keeping the label of each buffer the gpu side destroys. */
 function stub() {
   const destroyed: string[] = [];
+  let dispatched = 0;
   let lose = () => {};
   const lost = new Promise<void>((resolve) => {
     lose = resolve;
   });
-  const pass = { setPipeline() {}, setBindGroup() {}, dispatchWorkgroups() {}, end() {} };
+  const pass = {
+    setPipeline() {},
+    setBindGroup() {},
+    dispatchWorkgroups() {
+      dispatched++;
+    },
+    end() {},
+  };
   const device = {
     queue: { writeBuffer() {}, submit() {}, onSubmittedWorkDone: async () => {} },
     lost,
@@ -61,7 +69,7 @@ function stub() {
       finish: () => ({}),
     }),
   } as unknown as GpuDevice;
-  return { device, destroyed, lose: () => lose() };
+  return { device, destroyed, lose: () => lose(), dispatched: () => dispatched };
 }
 
 /** A gpu mix folding a staggered spring that fades in, so the side has a mirror and a timing block. */
@@ -109,6 +117,27 @@ describe('gpu engine', () => {
     expect(side.channel('y')).toBeNull();
     expect(motions?.listener).toBeNull();
     expect(mixerOf(m).reorigined).toBeNull();
+  });
+
+  it('folds again after a level is set between syncs', async () => {
+    const d = stub();
+    const cells = [{ x: 0 }, { x: 1 }];
+    const m = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: d.device }) });
+    m.sync(0);
+    const lvl = level<C>(0.5);
+    m.cue({ patch: wave, subjects: cells, loop: true, weight: lvl });
+    const side = gpuOf(m);
+    side.subjects(cells, () => ({}));
+    side.channel('y');
+    await side.ready;
+    side.channel('y');
+    side.channel('y');
+    expect(d.dispatched()).toBe(1);
+    lvl.set(0.25);
+    side.channel('y');
+    expect(d.dispatched()).toBe(2);
+    side.channel('y');
+    expect(d.dispatched()).toBe(2);
   });
 
   it('plays on the CPU as mixer does while nothing asks for a channel', () => {

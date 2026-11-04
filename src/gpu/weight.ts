@@ -1,6 +1,6 @@
 import type { Mixer } from '../mixer.js';
 import { ownersWeight } from '../owner.js';
-import { subjectFree } from '../signals.js';
+import { heard, subjectFree } from '../signals.js';
 import type { Signal } from '../types.js';
 import type { Voice } from '../voice.js';
 
@@ -65,3 +65,46 @@ export const weighsOf = <I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Weighs => 
   base: baseOf(voice),
   owned: ownedOf(mix, voice),
 });
+
+/** A voice's weight signal, or null where its weight is a number. */
+const signalOf = <I, O>(voice: Voice<I, O>): Signal<unknown> | null =>
+  typeof voice.spec.weight === 'function' ? (voice.spec.weight as Signal<unknown>) : null;
+
+const isInput = (signal: Signal<unknown>): boolean =>
+  (signal as { input?: boolean }).input === true;
+
+/**
+ * Why a voice's weight signal, or an owner's above it, keeps the voice on the CPU, or null where
+ * the gpu side can read them. `refused` holds the signals the gpu side's own setting could not read.
+ */
+export function weightWhy<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  refused?: WeakMap<object, string>,
+): string | null {
+  const recorded = mix.opts.history?.inputs === true;
+  const signal = signalOf(voice);
+  if (signal !== null) {
+    if (voice.blend !== null)
+      return 'it is a member of a blend, whose signal the CPU reads once for every member';
+    if (isInput(signal) && recorded)
+      return "its weight signal is an input the mix's history records, which a seek plays back";
+    if (isInput(signal) && !heard(signal))
+      return 'its weight signal reads an input that does not report its changes';
+    if (!uniform(signal) && voice.keeping)
+      return "its weight signal keeps state for each subject, which only the CPU's records hold";
+    const no = refused?.get(signal);
+    if (no !== undefined) return no;
+  }
+  for (let o = voice.owner; o !== null; o = o.owner) {
+    const s = signalOf(o);
+    if (s === null) continue;
+    // Input checks come first, as for the voice's own: a non-reporting input is never uniform.
+    if (isInput(s) && recorded)
+      return "an owner above it is weighted by an input the mix's history records, which a seek plays back";
+    if (isInput(s) && !heard(s))
+      return 'an owner above it is weighted by an input that does not report its changes';
+    if (!uniform(s)) return 'an owner above it weighs it by a signal read per subject';
+  }
+  return null;
+}
