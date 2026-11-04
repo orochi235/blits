@@ -128,6 +128,31 @@ describe('voice table', () => {
     expect(t.rows[Col.PASS_BASE]).toBe(0);
   });
 
+  it('marks a voice whose clock reads NaN, and sends no NaN', () => {
+    const at = staggered({ loop: true });
+    const { voice } = at(500);
+    // `frozenTime`'s pending voice at rate 0 reads its clock as infinity times 0.
+    voice.rawAt = () => Number.NaN;
+    const t = at(600);
+    expect((t.bits[Col.FLAGS] as number) & Flag.NO_CLOCK).toBe(Flag.NO_CLOCK);
+    expect(t.rows[Col.CLOCK]).toBe(0);
+    expect(t.rows[Col.START]).toBe(-0);
+    expect(t.rows[Col.PASS_BASE]).toBe(0);
+  });
+
+  it('keeps a beginless voice its pass and a clock inside it, hours back', () => {
+    const at = staggered({ loop: true, rate: -1 });
+    const hours = 3 * 3600 * 1000 + 250;
+    const t = at(hours);
+    expect(t.voice.beginless).toBe(true);
+    const raw = t.voice.rawAt(hours, 0);
+    expect(raw).toBe(-hours);
+    expect(t.rows[Col.CLOCK]).toBe(750);
+    expect(t.rows[Col.PASS_BASE]).toBe(Math.floor(raw / 1000));
+    expect(t.rows[Col.START]).toBe(-1000 * Math.floor(raw / 1000));
+    expect((t.bits[Col.FLAGS] as number) & Flag.BEGINLESS).toBe(Flag.BEGINLESS);
+  });
+
   it('sets FADE only while some subject is still fading in', () => {
     const four = [0, 1, 2, 3].map((x) => ({ x }));
     // Origins at 0, 100, 200 and 300: the last subject's fade in ends at 700.

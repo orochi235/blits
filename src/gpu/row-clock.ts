@@ -26,7 +26,9 @@ export function rowClock<I, O>(
   const raw = voice.rawAt(now, 0);
   let base = 0;
   if (Number.isFinite(raw) && duration > 0) {
-    const pass = Math.max(0, Math.floor(raw / duration));
+    // A beginless voice runs on below 0 for good, so its B follows it there.
+    const q = Math.floor(raw / duration);
+    const pass = voice.beginless ? q : Math.max(0, q);
     base = duration * (Number.isFinite(passes) ? Math.min(pass, passes - 1) : pass);
   }
   let flags =
