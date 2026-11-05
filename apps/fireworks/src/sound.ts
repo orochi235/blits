@@ -1,6 +1,6 @@
 import type { Target } from '@msb235/blits-tone';
 import * as Tone from 'tone';
-import type { Sound } from './show';
+import { panOf, type Shell, type Sound, sizeOf } from './show';
 
 /** One oscillator a rising shell borrows: its pitch and its level are what the mix drives. */
 export interface Whistle {
@@ -9,8 +9,8 @@ export interface Whistle {
 }
 
 export interface Sounds {
-  /** Plays a bang or a crackle at `time`, seconds on the audio clock. */
-  play(sound: Sound, time: number): void;
+  /** Plays a shell's bang or crackle at `time`, seconds on the audio clock. */
+  play(sound: Sound, shell: Shell, time: number): void;
   /** A whistle nobody is using, or undefined when every one is in the air. */
   borrow(): Whistle | undefined;
   giveBack(whistle: Whistle): void;
@@ -57,15 +57,15 @@ export function createSounds(): Sounds {
   });
 
   return {
-    play(sound, time) {
-      if (sound.kind === 'bang') {
+    play(sound, shell, time) {
+      if (sound === 'bang') {
         const at = bangAt(time);
-        bangPan.pan.setValueAtTime(sound.pan, at);
-        rumble.triggerAttackRelease(0.6, at, Math.min(1, 0.5 + sound.size / 2));
+        bangPan.pan.setValueAtTime(panOf(shell), at);
+        rumble.triggerAttackRelease(0.6, at, Math.min(1, 0.5 + sizeOf(shell) / 2));
         thump.triggerAttackRelease('C1', 0.5, at, 0.9);
       } else {
         const at = crackleAt(time);
-        cracklePan.pan.setValueAtTime(sound.pan, at);
+        cracklePan.pan.setValueAtTime(panOf(shell), at);
         crackle.triggerAttackRelease(0.03, at, 0.25);
       }
     },
