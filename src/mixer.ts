@@ -34,6 +34,7 @@ import { Lanes } from './lanes.js';
 import { hostOf, listed, readingAt } from './marks.js';
 import type { Motions } from './motions.js';
 import { nextFrame } from './move.js';
+import { call, listen, onSeek } from './onseek.js';
 import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
 import { Keys } from './paging.js';
@@ -210,14 +211,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   onWake(fn: () => void): () => void {
-    if (this.stirFns === null) this.stirFns = [];
-    const fns = this.stirFns;
-    fns.push(fn);
-    return () => {
-      const i = fns.indexOf(fn);
-      if (i >= 0) fns.splice(i, 1);
-    };
+    this.stirFns ??= [];
+    return listen(this.stirFns, fn);
   }
+  /** Who `onSeek` tells; null until someone subscribes. */
+  seekFns: ((s: Sought) => void)[] | null = null;
   /**
    * Per subject, the first record of the chain through every live voice that reaches it, or a stub
    * where none does. Relinked when `version` moves, or when a voice naming the subject marks its
@@ -705,6 +703,8 @@ const methods = {
   forgetIn,
   releaseIn,
   recordDrop,
+  onSeek,
+  call,
 };
 type Methods = typeof methods;
 // biome-ignore lint/correctness/noUnusedVariables: merging needs the class's type parameters

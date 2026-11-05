@@ -11,6 +11,14 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice can name the `track` it plays on, so a tool that draws the score puts the voices sharing
   one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
   carries it as `track`, and `watched` reports it for each voice.
+- `mix.onSeek(fn)` and `transport.onSeek(fn)` tell a driver of every seek once it has landed,
+  paused or not: the mix time it landed on, the last frame it kept, and whether it went back. A
+  driver cuts what it logged after that frame, as a history store's `cut` does.
+- `mix.call(label, fn)` puts a driver's own call on the tape: it makes `fn` now and again wherever
+  the mix makes the host's calls again, on a seek forward, playing on after a seek back, and on a
+  branch `switchBranch` picks. Like any host call, one made while calls lie ahead starts a branch,
+  so a cue after a seek back leaves the driver's calls ahead behind as it does the mix's. What the
+  mix does inside `fn` is made again with it, not recorded apart; a read ahead makes none.
 
 ## 1.0.0
 

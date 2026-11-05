@@ -387,6 +387,23 @@ export interface Mix<I, O, H = unknown> {
    */
   onWake(fn: () => void): () => void;
   /**
+   * Calls `fn` each time the mix is sought, by its own `seek` or its transport's, once the seek has
+   * landed: the mix can be read at the time sought, before any sync, as a paused host scrubbing
+   * reads it. A driver holding state of its own learns here what to take back. Returns a function
+   * that unsubscribes `fn`.
+   */
+  onSeek(fn: (sought: Sought) => void): () => void;
+  /**
+   * Makes a call of a driver's own, `fn`, now, and keeps it on the tape beside the host's calls, so
+   * the mix makes it again wherever it plays them again: forward past it after a seek back, and on
+   * a branch `tape.switchBranch` picks. It is a host call like any other: made while the tape holds
+   * calls ahead, it starts a new branch, and what the mix does inside `fn` is part of it, made
+   * again with it rather than recorded apart. On a seek back to before it, the driver takes back
+   * what `fn` did, by {@link Mix.onSeek | `onSeek`}. A read ahead does not make it. Without a
+   * `history.tape` it only calls `fn`.
+   */
+  call(label: string, fn: () => void): void;
+  /**
    * Takes the mix off the list debuggers read (see `watched`). It is for a host done with it, where
    * it would otherwise stay until collected. Stops every watcher, and frees a hold no other listed
    * mix on its transport shares. It still plays if synced.
@@ -479,6 +496,24 @@ export interface Mix<I, O, H = unknown> {
    * nothing for it.
    */
   book<E = unknown>(opts: BookOptions<E, I>): Booker;
+}
+
+/**
+ * Where a seek landed, as {@link Mix.onSeek | `onSeek`} hands it over.
+ *
+ * @category mix
+ */
+export interface Sought {
+  /** The mix time it landed on. */
+  readonly at: number;
+  /**
+   * The last frame it kept. A seek back lets go of every frame after it, so what a driver logged
+   * in a later frame is from a future the tape makes again, as a history store's `cut` is told; a
+   * seek forward keeps every frame, and this is the one it ends in.
+   */
+  readonly frame: number;
+  /** Whether it went back. */
+  readonly back: boolean;
 }
 
 /**

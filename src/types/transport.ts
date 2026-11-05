@@ -1,5 +1,5 @@
 import type { Tape } from './history.js';
-import type { AnnounceOptions, Mix, MixOptions, Projection } from './mix.js';
+import type { AnnounceOptions, Mix, MixOptions, Projection, Sought } from './mix.js';
 import type { Marked } from './place.js';
 
 /**
@@ -74,6 +74,8 @@ export interface Transport {
    * sync.
    */
   onWake(fn: () => void): () => void;
+  /** As `Mix.onSeek`, for a seek of the transport or any mix on it. */
+  onSeek(fn: (sought: Sought) => void): () => void;
   /**
    * Takes a mix off the transport. It is no longer synced and takes no more calls. With history, a
    * seek back before the drop puts it back as it was then; without, it is let go.
