@@ -2,6 +2,8 @@
 # CPU-profile one stress demo with lanes on and then off, and print each profile's self time by
 # function (bench/profsum.mjs).
 #   bench/stressprof.sh <name> [stress flags...]
+# heatmap plays a twin with lanes the other way to check them against, so its two profiles hold
+# both paths: profile it with AB_BENCH=bench/heatmap.mjs bench/cpuprof.sh instead.
 # CALLERS="<name>..." also splits those functions' self time by caller (bench/profcallers.mjs).
 # Profiles go to a temporary directory, removed on exit.
 set -euo pipefail
