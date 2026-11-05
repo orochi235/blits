@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "api": "typedoc --json .generated/api.json --tsconfig ../tsconfig.json ../src/index.ts --excludePrivate --excludeInternal --sort source-order --logLevel Warn --treatValidationWarningsAsErrors",
+    "api": "node ../apps/playground/scripts/docs.mjs && typedoc --json .generated/api.json --tsconfig ../tsconfig.json ../src/index.ts --excludePrivate --excludeInternal --sort source-order --logLevel Warn --treatValidationWarningsAsErrors",
     "dev": "npm run api && astro dev --host :: --port 4880",
     "build": "npm run api && astro build && pagefind --site ${BLITS_SITE_OUT:-dist}",
     "smoke": "npm run build && node scripts/smoke.mjs",

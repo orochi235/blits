@@ -5,6 +5,7 @@
     "jsxImportSource": "react",
     "paths": {
       "@brand/*": ["../brand/*"],
+      "@pg/*": ["../apps/playground/src/*"],
       "bree": ["./vendor/bree/index.ts"],
       "@msb235/blits": ["../src/index.ts"],
       "@msb235/blits/lean": ["../src/lean.ts"],

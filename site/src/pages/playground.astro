@@ -1,0 +1,31 @@
+---
+import icon from '@brand/out/mark-panel.svg?url';
+import { Playground } from '@pg/Playground';
+import DebugPanel from '../components/DebugPanel.astro';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>blits: Playground</title>
+    <meta
+      name="description"
+      content="Compose with blits in the browser: voices on a score, a stage of dots or letters, and diagrams of how each channel folds."
+    />
+    <link rel="icon" type="image/svg+xml" href={icon} />
+  </head>
+  <body>
+    <Playground client:only="react" />
+    <DebugPanel />
+  </body>
+</html>
+
+<style is:global>
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+</style>

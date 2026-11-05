@@ -53,10 +53,8 @@ export const extra = [
   { slug: 'reference', title: 'Reference' },
   { slug: 'changelog', title: 'Changelog' },
   { slug: 'built-on', title: 'Built on blits' },
+  { slug: 'playground', title: 'Playground' },
 ] as const;
-
-/** Apps the dev server links to; they run only on this machine, so the built site leaves them out. */
-export const local = [{ href: 'http://localhost:4881/', title: 'Playground (local)' }] as const;
 
 interface Entry {
   slug: string;

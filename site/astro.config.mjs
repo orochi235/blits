@@ -65,6 +65,10 @@ export default defineConfig({
           replacement: fileURLToPath(new URL('./vendor/bree/index.ts', import.meta.url)),
         },
         { find: /^@brand\//, replacement: fileURLToPath(new URL('../brand/', import.meta.url)) },
+        {
+          find: /^@pg\//,
+          replacement: fileURLToPath(new URL('../apps/playground/src/', import.meta.url)),
+        },
         { find: /^@msb235\/blits$/, replacement: src('index.ts') },
         { find: /^@msb235\/blits\/lean$/, replacement: src('lean.ts') },
         { find: /^@msb235\/blits\/gpu$/, replacement: src('gpu.ts') },
