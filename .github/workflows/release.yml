@@ -82,6 +82,17 @@ jobs:
             exit 1
           fi
 
+      # blits-panel shares the engine's version, so a panel release names the engine it ships with.
+      - name: The panel is at the engine's version
+        if: steps.pick.outputs.dir == 'packages/panel'
+        run: |
+          panel="$(node -p 'require("./packages/panel/package.json").version')"
+          engine="$(node -p 'require("./package.json").version')"
+          if [ "$panel" != "$engine" ]; then
+            echo "blits-panel is at $panel, but the engine is at $engine; they release in lockstep" >&2
+            exit 1
+          fi
+
       - name: The changelog has a section for this version
         working-directory: ${{ steps.pick.outputs.dir }}
         run: |
