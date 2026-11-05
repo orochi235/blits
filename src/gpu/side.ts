@@ -115,6 +115,7 @@ export class GpuSide<I> {
     this.frame = Number.NaN;
     this.mirrors.clear();
     this.answers.register(this.list);
+    this.met.clear();
     this.timings.clear();
     this.reads.clear();
     this.readback.forget();

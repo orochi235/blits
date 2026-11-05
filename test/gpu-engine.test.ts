@@ -72,6 +72,7 @@ describe('gpu engine', () => {
     h.rate = 2;
     expect(mixerOf(m).reorigined).toBeNull();
     expect(mixerOf(m).unheld).toBeNull();
+    expect(mixerOf(m).unmet).toBeNull();
   });
 
   it('lets go of the patch and the clock, and destroys nothing, when the device is lost', async () => {
@@ -85,6 +86,7 @@ describe('gpu engine', () => {
     expect(motions?.listener).toBeNull();
     expect(mixerOf(m).reorigined).toBeNull();
     expect(mixerOf(m).unheld).toBeNull();
+    expect(mixerOf(m).unmet).toBeNull();
   });
 
   it('drops a twin check whose map a lost device refuses, rejecting nothing unhandled', async () => {

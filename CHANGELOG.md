@@ -21,6 +21,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `gpuOf(m).read` lets go of a channel's last copy once a frame passes without reading it, rather
   than holding it, about 32 MB for 1M subjects of eight numbers, until `subjects()` or `close()`; and
   after a stretch of frames with no fold, it no longer copies the old fold only to turn it down.
+- On the `gpu` engine, a motion change made to a subject after a seek back before its voice's cue,
+  or after the subject's `drop`, is timed as on the CPU, which holds no record of it then, rather
+  than as if the GPU's last fold had met it.
 
 ## 1.0.0
 
