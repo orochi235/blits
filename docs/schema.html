@@ -438,7 +438,7 @@ interface VoiceSpec&lt;I, O, H = unknown&gt; extends SpanHints {
   subjects?: readonly I[];
 
   <span class="cm">// clock</span>
-  <span class="cm">/** When the voice starts, in ms on the clock the host passes <code>sync</code>. Default: the time the mix last synced to, and 0 for a voice cued before the first sync, which that sync finds already as far in as its timestamp. */</span>
+  <span class="cm">/** When the voice starts, in ms on the clock the host passes <code>sync</code>. Default: the time the mix last synced to, and 0 for a voice cued before the first sync, which that sync finds already as far in as its timestamp; the mix warns when that is past the voice&rsquo;s end. */</span>
   start?: number;
   <span class="cm">/** Playback rate. 1 is real time; 0 freezes; below 0 plays backward. See Starting partway, and playing backward. */</span>
   rate?: number;

@@ -672,10 +672,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    from 24 places in 12 modules and was left in.
 
 12. **What the docs audit left** (2026-10-10).
-    - **A voice cued before the mix's first sync starts at 0 on the host's clock, not at that
-      sync** (measured 2026-10-11): a one-pass 1 s voice cued before `sync(5000)` has ended
-      when it is first probed. Whether it should start at the first sync instead is Mike's call;
-      a page that cues before its first `requestAnimationFrame` meets it.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts.
 

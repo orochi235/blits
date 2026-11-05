@@ -16,6 +16,7 @@ import { scoredLeft, scoredRemove } from './scored.js';
 import { type Fitting, lapse, lapses, unfit } from './spans.js';
 import { unplay } from './strays.js';
 import type { Controls, Earlier, Voice } from './voice.js';
+import { warnOnce } from './warn.js';
 
 /** Numbers every mix's frames apart, so a blend's read is never taken for another mix's or frame's. */
 let frames = 0;
@@ -41,6 +42,7 @@ export function move<I, O>(mix: Mixer<I, O>, now: number): void {
 }
 
 function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
+  if (Number.isNaN(mix.now)) early(mix, now);
   mix.now = now;
   mix.looked = false;
   if (mix.unshared) {
@@ -558,5 +560,19 @@ export function forget<I, O>(mix: Mixer<I, O>): void {
     } else {
       expireGone(mix, mix.transport.keepsFrom());
     }
+  }
+}
+
+/** Warns when the first sync lands past the end of a voice cued before it with no start of its own. */
+function early<I, O>(mix: Mixer<I, O>, now: number): void {
+  for (const v of mix.cued) {
+    if (v.owner !== null || v.spec.start !== undefined || v.cuedAt !== Number.NEGATIVE_INFINITY)
+      continue;
+    if (v.start !== 0 || v.span > now) continue;
+    warnOnce(
+      mix,
+      `${mix.name ?? 'a mix'}: ${v.spec.name ?? `voice ${v.id}`} was cued before the first sync, so it started at 0 and sync(${now}) finds it already past its end; cue it after the first sync, or give it a start`,
+    );
+    return;
   }
 }

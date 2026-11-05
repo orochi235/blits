@@ -11,6 +11,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice can name the `track` it plays on, so a tool that draws the score puts the voices sharing
   one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
   carries it as `track`, and `watched` reports it for each voice.
+- A mix warns, outside production, when its first sync lands past the end of a voice cued before
+  it with no `start`. Such a voice starts at 0 on the sync clock, so a page that cues before its
+  first `requestAnimationFrame` and syncs to that frame's timestamp never shows it.
 
 ## 1.0.0
 
