@@ -153,6 +153,8 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   // A role on lanes gathers keys and fn members; a motion member keeps it on the general path.
   if (spec.role !== undefined && voice.motion !== undefined) return false;
   if (spec.from === 'current') return false;
+  // A lane folds every axis of a channel at one weight.
+  if (voice.axes !== null) return false;
   // A rest-less channel's band is read on the record `one` folds; crowds, motions and roles fold elsewhere.
   if (
     (voice.motion !== undefined || spec.role !== undefined || crowdable(voice)) &&

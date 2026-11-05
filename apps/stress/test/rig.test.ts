@@ -19,7 +19,7 @@ test('each bone turns and moves as its role blends the clips and the IK hold', (
   const { s } = play('rig', 0.2, 300);
   const found = s.check();
   expect(found.filter((x) => x.kind === 'fail')).toEqual([]);
-  expect(found.filter((x) => x.kind === 'gap')).toHaveLength(1);
+  expect(found.filter((x) => x.kind === 'gap')).toEqual([]);
   const stats = s.stats();
   const during = stats.checkedDuring ?? 0;
   expect(during).toBeGreaterThan(20);

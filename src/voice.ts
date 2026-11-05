@@ -1,5 +1,6 @@
 import type { Arc } from './arcs.js';
 import type { Asked } from './asked.js';
+import { type AxisWeights, axisWeights } from './axes.js';
 import type { Blend } from './blend.js';
 import type { Bound } from './bound.js';
 import {
@@ -176,6 +177,8 @@ export class Voice<I, O> {
   readonly named: Named<I> | null;
   /** Kit slot of each channel the patch writes, in `writes` order. */
   readonly slots: number[];
+  /** By kit slot, the spec's `axes`: the weight it gives each axis of a `vec`; null with none. */
+  readonly axes: AxisWeights | null;
   /** The stops built ahead of time, for a `keys` patch. */
   readonly built: Built | null;
   /** The kit's `lerp` for each channel the patch writes, which keyed stops interpolate through. */
@@ -568,6 +571,12 @@ export class Voice<I, O> {
     this.holding = patch === ownerPatch ? new Holding() : null;
     const wrote = writing(patch.writes as readonly string[], slotOf, channels);
     this.slots = wrote.slots;
+    this.axes = axisWeights(
+      spec.axes as Record<string, readonly number[] | undefined> | undefined,
+      patch.writes as readonly string[],
+      slotOf,
+      channels,
+    );
     this.named = spec.subjects ? new Named(spec.subjects, spec.stagger) : null;
     // Every subject's stagger is known at cue, so a finite loop ends by them all, read or not.
     this.latest = this.named?.latest ?? 0;

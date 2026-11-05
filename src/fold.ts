@@ -1,3 +1,4 @@
+import { foldAxes } from './axes.js';
 import { foldNumber } from './channels.js';
 import { copy as copyValue, first } from './clone.js';
 import type { Share } from './everyone.js';
@@ -79,10 +80,14 @@ export function apply<I, O>(
     }
     const channel = this.channels[slot] as Channel<unknown>;
     if (channel.rest !== undefined && channel.scale) {
+      const axes = voice.axes?.[slot];
       // pose[key] is the copy of rest this fold made, so it is ours to write into.
-      pose[key] = channel.fold
-        ? channel.fold(pose[key], value, weight)
-        : merged(channel, pose[key], channel.scale(value, weight));
+      pose[key] =
+        axes !== undefined
+          ? foldAxes(channel, pose[key] as number[], value as ArrayLike<number>, weight, axes)
+          : channel.fold
+            ? channel.fold(pose[key], value, weight)
+            : merged(channel, pose[key], channel.scale(value, weight));
       continue;
     }
     const bands = held.bands ?? bandsFor(held, slots.length);

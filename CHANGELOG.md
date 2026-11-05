@@ -14,12 +14,21 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A mix warns, outside production, when its first sync lands past the end of a voice cued before
   it with no `start`. Such a voice starts at 0 on the sync clock, so a page that cues before its
   first `requestAnimationFrame` and syncs to that frame's timestamp never shows it.
+- A voice's `axes` gives each axis of a `vec` channel its own weight, multiplied into the voice's:
+  `axes: { pos: [0, 1, 0] }` moves only y. In a role an axis is shared only among the members that
+  weigh it, so a hold can take one axis of a position while clips keep the rest. Such a voice runs
+  off lanes and off the `gpu` engine.
 
 ### Fixed
 
 - A voice cued backward under an owner turned backward, so running forward overall, showed
   nothing through its fade out once it reached its end; it now holds its last frame through the
   fade, as a voice running forward on its own does.
+- Three or more `angle()` members of a role read the same in any cue order: they meet at the
+  direction they average to, each taken the short way from there, where before each was lerped
+  into the ones cued before it, so holds at 200°, 0° and 100° read 220° rather than 100°. Two
+  members read as before, to rounding. On the `gpu` engine, an angle three or more members of
+  one role write stays on the CPU.
 
 ## 1.0.0
 

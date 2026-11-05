@@ -307,11 +307,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      no findings, heap between 17 and 86 MB with no trend, 2 voices throughout, reads 0.28 ms at
      hour 0 and 0.29 at hour 71.
 
-2. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: churn, stopping and
-   replacing voices, and two design questions. Delete each item as it is dealt with, and the file
-   once it is empty. At `FRAMES=5000` the bench's tween rows mostly time tweens that have landed,
-   since each lasts 10 s, and `turnover^`'s `kB/frame` is mostly the row's own list copy.
-
 3. **What is still slow.** Lanes, `pull`, `tween`, subject fades, a voice per node and crowds are
    built (the schema page's Lanes and motion sections, the changelog's 0.8.0 section); Mike set the
    goal as fast and capacious as possible, not a target (2026-10-02). Measure each change on the
@@ -396,6 +391,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        timing number given when a row is added); what is left per row is its lerp and fold. The
        search has to stay out of `fold`: inside it, `fold` stopped inlining and boxed each row's
        phase (+155 kB a frame, backed out).
+     - **Stopping a subject's voice and cueing its replacement** (`bench/restart.mjs`, weasel's
+       codec shape: a tween voice per subject read by `pull`, 100 stopped, dropped and cued again a
+       frame; keiei, 2026-10-29, `bench/runs/2026-10-29-stop-seat.txt`): at 10,000 subjects the
+       frame after the stops takes 0.955 ms, the next 0.386, a steady frame 0.239. A stop
+       (`fade({ over: 0 })` and the `drop` after it) grows with N though nothing in it walks more:
+       0.61 µs at 1,000 subjects, 1.60 at 10,000, 2.92 at 40,000, every part growing
+       (`bench/stopparts.mjs`). Inferred, not counted: it pays the first touch of each line it
+       reads or writes, one or more per object of the voice and one per parallel array of its
+       crowd row, so a cheaper stop means fewer objects per voice and fewer arrays per row.
+       Measured no different: one `Seat` per crowd voice (`eed156c`, 0.06 µs at 40,000) and
+       skipping the due-queue push of a voice retiring at once
+       (`bench/runs/2026-10-29-stop-due-push.txt`); one entry per subject in place of `chains`
+       and `named` would save one lookup, decided against for now (2026-10-29). Neither what a
+       churned voice leaves alive nor its garbage is weasel's gap: pooling everything per voice
+       (2026-10-05) and cutting garbage from 21.5 to 11.7 KB a churned voice (2026-10-24,
+       `bench/churnwho.mjs`) moved no row.
      - **A voice that allocates almost nothing per cue would not speed weasel's frame.** At
        `0c80b6d` (3.7 KB a voice) weasel's animator takes 0.50–0.73 ms a frame for 10k tweens on
        teitou, against 0.165 with no voice cued. Pooling weasel's own per-animation objects, which
@@ -463,6 +474,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `weasel^` 0.193 → 0.186 ms, U = 10; `weasel` 0.663 → 0.653, U = 21.5, inside noise (teitou,
      9 rounds, `bench/runs/2026-11-03-lane-landed.txt`). It allocates about 1.3 kB a frame more on
      `weasel^` (5.3–6.2 against 3.9–5.0), source not found.
+   - **Churn, `turnover^`**: `pull` gives the subject swapped into a dropped one's place the
+     number the drop freed (`7e64030`, 2026-10-29), so list order no longer costs anything there
+     (`bench/runs/2026-10-29-turnover-prof-renumber.txt`). What is left over `tweens^` is the
+     per-frame stop, drop and cue (item 3) and the row's own copy of its list, most of its
+     136 `kB/frame`. Not built: renumbering for lists reordered other ways (sorted, reversed,
+     filtered), which needs two live subjects to swap numbers, and renumbering under history,
+     roles or a bound, which `src/renumber.ts` declines.
    - **A subject the host has let go entirely may be collected before the next fill** rather than
      held until it, since a probe holds its subject only while fills look subjects up (2026-10-24);
      only a later signal or `parting` lookup on that subject could notice.

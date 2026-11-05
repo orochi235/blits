@@ -44,6 +44,12 @@ export interface Role<I, O> {
   /** By laned channel, then subject number (times axes for `values`). */
   values: (Float64Array | undefined)[];
   taken: (Float64Array | undefined)[];
+  /**
+   * By laned angle channel, each member's value and weight by subject number times members, since
+   * angles meet at their mean direction, which takes every member at once.
+   */
+  turnValues: (Float64Array | undefined)[];
+  turnWeights: (Float64Array | undefined)[];
   /** No other laned or crowded voice falls between its members in voice order, as qualify found. */
   contiguous: boolean;
   /** This fill runs it a subject at a time at its first member's turn, folding each as it goes. */

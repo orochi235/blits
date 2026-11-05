@@ -1,5 +1,6 @@
 import { type Arc, cueArc } from './arcs.js';
 import { around } from './around.js';
+import { turnOf } from './axes.js';
 import { blanks } from './blank.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
@@ -298,6 +299,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly reuses: boolean[];
   /** By slot, a stock scalar channel's arithmetic, which a fold applies without calling the channel. */
   readonly scalars: ('sum' | 'mul' | 'max' | undefined)[];
+  /** By slot, the full turn of an angle channel or a `vec` of angles, and 0 for any other. */
+  readonly turns: number[];
   /** What a fold with a role in play gathers into, one per depth of folds under way. */
   readonly roleScratch: RoleScratch<I, O>[] = [];
   roleDepth = 0;
@@ -334,6 +337,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.reuses = this.channels.map((c) => reusesHeld(c));
     this.pose = blanks(this.names as string[], this.channels);
     this.scalars = this.channels.map((c) => scalarOp(c));
+    this.turns = this.channels.map((c) => turnOf(c));
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
