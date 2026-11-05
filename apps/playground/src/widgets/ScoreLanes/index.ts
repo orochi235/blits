@@ -58,6 +58,9 @@ export interface Link {
 export type Hatch = 'before' | 'after' | 'both' | null;
 /** A lane's run sampled evenly from 0 to the score's duration, drawn over the lane. */
 export interface Track {
+  /** When each sample was taken, ms into a run `length` ms long; every list below is at these. */
+  at: number[];
+  length: number;
   weights: number[]; // 0..1
   channel?: string; // drawn as a line over the weight, from `values`
   values?: number[];

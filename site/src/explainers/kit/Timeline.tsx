@@ -1,3 +1,4 @@
+import { area, curve, spread, stops } from '@pg/widgets/ScoreLanes/track';
 import { type PointerEvent, useEffect, useId, useMemo, useRef } from 'react';
 
 /** How far an arrow key moves the time; Shift moves four times as far. */
@@ -6,45 +7,15 @@ const STEP_MS = 250;
 export interface Track {
   name: string;
   color: string;
-  /** The voice's weight at evenly spaced times across the run, 0..1. */
+  /** When each sample was taken, ms into the run; every list below is at these. */
+  at: number[];
+  /** The voice's weight at those times, 0..1. */
   weights: number[];
   /** The channel drawn as a line over the weight, and its values at the same times. */
   channel?: string;
   values?: number[];
   /** For a voice that moves only a color: the band is that color over time, as CSS. */
   colors?: string[];
-}
-
-/** Gradient stops for `colors` spread across the run, every few samples. */
-function stops(colors: string[]): { at: number; color: string }[] {
-  const n = colors.length;
-  const every = Math.max(1, Math.floor(n / 60));
-  const out = [];
-  for (let k = 0; k < n; k += every) out.push({ at: k / (n - 1), color: colors[k] as string });
-  return out;
-}
-
-/** `values` stretched to fill 0..1 from their lowest to their highest. */
-function spread(values: number[]): number[] {
-  const lo = Math.min(...values);
-  const hi = Math.max(...values);
-  return values.map((v) => (hi > lo ? (v - lo) / (hi - lo) : 0.5));
-}
-
-/** A weight curve, in a box `n - 1` wide and 1 tall. */
-function curve(weights: number[]): string {
-  const top = weights.map(
-    (w, k) =>
-      `${k === 0 ? 'M' : 'L'}${k},${(1 - Math.min(1, Math.max(0, w)) * 0.8 - 0.1).toFixed(3)}`,
-  );
-  return top.join(' ');
-}
-
-/** The area under a weight curve. */
-function area(weights: number[]): string {
-  const n = weights.length;
-  if (n === 0) return '';
-  return `${curve(weights)} L${n - 1},1 L0,1 Z`;
 }
 
 /**
@@ -71,12 +42,11 @@ export function Timeline({
   const paths = useMemo(
     () =>
       tracks.map((tr) => ({
-        area: area(tr.weights),
-        line: tr.values ? curve(spread(tr.values)) : '',
+        area: area(tr.weights, tr.at, duration, 0.1),
+        line: tr.values ? curve(spread(tr.values), tr.at, duration) : '',
       })),
-    [tracks],
+    [tracks, duration],
   );
-  const width = Math.max(1, (tracks[0]?.weights.length ?? 2) - 1);
   const id = useId();
 
   useEffect(() => {
@@ -132,9 +102,7 @@ export function Timeline({
         const band = tr.colors && `${id}-band-${i}`;
         const layers = (
           <>
-            {band && (
-              <rect className="timeline-band" width={width} height={1} fill={`url(#${band})`} />
-            )}
+            {band && <rect className="timeline-band" width={1} height={1} fill={`url(#${band})`} />}
             <path className="timeline-area" d={paths[i]?.area} />
             <path className="timeline-curve" d={paths[i]?.line} />
           </>
@@ -143,14 +111,14 @@ export function Timeline({
           <div key={tr.name} className="timeline-track" data-color={tr.color}>
             <svg
               className="timeline-ahead"
-              viewBox={`0 0 ${width} 1`}
+              viewBox="0 0 1 1"
               preserveAspectRatio="none"
               aria-hidden="true"
             >
               {band && tr.colors && (
                 <defs>
                   <linearGradient id={band}>
-                    {stops(tr.colors).map((s) => (
+                    {stops(tr.colors, tr.at, duration).map((s) => (
                       <stop key={s.at} offset={s.at} stopColor={s.color} />
                     ))}
                   </linearGradient>
@@ -160,7 +128,7 @@ export function Timeline({
             </svg>
             <svg
               className="timeline-played"
-              viewBox={`0 0 ${width} 1`}
+              viewBox="0 0 1 1"
               preserveAspectRatio="none"
               aria-hidden="true"
             >

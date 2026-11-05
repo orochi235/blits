@@ -308,6 +308,8 @@ export class Player<I, O, C> {
 
 /** One voice across a run: its weight, and the channel of its own that moves most, if one does. */
 export interface Course {
+  /** When each sample was taken, ms into the run; every list below is at these. */
+  at: number[];
   weights: number[];
   channel?: string;
   /** That channel's value with the voice alone, for the ledger's subject, at the same times. */
@@ -321,8 +323,8 @@ export interface Course {
  * for any subject, so a stagger or a voice reaching a few subjects still shows.
  */
 export function coursesOver<I, O, C>(scene: Scene<I, O, C>, config: C, duration: number): Course[] {
-  // Sampling off the frame grid lands one, then two frames apart, and a ramp comes out stepped.
   const n = Math.floor(duration / FRAME + 1e-6) + 1;
+  const at = Array.from({ length: n }, (_, k) => k * FRAME);
   const player = new Player(scene, config, { duration, listed: false });
   const voices = scene.voices(config);
   const weights = voices.map(() => [] as number[]);
@@ -360,7 +362,7 @@ export function coursesOver<I, O, C>(scene: Scene<I, O, C>, config: C, duration:
       if (range > 1e-9 && (best === undefined || range > best.range))
         best = { channel: c, values: row, range };
     });
-    const out: Course = { weights: weights[i] ?? [] };
+    const out: Course = { at, weights: weights[i] ?? [] };
     if (best) {
       out.channel = best.channel;
       out.values = best.values;

@@ -29,16 +29,15 @@ export function TrackLayers(p: TrackLayersProps) {
   const paths = useMemo(
     () =>
       track && {
-        area: area(track.weights),
-        line: track.values ? curve(spread(track.values)) : '',
+        area: area(track.weights, track.at, track.length),
+        line: track.values ? curve(spread(track.values), track.at, track.length) : '',
       },
     [track],
   );
-  const n = Math.max(1, (track?.weights.length ?? 2) - 1);
   const layers = (
     <>
       {track?.colors && (
-        <rect className={s.trackColors} width={n} height={1} fill={`url(#${grad})`} />
+        <rect className={s.trackColors} width={1} height={1} fill={`url(#${grad})`} />
       )}
       {paths && <path className={s.trackArea} d={paths.area} fill={color} />}
       {paths?.line && <path className={s.trackCurve} d={paths.line} stroke={color} />}
@@ -51,14 +50,14 @@ export function TrackLayers(p: TrackLayersProps) {
       y={p.box.y}
       width={p.w}
       height={Math.max(0, p.box.h)}
-      viewBox={`0 0 ${n} 1`}
+      viewBox="0 0 1 1"
       preserveAspectRatio="none"
       aria-hidden="true"
     >
       {defs && track?.colors && (
         <defs>
           <linearGradient id={grad}>
-            {stops(track.colors).map((x) => (
+            {stops(track.colors, track.at, track.length).map((x) => (
               <stop key={x.at} offset={x.at} stopColor={x.color} />
             ))}
           </linearGradient>

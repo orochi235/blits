@@ -109,10 +109,10 @@ function ExplainerBody<I, O, C>({
     const courses = coursesOver(built, config, duration);
     const voices = built.voices(config);
     // A scene that cues its voices from events still needs something to scrub along.
-    if (voices.length === 0) return [{ name: '', color: '', weights: [1, 1] }];
+    if (voices.length === 0) return [{ name: '', color: '', at: [0, duration], weights: [1, 1] }];
     const byTrack = new Map<string, Track>();
     voices.forEach((v, i) => {
-      const course = courses[i] ?? { weights: [] };
+      const course = courses[i] ?? { at: [], weights: [] };
       const key = v.spec.track ?? v.name;
       const held = byTrack.get(key);
       if (!held) {
@@ -124,6 +124,7 @@ function ExplainerBody<I, O, C>({
       byTrack.set(key, {
         name: key,
         color: held.color,
+        at: held.at,
         weights: held.weights.map((w, k) => Math.max(w, course.weights[k] ?? 0)),
       });
     });
