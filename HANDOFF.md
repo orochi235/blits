@@ -781,20 +781,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - A kinematic goal's voice weight only switches it on or off (`last`); goals cannot crossfade
       by weight without a core channel that blends rest-less values.
 
-17. **Drivers** (2026-11-03). `docs/drivers.md` lists what a driver has to handle, each rule with
-    the bug that taught it, and `checkDriver` in `@msb235/blits/testing` checks what generalizes;
-    blits-quarks, blits-tone and blits-rapier were audited against it and each runs it
-    (`packages/*/test/conformance.test.ts`). Open, for the engine:
-    - **Drivers cannot hear a seek.** rapier works out where one landed from `seq`, timestamps and
-      `project({ frame: seq - 1 })`; `onWake` fires once until the next sync, so seeks while paused
-      are missed. A seek notification, or a way to put a driver's own calls on the tape, would end
-      the guessing, and make the tape's `switchBranch` and a plain `cue` after a seek cut rapier's
-      calls ahead as they cut the tape.
-    - **A store's `cut(seq)` on a seek back drops what a driver paged** (rapier's pushes), which a
-      later seek forward past memory needs.
-    - **`project` and `trace` show a body at the last synced world**: a patch cannot read another
-      subject's state.
-
 18. **What the gpu engine's reach left open.** All four phases are built: stock patches, staggered
     voices and voices reaching some subjects, owners and weight signals, and readback
     (`gpuOf(m).read`). The schema page's `#gpu` ("The gpu engine") says what folds, why, and what

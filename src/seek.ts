@@ -9,6 +9,7 @@ import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { move, nextFrame } from './move.js';
+import { told } from './onseek.js';
 import { place } from './place.js';
 import { unpull } from './pull.js';
 import { isRested } from './record.js';
@@ -292,6 +293,7 @@ export function seek(transport: Transport, to: number | { readonly frame: number
     const bookers = m.bookers;
     if (bookers !== null) for (const b of bookers) b.sought();
   }
+  told(transport, { at: t, frame: frame?.seq ?? transport.seq, back: frame !== undefined });
 }
 
 /**

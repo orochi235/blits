@@ -2,6 +2,7 @@ import { Frames } from './frames.js';
 import { listedAll } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { move, nextFrame, waits } from './move.js';
+import { listen } from './onseek.js';
 import { Pace } from './pace.js';
 import { Pager, pageTransport, prepare } from './paging.js';
 import { pin } from './place.js';
@@ -18,6 +19,7 @@ import type {
   Marked,
   Mix,
   MixOptions,
+  Sought,
   Tape,
   Transport as TransportApi,
   TransportOptions,
@@ -206,12 +208,13 @@ export class Transport implements TransportApi {
   }
 
   onWake(fn: () => void): () => void {
-    const fns = this.wakeFns;
-    fns.push(fn);
-    return () => {
-      const i = fns.indexOf(fn);
-      if (i >= 0) fns.splice(i, 1);
-    };
+    return listen(this.wakeFns, fn);
+  }
+
+  /** Who `onSeek` tells. */
+  seekFns: ((s: Sought) => void)[] = [];
+  onSeek(fn: (s: Sought) => void): () => void {
+    return listen(this.seekFns, fn);
   }
 
   /** A mix on it was changed outside a sync: wakes whoever sleeps on the transport, once. */

@@ -26,6 +26,19 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   line comes as a line, as a fade over a still value does. A subject no frame has met yet takes
   its fade in from when it will be met. One stretch takes up to eight bends, where it took up to
   four voices' eased stretches.
+- `mix.onSeek(fn)` and `transport.onSeek(fn)` tell a driver of every seek once it has landed,
+  paused or not: the mix time it landed on, the last frame it kept, and whether it went back. A
+  driver cuts what it logged after that frame, as a history store's `cut` does.
+- `mix.call(label, fn)` puts a driver's own call on the tape: it makes `fn` now and again wherever
+  the mix makes the host's calls again, on a seek forward, playing on after a seek back, and on a
+  branch `switchBranch` picks. Like any host call, one made while calls lie ahead starts a branch,
+  so a cue after a seek back leaves the driver's calls ahead behind as it does the mix's. What the
+  mix does inside `fn` is made again with it, not recorded apart; a read ahead makes none.
+- `checkDriver` checks a driver whose output follows the mix across a seek back and on again with no
+  frame between, and, where the run gives a `call` the host makes on the driver once, that the
+  call is made again past a seek back, left behind by a host call after the seek, and brought back
+  by `switchBranch`. Its frames are 16 ms apart, where they were 1000 / 60, so every time it seeks
+  to is exact.
 
 ### Fixed
 
