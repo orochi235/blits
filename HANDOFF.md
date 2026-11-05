@@ -671,9 +671,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    `Lanes.pulls`. History (9.3 kB gzipped) is reached
    from 24 places in 12 modules and was left in.
 
-11. **The history adapter** (the schema page's "History behind a store") was approved by Mike
-    (2026-11-03).
-
 12. **What the docs audit left** (2026-10-10).
     - **A voice cued before the mix's first sync starts at 0 on the host's clock, not at that
       sync** (measured 2026-10-11): a one-pass 1 s voice cued before `sync(5000)` has ended
