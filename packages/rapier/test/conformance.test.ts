@@ -34,6 +34,7 @@ it('passes checkDriver: every body’s pose, frame by frame', () => {
       return {
         mix: sim.mix,
         frame: () => sim.step(),
+        call: () => bodies[1]?.impulse([0.5, 1]),
         output: () =>
           bodies.map((b) => {
             const p = sim.mix.probe(b) as unknown as { position: number[]; rotation: number };

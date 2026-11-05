@@ -4,6 +4,23 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## Unreleased
+
+### Breaking
+
+- Needs the engine's `mix.onSeek` and `mix.call`, released after `@msb235/blits` 1.0.0; the peer
+  range moves to that release when this one ships.
+
+### Fixed
+
+- `impulse`, `drop` and `body` are calls on the mix's tape, so a `cue` or any other host call made
+  after a seek back leaves the calls ahead behind, and `tape.switchBranch` brings them back. The
+  world learns of each seek from `onSeek`, paused or not, where it guessed from frame numbers and
+  timestamps. A host making a call again once the mix has played past it again has made it twice,
+  as with a `cue`.
+- A seek forward after a seek back past memory, with a history store, replays exactly: the world
+  paged its log of pushes before stepping through it, so the stretch replayed with the wrong push.
+
 ## 0.6.0
 
 ### Breaking

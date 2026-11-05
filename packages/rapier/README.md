@@ -55,11 +55,12 @@ const { position, rotation } = sim.mix.probe(box);
   the shown pose moves, so handing it back starts the simulation from there. A voice outside the
   role adds on top of wherever physics has it.
 - **`body.impulse(v)`** applies an impulse once, on the step after the mix's current time.
-  **`body.drop()`** takes the body out of the world then. Both are logged at that time, so a seek
-  back before it undoes them and playing forward through it does them again. One of these calls,
-  or `sim.body`, made after a seek lets go of the calls logged ahead of it before the seek, as a
-  call on the mix's tape starts a new future: a host that makes its calls again on the way does
-  each once.
+  **`body.drop()`** takes the body out of the world then. They and `sim.body` are calls on the
+  mix's tape (`mix.call`), so a seek back before one undoes it, and the mix makes it again as it
+  plays past, as it does a `cue`. Any host call made after a seek back, one of these or a call on
+  the mix, starts a new future without the calls that lay ahead, and `tape.switchBranch` brings
+  them back. A host that makes a call again after the mix has played past it again has made it
+  twice, as with a `cue`.
 - **`sim.world()`** is the Rapier world as the last `sync` left it, for reading: raycasts, contact
   queries, debugging draws. A change made to it directly is lost at the next seek.
 
@@ -137,14 +138,8 @@ deterministic build.
 ## Not handled
 
 - **Reads at another time.** `mix.project(t)` and `mix.trace` show a body where the world was at
-  the last `sync`, not at `t`, since the world is a voice on a subject of its own. A seek is
-  shown at once, before the next `sync`.
-- **Picking another future.** The tape's `switchBranch` brings back the mix's own calls, not
-  `impulse`, `drop` or `body` calls a later one let go of. A call on the mix itself, such as a
-  `cue`, made after a seek does not let go of those calls logged ahead.
-- **A seek forward past memory after playing on from a seek back**, with a `store`: the seek back
-  cuts the pushes paged after it from the store, so the world replays that stretch with the push
-  of the first frame it still holds. Within memory it replays exactly.
+  the last `sync` or seek, not at `t`, since the world is a voice on a subject of its own and a
+  patch reads no other subject. A seek is shown at once, before the next `sync`.
 - **Growth with a store.** Each `impulse`, `drop` and `body` call is kept for the session, since
   a seek past memory replays it and a body's description is a Rapier object, not data a store
   takes. Without a store they go once history can no longer reach them. Every body made keeps its

@@ -58,10 +58,13 @@ describe.each([
     expect(sought.frame(301)).toEqual(want[301]);
   });
 
-  it('replaces the calls logged ahead of a seek back with those the host makes again', () => {
+  it('leaves the calls ahead behind when the host makes one after a seek back, until switchBranch', () => {
     const straight = play(scene);
     const want = [];
-    for (let f = 0; f <= 200; f++) want.push(straight.frame(f));
+    for (let f = 0; f <= 200; f++) {
+      want.push(straight.frame(f));
+      if (f === 80) straight.s.bodies[0]?.drop();
+    }
 
     const sought = play(scene);
     for (let f = 0; f <= 200; f++) {
@@ -69,13 +72,23 @@ describe.each([
       if (f === 80) sought.s.bodies[0]?.drop();
     }
     sought.seek(200, 20);
-    const kick = sought.s.bodies[2]?.impulse as (v: number[]) => void;
-    const got = [];
+    // A call on the mix after the seek back starts a new future, without the kick at 40 or the drop.
+    const other = [];
     for (let f = 21; f <= 200; f++) {
-      got.push(sought.frame(f));
-      // The host makes the scene's kick again on the way, and not the drop.
-      if (f === 40) kick(scene === scene2 ? [0.4, 1] : [0.4, 1, 0]);
+      other.push(sought.frame(f));
+      if (f === 25) sought.s.sim.mix.announce('again');
     }
+    const position = (frame: unknown) => (frame as number[][][])[0]?.[0] as number[];
+    expect(position(want[180]).every((x) => x === 0)).toBe(true);
+    expect(position(other[180 - 21]).some((x) => x !== 0)).toBe(true);
+    expect(other[60 - 21]?.[2]).not.toEqual(want[60]?.[2]);
+
+    sought.seek(200, 20);
+    const tape = sought.s.sim.mix.tape;
+    const old = tape?.branches().find((b) => !b.current) as { id: number };
+    tape?.switchBranch(old.id);
+    const got = [];
+    for (let f = 21; f <= 200; f++) got.push(sought.frame(f));
     expect(got).toEqual(want.slice(21));
   });
 
