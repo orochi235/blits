@@ -282,8 +282,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      it is not split yet (V8 inlines its helpers into it). The demo itself plays a lanes twin, so
      profile `bench/heatmap.mjs`, not `bench/stressprof.sh heatmap`.
    - **The rig reads 1,000 bones in 1.2 ms** (`pull`, 70 voices), lanes on about 20% faster than
-     off. Profiled (teitou, 2026-11-04, `bench/stressprof.sh rig`,
-     `bench/runs/2026-11-04-rig-profile.txt`), the quat folds are not where it goes: `slerp`,
+     off. Profiled before its height hold moved onto `axes` (teitou, 2026-11-04,
+     `bench/stressprof.sh rig`, `bench/runs/2026-11-04-rig-profile.txt`), the quat folds are not
+     where it goes: `slerp`,
      `multiply` and `foldInto` together are about 8% of a lanes-on frame. Each character's clips
      are staggered, so every bone has a time of its own and each keys voice reads its stops once
      a subject, not once a voice: `readKeys`, `segment`, `firstPast`, `read`, `phaseAt` and the
