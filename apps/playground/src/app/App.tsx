@@ -45,7 +45,7 @@ export function App() {
   const compiled = useRef<Composition | null>(null);
   // A new stage needs new columns, so a new player; it takes over the old one's playhead and sliders.
   const player = useMemo(() => {
-    const build = () => compile(compRef.current, subjects, { solos: true });
+    const build = () => compile(compRef.current, subjects, { solos: true, name: 'playground' });
     const p = new Player(build, subjects, { levels: compRef.current.levels, from: last.current });
     last.current = p;
     compiled.current = compRef.current;

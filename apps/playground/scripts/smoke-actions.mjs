@@ -1,5 +1,5 @@
-// The smoke run's actions beyond playing a preset: a live ramp and mute on the mix, and a save that
-// opens again. Returns what went wrong, empty when nothing did.
+// The smoke run's actions beyond playing a preset: a live ramp and mute on the mix, a save that
+// opens again, and the debug panel on `?panel`. Returns what went wrong, empty when nothing did.
 import { join } from 'node:path';
 
 export async function actions(browser, origin, shots) {
@@ -36,6 +36,11 @@ export async function actions(browser, origin, shots) {
       .locator('input[type=file]')
       .setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{}') });
     await page.getByText('bad.json holds no composition').waitFor({ timeout: 2000 });
+
+    await page.goto(`${origin}?panel`, { waitUntil: 'networkidle' });
+    await page.locator('[data-blits-panel]').waitFor({ state: 'attached', timeout: 3000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(shots, 'panel.png') });
   } catch (e) {
     errors.push(e.message.split('\n')[0]);
   }

@@ -684,7 +684,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). What
     is built is in its README; the calls made building it are under its "Chosen while building".
-    What is left:
+    Built 2026-11-04: save and open by file, the live mix's `ramp` and `mute`, a "read back and
+    ahead" section under the inspector (`project`, `assess`, `trace`, `atRest`, `inert`), and score
+    links for anchors on groups and to them, `angle` as a fold rule for `turn`, and blits' debug
+    panel on `?panel`, over named mixes, with finished compiles `close`d. What is left:
+    - **Unbuilt, each waiting on a call from Mike** (2026-11-04):
+      - **Where a dot is beyond its grid place.** `put`, `within` with a signal of the author's
+        own, and moving dots all need the composition to say where a subject is: a per-subject
+        position expression, a voice whose channel moves the dot, or something else. That choice
+        is a new composition field `load` must accept, and it decides whether `put` is offered.
+      - **Recording level moves.** A slider move today plays live and is dropped by the next edit
+        of that level. Recording it means a new composition field (a level's moves over score
+        time), which then saves, shares and undoes with everything else.
+      - **A booker with a clock other than the player's**, and **dragging a link from or onto a
+        group header** (header lanes take no link drags), are both in the README's "Not in this
+        version"; neither is blocked on anything but whether it is wanted.
     - **Found while building, Mike's to decide** (2026-10-17; the owner marks and the backward
       past-end frame found with these are fixed, in the changelog; whether turning an owner back
       brings back a child that left was decided yes under `history` and built, 2026-10-30):
@@ -716,12 +730,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       the "bounded glow" preset uses it over 960 dots. Chosen while building (2026-10-26): no new
       composition field, since the circle is the pointer and the positions are the dots' column and
       row; and a composition whose code calls `around` keeps no history, since blits refuses a bound
-      with history, so a scrub back there replays rather than seeks. Not offered: `within` with a
-      signal of the author's own, `put`, and moving dots, all of which want a way to say where a dot
-      is beyond its grid place. Checked headless 2026-10-26: the glow follows the pointer playing
+      with history, so a scrub back there replays rather than seeks. Checked headless 2026-10-26: the glow follows the pointer playing
       and paused, and the stage canvas is capped at 400 px.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
+    Also not offered (2026-11-04): `onWake` and `rebase`, which are about driving frames;
+    `prepare`, which needs a history store; `affine`, `matrix` and `quat`, which flat dots and
+    letters have no use for; and `waveAt` and `layersOf`, helpers a field could show but none asks
+    for yet.
 
 14. **What the 2026-10-09 code review left.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5), with its

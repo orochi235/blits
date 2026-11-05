@@ -1,6 +1,6 @@
 import { css } from '@msb235/blits';
 import type { Track } from '@pg/widgets/ScoreLanes';
-import { compile } from './compile';
+import { close, compile } from './compile';
 import type { Composition } from './composition';
 import { FRAME } from './frame';
 import type { Mixed } from './kit';
@@ -28,7 +28,8 @@ export function coursesOf(
   subject = 0,
   n = 241,
 ): Map<string, Track> {
-  const { mix, solos, handles, groupHandles } = compile(c, subjects, { solos: true });
+  const built = compile(c, subjects, { solos: true });
+  const { mix, solos, handles, groupHandles } = built;
   const weighed = [...handles, ...groupHandles];
   const weights = new Map(weighed.map(([id]) => [id, [] as number[]]));
   const values = new Map([...solos.keys()].map((id) => [id, NUMBERS.map(() => [] as number[])]));
@@ -85,5 +86,6 @@ export function coursesOf(
     }
     out.set(id, track);
   }
+  close(built);
   return out;
 }

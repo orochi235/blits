@@ -79,8 +79,9 @@ interface Composition {
 edits them. Unset, `stepMs` is one frame and the rest are blits' defaults.
 
 `rules` picks each channel's fold rule, from which `kitOf` in `src/blits/kit.ts` makes the kit
-every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, `min`, `norm`, or `last`, and
-all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `last`; `color`
+every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, `min`, `norm`, or `last`, and `turn` also
+`angle`, which adds the short way round; all but `last` and `angle` take `bounds`; `offset` folds
+its two numbers alike, so not by `last`; `rulesFor` in `src/blits/kit.ts` holds which channel takes which; `color`
 replaces, averages, or blends by any of blits' blend modes (`multiply`, `overlay`, `hue`, and the
 rest; `BLENDS` in `src/blits/kit.ts` lists them) over the subject's base color, as a `color` (straight across OKLab, as light mixes) or an `ink` (round the
 hue, for colors that stand for something). The stage lays every color pose over the base color,
@@ -407,6 +408,10 @@ owner or a span; deleting a group moves what it held up to its parent.
   'fresh'` changes anything only when the voice starts partway through a frame and its `stepMs`
   is shorter than one: it skips the steps from its start to that frame. A subject waiting out a
   `stagger` is already met, so it steps the same either way.
+- **The debug panel.** With `?panel` in the address, blits' debug panel mounts over the page. The
+  Player's mixes are named `playground` and `playground · solo <voice>`; a compile the app is
+  done with, the Player's last one, the score's and the tracks', is `close`d, so the panel lists
+  only what plays.
 - **The inspector reads only public API.** Each solo mix plays one voice and is read with `probe`;
   blits exposes no per-voice contribution, and the playground does not reach inside for one. The
   Player records the picked subject's history as it steps, so a plot never replays anything.

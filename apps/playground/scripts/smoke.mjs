@@ -143,7 +143,7 @@ try {
   }
   const acted = await actions(browser, origin, shots);
   if (acted.length > 0) failed++;
-  console.log(`${acted.length ? 'FAIL' : 'ok  '}  live ramp and mute, save and open`);
+  console.log(`${acted.length ? 'FAIL' : 'ok  '}  live ramp and mute, save and open, ?panel`);
   for (const e of acted) console.log(`       ${e}`);
 } finally {
   await browser.close();
