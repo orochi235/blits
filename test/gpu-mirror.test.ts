@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Answers } from '../src/gpu/answers.js';
 import { codesOf } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
@@ -132,7 +132,7 @@ describe('motion mirror', () => {
     const { s, m, motions, mirror } = setup(list, [], Float64Array.of(0, 200));
     m.sync(150);
     for (const c of list) s.to(c, 50);
-    mirror.prepare(150, Number.POSITIVE_INFINITY, true);
+    mirror.prepare(150, Number.POSITIVE_INFINITY, { holds: true });
     expect(motions.runs[motions.base(motions.known(list[1] as C) as number)]).toBe(0);
   });
 
@@ -141,7 +141,7 @@ describe('motion mirror', () => {
     const { s, m, motions, mirror } = setup(list);
     m.sync(150);
     for (const c of list) s.to(c, 50);
-    mirror.prepare(150, Number.POSITIVE_INFINITY, false, (row) => row === 1);
+    mirror.prepare(150, Number.POSITIVE_INFINITY, { unread: (row) => row === 1 });
     const s1 = motions.known(list[1] as C) as number;
     expect(motions.runs[motions.base(motions.known(list[0] as C) as number)]).toBe(150);
     expect(motions.pending?.[s1]?.[0]?.at).toBeUndefined();
@@ -234,6 +234,21 @@ describe('motion mirror', () => {
     expect(mirror.rows[3 + 2 * motions.n]).toBe(9);
     s.to(list[1] as C, 4);
     expect(mirror.stirred).toBe(true);
+  });
+
+  it('warns once where another mirror took its watch, since both rebuild every frame', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const list = cells(2);
+    const { motions, mirror } = setup(list);
+    mirror.prepare(0, Number.POSITIVE_INFINITY);
+    expect(warn).not.toHaveBeenCalled();
+    const other = new Mirror(motions, list, mirror.values());
+    mirror.prepare(16, Number.POSITIVE_INFINITY);
+    other.prepare(16, Number.POSITIVE_INFINITY);
+    mirror.prepare(32, Number.POSITIVE_INFINITY);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/one motion patch is folded by two voices at once/);
+    warn.mockRestore();
   });
 
   it('hands every row over as one range when it re-anchors, each time counted from the new anchor', () => {

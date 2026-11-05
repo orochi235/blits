@@ -1,5 +1,5 @@
 import type { Mixer } from '../mixer.js';
-import { production, warnOnce } from '../warn.js';
+import { errorOnce, production, warnOnce } from '../warn.js';
 import type { Kernel } from './kernel.js';
 import type { Runner } from './runner.js';
 import { type GpuBuffer, type GpuDevice, MAP_READ, Usage } from './webgpu.js';
@@ -10,18 +10,19 @@ const RELATIVE = 1e-4;
 const ABSOLUTE = 1e-3;
 const SAMPLES = 16;
 
+/** The CPU's values for a sample of the registered subjects, by their place in the list. */
+export interface Sample {
+  readonly picks: readonly number[];
+  readonly cpu: readonly Record<string, unknown>[];
+  /** The runners not checked before, the first of them the one warnings are about. */
+  readonly fresh: readonly Runner[];
+}
+
 /**
- * Compares a sample of `list`'s subjects in the fold `k` wrote to `out` with the CPU's, warning
- * about `about` where they disagree.
+ * The CPU's values for a sample of `list`'s subjects. Taken before the fold, since probing commits
+ * a motion's changes, and a fold made before that would be out of date as soon as it was made.
  */
-export function twins<I>(
-  device: GpuDevice,
-  mix: Mixer<I, unknown>,
-  list: readonly I[],
-  k: Kernel,
-  out: GpuBuffer,
-  about: object,
-): void {
+function sample<I>(mix: Mixer<I, unknown>, list: readonly I[], fresh: readonly Runner[]): Sample {
   const n = list.length;
   const picks = [
     ...new Set(
@@ -30,22 +31,26 @@ export function twins<I>(
       ),
     ),
   ];
+  const cpu = picks.map((i) => ({ ...(mix.probe(list[i] as I) as Record<string, unknown>) }));
+  return { picks, cpu, fresh };
+}
+
+/** Compares `s` with the fold `k` wrote to `out`, warning where they disagree. */
+function compare(device: GpuDevice, k: Kernel, out: GpuBuffer, s: Sample): void {
+  const about = s.fresh[0] as Runner;
   const read = device.createBuffer({
     size: k.size * 4,
     usage: Usage.MAP_READ | Usage.COPY_DST,
+    label: 'blits gpu twins',
   });
   const enc = device.createCommandEncoder();
   enc.copyBufferToBuffer(out, 0, read, 0, k.size * 4);
   device.queue.submit([enc.finish()]);
-  const subjects = picks.map((i) => list[i] as I);
-  const cpu = subjects.map((s) => ({ ...(mix.probe(s) as Record<string, unknown>) }));
   const check = () => {
     const got = new Float32Array(read.getMappedRange().slice(0));
-    read.unmap();
-    read.destroy();
     for (const o of k.outputs)
-      picks.forEach((i, j) => {
-        const want = cpu[j]?.[o.name];
+      s.picks.forEach((i, j) => {
+        const want = s.cpu[j]?.[o.name];
         const wants =
           typeof want === 'number' ? [want] : Array.isArray(want) ? (want as number[]) : [];
         for (let a = 0; a < o.axes; a++) {
@@ -60,26 +65,35 @@ export function twins<I>(
       });
   };
   // A device lost before the map settles refuses it; the check is dropped.
-  read.mapAsync(MAP_READ).then(check, () => {});
+  read.mapAsync(MAP_READ).then(
+    () => {
+      try {
+        check();
+      } catch (err) {
+        errorOnce(about, `a gpu twin check could not read its values back: ${err}`);
+      } finally {
+        read.destroy();
+      }
+    },
+    () => read.destroy(),
+  );
 }
 
-/** Runs `twins` in development the first time each runner folds. */
+/** Checks, in development, the first fold of each runner against the CPU. */
 export class Twins {
   private readonly checked = new Set<string>();
 
-  /** Checks the fold `k` wrote to `out` against the CPU where one of `runners` has not run before. */
-  first<I>(
-    device: GpuDevice,
-    mix: Mixer<I, unknown>,
-    list: readonly I[],
-    k: Kernel,
-    out: GpuBuffer,
-    runners: readonly Runner[],
-  ): void {
-    if (production()) return;
+  /** The CPU's sample for a fold of `runners`, before it is made; null where none is new. */
+  before<I>(mix: Mixer<I, unknown>, list: readonly I[], runners: readonly Runner[]): Sample | null {
+    if (production()) return null;
     const fresh = runners.filter((r) => !this.checked.has(r.key));
-    if (fresh.length === 0) return;
-    for (const r of fresh) this.checked.add(r.key);
-    twins(device, mix, list, k, out, fresh[0] as Runner);
+    return fresh.length === 0 ? null : sample(mix, list, fresh);
+  }
+
+  /** Checks the fold `k` wrote to `out` against `s`. */
+  after(device: GpuDevice, k: Kernel, out: GpuBuffer, s: Sample | null): void {
+    if (s === null) return;
+    for (const r of s.fresh) this.checked.add(r.key);
+    compare(device, k, out, s);
   }
 }

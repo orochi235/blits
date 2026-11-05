@@ -34,8 +34,9 @@ export function keysPack(patch: object, channels: ChannelLookup): Packed | undef
     if (track.all.length === 0) return { why: `${track.channel} has no stops` };
     const width = widthOf(code);
     values.push(track.delay, track.all.length);
-    for (const pt of track.all) {
-      const curve = curveData(pt.ease);
+    for (const [k, pt] of track.all.entries()) {
+      // The first stop's easing shapes no segment, so the GPU never reads it.
+      const curve = curveData(k === 0 ? undefined : pt.ease);
       if (curve === undefined) return { why: 'its easing is a function' };
       const v = numbersOf(pt.value, width);
       if (v === undefined) return { why: 'a stop holds a value the GPU cannot read' };

@@ -2,7 +2,12 @@ import type { Motions } from '../motions.js';
 import { absent } from '../numbers.js';
 import { reading } from '../reading.js';
 import { RunFlag, type Segment } from '../stretch.js';
+import { warnOnce } from '../warn.js';
 import { putRun, rangesOf } from './run-row.js';
+
+/** The warning where two voices fold one motion patch, each taking its one watch from the other. */
+export const SHARED =
+  'one motion patch is folded by two voices at once, on one mix or two, so the gpu engine rebuilds its mirror of the patch every frame; give each voice a patch of its own';
 
 const PENDING = RunFlag.PENDING;
 const OLDER = RunFlag.OLDER;
@@ -182,9 +187,15 @@ export class Mirror<I> {
    * commits at 0 where `holds`, as a sample of a voice holding its first frame does. A row
    * `unread` says the CPU would not sample this frame, unreached or silent, commits nothing.
    */
-  prepare(t: number, horizon: number, holds = false, unread?: (row: number) => boolean): void {
+  prepare(
+    t: number,
+    horizon: number,
+    opts: { holds?: boolean; unread?: (row: number) => boolean } = {},
+  ): void {
+    const { holds = false, unread } = opts;
     const m = this.motions;
     if (m.listener !== this.listen) {
+      warnOnce(m, SHARED);
       this.watch();
       this.number();
     } else this.recheck();

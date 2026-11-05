@@ -1,8 +1,8 @@
 import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
-import { warnOnce } from '../warn.js';
 import { Answers } from './answers.js';
+import { overBinding, overTable } from './bounds.js';
 import { Buffers } from './buffers.js';
 import { type Built, compile } from './compile.js';
 import { codesOf, eligibility, within } from './eligible.js';
@@ -65,6 +65,8 @@ export class GpuSide<I> {
   private readonly buffers: Buffers;
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
   private stale = true;
+  /** Set where the last fold waited on a kernel compiling or failed, which no mirror's change moves. */
+  private waiting = false;
   private readonly why = new Reasons();
   private readonly readback: Readback<I>;
 
@@ -115,6 +117,7 @@ export class GpuSide<I> {
     this.frame = Number.NaN;
     this.mirrors.clear();
     this.answers.register(this.list);
+    this.met.clear();
     this.timings.clear();
     this.reads.clear();
     this.readback.forget();
@@ -170,14 +173,15 @@ export class GpuSide<I> {
       this.mix.frame === this.frame &&
       this.mix.stirs === this.stirs &&
       reading.inputs === this.inputs &&
-      !this.mirrors.stirred
+      (this.waiting || !this.mirrors.stirred)
     )
       return;
     this.frame = this.mix.frame;
     this.stirs = this.mix.stirs;
     this.inputs = reading.inputs;
     this.outputs = new Map();
-    this.readback.turn(this.mix.frame);
+    this.readback.turn(this.mix.frame, this.mix.seq);
+    this.waiting = false;
     this.dispatch();
   }
 
@@ -206,6 +210,11 @@ export class GpuSide<I> {
     const channels = new Map<string, ChannelCode>();
     for (const name of mix.names)
       if (e.channels.has(name)) channels.set(name, codes.get(name) as ChannelCode);
+    const over = overBinding(channels, this.known, n, limit);
+    if (over !== null) {
+      this.why.all([...channels.keys()], over);
+      return;
+    }
     const key = `${this.known.length}|${[...channels.keys()].join(',')}|${n}`;
     let b = this.built.get(key);
     if (b === undefined) {
@@ -221,8 +230,12 @@ export class GpuSide<I> {
         () => {},
       );
     }
-    if (b.pipeline === null || b.failed) return;
+    if (b.pipeline === null || b.failed) {
+      this.waiting = true;
+      return;
+    }
     const voices = e.voices as Voice<I, unknown>[];
+    const sample = this.twins.before(mix, this.list, runners);
     const prepared = prepare({
       mix,
       voices,
@@ -242,11 +255,13 @@ export class GpuSide<I> {
       return;
     }
     const { table, placed } = prepared;
-    if (table.roles > MAX_ROLES) {
+    const refused =
+      table.roles > MAX_ROLES
+        ? `the gpu engine folds at most ${MAX_ROLES} roles a frame, so in a frame with more every channel stays on the CPU`
+        : overTable(table.rows.byteLength, limit);
+    if (refused !== null) {
       this.stale = true;
-      const why = `the gpu engine folds at most ${MAX_ROLES} roles a frame, so in a frame with more every channel stays on the CPU`;
-      this.why.all([...channels.keys()], why);
-      warnOnce(this, why);
+      this.why.all([...channels.keys()], refused);
       return;
     }
     this.met.mark(voices);
@@ -272,6 +287,6 @@ export class GpuSide<I> {
     const { frame, seq, now, timestamp } = mix;
     this.readback.fold({ out, outputs: this.outputs, frame, seq, now, timestamp, list: this.list });
     this.stale = false;
-    this.twins.first(this.device, mix, this.list, k, out, runners);
+    this.twins.after(this.device, k, out, sample);
   }
 }

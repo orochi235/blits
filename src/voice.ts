@@ -739,6 +739,12 @@ export class Voice<I, O> {
     return (!(raw >= 0) && !this.beginless) || this.unstarted(now);
   }
 
+  /** Whether its subjects' chains link it: it plays, or waits for its start showing its first frame. */
+  get linked(): boolean {
+    const state = this.state;
+    return state !== 'done' && (state !== 'pending' || this.freezesBefore);
+  }
+
   /**
    * Whether a subject before its start shows its first frame: the voice freezes before, or is
    * fading out from where it, or its owner, ran back to its start, as one fading from its end

@@ -112,4 +112,31 @@ describe('gpu reads', () => {
     read();
     expect((reads.of(voice) as Float32Array)[0]).toBe(16);
   });
+
+  it("gives every read in one frame that frame's dt, as a probe again in the frame does", () => {
+    const { m, voice, reads, read } = made({ weight: (_c, s) => s.dt }, 100);
+    const cpu = mix<C, P>(K);
+    cpu.sync(0);
+    const dts: number[] = [];
+    cpu.cue({
+      patch: wave,
+      loop: true,
+      subjects: FOUR,
+      weight: (_c, s) => {
+        dts.push(s.dt);
+        return s.dt;
+      },
+    });
+    cpu.sync(100);
+    cpu.probe(FOUR[0] as C);
+    read();
+    m.sync(116);
+    cpu.sync(116);
+    read();
+    cpu.probe(FOUR[0] as C);
+    read();
+    cpu.probe(FOUR[0] as C);
+    expect((reads.of(voice) as Float32Array)[0]).toBe(16);
+    expect(dts.at(-1)).toBe(16);
+  });
 });

@@ -85,6 +85,14 @@ const CASES: [string, Script][] = [
     },
   ],
   [
+    'an unstarted voice holding its first frame, sought ahead on its handle',
+    {
+      cues: [{ stagger: STAGGER, freeze: 'before', start: 2000 }],
+      acts: [{ at: 100, act: (h) => h[0]?.seek(500) }],
+      times: [1, 100, 300, 1999, 2000, 2300, 4100],
+    },
+  ],
+  [
     'a mix-level seek back to before a rate change, then a new rate, inside the delays',
     {
       cues: [{ stagger: STAGGER, fade: { in: 400 } }],

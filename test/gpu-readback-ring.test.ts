@@ -46,7 +46,7 @@ describe('gpu readback ring', () => {
     const f1 = fold(1);
     r.want('s');
     r.fold(f1);
-    r.turn(2);
+    r.turn(2, 2);
     expect(d.log).toEqual(['copy out->readback 0+16', 'submit', 'map readback']);
     await d.settle();
     const got = (await read('s', 2)) as GpuRead<string>;
@@ -60,16 +60,16 @@ describe('gpu readback ring', () => {
   it('copies nothing when nothing was read, the fold is this frame’s, or it was copied already', () => {
     const { d, r, fold } = ring();
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     expect(copies(d.log)).toEqual([]);
     r.want('s');
     r.fold(fold(2));
-    r.turn(2);
+    r.turn(2, 2);
     expect(copies(d.log)).toEqual([]);
-    r.turn(3);
+    r.turn(3, 3);
     expect(copies(d.log)).toHaveLength(1);
     r.want('s');
-    r.turn(3);
+    r.turn(3, 3);
     expect(copies(d.log)).toHaveLength(1);
   });
 
@@ -77,14 +77,14 @@ describe('gpu readback ring', () => {
     const { d, r, out, fold } = ring();
     r.want('q');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     expect(copies(d.log)).toEqual([]);
     const wide = new Map<string, GpuChannel>([
       ['w', { buffer: out, offset: 0, stride: 16, axes: 3 }],
     ]);
     r.want('w');
     r.fold({ ...fold(2), outputs: wide });
-    expect(() => r.turn(3)).toThrow(/stride/);
+    expect(() => r.turn(3, 3)).toThrow(/stride/);
   });
 
   it('lays a multi-axis channel out subject by subject', async () => {
@@ -92,7 +92,7 @@ describe('gpu readback ring', () => {
     fill(0);
     r.want('p');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     await d.settle();
     const got = (await read('p', 2)) as GpuRead<string>;
     expect(Array.from(got.values)).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
@@ -103,7 +103,7 @@ describe('gpu readback ring', () => {
     const { d, r, fold, read } = ring();
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     const first = read('s', 2);
     const second = read('s', 2);
     await d.settle();
@@ -128,13 +128,13 @@ describe('gpu readback ring', () => {
     const { d, r, fold, read } = ring();
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     const f2 = fold(2);
     r.fold(f2);
     const p = read('p', 2);
     r.want('s');
     r.want('p');
-    r.turn(3);
+    r.turn(3, 3);
     expect(copies(d.log)).toEqual([
       'copy out->readback 0+16',
       'copy out->readback 16+48',
@@ -146,20 +146,43 @@ describe('gpu readback ring', () => {
     expect(await read('p', 3)).toBe(await p);
   });
 
-  it('copies the current fold rather than give a copy from before a gap', async () => {
+  it('copies the current fold rather than give, or copy at the turn, one from before a gap', async () => {
     const { d, r, fold, read } = ring();
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     await d.settle();
-    const f101 = fold(101);
     r.want('s');
-    r.turn(101);
+    r.fold(fold(2));
+    const f101 = fold(101);
+    r.turn(101, 101);
+    expect(copies(d.log)).toHaveLength(1);
     r.fold(f101);
     const pending = read('s', 101);
     expect(copies(d.log)).toHaveLength(2);
     await d.settle();
     expect((await pending)?.timestamp).toBe(f101.timestamp);
+  });
+
+  it('lets go of an unread channel’s copy once it is too old for a read to give', async () => {
+    const { d, r, fold } = ring();
+    const held = (r as unknown as { held: Map<string, unknown> }).held;
+    r.want('s');
+    r.want('p');
+    r.fold(fold(1));
+    r.turn(2, 2);
+    await d.settle();
+    // A frame a control change starts, with no sync since: a read could still give the copy.
+    r.fold(fold(2));
+    r.turn(3, 2);
+    expect([...held.keys()].sort()).toEqual(['p', 's']);
+    r.want('s');
+    r.fold(fold(3));
+    r.turn(4, 4);
+    expect([...held.keys()]).toEqual(['s']);
+    r.fold(fold(4));
+    r.turn(5, 5);
+    expect(held.size).toBe(0);
   });
 
   it('holds three staging buffers at most, and skips a frame rather than wait', async () => {
@@ -168,7 +191,7 @@ describe('gpu readback ring', () => {
     for (const f of folds) {
       r.want('s');
       r.fold(f);
-      r.turn(f.frame + 1);
+      r.turn(f.frame + 1, f.frame + 1);
     }
     expect(d.made('readback')).toBe(3);
     expect(copies(d.log)).toHaveLength(3);
@@ -183,7 +206,7 @@ describe('gpu readback ring', () => {
     for (const frame of [1, 2, 3]) {
       r.want('s');
       r.fold(fold(frame));
-      r.turn(frame + 1);
+      r.turn(frame + 1, frame + 1);
     }
     r.fold(fold(4));
     const pending = read('p', 4);
@@ -197,17 +220,17 @@ describe('gpu readback ring', () => {
     const { d, r, fold } = ring();
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     await d.settle();
     r.want('s');
     r.fold(fold(2));
-    r.turn(3);
+    r.turn(3, 3);
     await d.settle();
     expect(d.made('readback')).toBe(1);
     r.want('s');
     r.want('p');
     r.fold(fold(3));
-    r.turn(4);
+    r.turn(4, 4);
     expect(d.destroyed).toEqual(['readback']);
     expect(d.made('readback')).toBe(2);
   });
@@ -217,14 +240,14 @@ describe('gpu readback ring', () => {
     fill(0);
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     await d.settle();
     const held = (await read('s', 2)) as GpuRead<string>;
     for (let frame = 2; frame < 7; frame++) {
       fill(frame * 100);
       r.want('s');
       r.fold(fold(frame));
-      r.turn(frame + 1);
+      r.turn(frame + 1, frame + 1);
       await d.settle();
       expect((await read('s', frame + 1))?.values[0]).toBe(frame * 100);
     }
@@ -236,7 +259,7 @@ describe('gpu readback ring', () => {
     const { d, r, fold, read } = ring();
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     const slice = vi.spyOn(ArrayBuffer.prototype, 'slice').mockImplementationOnce(() => {
       throw new Error('no range');
     });
@@ -245,7 +268,7 @@ describe('gpu readback ring', () => {
     expect(await read('s', 2)).toBeNull();
     r.want('s');
     r.fold(fold(2));
-    r.turn(3);
+    r.turn(3, 3);
     expect(d.made('readback')).toBe(1);
   });
 
@@ -255,7 +278,7 @@ describe('gpu readback ring', () => {
       const { d, r, fold, read } = ring();
       r.want('s');
       r.fold(fold(frame));
-      r.turn(frame + 1);
+      r.turn(frame + 1, frame + 1);
       const slice = vi.spyOn(ArrayBuffer.prototype, 'slice').mockImplementation(() => {
         throw new Error('no range');
       });
@@ -278,7 +301,7 @@ describe('gpu readback ring', () => {
     const { d, r, fold, read } = ring();
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     const waiting = read('s', 2);
     r.forget();
     const f2 = fold(2, ['d', 'c']);
@@ -296,7 +319,7 @@ describe('gpu readback ring', () => {
     const { d, r, fold, read } = ring();
     r.want('s');
     r.fold(fold(1));
-    r.turn(2);
+    r.turn(2, 2);
     const waiting = read('s', 2);
     r.close(true);
     expect(await waiting).toBeNull();
@@ -313,7 +336,7 @@ describe('gpu readback ring', () => {
       const { d, r, fold, read } = ring();
       r.want('s');
       r.fold(fold(1));
-      r.turn(2);
+      r.turn(2, 2);
       const waiting = read('s', 2);
       r.close(false);
       if (outcome === 'refuse') d.refuse();

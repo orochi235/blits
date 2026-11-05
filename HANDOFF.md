@@ -795,59 +795,38 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 18. **What the gpu engine's reach left open.** All four phases are built: stock patches, staggered
     voices and voices reaching some subjects, owners and weight signals, and readback
     (`gpuOf(m).read`). The schema page's `#gpu` ("The gpu engine") says what folds, why, and what
-    each part costs. Open from phase 4:
+    each part costs. Still open (rest cleared 2026-11-04):
     - **At 1M subjects, 14 of 300 frames awaiting four `read`s took over 16.7 ms**, up to 147 ms,
       against a 3.155 ms median (`bench/runs/2026-11-04-gpu-readback.txt`): 10 mostly awaiting the
       reads, 4 mostly in `onSubmittedWorkDone`; unexplained.
-    - `Readback` keeps each channel's newest `GpuRead` until `subjects()` or `close()`, about 32 MB
-      at 1M subjects × 8 numbers, even after the host stops reading.
-    - After a stretch of frames with no fold, `turn` copies the last fold, which `read` then turns
-      down as more than one sync old before copying the current one: one wasted copy.
-    - A spring's first fold leaves `mirrors.stirred` true, so the next `channel()` or `read` in that
-      frame folds it a second time.
-    - In `twins.ts`, a throw inside `check` (after the map settles) is an unhandled rejection, and a
-      refused map leaves its staging buffer undestroyed.
-    Open from phase 3:
     - **A frame where a scene starts costs 195–241 ms at 1M on the gpu engine**, about half in
       `sync` and half in the fold, against a 0.515 ms median (`bench/runs/2026-11-04-gpu-owned.txt`);
       unexplained.
-    - `Met` keeps a voice met after `park()` (a seek back before its cue) and after a subject is
-      dropped, where the CPU drops its records; storing `voice.seeks` with the mark would fix it.
-      `read()`/`landed()` answering from that hook on a gpu mix is untested.
-    - `Reads` forgets a voice's read times when it is absent from one read, so its next `dt` jumps
-      to `now - since`; `dt` is per voice, not per subject (a subject met late gets the voice's);
-      it resets `dt` on every seek, the CPU only on seeks that send back; no test pins `dt`
-      within one frame.
-    Open from phase 2:
-    - **Answers never forgets a subject.** After a drop, or a part and unpart, a CPU-only mix asks
-      `target` again, while one with a gpu side answers from what it kept; they differ only for a
-      `target` that is not deterministic.
-    - `Answer.reach` shows a faded-out named subject as reached. Harmless while parting voices stay
-      on the CPU; lifting "it is parting from subjects" has to fix it first.
-    - The kernel's pass index is `pass_base + q` in f32, exact only to 2^24 passes (a short loop
-      played for many hours).
-    - An unstarted voice that holds its first frame, after a seek ahead, shows time 0 in the kernel
-      where the CPU's `shownAt` gives `anchorElapsed - delay`. Untested.
-    - The timing-block span test compares against records made at the end; probing each frame
-      would test records that moved.
-    - `Mirror.prepare` takes positional optionals (`holds`, `unread`).
-    Open from phase 1:
-    - **One motion patch folded by two voices at once**, on one mix or two live ones, rebuilds
-      their mirrors every frame, each taking the patch's one watch back from the other, unwarned.
-    - **A motion whose `from` or `velocity` is not deterministic** can jump on the GPU when a subject
-      is met and whenever its mirror is rebuilt: say so in the docs, or cache the first segment.
-    - While a kernel compiles, a mirror with changes waiting re-runs the dispatch's start on every
-      `channel()` call.
-    - A function easing on a `keys` patch's first stop, which is never evaluated, still sends the
-      patch to the CPU.
-    - The binding-size guard keeps a voice on the CPU when `values` or `persub` would pass the
-      device's `maxStorageBufferBindingSize`, but not the `out` and `subjects` buffers, whose
-      `createBindGroup` still fails.
     - At 1M subjects a motion voice's re-anchor, every 2^14 ms of voice time, still costs one
       6.6 ms frame against a 0.4 ms median (`bench/runs/2026-11-03-gpu-anchor-after.jsonl`), most
       of it uploading every row's new time.
     - The light-board demo on the gpu engine still probes about 1,230 subjects a frame on the CPU
       (`bench/runs/2026-11-03-demos-keys-gpu.json`); unexplained.
+    - `Reads` forgets a voice's read times when it is absent from one read, so its next `dt` jumps
+      to `now - since`; `dt` is per voice, not per subject (a subject met late gets the voice's);
+      it resets `dt` on every seek, the CPU only on seeks that send back. Matching the CPU means
+      knowing each subject's last probe, which the GPU path keeps no record of.
+    - The timing-block span test compares against records made at the end; probing each frame
+      would test records that moved.
+    - Needing Mike's call:
+      - **Answers never forgets a subject.** After a drop, or a part and unpart, a CPU-only mix asks
+        `target` again, while one with a gpu side answers from what it kept; they differ only for a
+        `target` that is not deterministic. Forgetting means asking every voice's `target` again
+        for the registered list at the next fold after any drop, an O(subjects × voices) frame
+        under churn: worth it for non-deterministic targets, or documented as a rule?
+      - **A motion whose `from` or `velocity` is not deterministic** can jump on the GPU when a
+        subject is met and whenever its mirror is rebuilt: say so in the docs, or cache the first
+        segment?
+      - **The kernel's pass index is `pass_base + q` in f32**, exact only to 2^24 passes (a 16 ms
+        loop played for about 75 hours). A shader patch's WGSL reads `pass_index: f32`, so exact
+        counts past that mean changing that public type (to `u32`, or a pair).
+    - `Answer.reach` shows a faded-out named subject as reached. Harmless while parting voices stay
+      on the CPU; lifting "it is parting from subjects" has to fix it first.
 
 ## Loose ends
 

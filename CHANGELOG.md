@@ -18,6 +18,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   `axes: { pos: [0, 1, 0] }` moves only y. In a role an axis is shared only among the members that
   weigh it, so a hold can take one axis of a position while clips keep the rest. Such a voice runs
   off lanes and off the `gpu` engine.
+- The `gpu` engine warns once, in development, where two voices fold one motion patch at once, on
+  one mix or two, which rebuilds the GPU's copy of the patch's runs every frame.
 
 ### Fixed
 
@@ -29,6 +31,26 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   into the ones cued before it, so holds at 200°, 0° and 100° read 220° rather than 100°. Two
   members read as before, to rounding. On the `gpu` engine, an angle three or more members of
   one role write stays on the CPU.
+- On the `gpu` engine in development, a motion voice's first fold no longer folds a second time at
+  the next `channel()` or `read` in its frame, and the check comparing that fold with the CPU
+  destroys its staging buffer when the device refuses the map, and reports an error reading it
+  back rather than leaving an unhandled rejection.
+- `gpuOf(m).read` lets go of a channel's last copy once it goes unread and too old to give, rather
+  than holding it, about 32 MB for 1M subjects of eight numbers, until `subjects()` or `close()`; and
+  after a stretch of frames with no fold, it no longer copies the old fold only to turn it down.
+- On the `gpu` engine, a motion change made to a subject after a seek back before its voice's cue,
+  or after the subject's `drop`, is timed as on the CPU, which holds no record of it then, rather
+  than as if the GPU's last fold had met it.
+- The `gpu` engine folds a `keys` patch whose first stop is eased by a function, which no segment
+  reads, rather than leaving it on the CPU.
+- The `gpu` engine keeps a frame's fold on the CPU, with a reason in `reasons()`, where its output,
+  subjects or table buffer would pass the device's `maxStorageBufferBindingSize`, rather than
+  failing to bind them.
+- While the `gpu` engine's kernel compiles, a motion voice with a change waiting no longer starts
+  the fold over at every `channel()` or `read` call.
+- The `gpu` engine folds a voice waiting for its start that freezes before it, as the CPU does,
+  rather than showing nothing where the voice holds its first frame, or the frame a seek ahead put
+  it at.
 
 ## 1.0.0
 

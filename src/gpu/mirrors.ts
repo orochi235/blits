@@ -1,4 +1,5 @@
-import { Mirror } from './mirror.js';
+import { warnOnce } from '../warn.js';
+import { Mirror, SHARED } from './mirror.js';
 import type { PerSubject } from './runner.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
 
@@ -25,6 +26,8 @@ export class Mirrors {
   private placed: { mirror: Mirror<unknown>; offset: number }[] = [];
   /** Set where `placed` moved since the last upload, so all of it is written next. */
   private moved = true;
+  /** The voices asked for a mirror since the last `place`. */
+  private readonly asked = new Set<object>();
   /** f32s the laid-out mirrors take. */
   length = 0;
 
@@ -46,11 +49,13 @@ export class Mirrors {
       this.clear();
       this.list = list;
     }
+    this.asked.add(voice);
     let m = this.by.get(voice);
     if (m === undefined || m.motions !== p.motions || m.packed !== packed || m.delays !== delays) {
       // A patch has room for one watch: a voice cued again on it hands it over.
       for (const [v, other] of this.by)
         if (other.motions === p.motions) {
+          if (v !== voice && this.asked.has(v)) warnOnce(p.motions, SHARED);
           other.detach();
           this.by.delete(v);
         }
@@ -65,6 +70,7 @@ export class Mirrors {
    * rest: each one's offset in `persub` in f32s, 0 for none.
    */
   place(mirrors: readonly (Mirror<unknown> | undefined)[]): number[] {
+    this.asked.clear();
     const live = new Set(mirrors.filter((m) => m !== undefined));
     for (const [voice, m] of this.by)
       if (!live.has(m)) {
@@ -114,6 +120,7 @@ export class Mirrors {
 
   /** Lets go of every mirror. */
   clear(): void {
+    this.asked.clear();
     for (const m of this.by.values()) m.detach();
     this.by.clear();
     this.placed = [];

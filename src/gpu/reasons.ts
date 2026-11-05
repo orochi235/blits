@@ -39,9 +39,12 @@ export class Reasons {
     }
   }
 
-  /** Adds a reason the whole fold stayed on the CPU, keeping `channels` there. */
+  /** Adds a reason the whole fold stayed on the CPU, keeping `channels` there, warned once. */
   all(channels: readonly string[], why: string): void {
     this.why = Object.freeze([...this.why, entry(undefined, channels, why)]);
+    if (this.told.has(why)) return;
+    this.told.add(why);
+    warnOnce({}, why);
   }
 
   clear(): void {
