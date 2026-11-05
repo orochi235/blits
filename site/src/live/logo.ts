@@ -15,21 +15,27 @@ import { loop } from './loop';
 
 const WORD = compose('blits');
 
-/** Blank rows the face carries above the word, so the sign reaches the top of the page. */
+/**
+ * Blank rows the face carries above the word, so the sign reaches the top of the page, and below
+ * it, where the sign runs on behind the rail's links and search box.
+ */
 const ABOVE = 3;
+const BELOW = 13;
 
 /**
  * The whole wordmark as one glyph, so bree draws it exactly as the brand grid has it, standing on
- * `ABOVE` blank rows that moves pass through. bree centers a message with a blank column after it,
+ * blank rows that moves pass through. bree centers a message with a blank column after it,
  * so the glyph carries one before it to balance, kept by drawing at fixed pitch.
  */
 const FACE: Face = {
   name: 'blits',
-  rows: WORD.rows + ABOVE,
+  rows: ABOVE + WORD.rows + BELOW,
   width: WORD.cols + 1,
   glyph(ch) {
     if (ch !== 'B') return undefined;
-    const rows = Array.from({ length: WORD.rows + ABOVE }, () => Array(WORD.cols + 1).fill('.'));
+    const rows = Array.from({ length: ABOVE + WORD.rows + BELOW }, () =>
+      Array(WORD.cols + 1).fill('.'),
+    );
     for (const [c, r] of WORD.lit) rows[r + ABOVE][c + 1] = '#';
     return rows.map((r) => r.join(''));
   },
@@ -136,7 +142,7 @@ export function playLogo(canvas: HTMLCanvasElement): () => void {
     const sign = createMarquee(canvas, {
       name: 'logo',
       cols: WORD.cols + 2 + 2 * marginOf(false),
-      rows: WORD.rows + ABOVE + 2 * marginOf(false),
+      rows: ABOVE + WORD.rows + BELOW + 2 * marginOf(false),
       border: false,
       housing: dark.matches ? 'none' : 'dark',
       program: program(calm.matches),

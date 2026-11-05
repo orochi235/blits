@@ -110,8 +110,10 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
   }
 
   /*
-   * The sign is 24 x 14 pitches, and its dots of the word span 3.14 to 20.86 across and 5.14 to
-   * 11.86 down; the rows above the word reach the top of the page. In light mode its housing fills the rail; in dark, with no housing, the word does.
+   * The sign is 24 x 27 pitches, and its dots of the word span 3.14 to 20.86 across and 5.14 to
+   * 11.86 down: the rows above the word reach the top of the page, and the 13 below run on behind
+   * the links and the search box, fading out. In light mode its housing fills the rail; in dark,
+   * with no housing, the word does. Only the 14 rows down to the word's foot take space or clicks.
    */
   .mark {
     --fill: 100%;
@@ -120,17 +122,39 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     display: block;
     position: relative;
     width: var(--fill);
-    aspect-ratio: 24 / 14;
+    aspect-ratio: 24 / 27;
     margin-top: calc(-2rem - var(--pitch));
-    margin-bottom: 0.9rem;
+    margin-bottom: calc(0.9rem - 13 * var(--pitch));
+    pointer-events: none;
   }
 
-  .still,
+  .mark::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    aspect-ratio: 24 / 14;
+    pointer-events: auto;
+  }
+
+  .meta,
+  .rail :global(.search) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .still {
+    position: absolute;
+    inset: 0 0 auto;
+    aspect-ratio: 24 / 14;
+  }
+
   .mark canvas {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+    /* The light housing fades out before the links under it, which would not read on it. */
+    mask-image: linear-gradient(to bottom, #000 calc(12.5 / 27 * 100%), transparent 55%);
   }
 
   .still :global(svg) {
@@ -165,6 +189,9 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
   }
 
   @media (prefers-color-scheme: dark) {
+    .mark canvas {
+      mask-image: linear-gradient(to bottom, #000 calc(12.5 / 27 * 100%), transparent);
+    }
     .mark {
       --pitch: calc(var(--fill) / 17.72);
       width: calc(var(--fill) * 24 / 17.72);
