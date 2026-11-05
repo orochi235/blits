@@ -1,0 +1,24 @@
+# teitou, 2026-11-04, at 5c2118d: three rounds of node bench/frame.mjs keys:10000:3, then OUT=blank node bench/frame.mjs keys:10000:3
+  waiting for room
+teitou  chosen: 9.9 cores free, 30.1G available (bash -c npm ci --silent && npm run buil…: no past runs)
+  studio   scored 0.39 against teitou's 0.40
+  keiei    scored 0.07 against teitou's 0.40
+  msb-uai  its blits tree is held by job 63067389
+  orochi   has 0.7 of its 12 cores free, too few to start on
+  base   5c2118da
+  updated blits on teitou at 5c2118da
+  job    1967b9e1 on teitou
+
+# round 1 default
+ 1/1  keys       N= 10000 V=3     1.123 ms/frame     37 ns/subject·voice  p50    1.104  p99    1.382  worst    1.693  first    15.8 ms  gc    3    0.4 ms     182.8 kB/frame
+# round 1 OUT=blank
+ 1/1  keys       N= 10000 V=3     1.120 ms/frame     37 ns/subject·voice  p50    1.102  p99    1.529  worst    1.807  first    16.0 ms  gc    0    0.0 ms      31.6 kB/frame
+# round 2 default
+ 1/1  keys       N= 10000 V=3     1.224 ms/frame     41 ns/subject·voice  p50    1.175  p99    2.224  worst    2.675  first    16.2 ms  gc    3    0.3 ms     180.6 kB/frame
+# round 2 OUT=blank
+ 1/1  keys       N= 10000 V=3     1.070 ms/frame     36 ns/subject·voice  p50    1.054  p99    1.287  worst    1.653  first    15.7 ms  gc    0    0.0 ms      19.4 kB/frame
+# round 3 default
+ 1/1  keys       N= 10000 V=3     1.125 ms/frame     37 ns/subject·voice  p50    1.107  p99    1.434  worst    1.703  first    15.5 ms  gc    3    0.3 ms     180.7 kB/frame
+# round 3 OUT=blank
+ 1/1  keys       N= 10000 V=3     1.114 ms/frame     37 ns/subject·voice  p50    1.104  p99    1.325  worst    1.645  first    14.9 ms  gc    6    3.2 ms      25.5 kB/frame
+
