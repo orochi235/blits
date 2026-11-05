@@ -48,7 +48,7 @@ function program(still: boolean): Scene[] {
 }
 
 /**
- * Plays the wordmark on `canvas` as a bree sign, synced only while the site's live demos are. On a
+ * Plays the wordmark on `canvas` as a bree sign, synced while the site's live demos are, focus or not. On a
  * dark page the dots stand on the page itself; on a light one, where green would wash out, they
  * keep the sign's dark housing. A sign's housing is set when it is made, so a change of theme makes
  * it again.
@@ -80,9 +80,14 @@ export function playLogo(canvas: HTMLCanvasElement): () => void {
     });
     const recolor = () => sign.setProgram(program(calm.matches));
     calm.addEventListener('change', recolor);
-    const halt = loop(sign.mix, canvas, (now) => {
-      for (const fn of fns) fn(now);
-    });
+    const halt = loop(
+      sign.mix,
+      canvas,
+      (now) => {
+        for (const fn of fns) fn(now);
+      },
+      { focus: false },
+    );
     return () => {
       halt();
       calm.removeEventListener('change', recolor);

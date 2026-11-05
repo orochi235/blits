@@ -129,8 +129,13 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
   }
 
   .bare {
-    padding: 4.5% 9%;
+    /* Where the live sign draws the word, so the swap from this still to it moves nothing. */
+    padding: 7.9% 22.6% 8% 11.6%;
     box-sizing: border-box;
+  }
+
+  .bare :global(svg) {
+    width: auto;
   }
 
   .mark canvas,
@@ -140,6 +145,10 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
   }
 
   @media (prefers-color-scheme: dark) {
+    /* With no housing, the b's left edge is the mark's: 3.14 of the sign's 11 pitches down, 9/22 of its width tall. */
+    .mark {
+      translate: calc(-3.14 * 9 / 22 / 11 * 100%) 0;
+    }
     .panel {
       visibility: hidden;
     }
