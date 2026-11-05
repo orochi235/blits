@@ -13,7 +13,7 @@
 // Size it with CSS width; height follows. Motion stops when prefers-reduced-motion is set
 // and pauses while the logo is offscreen. play() restarts the effect.
 
-import { COLOR, DOT, compose } from './glyphs.js';
+import { COLOR, DOT, MARK_FILL, compose } from './glyphs.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 // Opacity of the unlit grid, and the floor a lit dot dims to.
@@ -122,7 +122,7 @@ class BlitsLogo extends HTMLElement {
     const panel = this.hasAttribute('panel');
     const pad = panel ? (mark ? 1.5 : 2) : 0.2;
     const w = g.cols + 2 * pad, h = g.rows + 2 * pad;
-    const size = mark ? Math.max(w, h) : 0;
+    const size = mark ? (panel ? g.rows / MARK_FILL : Math.max(w, h)) : 0;
     const vw = mark ? size : w, vh = mark ? size : h;
     const ox = (vw - g.cols) / 2, oy = (vh - g.rows) / 2;
     const color = this.getAttribute('color') ?? `var(--blits-logo-color, ${COLOR.green})`;

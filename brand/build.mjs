@@ -5,7 +5,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { COLOR, DOT, compose } from './glyphs.js';
+import { COLOR, DOT, MARK_FILL, compose } from './glyphs.js';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), 'out');
 
@@ -37,7 +37,7 @@ for (const [name, fill] of [['green', COLOR.green], ['black', COLOR.ink], ['whit
 }
 // The mark: the wordmark's own b, centered in a square tile.
 {
-  const S = 100, cell = 56 / mark.rows, ox = (S - mark.cols * cell) / 2, oy = (S - mark.rows * cell) / 2;
+  const S = 100, cell = (S * MARK_FILL) / mark.rows, ox = (S - mark.cols * cell) / 2, oy = (S - mark.rows * cell) / 2;
   const tile = (fill, r) => `<rect width="${S}" height="${S}" rx="${r}" fill="${fill}"/>`;
   files['mark-panel.svg'] = svg(S, S, tile(COLOR.panel, 22) + dots(mark, cell, ox, oy, COLOR.green));
   files['mark-panel-square.svg'] = svg(S, S, tile(COLOR.panel, 0) + dots(mark, cell, ox, oy, COLOR.green));

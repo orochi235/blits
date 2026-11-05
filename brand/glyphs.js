@@ -16,6 +16,9 @@ export const KERN = { l: -1, i: -1, t: -1, s: -1 };
 // Dot radius as a fraction of the cell.
 export const DOT = 0.46;
 
+// How much of the icon tile's height the b fills.
+export const MARK_FILL = 0.76;
+
 /** Lays out `text` (letters from GLYPHS) as a grid; `lit` holds [col, row, letterIndex] per dot. */
 export function compose(text) {
   const rows = GLYPHS[text[0]].length;
