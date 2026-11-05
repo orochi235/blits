@@ -36,6 +36,22 @@ Switch the channel to `sum` and the two curves lie on top of each other. On `sum
 
 A role whose weights sum below 1 is faded toward rest by that sum, and one whose weights sum above 1 counts as 1. Every stock channel has a `lerp`, so any of them can be folded this way.
 
+## Angles
+
+An `angle()` in a role meets at the direction its members average to, and each member is taken the short way round from there. Two members blend as the short-way `lerp` would, and three or more give the same answer in any cue order: holds at 0°, 100° and 200° read 100°. Where the directions cancel out, as at 0°, 120° and 240°, there is no way round between them, and each is taken the short way from rest. A `vec` of angles does the same on each axis.
+
+## Some axes of a vec
+
+`axes` gives a voice a weight per axis of a `vec` channel, multiplied into its `weight`. In a role, an axis is shared only among the members that weigh it, so a hold can take one axis and leave the others to the clips it is blended with, as an IK arm holding a bone's height while the walk keeps its x and z:
+
+```ts
+rig.cue({ patch: walk, role: 'arm', axes: { pos: [1, 0, 1] } });
+rig.cue({ patch: walk, role: 'arm', weight: 1 - h, axes: { pos: [0, 1, 0] } });
+rig.cue({ patch: height, role: 'arm', weight: h, axes: { pos: [0, 1, 0] } });
+```
+
+The walk's y gives way as `h` rises, while its x and z stay whole. A voice with `axes` runs off lanes.
+
 ## Blend
 
 `mix.blend(patches, by)` cues several voices into one role for you, their weights split from one signal: at 0 the first patch has it all, at 1 the last. Two patches crossfade; more make stops along the way.

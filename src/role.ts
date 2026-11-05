@@ -1,3 +1,4 @@
+import { markAxial, resolve, together } from './axes.js';
 import { first } from './clone.js';
 import type { Mixer } from './mixer.js';
 import type { Subject } from './subject.js';
@@ -30,6 +31,16 @@ export interface RoleScratch<I, O> {
   met: Uint8Array;
   touched: number[];
   owned: (number[] | undefined)[];
+  /** Per slot, 1 where a member of the role being folded weighs the channel's axes apart. */
+  axial: Uint8Array;
+  /** Per slot folded all at once, the members that wrote it, which `resolve` folds together. */
+  picks: (number[] | undefined)[];
+  turnVs: number[];
+  turnWs: number[];
+  axisOut: (number[] | undefined)[];
+  /** Per slot `resolve` folded axis by axis this fold, the weight each axis took; else undefined. */
+  axisTaken: (number[] | undefined)[];
+  axisTakenOf: (number[] | undefined)[];
 }
 
 export function roleScratch<I, O>(channels: number): RoleScratch<I, O> {
@@ -52,6 +63,13 @@ export function roleScratch<I, O>(channels: number): RoleScratch<I, O> {
     met: new Uint8Array(channels),
     touched: [],
     owned: new Array(channels).fill(undefined),
+    axial: new Uint8Array(channels),
+    picks: new Array(channels).fill(undefined),
+    turnVs: [],
+    turnWs: [],
+    axisOut: new Array(channels).fill(undefined),
+    axisTaken: new Array(channels).fill(undefined),
+    axisTakenOf: new Array(channels).fill(undefined),
   };
 }
 
@@ -87,6 +105,7 @@ export function foldRole<I, O>(this: Mixer<I, O>, k: RoleScratch<I, O>, group: n
   let sum = 0;
   for (let m = 0; m < k.m; m++) if (k.mGroups[m] === group) sum += k.mWeights[m] as number;
   if (sum <= 0) return 0;
+  const axial = markAxial(k, group);
   const taken = k.taken;
   for (let m = 0; m < k.m; m++) {
     if (k.mGroups[m] !== group) continue;
@@ -99,6 +118,19 @@ export function foldRole<I, O>(this: Mixer<I, O>, k: RoleScratch<I, O>, group: n
       const value = delta[this.names[slot] as string];
       if (value === undefined) continue;
       const channel = this.channels[slot] as Channel<unknown>;
+      if (together(k, slot, this.turns[slot] as number)) {
+        if (k.met[slot] === 0) {
+          k.met[slot] = 1;
+          k.touched.push(slot);
+          taken[slot] = 0;
+          const picks = k.picks[slot];
+          if (picks === undefined) k.picks[slot] = [];
+          else picks.length = 0;
+        }
+        taken[slot] = (taken[slot] as number) + weight;
+        (k.picks[slot] as number[]).push(m);
+        continue;
+      }
       if (k.met[slot] === 0) {
         k.met[slot] = 1;
         k.touched.push(slot);
@@ -127,6 +159,19 @@ export function foldRole<I, O>(this: Mixer<I, O>, k: RoleScratch<I, O>, group: n
           : channel.lerp(was, value, weight / total);
     }
   }
-  for (let t = 0; t < k.touched.length; t++) k.met[k.touched[t] as number] = 0;
+  for (let t = 0; t < k.touched.length; t++) {
+    const slot = k.touched[t] as number;
+    k.met[slot] = 0;
+    if (!together(k, slot, this.turns[slot] as number)) continue;
+    const name = this.names[slot] as string;
+    k.values[slot] = resolve(
+      k,
+      slot,
+      name,
+      this.channels[slot] as Channel<unknown>,
+      this.turns[slot] as number,
+    );
+  }
+  if (axial) k.axial.fill(0);
   return sum > 1 ? 1 : sum;
 }

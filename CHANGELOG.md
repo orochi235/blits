@@ -11,6 +11,18 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice can name the `track` it plays on, so a tool that draws the score puts the voices sharing
   one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
   carries it as `track`, and `watched` reports it for each voice.
+- A voice's `axes` gives each axis of a `vec` channel its own weight, multiplied into the voice's:
+  `axes: { pos: [0, 1, 0] }` moves only y. In a role an axis is shared only among the members that
+  weigh it, so a hold can take one axis of a position while clips keep the rest. Such a voice runs
+  off lanes and off the `gpu` engine.
+
+### Fixed
+
+- Three or more `angle()` members of a role read the same in any cue order: they meet at the
+  direction they average to, each taken the short way from there, where before each was lerped
+  into the ones cued before it, so holds at 200°, 0° and 100° read 220° rather than 100°. Two
+  members read as before, to rounding. On the `gpu` engine, an angle three or more members of
+  one role write stays on the CPU.
 
 ## 1.0.0
 

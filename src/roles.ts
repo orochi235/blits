@@ -1,3 +1,4 @@
+import { foldTaken } from './axes.js';
 import { first } from './clone.js';
 import type { Share } from './everyone.js';
 import { merged, unband } from './fold.js';
@@ -137,6 +138,12 @@ export function foldRoles<I, O>(
         k.values[slot] = undefined;
         const key = this.names[slot] as string;
         const channel = this.channels[slot] as Channel<unknown>;
+        const axes = k.axisTaken[slot];
+        if (axes !== undefined) {
+          k.axisTaken[slot] = undefined;
+          pose[key] = foldTaken(channel, pose[key] as number[], value as number[], axes);
+          continue;
+        }
         // A channel folds at the weight of the members that wrote it, not the whole role.
         const taken = k.taken[slot] as number;
         const w = taken > 1 ? 1 : taken;
@@ -170,6 +177,7 @@ export function foldRoles<I, O>(
       const slot = k.touched[t] as number;
       k.met[slot] = 0;
       k.values[slot] = undefined;
+      k.axisTaken[slot] = undefined;
     }
     k.touched.length = 0;
     this.roleDepth--;

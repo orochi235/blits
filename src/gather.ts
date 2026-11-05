@@ -3,7 +3,7 @@ import { foldNumber, lerpNumber } from './channels.js';
 import { Arg, type Lane, type Laned, type Role, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Subject } from './subject.js';
-import { shortWay, turnFrom, turnInto, turnToward } from './turns.js';
+import { foldTurn, gatherTurn, shortWay, turnFrom, turnInto, turnToward } from './turns.js';
 
 /** `xs`, or a copy at least `n` long where it is shorter. */
 function sized(xs: Float64Array, n: number): Float64Array {
@@ -32,15 +32,22 @@ export function gatherRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
     const axes = (lanes.laned[k] as Laned).axes;
     if (values !== undefined) g.values[k] = sized(values, cap * axes);
     if (taken !== undefined) g.taken[k] = sized(taken, cap);
+    const m = g.members.length;
+    const tv = g.turnValues[k];
+    const tw = g.turnWeights[k];
+    if (tv !== undefined) g.turnValues[k] = sized(tv, cap * m);
+    if (tw !== undefined) g.turnWeights[k] = sized(tw, cap * m);
   }
   g.inline = inlined(g);
   if (g.inline) return;
   lanes.into = g;
   try {
-    for (const lane of g.members) {
+    for (let i = 0; i < g.members.length; i++) {
+      const lane = g.members[i] as Lane<I, O>;
       const voice = lane.voice;
       if (lane.idle || voice.state === 'pending' || voice.state === 'done') continue;
       lanes.intoId = voice.id;
+      lanes.intoMember = i;
       lanes.reset(lane);
       lane.elapsedNow = voice.elapsedAt(lanes.now);
       const list = lane.list;
@@ -76,6 +83,8 @@ function meetRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, slot: number): void {
   for (let k = 0; k < takens.length; k++) {
     const taken = takens[k];
     if (taken !== undefined) taken[slot] = 0;
+    const tw = g.turnWeights[k];
+    if (tw !== undefined) tw.fill(0, slot * g.members.length, (slot + 1) * g.members.length);
   }
 }
 
@@ -125,7 +134,8 @@ function gatherInto<I, O>(
   const taken = takenAt[slot] as number;
   const total = taken + w;
   const u = w / total;
-  if (!ch.plain || !ch.straight) turnToward(ch, values, slot * ch.axes, value, taken, u);
+  if (ch.turn > 0) gatherTurn(g, k, lanes.cap, slot, lanes.intoMember, value as number, w);
+  else if (!ch.plain || !ch.straight) turnToward(ch, values, slot * ch.axes, value, taken, u);
   else if (ch.scalar) {
     values[slot] =
       taken === 0 ? (value as number) : lerpNumber(values[slot] as number, value as number, u);
@@ -166,6 +176,10 @@ function foldAt<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, slot: number): void {
     const values = g.values[k] as Float64Array;
     const into = ch.values;
     const base = slot * ch.axes;
+    if (ch.turn > 0) {
+      foldTurn(ch, g, slot, w);
+      continue;
+    }
     if (!ch.plain) {
       turnFrom(ch, into, base, values, base, w);
       continue;
@@ -226,6 +240,7 @@ export function runRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
         }
         // Each lane's placing is numbered on its own; the last member placed left its number.
         arg[Arg.MARK] = lane.mark;
+        lanes.intoMember = i;
         if (lanes.one(lane, p, slot)) {
           meetRole(lanes, g, slot);
           sum += lane.data[p * Row.STRIDE + Row.WEIGHT] as number;

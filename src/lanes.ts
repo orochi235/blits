@@ -125,6 +125,8 @@ export class Lanes<I, O> implements Watcher {
   /** While a fill gathers a role: that role and the member gathering, where folds go instead. */
   into: Role<I, O> | null = null;
   intoId = 0;
+  /** The place in its role of the member `intoId` names. */
+  intoMember = 0;
   readonly lawsByKey = new Map<string, Float64Array>();
   lastLaw: Float64Array | null = null;
   /**

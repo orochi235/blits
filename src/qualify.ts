@@ -123,6 +123,8 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
         sum: new Float64Array(lanes.cap),
         values: [],
         taken: [],
+        turnValues: [],
+        turnWeights: [],
         contiguous: false,
         inline: false,
       };

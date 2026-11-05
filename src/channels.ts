@@ -218,6 +218,13 @@ export function last<V>(opts?: LastOptions<V>): Channel<V> {
   };
 }
 
+const inners = shared<object, Channel<unknown>>('vec-of@1');
+
+/** The channel each axis of a `vec` folds by, or undefined for any other channel. */
+export function axisChannel(channel: Channel<unknown>): Channel<unknown> | undefined {
+  return inners.get(channel);
+}
+
 /**
  * `n` copies of `v` in an array the engine stores as doubles from the start, so a copy of it, and
  * every fraction written into that copy, keeps one element kind: a pose's arrays then look alike to
@@ -291,6 +298,7 @@ export function vec<N extends number>(n: N, of: Channel<number>): Channel<Vec<N>
     lerp: (a, b, u) => lerpTo(undefined, a, b, u),
   };
   inPlace.set(channel, lerpTo as LerpInto);
+  inners.set(channel, of as Channel<unknown>);
   const inner = numerics.get(of);
   if (inner !== undefined && inner.axes === 1 && inner.turn === undefined)
     numerics.set(channel, { ...inner, axes: n });

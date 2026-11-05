@@ -169,6 +169,14 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   /** Steady weight, or a signal read per subject per frame. Default 1. */
   weight?: number | Signal<I, H>;
   /**
+   * A weight for each axis of a `vec` channel the patch writes, from 0 to 1, multiplied into
+   * `weight` axis by axis: `{ pos: [0, 1, 0] }` moves only a position's y. An axis at 0 takes
+   * nothing from this voice, and in a role it is left to the members that weigh it, as a channel a
+   * member does not write is. Channels it leaves out take `weight` whole. Such a voice runs off
+   * lanes.
+   */
+  axes?: { readonly [K in keyof O]?: readonly number[] };
+  /**
    * Where the `weight` signal can be above 0. It is a circle the host moves by writing to it, read
    * once a frame, over the positions `plot` or `put` gave, or a `Finder` the host answers by index.
    * Outside

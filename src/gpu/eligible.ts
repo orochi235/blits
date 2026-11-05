@@ -66,6 +66,7 @@ function why<I, O>(
 ): string | null {
   for (const name of voice.patch.writes as readonly string[])
     if (!codes.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
+  if (voice.axes !== null) return "it weighs a channel's axes apart";
   const packed = packOf(voice.patch, codes);
   if (packed === undefined) return `no gpu runner takes a ${voice.patch.form} patch`;
   if ('why' in packed) return packed.why;
@@ -131,6 +132,7 @@ export function eligibility<I, O>(
     if (reason === null) fit.add(voice);
     else reasons.push({ voice, why: reason });
   }
+  meanTurns(mix, playing, kept, reasons);
   // A channel no playing voice writes folds to its rest, which the GPU gives as well as any.
   for (const name of codes.keys()) channels.add(name);
   for (const name of kept) channels.delete(name);
@@ -138,6 +140,41 @@ export function eligibility<I, O>(
     (v) => fit.has(v) && (v.patch.writes as readonly string[]).some((n) => channels.has(n)),
   );
   return { channels, voices, reasons };
+}
+
+/**
+ * Keeps on the CPU each angle channel that three or more members of one role write: there they
+ * meet at their mean direction, which takes every member at once, where the kernel lerps them in
+ * one by one. Two members meet the same either way.
+ */
+function meanTurns<I, O>(
+  mix: Mixer<I, O>,
+  playing: readonly Voice<I, O>[],
+  kept: Set<string>,
+  reasons: { voice: Voice<I, O>; why: string }[],
+): void {
+  mix.turns.forEach((turn, slot) => {
+    if (!(turn > 0)) return;
+    const name = mix.names[slot] as string;
+    if (kept.has(name)) return;
+    const roles = new Map<string, Voice<I, O>[]>();
+    for (const v of playing) {
+      const role = v.spec.role;
+      if (role === undefined || !v.slots.includes(slot)) continue;
+      const at = roles.get(role);
+      if (at === undefined) roles.set(role, [v]);
+      else at.push(v);
+    }
+    for (const members of roles.values()) {
+      if (members.length < 3) continue;
+      kept.add(name);
+      for (const voice of members)
+        reasons.push({
+          voice,
+          why: `its role blends ${name} from three or more angles, which meet at their mean direction on the CPU`,
+        });
+    }
+  });
 }
 
 /** f32s a voice takes in the values buffer and in the per-subject buffer. */

@@ -4,7 +4,7 @@ import { eligibility, within } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { Timings } from '../src/gpu/timings.js';
 import { perSubject } from '../src/gpu/weight.js';
-import { input, kit, mix, patch, quat, tween } from '../src/index.js';
+import { angle, input, keys, kit, mix, patch, quat, sum, tween, vec } from '../src/index.js';
 import type { Mixer } from '../src/mixer.js';
 import type { Voice } from '../src/voice.js';
 import { type C, cells, elig, K, type P, wave } from './gpu-fixtures.js';
@@ -237,5 +237,39 @@ describe('gpu eligibility', () => {
     const m = mix<C, P>(K);
     m.sync(0);
     expect(elig(m).channels.has('y')).toBe(true);
+  });
+
+  it('keeps an angle three members of one role write on the CPU, where they meet at their mean', () => {
+    const turns = (n: number) => {
+      const m = mix<C, { h: number }>(kit({ h: angle() }));
+      const at = (h: number) =>
+        keys<C, { h: number }>(1000, [
+          { at: 0, delta: { h } },
+          { at: 1, delta: { h } },
+        ]);
+      for (let i = 0; i < n; i++) m.cue({ patch: at(100 * i), role: 'r', subjects: cells });
+      m.sync(0);
+      return elig(m);
+    };
+    expect(turns(2).channels.has('h')).toBe(true);
+    const three = turns(3);
+    expect(three.channels.has('h')).toBe(false);
+    expect(three.reasons[0]?.why).toMatch(/mean direction/);
+  });
+
+  it('keeps a voice weighing axes apart on the CPU', () => {
+    const m = mix<C, { p: number[] }>(kit({ p: vec(2, sum()) }));
+    m.cue({
+      patch: keys<C, { p: number[] }>(1000, [
+        { at: 0, delta: { p: [0, 0] } },
+        { at: 1, delta: { p: [1, 1] } },
+      ]),
+      subjects: cells,
+      axes: { p: [1, 0] },
+    });
+    m.sync(0);
+    const e = elig(m);
+    expect(e.channels.has('p')).toBe(false);
+    expect(e.reasons[0]?.why).toMatch(/axes apart/);
   });
 });

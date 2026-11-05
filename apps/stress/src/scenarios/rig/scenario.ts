@@ -27,8 +27,6 @@ const CHECKS = 30;
 const TOL = 1e-6;
 const POS_TOL = 1e-9;
 const MAX_FAILS = 10;
-const HOLD_GAP =
-  "a voice's weight covers every component of a vec channel, so a hold cannot take some components of a vec(3) and leave the others to what it is blended with, as an IK arm holding a bone's height while clips keep its x and z; the rig cues each arm bone's clips twice, once for rot and once for pos, and applies the IK y-hold itself after reading";
 
 export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
   const chars = Math.max(1, Math.round(size * PER_SIZE));
@@ -89,7 +87,9 @@ export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
         continue;
       }
       m.cue({ ...spec, patch: clip(t, c.ms, ['rot']), role: 'rot', weight: armRot[k] });
-      m.cue({ ...spec, patch: clip(t, c.ms, ['pos']), role: 'pos', weight: body[k] });
+      const pos = clip(t, c.ms, ['pos']);
+      m.cue({ ...spec, patch: pos, role: 'pos', weight: body[k], axes: { pos: [1, 0, 1] } });
+      m.cue({ ...spec, patch: pos, role: 'pos', weight: armRot[k], axes: { pos: [0, 1, 0] } });
     }
   });
   const hold = patch<Bone, Pose>(
@@ -98,6 +98,18 @@ export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
     { writes: ['rot'] },
   );
   m.cue({ patch: hold, subjects: bones.filter((b) => isArm(b.bone)), role: 'rot', weight: ik });
+  const lift = patch<Bone, Pose>(
+    0,
+    (_, b) => ({ pos: [0, ikY[b.char * ARM.length + b.bone - (ARM[0] as number)] as number, 0] }),
+    { writes: ['pos'] },
+  );
+  m.cue({
+    patch: lift,
+    subjects: bones.filter((b) => isArm(b.bone)),
+    role: 'pos',
+    weight: ik,
+    axes: { pos: [0, 1, 0] },
+  });
 
   const found: Finding[] = [];
   let last = -1;
@@ -175,7 +187,7 @@ export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
     return out;
   }
 
-  /** A bone's `pos` as its role blends the clips, then held at the IK height as `pulled` does. */
+  /** A bone's `pos` as its role blends the clips, its height handed to the IK hold by `H`. */
   function wantPos(b: Bone, t: number): number[] {
     const p = posBlend(
       CLIPS.map((_, k) => ({
@@ -229,18 +241,8 @@ export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
 
   const rot = new Float64Array(n * 4);
   const pos = new Float64Array(n * 3);
-  /** Pulls every bone's pose, with the IK arm's height applied as the rig does after reading. */
   function pulled(): void {
     m.pull(bones, { rot, pos });
-    for (let c = 0; c < chars; c++) {
-      const h = H[c] as number;
-      if (!(h > 0)) continue;
-      for (let k = 0; k < ARM.length; k++) {
-        const y = (c * BONES + (ARM[k] as number)) * 3 + 1;
-        pos[y] =
-          (pos[y] as number) + ((ikY[c * ARM.length + k] as number) - (pos[y] as number)) * h;
-      }
-    }
   }
 
   const scenario: Scenario = {
@@ -255,7 +257,6 @@ export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
     },
     stats: () => ({
       voices: m.voices().length,
-      gaps: held > 0 ? 1 : 0,
       held,
       threeWay,
       checked,
@@ -280,7 +281,6 @@ export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
           kind: 'fail',
           what: `${posFails - MAX_FAILS} more bones read a pos off their role's blend`,
         });
-      if (held > 0) found.push({ kind: 'gap', what: HOLD_GAP });
       return found;
     },
     draw: (ctx, w, h) => {

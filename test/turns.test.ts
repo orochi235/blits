@@ -102,7 +102,77 @@ const SCENES: Record<string, { cue: (m: M) => void; laned: string[] }> = {
     },
     laned: ['heading', 'spin'],
   },
+  'a role of headings spread wide': {
+    cue: (m) => {
+      const hold = (deg: number) =>
+        patch<Part, Pose>(0, (_, s) => ({ heading: deg + 25 * s.id }), { writes: ['heading'] });
+      m.cue({ patch: hold(200), role: 'h', weight: 0.7 });
+      m.cue({ patch: veer(800), loop: true, weight: 0.4 });
+      m.cue({ patch: hold(0), role: 'h', weight: (s: Part) => 0.3 + 0.2 * s.id });
+      m.cue({ patch: hold(100), role: 'h' });
+    },
+    laned: ['heading', 'spin'],
+  },
 };
+
+const hold = (deg: number) =>
+  patch<Part, Pose>(0, () => ({ heading: deg }), { writes: ['heading'] });
+/** How far `a` is from `b` the short way round, in degrees. */
+const off = (a: number, b: number) => Math.abs(a - b - 360 * Math.round((a - b) / 360));
+
+describe('angles in a role', () => {
+  const heading = (lanes: boolean, holds: [number, number][]) => {
+    const m = mix<Part, Pose>(K, { lanes });
+    for (const [deg, weight] of holds) m.cue({ patch: hold(deg), role: 'h', weight });
+    m.sync(0);
+    m.probe(PARTS[0] as Part);
+    m.sync(16);
+    return m.probe(PARTS[0] as Part).heading;
+  };
+  for (const lanes of [false, true]) {
+    const on = lanes ? 'lanes on' : 'lanes off';
+    it(`meet at their mean direction in any order, ${on}`, () => {
+      for (const order of [
+        [200, 0, 100],
+        [0, 100, 200],
+        [100, 200, 0],
+      ])
+        expect(
+          off(heading(lanes, order.map((d) => [d, 1]) as [number, number][]), 100),
+        ).toBeLessThan(1e-9);
+    });
+
+    it(`still lerp the short way between two, ${on}`, () => {
+      const h = heading(lanes, [
+        [350, 0.25],
+        [10, 0.75],
+      ]);
+      expect(off(h, 5)).toBeLessThan(1e-9);
+    });
+
+    it(`take each the short way from rest where they cancel, ${on}`, () => {
+      expect(
+        heading(lanes, [
+          [0, 1],
+          [120, 1],
+          [240, 1],
+        ]),
+      ).toBeCloseTo(0, 9);
+    });
+
+    it(`fade the mean the short way toward rest under a weight below 1, ${on}`, () => {
+      expect(
+        off(
+          heading(lanes, [
+            [150, 0.25],
+            [190, 0.25],
+          ]),
+          85,
+        ),
+      ).toBeLessThan(1e-9);
+    });
+  }
+});
 
 describe('an angle and a quat on a lane', () => {
   for (const [name, { cue, laned }] of Object.entries(SCENES))

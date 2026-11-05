@@ -1,10 +1,88 @@
 import { blendRuleOf } from './blend-modes.js';
 import { doubles } from './channels.js';
-import type { Laned } from './lane.js';
+import type { Laned, Role } from './lane.js';
 
 /** `d` less whole turns, so within half a turn of 0: the short way round a circle of `turn`. */
 export function shortWay(d: number, turn: number): number {
   return d - turn * Math.round(d / turn);
+}
+
+/**
+ * The angles `vs[from..to)` at weights `ws`, folded as alternatives in a role: each taken the
+ * short way to the direction they average to, then averaged by weight, so the answer is the same
+ * in any order. Where the directions cancel there is no way round between them, and each is taken
+ * the short way from 0. Weights of 0 or less are passed over; with none left the answer is 0.
+ */
+export function meanTurn(
+  vs: ArrayLike<number>,
+  ws: ArrayLike<number>,
+  from: number,
+  to: number,
+  turn: number,
+): number {
+  const k = (2 * Math.PI) / turn;
+  let first = Number.NaN;
+  let total = 0;
+  let sin = 0;
+  let cos = 0;
+  for (let i = from; i < to; i++) {
+    const w = ws[i] as number;
+    if (!(w > 0)) continue;
+    const v = vs[i] as number;
+    if (total === 0) first = v;
+    total += w;
+    // Measured from the first, so one member gives its own value to the bit.
+    const d = shortWay(v - first, turn) * k;
+    sin += w * Math.sin(d);
+    cos += w * Math.cos(d);
+  }
+  if (total === 0) return 0;
+  const cancels = Math.hypot(sin, cos) < 1e-9 * total;
+  const mean = cancels ? 0 : Math.atan2(sin, cos) / k;
+  let sum = 0;
+  for (let i = from; i < to; i++) {
+    const w = ws[i] as number;
+    if (!(w > 0)) continue;
+    const v = vs[i] as number;
+    sum += w * (cancels ? shortWay(v, turn) : shortWay(v - first - mean, turn));
+  }
+  return cancels ? sum / total : first + mean + sum / total;
+}
+
+/** Keeps a role member's angle for the subject at `slot`, which `foldTurn` folds with the others. */
+export function gatherTurn<I, O>(
+  g: Role<I, O>,
+  k: number,
+  cap: number,
+  slot: number,
+  member: number,
+  value: number,
+  w: number,
+): void {
+  const m = g.members.length;
+  let vs = g.turnValues[k];
+  let ws = g.turnWeights[k];
+  if (vs === undefined || ws === undefined) {
+    vs = new Float64Array(cap * m);
+    ws = new Float64Array(cap * m);
+    g.turnValues[k] = vs;
+    g.turnWeights[k] = ws;
+  }
+  vs[slot * m + member] = value;
+  ws[slot * m + member] = w;
+}
+
+/** Folds a role's angles for the subject at `slot` into its laned value, at weight `w`. */
+export function foldTurn<I, O>(ch: Laned, g: Role<I, O>, slot: number, w: number): void {
+  const m = g.members.length;
+  const v = meanTurn(
+    g.turnValues[ch.index] as Float64Array,
+    g.turnWeights[ch.index] as Float64Array,
+    slot * m,
+    (slot + 1) * m,
+    ch.turn,
+  );
+  ch.values[slot] = (ch.values[slot] as number) + shortWay(v, ch.turn) * w;
 }
 
 type Fold = (into: number[], v: unknown, w: number) => ArrayLike<number>;
