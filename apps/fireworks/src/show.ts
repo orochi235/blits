@@ -17,8 +17,8 @@ export interface Shell {
   stars: number;
 }
 
-/** What a hit hands the sound: where across the sky, and for a bang how big. */
-export type Sound = { kind: 'bang'; pan: number; size: number } | { kind: 'crackle'; pan: number };
+/** What a hit sounds. */
+export type Sound = 'bang' | 'crackle';
 
 /** The tag a burst is sent under, which the quarks driver drains. */
 export const BURSTS = 'bursts';
@@ -56,14 +56,19 @@ const bloom = patch<Shell, Pose, { sent: boolean }>(
   },
 );
 
-function hits(shell: Shell): Hit<Sound>[] {
-  const pan = shell.x / HALF_WIDTH;
+function hits(): Hit<Sound>[] {
   const crackles = Array.from({ length: 6 }, (_, k) => ({
     at: 220 + k * 105 + Math.random() * 60,
-    event: { kind: 'crackle', pan } as const,
+    event: 'crackle' as const,
   }));
-  return [{ at: 0, event: { kind: 'bang', pan, size: shell.stars / 160 } }, ...crackles];
+  return [{ at: 0, event: 'bang' }, ...crackles];
 }
+
+/** Where across the stereo field a shell sounds, -1 left to 1 right. */
+export const panOf = (shell: Shell): number => shell.x / HALF_WIDTH;
+
+/** How big a shell's bang is, about 0.5 to 1.25. */
+export const sizeOf = (shell: Shell): number => shell.stars / 160;
 
 /** Cues a shell: it rises, then blooms. The handle is the bloom's, done when the shell is over. */
 export function cue(m: Mix<Shell, Pose>, shell: Shell): Handle<Shell> {
@@ -75,7 +80,7 @@ export function cue(m: Mix<Shell, Pose>, shell: Shell): Handle<Shell> {
     patch: bloom,
     subjects: [shell],
     tags: [BURSTS],
-    hits: hits(shell),
+    hits: hits(),
   });
 }
 

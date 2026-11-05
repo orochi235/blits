@@ -38,7 +38,10 @@ start.addEventListener('click', async () => {
   const sounds = createSounds();
   const sound = driveSound<Shell, Pose, Sound>(m, {
     take: (item, time) => {
-      if ('hit' in item) sounds.play(item.event, time);
+      if (!('hit' in item)) return undefined;
+      // A hit is the bloom's, whose one subject is the shell.
+      const fired = item.subjects?.[0];
+      if (fired !== undefined) sounds.play(item.event, fired, time);
       return undefined;
     },
   });

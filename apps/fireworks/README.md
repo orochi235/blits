@@ -26,9 +26,15 @@ then a bloom placed on the owner's clock where the rise ends.
 The quarks driver reads each shell's pose every frame and emits into one particle system
 (`src/sky.ts`). The Tone driver reads the same pose a little ahead and schedules the whistle on an
 oscillator the shell borrows from a pool of six, and hands each hit to `take` before it comes, at
-its time on the audio clock (`src/sound.ts`). A shell launched while all six whistles are in the
-air rises silently and still bangs.
+its time on the audio clock (`src/sound.ts`). A hit names only a bang or a crackle; `take` reads
+the shell off the hit's `subjects` and pans the sound by where it is and sizes a bang by its stars.
+A shell launched while all six whistles are in the air rises silently and still bangs.
 
 The frame loop in `src/main.ts` syncs the mix, then writes both drivers. The quarks driver takes
 the frame's gap in mix time, so it and the sparks' own aging are scaled by `mix.rate`; the Tone
 driver takes the timestamp the mix was synced to.
+
+Nobody has listened to it. `test/sound.test.ts` renders two shells offline through the same
+instruments and driver and checks the levels: each bang is about five times louder on its own side,
+as a pan of 0.75 gives, the whistle is centered, and nothing reaches full scale, though one bang
+peaks at 0.88 of it.

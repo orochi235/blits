@@ -75,8 +75,8 @@ and stops for as long as the frame loop stalls. So the driver never writes the p
 `write` it reads the mix from now to `ahead` ms out with `mix.trace`, and schedules what that gives
 on the audio clock, replacing what the last `write` scheduled: a linear ramp to each point, and a
 jump as `setValueAtTime`. Where a voice's shape is known, the trace gives its own breakpoints,
-however coarse `grid`: a straight `keys` stretch is one exact ramp, and an eased stop or a tween's
-stretch comes as a curve, which the driver writes as ramps that stand no further off it than
+however coarse `grid`: a straight `keys` stretch is one exact ramp, and an eased stop, a tween's
+stretch, a fade, a sine `wave`, or a stretch whose voice's rate is ramping comes as a curve, which the driver writes as ramps that stand no further off it than
 1/10,000 of the curve's size. Anywhere else the mix is read every `grid` ms. The engine's docs
 (the schema page's `mix.trace`) list what counts as known. Mix time is turned into audio time
 through `mix.time` and `mix.when`, so a `mix.ramp` lands where the mix will be. Hits and marks go
@@ -91,7 +91,7 @@ with jitter, a 120 ms stall, and a 200 ms one. The tests hold these bounds:
 | Case | `freq` error, max (Hz) |
 |---|---:|
 | retimed and sought, 5 ms `grid` (the default) | 0.040 |
-| retimed and sought, 25 ms `grid` | 0.100 |
+| retimed and sought, 25 ms `grid` | 0.040 |
 | the sweep alone, any `grid` | 0.040 |
 | the straight fall, any `grid` | 0.001 |
 | a tween retargeted mid-flight, any `grid` | 0.040 |
@@ -99,9 +99,6 @@ with jitter, a 120 ms stall, and a 200 ms one. The tests hold these bounds:
 | inside the 200 ms stall, 150 ms `ahead` | above 20 |
 | inside the 200 ms stall, 250 ms `ahead` | 0.040 |
 | audio clock read up to 1 ms off each frame | 0.200 |
-
-Where the sweep is retimed, it is sampled on the grid while its voice's rate ramps, which is what
-the 25 ms row measures.
 
 Every booked note sounds within a sample of its time at 48 kHz, through a rate change and a seek;
 with the clock read up to 1 ms off, within 0.25 ms.
@@ -184,10 +181,9 @@ timestamp as usual. The driver maps one onto the other by the offset `mix.book` 
 
 ## What it does not do yet
 
-- **Only `keys` voices and tweens are known shapes.** Any other patch, a signal weight, a fade
-  under way, and a voice whose rate is ramping are read every `grid` ms, where the error grows with
-  the square of `grid` and a jump between two points plays as a ramp. Each such point is one
-  `mix.project`. A tween retargeted with no time plays from when it was retargeted.
+- **A patch or a weight signal of your own, a spring, a glide, and a fling are read every `grid`
+  ms**, where the error grows with the square of `grid` and a jump between two points plays as a
+  ramp. Each such point is one `mix.project`. A tween retargeted with no time plays from when it was retargeted.
 - **Curves are written as ramps, not `setValueCurveAtTime`.** Tone's own `setValueCurveAtTime`
   is a run of ramps, and `node-web-audio-api` 2.2.0 lets a native curve play on through the
   `cancelAndHoldAtTime` each `write` starts with. An eased stretch costs more points than a

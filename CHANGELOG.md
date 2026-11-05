@@ -20,6 +20,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   off lanes and off the `gpu` engine.
 - The `gpu` engine warns once, in development, where two voices fold one motion patch at once, on
   one mix or two, which rebuilds the GPU's copy of the patch's runs every frame.
+- `mix.trace` knows more shapes, where it read them every `grid` ms: a voice's fades in, out, set
+  ahead, and turned back, at a weight of at most 1; a voice whose rate is ramping; and a `wave`.
+  With `bends: true` each comes as its breakpoints and bends; without, a stretch whose reads fit a
+  line comes as a line, as a fade over a still value does. A subject no frame has met yet takes
+  its fade in from when it will be met. One stretch takes up to eight bends, where it took up to
+  four voices' eased stretches.
 
 ### Fixed
 

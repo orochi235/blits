@@ -664,20 +664,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the survey proposed is this same question.
 
 9. **blits-tone.** Its README says what it does and does not do yet. Open:
-   - `mix.trace` (2026-11-03) knows `keys` voices, any easing as a bend under `bends`, and tweens
-     with no retarget timed inside the window. Still read every `grid` ms: other patches, a signal
-     weight, a fade under way, and a voice whose own rate is ramping (the 0.078 Hz left at a 25 ms
-     grid in `curves.test.ts`). The schema page's Mix section lists what it needs to be exact.
-   - **`apps/fireworks`**, which plays one mix through this driver and the quarks one, has never
-     been listened to. It still packs pan and size into each event and could read them off the
-     shell, since a booked hit carries its voice's `subjects` (2026-10-11).
+   - **Whether a spring, glide, or fling should settle at a time it names** (2026-11-04). `mix.trace`
+     reads them every `grid` ms, since each snaps to its goal at the first read that finds it within
+     `settle`, which no closed form gives; settling at a time worked out once a stretch would let
+     the trace bend them as it does fades and ramps (`src/trace-plan.ts`). A ramp set on a voice
+     that has not started is also still read on the grid.
+   - **`apps/fireworks`** has never been listened to. `apps/fireworks/test/sound.test.ts` renders it
+     offline and checks pans and levels; one bang peaks at 0.88 of full scale, so two at once may
+     clip on the shared master.
    - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array** (2026-10-11):
      the `Float32Array` from `getChannelData` reads freed memory once its `AudioBuffer` is
      collected, so `render` in `packages/tone/test/render.ts` copies them. Upstream knows:
-     ircam-ismm/node-web-audio-api issue 80. The copy can go once that is fixed. It also lets a
-     native `setValueCurveAtTime` play on through a `cancelAndHoldAtTime` (2026-11-03), which is
-     why the driver writes curves as ramps.
-
+     ircam-ismm/node-web-audio-api issue 80, still open and 2.2.0 still the latest (2026-11-04).
+     The copy can go once that is fixed. It also lets a native `setValueCurveAtTime` play on
+     through a `cancelAndHoldAtTime` (2026-11-03), which is why the driver writes curves as ramps.
 10. **Two copies of blits loaded together** share what each knows of its patches and channels
    (`src/shared.ts`, `test/copies.test.ts`; the schema page's motion section). blits-quarks,
    blits-tone and blits-panel take blits as a peer dependency, so **the range has to be widened with
