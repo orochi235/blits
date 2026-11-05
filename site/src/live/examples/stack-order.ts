@@ -348,29 +348,34 @@ export default function run(root: HTMLElement): () => void {
     };
 
     rebuild();
-    const halt = loop(show, root, (now) => {
-      show.sync(now);
-      const key = `${show.seq}`;
-      if (key === drawn) return;
-      drawn = key;
-      // The share is counted from probes, so on the GPU it is counted four times a second of mix
-      // time rather than every frame.
-      const count = device === null || !(Math.floor(show.now / 250) === counted);
-      if (count) {
-        counted = Math.floor(show.now / 250);
-        probe(left, fixed);
-        probe(right, yours);
-      }
-      if (device === null) {
-        ctxs[0]?.putImageData(fixed.image, 0, 0);
-        ctxs[1]?.putImageData(yours.image, 0, 0);
-      } else for (const g of grids) g.draw();
-      if (count) {
-        const share = differing(fixed.image, yours.image, diff.image);
-        if (device === null) diffCtx?.putImageData(diff.image, 0, 0);
-        readout.textContent = `${(100 * share).toFixed(1).padStart(5)}% of pixels differ between the two`;
-      }
-    });
+    const halt = loop(
+      show,
+      root,
+      (now) => {
+        show.sync(now);
+        const key = `${show.seq}`;
+        if (key === drawn) return;
+        drawn = key;
+        // The share is counted from probes, so on the GPU it is counted four times a second of mix
+        // time rather than every frame.
+        const count = device === null || !(Math.floor(show.now / 250) === counted);
+        if (count) {
+          counted = Math.floor(show.now / 250);
+          probe(left, fixed);
+          probe(right, yours);
+        }
+        if (device === null) {
+          ctxs[0]?.putImageData(fixed.image, 0, 0);
+          ctxs[1]?.putImageData(yours.image, 0, 0);
+        } else for (const g of grids) g.draw();
+        if (count) {
+          const share = differing(fixed.image, yours.image, diff.image);
+          if (device === null) diffCtx?.putImageData(diff.image, 0, 0);
+          readout.textContent = `${(100 * share).toFixed(1).padStart(5)}% of pixels differ between the two`;
+        }
+      },
+      { settle: () => [left, right].filter((x) => x !== undefined) },
+    );
 
     return () => {
       halt();

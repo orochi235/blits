@@ -148,29 +148,34 @@ export default function run(root: HTMLElement): () => void {
   const pose: Pose = { reveal: 0, under: 0, glow: 0 };
   let first = Number.NaN;
   let far = 0;
-  const stop = loop(m, root, (now) => {
-    if (Number.isNaN(first)) first = now;
-    if (!held) {
-      m.sync(now - first);
-      far = Math.max(far, m.now);
-      scrub.min = String(Math.max(0, far - KEPT));
-      scrub.max = String(far);
-      scrub.value = String(m.now);
-    }
-    m.probe(heading, pose);
-    drawHeading(pose.reveal);
-    m.probe(underlined, pose);
-    rule.style.setProperty('--under', String(pose.under));
-    for (const line of lines) {
-      m.probe(line.part, pose);
-      line.draw(pose.reveal);
-    }
-    m.probe(flagged, pose);
-    badge.style.setProperty('--show', String(pose.reveal));
-    badge.style.setProperty('--glow', String(pose.glow));
-    const r = intro.result;
-    read.textContent = `budget ${pad(r.budget)} ms  length ${pad(r.length)} ms  over ${pad(r.over)} ms  skipped ${r.skipped}`;
-  });
+  const stop = loop(
+    m,
+    root,
+    (now) => {
+      if (Number.isNaN(first)) first = now;
+      if (!held) {
+        m.sync(now - first);
+        far = Math.max(far, m.now);
+        scrub.min = String(Math.max(0, far - KEPT));
+        scrub.max = String(far);
+        scrub.value = String(m.now);
+      }
+      m.probe(heading, pose);
+      drawHeading(pose.reveal);
+      m.probe(underlined, pose);
+      rule.style.setProperty('--under', String(pose.under));
+      for (const line of lines) {
+        m.probe(line.part, pose);
+        line.draw(pose.reveal);
+      }
+      m.probe(flagged, pose);
+      badge.style.setProperty('--show', String(pose.reveal));
+      badge.style.setProperty('--glow', String(pose.glow));
+      const r = intro.result;
+      read.textContent = `budget ${pad(r.budget)} ms  length ${pad(r.length)} ms  over ${pad(r.over)} ms  skipped ${r.skipped}`;
+    },
+    { settle: false },
+  );
 
   return () => {
     stop();

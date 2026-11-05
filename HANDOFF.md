@@ -823,6 +823,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
+- **Explainers don't settle to rest on blur yet** (unbuilt, 2026-11-05). `loop()` settles the live
+  demos as focus goes (voices fade over 400 ms, rise on focus; the owner chose settling to rest over
+  slowing to a stop or playing to a boundary, 2026-11-05). The explainer kit keeps its own clock
+  (`site/src/explainers/kit/Explainer.tsx`, `useFocused`) and still stops at once. Its player
+  replays a scene from its timeline, so the settle has to be part of what it replays, not a host
+  fade on the main mix.
+
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**
   (2026-10-23; narrowed 2026-10-29). A voice cued with `subjects` asks `stagger` for each at cue
   and ends by all of them, through seeks too, so the determinism tests' `named` variant passes every

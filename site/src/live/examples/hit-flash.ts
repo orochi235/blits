@@ -197,16 +197,21 @@ export default function run(root: HTMLElement): () => void {
     let drawn = -1;
     let last = 0;
     choose('difference');
-    const stop = loop(show, root, (now) => {
-      show.sync(now);
-      if (autoOn && show.now - last >= EVERY) {
-        last = show.now;
-        hit(Math.floor(Math.random() * CREATURES.length));
-      }
-      if (show.seq === drawn) return;
-      drawn = show.seq;
-      draw();
-    });
+    const stop = loop(
+      show,
+      root,
+      (now) => {
+        show.sync(now);
+        if (autoOn && show.now - last >= EVERY) {
+          last = show.now;
+          hit(Math.floor(Math.random() * CREATURES.length));
+        }
+        if (show.seq === drawn) return;
+        drawn = show.seq;
+        draw();
+      },
+      { settle: () => (m ? [m] : []) },
+    );
 
     return () => {
       stop();

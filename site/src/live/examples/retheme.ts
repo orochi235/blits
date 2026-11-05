@@ -161,20 +161,25 @@ export default function run(root: HTMLElement): () => void {
   const NONE = [0, 0, 0, 0];
   const pose: Theme = {};
   let drawn = -1;
-  const stop = loop(show, root, (now) => {
-    show.sync(now);
-    if (show.seq === drawn) return;
-    drawn = show.seq;
-    let fill = 0;
-    for (const t of tokens) {
-      m.probe(t, pose);
-      const out = toHex(pose.mute ?? NONE, toHex(pose.brand ?? NONE, t.base));
-      t.el.style.setProperty(t.prop, hex(out));
-      if (t.el === primary && t.prop === '--bg') fill = out;
-    }
-    const L = oklab(fill)[0] ?? 0;
-    readout.textContent = `Publish ${hex(fill)}   lightness ${L.toFixed(3)}, as designed ${(oklab(0x3b5bdb)[0] ?? 0).toFixed(3)}`;
-  });
+  const stop = loop(
+    show,
+    root,
+    (now) => {
+      show.sync(now);
+      if (show.seq === drawn) return;
+      drawn = show.seq;
+      let fill = 0;
+      for (const t of tokens) {
+        m.probe(t, pose);
+        const out = toHex(pose.mute ?? NONE, toHex(pose.brand ?? NONE, t.base));
+        t.el.style.setProperty(t.prop, hex(out));
+        if (t.el === primary && t.prop === '--bg') fill = out;
+      }
+      const L = oklab(fill)[0] ?? 0;
+      readout.textContent = `Publish ${hex(fill)}   lightness ${L.toFixed(3)}, as designed ${(oklab(0x3b5bdb)[0] ?? 0).toFixed(3)}`;
+    },
+    { settle: [m] },
+  );
 
   return () => {
     stop();

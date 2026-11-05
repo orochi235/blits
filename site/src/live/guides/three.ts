@@ -212,45 +212,50 @@ export default function run(root: HTMLElement): () => void {
     },
   });
 
-  const stop = loop(show, root, (now) => {
-    show.sync(now);
+  const stop = loop(
+    show,
+    root,
+    (now) => {
+      show.sync(now);
 
-    for (const part of parts) {
-      m.probe(part, pose);
-      const [x, y, z] = pose.offset;
-      part.mesh.position.set(part.home[0] + x, part.home[1] + y, part.home[2] + z);
-      const [qx, qy, qz, qw] = pose.turn;
-      part.mesh.quaternion.set(qx, qy, qz, qw);
-      part.mesh.scale.setScalar(pose.size);
-      part.mesh.material.color.setHex(toHex(pose.tint, BASE));
-    }
+      for (const part of parts) {
+        m.probe(part, pose);
+        const [x, y, z] = pose.offset;
+        part.mesh.position.set(part.home[0] + x, part.home[1] + y, part.home[2] + z);
+        const [qx, qy, qz, qw] = pose.turn;
+        part.mesh.quaternion.set(qx, qy, qz, qw);
+        part.mesh.scale.setScalar(pose.size);
+        part.mesh.material.color.setHex(toHex(pose.tint, BASE));
+      }
 
-    f.pull(instances, { offset, size });
-    const out = field.instanceMatrix.array;
-    for (const i of instances) {
-      const { x, z } = grid(i);
-      const s = size[i] ?? 1;
-      const o = i * 16;
-      out.fill(0, o, o + 16);
-      out[o] = out[o + 5] = out[o + 10] = s;
-      out[o + 12] = x + (offset[i * 3] ?? 0);
-      out[o + 13] = offset[i * 3 + 1] ?? 0;
-      out[o + 14] = z + (offset[i * 3 + 2] ?? 0);
-      out[o + 15] = 1;
-    }
-    field.instanceMatrix.needsUpdate = true;
+      f.pull(instances, { offset, size });
+      const out = field.instanceMatrix.array;
+      for (const i of instances) {
+        const { x, z } = grid(i);
+        const s = size[i] ?? 1;
+        const o = i * 16;
+        out.fill(0, o, o + 16);
+        out[o] = out[o + 5] = out[o + 10] = s;
+        out[o + 12] = x + (offset[i * 3] ?? 0);
+        out[o + 13] = offset[i * 3 + 1] ?? 0;
+        out[o + 14] = z + (offset[i * 3 + 2] ?? 0);
+        out[o + 15] = 1;
+      }
+      field.instanceMatrix.needsUpdate = true;
 
-    const width = canvas.clientWidth;
-    if (canvas.width !== Math.round(width * devicePixelRatio)) {
-      renderer.setSize(width, HEIGHT, false);
-      camera.aspect = width / HEIGHT;
-      // Wide enough for the whole row however narrow the column.
-      const half = Math.atan(5 / 5.4 / camera.aspect);
-      camera.fov = Math.max(34, (2 * half * 180) / Math.PI);
-      camera.updateProjectionMatrix();
-    }
-    renderer.render(scene, camera);
-  });
+      const width = canvas.clientWidth;
+      if (canvas.width !== Math.round(width * devicePixelRatio)) {
+        renderer.setSize(width, HEIGHT, false);
+        camera.aspect = width / HEIGHT;
+        // Wide enough for the whole row however narrow the column.
+        const half = Math.atan(5 / 5.4 / camera.aspect);
+        camera.fov = Math.max(34, (2 * half * 180) / Math.PI);
+        camera.updateProjectionMatrix();
+      }
+      renderer.render(scene, camera);
+    },
+    { settle: [m, f] },
+  );
 
   return () => {
     stop();

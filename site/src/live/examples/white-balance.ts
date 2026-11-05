@@ -237,13 +237,18 @@ export default function run(root: HTMLElement): () => void {
       };
     }
     let drawn = -1;
-    const stop = loop(show, root, (now) => {
-      show.sync(now);
-      if (show.seq === drawn) return;
-      drawn = show.seq;
-      draw();
-      readouts();
-    });
+    const stop = loop(
+      show,
+      root,
+      (now) => {
+        show.sync(now);
+        if (show.seq === drawn) return;
+        drawn = show.seq;
+        draw();
+        readouts();
+      },
+      { settle: [m] },
+    );
 
     return () => {
       stop();

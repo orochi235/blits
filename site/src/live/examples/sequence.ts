@@ -84,18 +84,23 @@ export default function run(root: HTMLElement): () => void {
   const pose = { x: 0 };
   // The cues' starts count from the first frame, which the mix synced to as 0.
   let first = Number.NaN;
-  const stop = loop(m, root, (now) => {
-    if (Number.isNaN(first)) first = now;
-    if (!held) {
-      m.sync(now - first);
-      if (m.now >= LENGTH) m.seek(0);
-      scrub.value = String(m.now);
-    }
-    for (const bar of bars) {
-      m.probe(bar, pose);
-      bar.el.style.left = `calc(${pose.x} * (100% - 6rem))`;
-    }
-  });
+  const stop = loop(
+    m,
+    root,
+    (now) => {
+      if (Number.isNaN(first)) first = now;
+      if (!held) {
+        m.sync(now - first);
+        if (m.now >= LENGTH) m.seek(0);
+        scrub.value = String(m.now);
+      }
+      for (const bar of bars) {
+        m.probe(bar, pose);
+        bar.el.style.left = `calc(${pose.x} * (100% - 6rem))`;
+      }
+    },
+    { settle: false },
+  );
 
   return () => {
     stop();

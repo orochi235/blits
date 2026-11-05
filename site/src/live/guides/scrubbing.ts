@@ -85,24 +85,29 @@ export default function run(root: HTMLElement): () => void {
   scrubber.addEventListener('change', release);
 
   const pose: DotPose = { y: 0 };
-  const stop = loop(m, root, (now) => {
-    if (!held) {
-      m.sync(now);
-      latest = m.now;
-      scrubber.min = String(Math.max(0, latest - MEMORY + 50));
-      scrubber.max = String(latest);
-      scrubber.value = String(latest);
-    }
-    const ahead = m.project(m.now + AHEAD);
-    for (const d of dots) {
-      m.probe(d.subject, pose);
-      d.el.style.transform = `translateY(${pose.y}px)`;
-      ahead.probe(d.subject, pose);
-      d.ghost.style.transform = `translateY(${pose.y}px)`;
-    }
-    const behind = (latest - m.now) / 1000;
-    time.textContent = behind > 0.005 ? `${behind.toFixed(2)} s back` : 'live';
-  });
+  const stop = loop(
+    m,
+    root,
+    (now) => {
+      if (!held) {
+        m.sync(now);
+        latest = m.now;
+        scrubber.min = String(Math.max(0, latest - MEMORY + 50));
+        scrubber.max = String(latest);
+        scrubber.value = String(latest);
+      }
+      const ahead = m.project(m.now + AHEAD);
+      for (const d of dots) {
+        m.probe(d.subject, pose);
+        d.el.style.transform = `translateY(${pose.y}px)`;
+        ahead.probe(d.subject, pose);
+        d.ghost.style.transform = `translateY(${pose.y}px)`;
+      }
+      const behind = (latest - m.now) / 1000;
+      time.textContent = behind > 0.005 ? `${behind.toFixed(2)} s back` : 'live';
+    },
+    { settle: false },
+  );
 
   return () => {
     stop();
