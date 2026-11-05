@@ -1,0 +1,64 @@
+# onto task blits-heatmap-deopts (2026-11-04, at 0d2bcb6 + bench/deopts.sh): AB_BENCH=bench/heatmap.mjs FRAMES=2000 bench/deopts.sh spring/input/ink/on
+  waiting for room
+  waiting: keiei unknown (its blits tree is promised to axes-tests), msb-uai unknown (its blits tree is promised to axes-typecheck), orochi unknown (someone is using it), studio unknown (its blits tree is held by job 572935fe, blits-quat-inplace-ab has no estimate), teitou unknown (job cc39fd4d has the node to itself, astv-gpu-split-8ca_722 has no estimate)
+msb-uai  chosen: 11.2 cores free, 17.2G available (env: 5 past runs, worst 2.0 cores / 4.6G)
+  keiei    its blits tree is promised to axes-tests
+  orochi   has 0.2 of its 12 cores free, too few to start on
+  studio   its blits tree is held by job 572935fe
+  teitou   job cc39fd4d has the node to itself
+  base   0d2bcb62
+  delta  7 file(s), 0 deleted
+  sent   7 new file(s), 0 already there
+  commits sent directly, 4.6 KiB (not on origin)
+  updated blits on msb-uai at 0d2bcb62 + 7 uncommitted file(s)
+  job    a70b9084 on msb-uai
+
+onto: agent-ac027606b81dfcbb5 is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+== by function
+   3 closed
+   3 changed
+   2 play
+   2 one
+   2 base
+   1 write
+   1 weighed
+   1 weigh
+   1 take
+   1 settle
+   1 set
+   1 same
+   1 runMotion
+   1 run
+   1 readAll
+   1 read
+   1 rawAt
+   1 quiet
+   1 pullRun
+   1 primeLaned
+   1 prime
+   1 prepare
+   1 owe
+   1 numbered
+   1 keepProbed
+   1 index
+   1 get
+   1 commit
+   1 call
+   1 apply
+== by reason
+  64 reason: dependent prototype chain changed]
+  11 reason: Insufficient type feedback for generic named access
+  10 reason: wrong map
+   8 reason: dependent field type constness changed]
+   5 reason: not a Smi
+   4 reason: dependent allocation site tenuring changed]
+   3 reason: Insufficient type feedback for generic global access
+   3 reason: Insufficient type feedback for binary operation
+   2 reason: prepare for on stack replacement (OSR
+   1 reason: wrong call target
+   1 reason: out of bounds
+   1 reason: not int32
+   1 reason: lost precision or NaN
+   1 reason: dependent allocation site transition changed]
+   1 reason: (unknown
