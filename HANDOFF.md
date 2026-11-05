@@ -291,12 +291,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      fold (`gatherRole`, `gatherInto`, `meetRole`, `foldAt`, `foldRole`) are another 12%. A
      staggered keys voice reading its stops once a distinct time, not once a subject, is what
      would move it.
-   - **Mike's call: should one voice's weight be able to cover some components of a `vec` and
-     not others?** The rig's IK arm holds a bone's height while its clips keep x and z, so it cues
-     each arm bone's clips twice, once for rotation and once for position, and holds the height
-     itself after reading; weasel asks for the same in `NOTES-FROM-WEASEL.md`. What turns on it:
-     a weight per component makes every lane fold a weight per axis, or a hold patch has to say
-     which axes it writes, as `writes` names channels.
    - **Mike's call: should a mix's `rate` go below 0?** It throws today, so the timeline demo
      plays reverse as an owner turned back. What turns on it: whether reverse is the host's to
      build from owners, or the mix's own, which would need an answer for every voice that keeps
