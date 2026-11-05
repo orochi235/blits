@@ -274,7 +274,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      cost is the retargets themselves, about 3,000 `.to()` calls a frame, each committed when its
      cell is read.
    - **The rig's quats read in 1.2 ms for 1,000 bones** (`pull`, 70 voices), with lanes on only
-     about 20% faster than off: the off-lane path for quats in `keys`, named under item 14.
+     about 20% faster than off: the off-lane path for quats in `keys`, named in the schema page's Open section.
    - **Gaps, things the demos had to do themselves:** a voice's weight cannot cover some
      components of a `vec` and not others (the rig's IK y-hold; weasel's item in
      `NOTES-FROM-WEASEL.md`); a mix's `rate` cannot go below 0, so reverse is an owner turned
