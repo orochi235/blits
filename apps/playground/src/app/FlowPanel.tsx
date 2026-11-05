@@ -3,6 +3,7 @@ import { flowOf, foldOf } from '@pg/blits/flow';
 import { type ChannelName, kitOf } from '@pg/blits/kit';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
 import { Glyph } from '@pg/widgets/Glyph';
+import { Button } from '@weasel-js/ui';
 import { useMemo, useRef, useState } from 'react';
 import s from './FlowPanel.module.css';
 import { flowKey } from './flowKey';
@@ -41,9 +42,9 @@ export function FlowPanel({ comp, faulted, selected, onVoice }: FlowPanelProps) 
       <nav className={s.crumbs}>
         {fold ? (
           <>
-            <button type="button" onClick={() => setFold(null)}>
+            <Button variant="link" size="sm" onClick={() => setFold(null)}>
               Flow
-            </button>
+            </Button>
             <Glyph name="ui:chevron" className={s.onward} />
             <span>{fold}</span>
           </>

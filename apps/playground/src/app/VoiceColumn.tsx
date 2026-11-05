@@ -8,6 +8,7 @@ import { underSpan } from '@pg/blits/groups';
 import { kitOf } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
 import type { Subject } from '@pg/blits/stage';
+import { Button, Input, MenuButton, type MenuButtonItem } from '@weasel-js/ui';
 import type { RefObject } from 'react';
 import s from './App.module.css';
 import { LevelsPanel } from './CompositionControls';
@@ -18,6 +19,11 @@ import { MixPanel } from './MixPanel';
 import { PatchPanel } from './PatchPanel';
 import { RulesPanel } from './RulesPanel';
 import { VoicePanel } from './VoicePanel';
+
+const GROUP_KINDS: MenuButtonItem<Group['kind']>[] = [
+  { value: 'owner', label: 'owner' },
+  { value: 'span', label: 'span' },
+];
 
 export interface VoiceColumnProps {
   comp: Composition;
@@ -45,50 +51,38 @@ export interface VoiceColumnProps {
 export function VoiceColumn(p: VoiceColumnProps) {
   const { voice, group } = p;
   const selected = voice ?? group;
+  const voicesFull = p.comp.voices.length >= MAX_VOICES;
   return (
     <div className={s.voiceColumn}>
       <div className={s.row}>
-        <button
-          type="button"
+        <Button
           onClick={p.onAddVoice}
-          disabled={p.comp.voices.length >= MAX_VOICES}
-          title={p.comp.voices.length >= MAX_VOICES ? `at most ${MAX_VOICES} voices` : undefined}
+          disabled={voicesFull}
+          tooltip={voicesFull ? `at most ${MAX_VOICES} voices` : undefined}
         >
           add voice
-        </button>
-        <select
-          aria-label="add group"
-          value=""
-          disabled={groupsFull(p.comp)}
-          title={groupsFull(p.comp) ? `at most ${MAX_GROUPS} groups` : undefined}
-          onChange={(e) => p.onAddGroup(e.target.value as Group['kind'])}
-        >
-          <option value="" disabled>
-            add group
-          </option>
-          <option value="owner">owner</option>
-          <option value="span">span</option>
-        </select>
-        <button type="button" onClick={p.onShare}>
-          share
-        </button>
+        </Button>
+        <MenuButton
+          label="add group"
+          items={GROUP_KINDS}
+          isDisabled={groupsFull(p.comp)}
+          tooltip={groupsFull(p.comp) ? `at most ${MAX_GROUPS} groups` : undefined}
+          onAction={p.onAddGroup}
+        />
+        <Button onClick={p.onShare}>share</Button>
         <FileButtons comp={p.comp} onOpen={p.onComp} />
         {p.shared?.copied && <span role="status">link copied</span>}
       </div>
       {p.shared && !p.shared.copied && (
         <div className={s.row} role="status">
-          <label className={s.row}>
-            copy this link
-            <input
-              readOnly
-              value={p.shared.url}
-              ref={p.linkRef}
-              onFocus={(e) => e.target.select()}
-            />
-          </label>
-          <button type="button" onClick={p.onCloseShare}>
-            close
-          </button>
+          <Input
+            label="copy this link"
+            isReadOnly
+            value={p.shared.url}
+            ref={p.linkRef}
+            onFocus={(e) => (e.target as HTMLInputElement).select()}
+          />
+          <Button onClick={p.onCloseShare}>close</Button>
         </div>
       )}
       {voice && (

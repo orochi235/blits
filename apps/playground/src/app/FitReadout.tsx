@@ -1,5 +1,6 @@
 import type { FitResult } from '@msb235/blits';
 import type { ControlRenderer } from '@weasel-js/labkit';
+import num from '@weasel-js/theme/numeric.module.css';
 import { type PrefRenderContext, PropertyRow } from '@weasel-js/ui';
 import { docOf } from './docs';
 import g from './Group.module.css';
@@ -21,7 +22,7 @@ export function FitReadout({ result: r }: { result: FitResult }) {
       {cells.map(([k, text]) => (
         <div key={k} title={docOf(`FitResult.${k}`)}>
           <dt>{k}</dt>
-          <dd>{text}</dd>
+          <dd className={num.numeric}>{text}</dd>
         </div>
       ))}
     </dl>

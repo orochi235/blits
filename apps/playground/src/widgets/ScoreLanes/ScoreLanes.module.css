@@ -207,8 +207,8 @@
 }
 
 .factor {
+  composes: numeric from "@weasel-js/theme/numeric.module.css";
   fill: var(--wzl-fg-muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .skipped {

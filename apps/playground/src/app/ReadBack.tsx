@@ -3,10 +3,10 @@ import { FRAME } from '@pg/blits/frame';
 import { CHANNELS, type Mixed, SWINGS } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
 import { readBack, restOf, traceAhead } from '@pg/blits/readBack';
+import { DataGrid, type DataGridColumn, PropertyField } from '@weasel-js/ui';
 import { useState, useSyncExternalStore } from 'react';
 import s from './App.module.css';
 import { docOf } from './docs';
-import e from './Events.module.css';
 
 const AHEAD = 1000;
 const fixed = (n: number) => (Number.isFinite(n) ? n.toFixed(3).padStart(9) : '        –');
@@ -14,6 +14,13 @@ const shown = (pose: Mixed, ch: keyof Mixed) => {
   const v = pose[ch];
   return Array.isArray(v) ? v.map(fixed).join(' ') : fixed(v as number);
 };
+
+type Read = { id: string; value: string; doubt: string };
+const readColumns = (at: number): DataGridColumn<Read>[] => [
+  { id: 'id', header: 'channel', sortable: false },
+  { id: 'value', header: `at ${at.toFixed(1)} ms`, numeric: true, sortable: false },
+  { id: 'doubt', header: 'doubt', sortable: false },
+];
 
 /**
  * The full mix read off the frame it plays: the picked subject at a past mix time by `project`,
@@ -43,56 +50,47 @@ export function ReadBack({ player }: { player: Player }) {
           mix {rest.inert ? 'inert: another frame would change nothing' : 'not inert'}
         </span>
       </p>
-      <label className={s.row} title={docOf('Mix.project')}>
-        project
-        <input
-          type="range"
-          min={0}
-          max={Math.max(FRAME, now)}
-          step={FRAME}
-          value={back}
-          aria-label="ms of mix time back"
-          onChange={(ev) => setAgo(ev.target.valueAsNumber)}
-        />
-        <span className={s.clock}>{back.toFixed(0).padStart(5)} ms back</span>
-      </label>
+      <PropertyField
+        layout="inline"
+        label="project back"
+        name="ms of mix time back"
+        description={docOf('Mix.project')}
+        kind="number"
+        control="slider"
+        min={0}
+        max={Math.max(FRAME, now)}
+        step={FRAME}
+        unit="ms"
+        value={back}
+        onInput={setAgo}
+        onChange={setAgo}
+      />
       {'error' in read ? (
         <p className={s.row}>{read.error}</p>
       ) : (
-        <table className={e.table}>
-          <thead>
-            <tr>
-              <th>channel</th>
-              <th className={e.num}>at {read.at.toFixed(1)} ms</th>
-              <th>doubt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {CHANNELS.map((ch) => (
-              <tr key={ch}>
-                <td>{ch}</td>
-                <td className={e.num}>{shown(read.pose, ch)}</td>
-                <td>{read.doubts[ch]}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <label className={s.row} title={docOf('Mix.trace')}>
-        trace ahead
-        <input
-          type="number"
-          min={FRAME}
-          step={100}
-          value={ahead}
-          aria-label="ms of mix time ahead to trace"
-          onChange={(ev) => {
-            const v = ev.target.valueAsNumber;
-            if (Number.isFinite(v) && v > 0) setAhead(v);
-          }}
+        <DataGrid
+          columns={readColumns(read.at)}
+          rows={CHANNELS.map((ch) => ({
+            id: ch,
+            value: shown(read.pose, ch),
+            doubt: read.doubts[ch],
+          }))}
         />
-        ms
-      </label>
+      )}
+      <PropertyField
+        layout="inline"
+        label="trace ahead"
+        name="ms of mix time ahead to trace"
+        description={docOf('Mix.trace')}
+        kind="number"
+        min={FRAME}
+        step={100}
+        unit="ms"
+        value={ahead}
+        onChange={(v) => {
+          if (Number.isFinite(v) && v > 0) setAhead(v);
+        }}
+      />
       {'error' in traced ? (
         <p className={s.row}>{traced.error}</p>
       ) : (

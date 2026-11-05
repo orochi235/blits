@@ -6,6 +6,7 @@ import { lit, liveOf, timingOf } from '@pg/blits/timing';
 import { type End, jobOf, toneOf, wired } from '@pg/blits/wire';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
 import { usePersistedState } from '@weasel-js/labkit';
+import { Button, PropertyField } from '@weasel-js/ui';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import s from './FlowPanel.module.css';
 import { flowKey } from './flowKey';
@@ -57,20 +58,28 @@ export function BothPanel({ comp, faulted, player, selected, onVoice, onComp }: 
   return (
     <section className={s.panel} aria-label="both">
       <div className={s.crumbs}>
-        <label>
-          <input type="checkbox" checked={editing} onChange={(e) => setEditing(e.target.checked)} />
-          edit
-        </label>
+        <PropertyField
+          hug
+          layout="inline"
+          label="edit"
+          kind="boolean"
+          value={editing}
+          onChange={setEditing}
+        />
         {editing && (
-          <label>
-            <input type="checkbox" checked={labeled} onChange={(e) => label(e.target.checked)} />
-            port labels
-          </label>
+          <PropertyField
+            hug
+            layout="inline"
+            label="port labels"
+            kind="boolean"
+            value={labeled}
+            onChange={label}
+          />
         )}
         {positions.size > 0 && (
-          <button type="button" onClick={() => place(new Map())}>
+          <Button size="sm" onClick={() => place(new Map())}>
             lay out
-          </button>
+          </Button>
         )}
         <span>
           {editing

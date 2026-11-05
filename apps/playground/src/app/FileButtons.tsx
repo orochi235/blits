@@ -1,5 +1,6 @@
 import type { Composition } from '@pg/blits/composition';
 import { fileName, fromFile, toFile } from '@pg/blits/file';
+import { Button } from '@weasel-js/ui';
 import { useRef, useState } from 'react';
 
 /** Save the composition as a JSON file, or open one, which loads as an edit and can be undone. */
@@ -22,12 +23,9 @@ export function FileButtons({ comp, onOpen }: { comp: Composition; onOpen(c: Com
   };
   return (
     <>
-      <button type="button" onClick={save}>
-        save
-      </button>
-      <button type="button" onClick={() => input.current?.click()}>
-        open
-      </button>
+      <Button onClick={save}>save</Button>
+      <Button onClick={() => input.current?.click()}>open</Button>
+      {/* weasel has no file picker; a hidden input is the browser's only way to one. */}
       <input
         ref={input}
         type="file"

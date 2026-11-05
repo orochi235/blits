@@ -6,12 +6,10 @@
 
 .bound {
   width: 9ch;
-  font-variant-numeric: tabular-nums;
 }
 
 .at {
   width: 12ch;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Doubled to outrank the text field's own width, whose sheet may load after this one. */

@@ -1,5 +1,5 @@
+import { Button, PropertyField } from '@weasel-js/ui';
 import { useState } from 'react';
-import s from './App.module.css';
 import { docOf } from './docs';
 
 /**
@@ -18,38 +18,37 @@ export function LiveMix({
   const [over, setOver] = useState<number | undefined>(undefined);
   return (
     <>
-      <label className={s.level} title={docOf('Mix.rate')}>
-        mix rate
-        <input
-          type="number"
-          min={0}
-          step={0.25}
-          value={rate}
-          onChange={(e) => {
-            const r = e.target.valueAsNumber;
-            if (Number.isFinite(r) && r >= 0) onRate(r, over);
-          }}
-        />
-      </label>
-      <label className={s.level} title={docOf('Mix.ramp')}>
-        over
-        <input
-          type="number"
-          min={0}
-          step={100}
-          placeholder="at once"
-          aria-label="ramp or mute over, ms"
-          value={over ?? ''}
-          onChange={(e) => {
-            const v = e.target.valueAsNumber;
-            setOver(Number.isFinite(v) && v > 0 ? v : undefined);
-          }}
-        />
-        ms
-      </label>
-      <button type="button" title={docOf('Mix.mute')} onClick={() => onMute(over)}>
+      <PropertyField
+        hug
+        layout="inline"
+        label="mix rate"
+        description={docOf('Mix.rate')}
+        kind="number"
+        min={0}
+        step={0.25}
+        value={rate}
+        onChange={(r) => {
+          if (Number.isFinite(r) && r >= 0) onRate(r, over);
+        }}
+      />
+      <PropertyField
+        hug
+        layout="inline"
+        label="over"
+        name="ramp or mute over, ms"
+        description={docOf('Mix.ramp')}
+        kind="number"
+        min={0}
+        step={100}
+        unit="ms"
+        placeholder="at once"
+        value={over ?? null}
+        onChange={(v) => setOver(Number.isFinite(v) && v > 0 ? v : undefined)}
+        onClear={() => setOver(undefined)}
+      />
+      <Button tooltip={docOf('Mix.mute')} onClick={() => onMute(over)}>
         mute
-      </button>
+      </Button>
     </>
   );
 }

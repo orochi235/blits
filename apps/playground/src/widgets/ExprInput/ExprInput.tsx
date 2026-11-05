@@ -1,5 +1,5 @@
-import { useIdleSettle } from '@weasel-js/ui';
-import { type KeyboardEvent, useEffect, useId, useState } from 'react';
+import { Input, useIdleSettle } from '@weasel-js/ui';
+import { type KeyboardEvent, useEffect, useState } from 'react';
 import s from './ExprInput.module.css';
 
 export interface ExprInputProps {
@@ -21,8 +21,6 @@ export function ExprInput({
   hideLabel = false,
 }: ExprInputProps) {
   const [draft, setDraft] = useState(value);
-  const id = useId();
-  const errorId = `${id}-error`;
   useEffect(() => setDraft(value), [value]);
   const commit = () => {
     idle.stop();
@@ -37,33 +35,21 @@ export function ExprInput({
     }
   };
   return (
-    <div className={s.field}>
-      {!hideLabel && (
-        <label className={s.label} htmlFor={id}>
-          {label}
-        </label>
-      )}
-      <input
-        id={id}
-        className={error ? s.bad : s.input}
-        value={draft}
-        placeholder={placeholder}
-        aria-label={hideLabel ? label : undefined}
-        spellCheck={false}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        onChange={(e) => {
-          setDraft(e.target.value);
-          idle.typed();
-        }}
-        onBlur={commit}
-        onKeyDown={key}
-      />
-      {error && (
-        <span id={errorId} className={s.error} role="alert">
-          {error}
-        </span>
-      )}
-    </div>
+    <Input
+      className={s.field}
+      label={hideLabel ? undefined : label}
+      aria-label={hideLabel ? label : undefined}
+      value={draft}
+      placeholder={placeholder}
+      spellCheck={false}
+      isInvalid={Boolean(error)}
+      errorMessage={error ?? undefined}
+      onChange={(next) => {
+        setDraft(next);
+        idle.typed();
+      }}
+      onBlur={commit}
+      onKeyDown={key}
+    />
   );
 }

@@ -41,7 +41,6 @@
   list-style: none;
   text-align: right;
   color: var(--wzl-fg-muted);
-  font-variant-numeric: tabular-nums;
   overflow: hidden;
   height: 0;
   min-height: 100%;

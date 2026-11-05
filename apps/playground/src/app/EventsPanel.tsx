@@ -3,8 +3,8 @@ import { withAhead } from '@pg/blits/edit';
 import { AHEAD } from '@pg/blits/events';
 import type { Player } from '@pg/blits/player';
 import { ControlPanel, f, resolveConfigSchema } from '@weasel-js/labkit';
-import { Button, PropertyRow } from '@weasel-js/ui';
-import { type ReactNode, useState } from 'react';
+import { Button, DataGrid, type DataGridColumn, PropertyRow } from '@weasel-js/ui';
+import { useState } from 'react';
 import { AnnouncedFields } from './AnnouncedFields';
 import s from './App.module.css';
 import { fieldRow } from './CompositionControls';
@@ -44,22 +44,58 @@ const SHOWN = 60;
 const ms = (t: number) => t.toFixed(1);
 const text = (event: unknown) => (typeof event === 'string' ? event : JSON.stringify(event));
 
-function Table({ label, head, rows }: { label: string; head: string[]; rows: ReactNode }) {
+type Cells = { id: string; canceled?: boolean } & Record<
+  string,
+  string | number | boolean | undefined
+>;
+
+const column = (id: string, header: string, numeric = false): DataGridColumn<Cells> => ({
+  id,
+  header,
+  numeric,
+  sortable: false,
+  render: (row) => String(row[id] ?? ''),
+});
+
+function Table({
+  label,
+  columns,
+  rows,
+}: {
+  label: string;
+  columns: DataGridColumn<Cells>[];
+  rows: Cells[];
+}) {
   return (
-    <div className={e.list}>
-      <table className={e.table} aria-label={label}>
-        <thead>
-          <tr>
-            {head.map((h) => (
-              <th key={h}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{rows}</tbody>
-      </table>
-    </div>
+    <section className={e.list} aria-label={label}>
+      <DataGrid
+        className={e.table}
+        columns={columns}
+        rows={rows}
+        rowClassName={(row) => (row.canceled ? e.canceled : undefined)}
+      />
+    </section>
   );
 }
+
+const MARKS = [
+  column('ms', 'ms', true),
+  column('mark', 'mark'),
+  column('of', 'of'),
+  column('tags', 'tags'),
+];
+const BOOKED = [
+  column('when', 'when', true),
+  column('late', 'late by', true),
+  column('item', 'item'),
+  column('of', 'of'),
+];
+const SENT = [
+  column('ms', 'ms', true),
+  column('voice', 'voice'),
+  column('subject', 'subject', true),
+  column('event', 'event'),
+];
 
 export interface EventsPanelProps {
   player: Player;
@@ -128,58 +164,52 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
       </h3>
       <Table
         label="marks"
-        head={['ms', 'mark', 'of', 'tags']}
-        rows={marks.slice(0, SHOWN * 2).map((m, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: two marks may share every field
-          <tr key={i}>
-            <td className={e.num}>{ms(m.timestamp)}</td>
-            <td>{m.mark ?? 'announced'}</td>
-            <td>{who(m.voice, m.name)}</td>
-            <td>{m.tags.join(', ')}</td>
-          </tr>
-        ))}
+        columns={MARKS}
+        rows={marks.slice(0, SHOWN * 2).map((m, i) => ({
+          id: String(i),
+          ms: ms(m.timestamp),
+          mark: m.mark ?? 'announced',
+          of: who(m.voice, m.name),
+          tags: m.tags.join(', '),
+        }))}
       />
       <h3 className={s.heading} title={docOf('Mix.book')}>
         booked · mix.book, {built.ahead} ms ahead
       </h3>
       <Table
         label="booked"
-        head={['when', 'late by', 'item', 'of']}
+        columns={BOOKED}
         rows={events.booked
           .slice(-SHOWN)
           .reverse()
-          .map((b, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: a booking taken back and made again repeats
-            <tr key={i} className={b.canceled ? e.canceled : undefined}>
-              <td className={e.num}>{ms(b.when)}</td>
-              <td className={e.num}>{ms(b.lateBy)}</td>
-              <td>
-                {'hit' in b.item
-                  ? `hit ${text(b.item.event)}${groups.has(b.item.voice) ? '' : `, pass ${b.item.pass + 1}`}`
-                  : (b.item.mark ?? 'announced')}
-              </td>
-              <td>{who(b.item.voice, b.item.name)}</td>
-            </tr>
-          ))}
+          .map((b, i) => ({
+            id: String(i),
+            canceled: b.canceled,
+            when: ms(b.when),
+            late: ms(b.lateBy),
+            item:
+              'hit' in b.item
+                ? `hit ${text(b.item.event)}${groups.has(b.item.voice) ? '' : `, pass ${b.item.pass + 1}`}`
+                : (b.item.mark ?? 'announced'),
+            of: who(b.item.voice, b.item.name),
+          }))}
       />
       <h3 className={s.heading} title={docOf('Mix.drain')}>
         sent · mix.drain, on the mix’s clock
       </h3>
       <Table
         label="sent"
-        head={['ms', 'voice', 'subject', 'event']}
+        columns={SENT}
         rows={events.sent
           .slice(-SHOWN)
           .reverse()
-          .map((x, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: one subject may send the same event twice in a frame
-            <tr key={i}>
-              <td className={e.num}>{ms(x.timestamp)}</td>
-              <td>{who(x.voice)}</td>
-              <td className={e.num}>{x.subject.index}</td>
-              <td>{text(x.event)}</td>
-            </tr>
-          ))}
+          .map((x, i) => ({
+            id: String(i),
+            ms: ms(x.timestamp),
+            voice: who(x.voice),
+            subject: x.subject.index,
+            event: text(x.event),
+          }))}
       />
     </div>
   );

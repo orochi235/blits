@@ -46,7 +46,6 @@
   flex-wrap: wrap;
 }
 
-.live,
 .level {
   display: flex;
   align-items: center;
@@ -57,9 +56,8 @@
 }
 
 .clock {
-  font-family: var(--wzl-font-mono);
+  composes: numeric from "@weasel-js/theme/numeric.module.css";
   font-size: var(--wzl-font-size-xs);
-  font-variant-numeric: tabular-nums;
   white-space: pre;
   color: var(--wzl-fg-muted);
 }
@@ -87,12 +85,6 @@
 .plots {
   display: grid;
   gap: var(--wzl-space-xs);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--wzl-space-md);
 }
 
 .heading {

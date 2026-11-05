@@ -1,13 +1,12 @@
 .desk {
   display: block;
   font-family: var(--wzl-font-ui);
-  font-variant-numeric: tabular-nums;
   /* The flow diagram's channel green. */
   --desk-bus: #3f9a52;
 }
 
 .busLabel {
-  font-size: 11px;
+  font-size: var(--wzl-font-size-xs);
   fill: var(--wzl-fg);
   text-anchor: end;
 }
@@ -30,14 +29,14 @@
 }
 
 .ruleText {
-  font-family: var(--wzl-font-mono);
-  font-size: 9px;
+  composes: numeric from "@weasel-js/theme/numeric.module.css";
+  font-size: var(--wzl-font-size-2xs);
   fill: var(--wzl-fg-muted);
 }
 
 .value {
-  font-family: var(--wzl-font-mono);
-  font-size: 10px;
+  composes: numeric from "@weasel-js/theme/numeric.module.css";
+  font-size: var(--wzl-font-size-2xs);
   fill: var(--wzl-fg);
   text-anchor: end;
 }
@@ -76,7 +75,7 @@
 }
 
 .stripLabel {
-  font-size: 11px;
+  font-size: var(--wzl-font-size-xs);
   fill: var(--wzl-fg);
 }
 
@@ -96,7 +95,8 @@
 }
 
 .readout {
-  font-size: 9px;
+  composes: numeric from "@weasel-js/theme/numeric.module.css";
+  font-size: var(--wzl-font-size-2xs);
   fill: var(--wzl-fg-muted);
   text-anchor: middle;
 }
@@ -107,7 +107,7 @@
 }
 
 .bracketText {
-  font-size: 10px;
+  font-size: var(--wzl-font-size-2xs);
   fill: var(--wzl-fg);
   text-anchor: middle;
 }

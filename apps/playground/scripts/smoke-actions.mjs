@@ -9,7 +9,8 @@ export async function actions(browser, origin, shots) {
   page.on('pageerror', (e) => errors.push(e.message));
   try {
     await page.goto(origin, { waitUntil: 'networkidle' });
-    await page.getByLabel('live', { exact: true }).check();
+    // weasel's switch keeps its input visually hidden, under the track a click lands on.
+    await page.getByRole('switch', { name: 'live' }).check({ force: true });
     await page.getByLabel('ramp or mute over, ms').fill('300');
     await page.getByLabel('mix rate').fill('2');
     await page.getByRole('button', { name: 'mute' }).click();
@@ -26,11 +27,10 @@ export async function actions(browser, origin, shots) {
     await download.saveAs(saved);
     if (download.suggestedFilename() !== 'stagger-wave.blits.json')
       errors.push(`saved as ${download.suggestedFilename()}`);
-    const preset = page.getByLabel('preset');
-    await preset.selectOption({ label: 'crossfade' });
+    await pickPreset(page, 'crossfade');
     await page.locator('input[type=file]').setInputFiles(saved);
     await page.waitForTimeout(200);
-    const title = await preset.evaluate((s) => s.options[s.selectedIndex]?.text);
+    const title = await presetMenu(page).textContent();
     if (title !== 'stagger wave') errors.push(`opening the saved file shows "${title}"`);
     await page
       .locator('input[type=file]')
@@ -45,6 +45,14 @@ export async function actions(browser, origin, shots) {
   }
   await page.close();
   return errors;
+}
+
+/** The header's preset select, whose trigger is named for its value and the row's label. */
+export const presetMenu = (page) => page.getByRole('button', { name: /preset$/ });
+
+export async function pickPreset(page, name) {
+  await presetMenu(page).click();
+  await page.getByRole('option', { name, exact: true }).click();
 }
 
 const stageHash = (page) =>

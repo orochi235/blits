@@ -1,10 +1,15 @@
 import type { Level } from '@pg/blits/composition';
 import type { SeekBy } from '@pg/blits/player';
 import { Glyph } from '@pg/widgets/Glyph';
-import { Button, Transport as WeaselTransport } from '@weasel-js/ui';
+import { Button, PropertyField, Transport as WeaselTransport } from '@weasel-js/ui';
 import s from './App.module.css';
 import { docOf } from './docs';
 import { LiveMix } from './LiveMix';
+
+const SEEK_BY: { value: SeekBy; label: string }[] = [
+  { value: 'replay', label: 'replay from 0' },
+  { value: 'seek', label: 'mix.seek' },
+];
 
 export interface TransportProps {
   playing: boolean;
@@ -55,13 +60,16 @@ export function Transport(p: TransportProps) {
         onLoopChange={(l) => p.onLoop(l !== false && l !== 0)}
         onRateChange={p.onRate}
       />
-      <label className={s.level} title={docOf('Mix.seek')}>
-        scrub by
-        <select value={p.seekBy} onChange={(e) => p.onSeekBy(e.target.value as SeekBy)}>
-          <option value="replay">replay from 0</option>
-          <option value="seek">mix.seek</option>
-        </select>
-      </label>
+      <PropertyField
+        hug
+        layout="inline"
+        label="scrub by"
+        description={docOf('Mix.seek')}
+        kind="enum"
+        value={p.seekBy}
+        options={SEEK_BY}
+        onChange={p.onSeekBy}
+      />
       <span className={s.level}>
         <Button iconOnly variant="ghost" ariaLabel="back one frame" onClick={() => p.onStep(-1)}>
           <Glyph name="ui:stepBack" />
@@ -70,31 +78,37 @@ export function Transport(p: TransportProps) {
           <Glyph name="ui:stepForward" />
         </Button>
       </span>
-      <button type="button" aria-expanded={p.tracksOpen} onClick={p.onTracks}>
-        {p.tracksOpen ? 'Hide tracks' : 'Show tracks'}
-      </button>
+      <Button onClick={p.onTracks}>{p.tracksOpen ? 'Hide tracks' : 'Show tracks'}</Button>
       {p.seekBy === 'seek' && (
         <span className={s.clock} title={docOf('Mix.seq')}>
           mix {p.clock.now.toFixed(1).padStart(7)} ms · frame {String(p.clock.seq).padStart(5)}
         </span>
       )}
-      <label className={s.live}>
-        <input type="checkbox" checked={p.live} onChange={(e) => p.onLive(e.target.checked)} />
-        live
-      </label>
+      <PropertyField
+        hug
+        layout="inline"
+        label="live"
+        kind="boolean"
+        control="switch"
+        value={p.live}
+        onChange={p.onLive}
+      />
       {p.live && <LiveMix rate={p.mixRate} onRate={p.onMixRate} onMute={p.onMute} />}
       {p.levels.map((l) => (
-        <label key={l.name} className={s.level}>
-          {l.name}
-          <input
-            type="range"
-            min={l.min}
-            max={l.max}
-            step={(l.max - l.min) / 200}
-            value={p.moved.get(l.name) ?? l.value}
-            onChange={(e) => p.onLevel(l.name, Number(e.target.value))}
-          />
-        </label>
+        <PropertyField
+          key={l.name}
+          hug
+          layout="inline"
+          label={l.name}
+          kind="number"
+          control="slider"
+          min={l.min}
+          max={l.max}
+          step={(l.max - l.min) / 200}
+          value={p.moved.get(l.name) ?? l.value}
+          onInput={(v) => p.onLevel(l.name, v)}
+          onChange={(v) => p.onLevel(l.name, v)}
+        />
       ))}
       {(p.live || p.livened) && (
         <span className={s.badge} role="status">

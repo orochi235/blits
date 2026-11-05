@@ -35,7 +35,7 @@ column's edge, or focusing it and pressing the arrow keys, sets its width, which
 clamps so the stage and diagrams keep room; the width, like whether the score's tracks are open and
 whether Both shows port labels, is kept per viewer through labkit's `Persistence` over
 localStorage. The score fills the bottom under the stage and diagrams, with the transport above it: play and pause, loop, rate, a choice of how a
-scrub back moves the mixes, step back and step forward one frame, the live toggle with, in live mode, the mix's own `rate`, an `over`
+scrub back moves the mixes, step back and step forward one frame, the live switch with, in live mode, the mix's own `rate`, an `over`
 that ramps a rate change (`mix.ramp`) and fades a **mute** (`mix.mute`), and a slider per level.
 Blank, `over` sets a rate at once and mutes over each voice's own `fade.out`. The transport's rate slows the playground's clock,
 while the mix's slows the voices as the score's clock runs on.
@@ -57,7 +57,7 @@ blank, and its bounds may not cross; its value is held inside them. Each of thes
 Enter, on leaving it, or once typing rests for 800 ms, so a burst of typing is one undo step, and Escape puts back what it held; so do the
 booker's tag and read-ahead, every field of the mix, fold rules and announced marks panels, and
 every expression field. A number field left blank puts back what it held. A code pane commits on Cmd/Ctrl-Enter or leaving
-it, and Tab indents. The panels' other text and number fields are weasel's, which commit the same way. Removing or renaming a level an expression names is allowed: the expression then reads
+it, and Tab indents. Every other text and number field, the transport's included, is weasel's and commits the same way. Removing or renaming a level an expression names is allowed: the expression then reads
 0, with no error.
 
 ## A composition
@@ -393,7 +393,7 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 
 Each error shows under its field's row; one on a `cue` or an `anchor`, or on a group's `start`
 under a span, which hides that row, is listed at the top of the panel. Two voices or groups with one name are an error on
-the second one's `name`, since anchors find them by name. "add group" beside "add voice" adds an
+the second one's `name`, since anchors find them by name. "add group", a menu beside "add voice", adds an
 owner or a span; deleting a group moves what it held up to its parent.
 
 ## How it runs
@@ -434,7 +434,7 @@ owner or a span; deleting a group moves what it held up to its parent.
 - **Levels.** A slider move is not recorded into the composition. It survives rebuilds, so a scrub
   back replays it at the slider's current value, and it is dropped when the composition's own value
   for that level changes or the level goes away.
-- **Live mode.** While the transport's live toggle is on, the live panel acts on the running
+- **Live mode.** While the transport's live switch is on, the live panel acts on the running
   handles instead of the composition. A change reaches the voice in the full mix and in every solo
   mix, where it plays silent but keeps time for anything anchored to it; a weight lands only where
   the voice is heard. A badge says the changes are in force; the next edit drops them, and so does a
@@ -514,7 +514,7 @@ Calls made while building, each the owner's to overturn, with how to reverse it.
 - **The Both tab is one diagram with both kinds of edge**, not the two views linked side by side
   (2026-10-17). Reverse it by replacing `BothPanel` with a `FlowPanel` over a `TimingPanel`,
   sharing `selected`.
-- **Editing is the Both tab behind an edit box**, not a tab of its own, and Flow and Timing stay
+- **Editing is the Both tab behind an edit checkbox**, not a tab of its own, and Flow and Timing stay
   read-only (2026-10-17). Reverse it by giving those panels the same `FlowDiagram` editing props.
 - **A port's meaning is its compass side**: a voice's or group's top takes a weight, its left is
   its start, its right its end; a signal or mark gives from its bottom. weasel's default ports are

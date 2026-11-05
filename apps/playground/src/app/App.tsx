@@ -13,10 +13,11 @@ import { type ClipEdit, ScoreLanes } from '@pg/widgets/ScoreLanes';
 import { LabShell, Split, usePersistedState } from '@weasel-js/labkit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
-import { CompFields, StageControls } from './CompositionControls';
+import { StageControls } from './CompositionControls';
 import { DiagramTabs } from './DiagramTabs';
 import { EventsPanel } from './EventsPanel';
 import { freshVoice } from './freshVoice';
+import { Header } from './Header';
 import { Inspector } from './Inspector';
 import { type PanelTab, PanelTabs } from './PanelTabs';
 import { ReadBack } from './ReadBack';
@@ -146,28 +147,7 @@ export function App() {
     set(preset.comp);
     setSelected(null);
   };
-  const header = (
-    <div className={s.header}>
-      <label className={s.row}>
-        preset
-        <select
-          value={PRESETS.find((x) => x.comp === comp)?.name ?? ''}
-          onChange={(e) => loadPreset(e.target.value)}
-        >
-          <option value="" disabled>
-            {comp.title}
-          </option>
-          {PRESETS.map((x) => (
-            <option key={x.name} value={x.name}>
-              {x.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <CompFields comp={comp} onChange={set} />
-    </div>
-  );
-
+  const header = <Header comp={comp} onComp={set} onPreset={loadPreset} />;
   const panels = (
     <PanelTabs
       tab={tab}

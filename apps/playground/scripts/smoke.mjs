@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { actions } from './smoke-actions.mjs';
+import { actions, pickPreset, presetMenu } from './smoke-actions.mjs';
 
 // Pixels differing from the corner-pixel background by more than 24 in any channel. A flow canvas is
 // WebGL, so it is read from a Playwright screenshot rather than from the canvas.
@@ -68,10 +68,8 @@ let failed = 0;
 try {
   const probe = await browser.newPage();
   await probe.goto(origin, { waitUntil: 'networkidle' });
-  const names = await probe
-    .getByLabel('preset')
-    .locator('option:not([disabled])')
-    .allTextContents();
+  await presetMenu(probe).click();
+  const names = await probe.getByRole('option').allTextContents();
   await probe.close();
   if (names.length === 0) throw new Error('no presets in the preset menu');
   for (const [i, name] of names.entries()) {
@@ -80,7 +78,7 @@ try {
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(origin, { waitUntil: 'networkidle' });
-    await page.getByLabel('preset').selectOption({ label: name });
+    await pickPreset(page, name);
     await page.waitForTimeout(1000);
     const drawn = await page.locator('canvas[aria-label=stage]').evaluate((c) => {
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -105,7 +103,7 @@ try {
       const ink = png ? await page.evaluate(inkPixels, png.toString('base64')) : 0;
       if (ink < FLOW_INK_MIN) errors.push(`${label} drew nothing`);
     }
-    await page.getByLabel('edit').check();
+    await page.getByLabel('edit', { exact: true }).check();
     await page.waitForTimeout(200);
     await page.screenshot({
       path: join(shots, `${String(i + 1).padStart(2, '0')}-${name.replaceAll(' ', '-')}.png`),

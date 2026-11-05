@@ -143,6 +143,5 @@
   margin: 0;
   min-width: 9ch;
   text-align: end;
-  font-variant-numeric: tabular-nums;
   white-space: pre;
 }
