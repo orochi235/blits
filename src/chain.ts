@@ -111,8 +111,7 @@ export function linkable<I, O>(
   slot: number,
   guess: Subject<unknown> | null = null,
 ): Subject<unknown> | null {
-  const state = voice.state;
-  if (state === 'done' || (state === 'pending' && !voice.freezesBefore)) return null;
+  if (!voice.linked) return null;
   // A voice sharing one record is in no chain: a fold takes it from `sharers` at its place.
   if (voice.sharing && (this.share as Share).everyoneOf(this, voice) !== null) {
     // A projection numbers no subject, and keeps nothing by subject.

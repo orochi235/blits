@@ -17,8 +17,6 @@ export interface Eligibility<I, O> {
   readonly reasons: { voice: Voice<I, O>; why: string }[];
 }
 
-const PLAYING = new Set(['live', 'frozen', 'fading']);
-
 const lookups = new WeakMap<object, ChannelLookup>();
 
 /** The WGSL of each of the mix's channels whose rule has some, one map per mix. */
@@ -120,7 +118,7 @@ export function eligibility<I, O>(
   const codes = codesOf(mix);
   for (const name of mix.names) if (!codes.has(name)) kept.add(name);
   // An owner writes nothing itself: its weight and clock reach the GPU through its children's rows.
-  const playing = mix.cued.filter((v) => v.holding === null && PLAYING.has(v.state) && !idle(v));
+  const playing = mix.cued.filter((v) => v.holding === null && v.linked && !idle(v));
   const fit = new Set<Voice<I, O>>();
   for (const voice of playing) {
     const reason = why(mix, voice, codes, answers, refused);
