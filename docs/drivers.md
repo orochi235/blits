@@ -20,9 +20,12 @@ that it does not handle that case.
 
 | Rule | Learned from |
 |---|---|
-| **Say what a seek does to output already sent**: particles alive, audio scheduled, bodies in flight. Whatever state the driver holds is restored or rebuilt to match the time sought. A seek is not a frame: tell them apart by `mix.played`, which a seek leaves alone, not by comparing mix time with host time. A driver that reads ahead cannot take back what it already scheduled into a hidden tab's gap. | rapier's replay; tone's `cancel`; quarks lost the frame after a seek back |
-| **Log host input read each frame.** A seek's catch-up reads the host as it is now, not as it was, so input the driver reads from the host has to be kept by mix time and replayed, and a new call after a seek back replaces what was logged ahead of it, as a host call cuts the tape's future. | rapier's log of pushes; rapier replayed one frame's push over a seek forward, and applied an impulse twice when the host made it again after a seek back (fixed 2026-11-03) |
-| **Show a seek at once.** What the driver shows reflects the time sought as soon as the seek lands, so scrubbing a paused page moves it. | rapier showed the old world until the next frame (fixed 2026-11-03) |
+| **Hear every seek** with `mix.onSeek`, which fires once each seek has landed, paused or not, with the mix time, the last frame kept and whether it went back. Don't work one out from `seq`, timestamps or `project`: several seeks can land between frames. | rapier guessed from `seq` and `project({ frame: seq - 1 })`, and missed seeks while paused (fixed 2026-11-04) |
+| **Say what a seek does to output already sent**: particles alive, audio scheduled, bodies in flight. Whatever state the driver holds is restored or rebuilt to match the time sought. A seek is not a frame: tell them apart by `onSeek`, or by `mix.played`, which a seek leaves alone, never by comparing mix time with host time. A driver that reads ahead cannot take back what it already scheduled into a hidden tab's gap. | rapier's replay; tone's `cancel`; quarks lost the frame after a seek back |
+| **Log host input read each frame.** A seek's catch-up reads the host as it is now, not as it was, so input the driver reads from the host has to be kept by mix time and replayed. On a seek back, cut what was logged after `onSeek`'s `frame`, unless a seek forward needs it, as rapier's pushes ahead. | rapier's log of pushes; rapier replayed one frame's push over a seek forward (fixed 2026-11-03) |
+| **Put the driver's own calls on the tape** with `mix.call`, where they change what it puts out: the mix makes them again wherever it makes the host's, and a host call after a seek back, a `cue` included, leaves them behind with the mix's calls ahead, until `tape.switchBranch` brings them back. Cut what they logged after `frame` on a seek back, and the tape makes it again. | rapier kept its own log of `impulse` and `drop`, which a `cue` after a seek did not cut and `switchBranch` did not bring back (fixed 2026-11-04) |
+| **Show a seek at once.** What the driver shows reflects the time sought as soon as the seek lands, so scrubbing a paused page moves it: `onSeek` says when. | rapier showed the old world until the next frame (fixed 2026-11-03) |
+| **Catch up before letting go.** After a seek the driver's state can stand far behind the mix, and the next read steps through the whole stretch: prune or page what that stretch reads only after it has. | rapier paged its pushes before the world stepped through them, so a seek forward after a seek back past memory replayed with the wrong ones (fixed 2026-11-04) |
 | **Page to a history `store`**: state packs to plain data, and any log of the driver's own pages through the store and comes back on `prepare`, including through a transport's store. | rapier (2026-11-03, twice) |
 | **Bound every list** that grows per frame or per write: prune it to what history can reach, or page it. | rapier's log of pushes; the engine's `Voice.earlier` |
 
@@ -31,6 +34,7 @@ that it does not handle that case.
 | Rule | Learned from |
 |---|---|
 | **Don't assume a subject was probed.** Lanes fill only subjects probed this frame or the last, and a read ahead (`project`, `trace`) has to see changes on subjects nothing read. | tone missed an untimed retarget (fixed in engine 0.19.0); the panel's pick missed subjects read only through `pull` |
+| **A read at another time cannot see the driver's state.** `project` and `trace` fold each subject alone, and a patch reads no other subject, so a pose that comes from the driver's state, as a body's from rapier's world, shows that state as the last sync or seek left it. This is a limit of the engine's design, not a driver bug: say so in the README. | rapier's bodies in `project` and `trace` (2026-11-04) |
 | **Know what weight 0 and an ended voice do to the channels read.** A channel scaled by weight goes to 0, and a patch's `at` is skipped at weight 0. Input that has to outlast the weight comes from the host, not a channel. | magicsmoke's fizz follows its level after the weight drops, hence quarks' `attach` `rate` |
 
 ## Exactness
@@ -47,7 +51,7 @@ that it does not handle that case.
 | Rule | Learned from |
 |---|---|
 | **Releasing lets go of everything wired**: `detach`, `cancel` and `drop` leave nothing a replacement driver cannot wire again. | tone's `cancel`, and its `detach` (fixed 2026-11-03) |
-| **Calls on the driver are not on the tape.** Wiring, attaching and `burst` are the host's, and a seek does not undo or replay them; say so, or route what must replay through the mix (an event a patch `send`s). | tone's wiring; quarks' `burst` |
+| **Calls on the driver are not on the tape unless it puts them there.** Wiring, attaching and `burst` are the host's, and a seek does not undo or replay them; say so, or put what must replay on the tape with `mix.call`, or route it through the mix (an event a patch `send`s). | tone's wiring; quarks' `burst` |
 | **Several drivers on one mix share its drains.** A drain takes every event under its tag, so a driver draining a shared tag hands on what belongs to another. | quarks lost another driver's bursts (fixed 2026-11-03) |
 | **A late subscriber gets the current state**, not only changes after it subscribes. | the panel after a reload |
 | **Peer range and pin**: widen the `@msb235/blits` peer range with every engine minor, pin the engine to build and test against, and work with two copies of blits loaded. | every release |
@@ -59,7 +63,10 @@ that it does not handle that case.
 sentence per problem: `expect(checkDriver(scene)).toEqual([])`. It checks that the driver puts out
 the same alone and on a shared transport, nothing new while paused, the same across a `rebase` over
 a hidden tab, the same after a seek back and on for a driver whose output follows the mix
-(`restores: true`), and that what it keeps (`size`) stops growing. It cannot say what a long frame
+(`restores: true`), and after a seek back and on again with no frame between, and that what it
+keeps (`size`) stops growing. A run that gives `call`, a call the host makes on the driver once, is
+checked to have it made again past a seek back, left behind by a host call after the seek, and
+brought back by `switchBranch`. It cannot say what a long frame
 should put out, or what a seek owes a driver whose output stays once sent, since both are the
 driver's to decide: those rules stay in the driver's own tests. `packages/quarks/test/conformance.test.ts`
 and `packages/tone/test/conformance.test.ts` are scenes to copy.

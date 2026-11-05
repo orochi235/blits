@@ -30,6 +30,12 @@ export interface DriverRun {
   output(): unknown;
   /** How much the driver keeps, checked not to grow as the mix plays on. */
   size?(): number;
+  /**
+   * A call the host makes on the driver once, such as an impulse on a body, for a scene that
+   * `restores`: checked to be made again after a seek back past it, and to be left behind when
+   * another host call after the seek starts a new future, until `tape.switchBranch` picks the old.
+   */
+  call?(): void;
 }
 
 /** @category patch */
@@ -43,11 +49,11 @@ export interface DriverScene {
    * follows the mix's state, false for one whose output, once sent, is not taken back.
    */
   restores: boolean;
-  /** Frames each check plays, at 60 a second. Default 240. */
+  /** Frames each check plays, 16 ms apart so every time is exact. Default 240. */
   frames?: number;
 }
 
-const FRAME = 1000 / 60;
+const FRAME = 16;
 const at = (f: number) => 1000 + f * FRAME;
 
 /** A run of the scene, alone or on a transport, frame `f` at host time `at(f) + shift`. */
@@ -71,6 +77,9 @@ function run(scene: DriverScene, shared: boolean, ms = 60_000) {
       if (t === undefined) r.mix.seek(r.mix.now - (at(from) - at(to)));
       else t.seek(t.now - (at(from) - at(to)));
       shift += at(from) - at(to);
+    },
+    get tape() {
+      return r.mix.tape as NonNullable<DriverRun['mix']['tape']>;
     },
     set rate(v: number) {
       if (t === undefined) r.mix.rate = v;
@@ -99,7 +108,9 @@ const describe = (e: unknown) => (e instanceof Error ? e.message : String(e));
  * plays the scene alone and on a shared transport and checks they put out the same each frame;
  * that a paused mix puts out nothing new; that a hidden tab taken out by `rebase` puts out what
  * playing straight through does; that, for a scene that `restores`, a seek back and forward again
- * puts out what played; and that `size`, where given, does not grow as the mix plays on. Meant for
+ * puts out what played, two seeks with no frame between included, and a `call` the run gives is
+ * made again past a seek back, left behind by a host call after it, and brought back by
+ * `switchBranch`; and that `size`, where given, does not grow as the mix plays on. Meant for
  * a driver's own tests: `expect(checkDriver(scene)).toEqual([])`.
  *
  * @category patch
@@ -189,6 +200,8 @@ export function checkDriver(scene: DriverScene): string[] {
     problems.push(`threw across a seek: ${describe(e)}`);
   }
 
+  if (scene.restores) problems.push(...seeksAgain(scene, frames, want, first));
+
   try {
     // A second of history, so what is kept for history's reach stops growing within the run.
     const long = run(scene, false, 1000);
@@ -204,6 +217,99 @@ export function checkDriver(scene: DriverScene): string[] {
     }
   } catch (e) {
     problems.push(`threw playing on: ${describe(e)}`);
+  }
+  return problems;
+}
+
+type First = (
+  play: (f: number) => unknown,
+  from: number,
+  expected: (f: number) => unknown,
+) => string | undefined;
+
+/**
+ * What a driver whose output follows the mix gets wrong across seeks beyond one seek back: two
+ * seeks with no frame between, and, where the scene makes one, a call of its own on the tape.
+ */
+function seeksAgain(scene: DriverScene, frames: number, want: unknown[], first: First): string[] {
+  const problems: string[] = [];
+  const eighth = Math.floor(frames / 8);
+  const quarter = Math.floor(frames / 4);
+  const half = Math.floor(frames / 2);
+  const on = half + quarter;
+  try {
+    const sought = run(scene, false);
+    for (let f = 0; f <= frames; f++) sought.frame(f);
+    sought.seek(frames, quarter);
+    for (let f = quarter + 1; f <= half; f++) sought.frame(f);
+    sought.seek(half, eighth);
+    sought.seek(eighth, on);
+    const off = first(
+      (f) => sought.frame(f),
+      on + 1,
+      (f) => want[f],
+    );
+    if (off !== undefined)
+      problems.push(
+        `after a seek back to frame ${eighth} and on to ${on} with no frame between, playing on puts out ${off} played first`,
+      );
+  } catch (e) {
+    problems.push(`threw across two seeks with no frame between: ${describe(e)}`);
+  }
+
+  if (run(scene, false).r.call === undefined) return problems;
+  try {
+    const called = run(scene, false);
+    const wantCalled: unknown[] = [];
+    // A replay makes the call in the sync of its frame, so that frame's output is read after it.
+    const play = (r: ReturnType<typeof run>, f: number) => {
+      const got = r.frame(f);
+      if (f !== half) return got;
+      r.r.call?.();
+      return r.r.output();
+    };
+    for (let f = 0; f <= frames; f++) wantCalled.push(play(called, f));
+    const sought = run(scene, false);
+    for (let f = 0; f <= frames; f++) play(sought, f);
+    sought.seek(frames, quarter);
+    let off = first(
+      (f) => sought.frame(f),
+      quarter + 1,
+      (f) => wantCalled[f],
+    );
+    // A check that fails stops its run short of the frame the next seek counts from.
+    if (off !== undefined)
+      return [
+        ...problems,
+        `after a seek back to frame ${quarter}, playing on past its call at frame ${half} puts out ${off} played first`,
+      ];
+    sought.seek(frames, quarter);
+    sought.frame(quarter + 1);
+    sought.r.mix.announce('checkDriver');
+    off = first(
+      (f) => sought.frame(f),
+      quarter + 2,
+      (f) => want[f],
+    );
+    if (off !== undefined)
+      return [
+        ...problems,
+        `after a seek back and a host call starting a new future, it puts out ${off} with no call at frame ${half}`,
+      ];
+    sought.seek(frames, quarter);
+    const old = sought.tape.branches().find((b) => !b.current);
+    if (old !== undefined) sought.tape.switchBranch(old.id);
+    off = first(
+      (f) => sought.frame(f),
+      quarter + 1,
+      (f) => wantCalled[f],
+    );
+    if (off !== undefined)
+      problems.push(
+        `after switchBranch back to the future with its call at frame ${half}, it puts out ${off} played first`,
+      );
+  } catch (e) {
+    problems.push(`threw across a seek past its call: ${describe(e)}`);
   }
   return problems;
 }

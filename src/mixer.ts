@@ -77,6 +77,7 @@ import type {
   Projection,
   Sent,
   Signal,
+  Sought,
   SpanHandle,
   SpanSpec,
   Tape,
