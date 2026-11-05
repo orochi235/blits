@@ -32,6 +32,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `quat` channel's keyed stops and role blends interpolate into an array the read already owns,
+  as `vec` does, not a new one each read. Off lanes, a keys voice writing a quat over 10,000
+  subjects allocates about half as much a frame.
+
 - With a history `store`, a seek back past memory to a frame after which the host sought an owner
   forward leaves the children that seek crossed waiting for the next frame, as a seek within
   memory does. A later forward seek of the same owner aged the record out with memory, so the

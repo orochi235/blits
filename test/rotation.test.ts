@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { kit, sum, type Vec, vec } from '../src/channels.js';
+import { kit, lerpInto, sum, type Vec, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import { angle, quat } from '../src/rotation.js';
+import type { Channel } from '../src/types.js';
 
 type Q = Vec<4>;
 
@@ -158,4 +159,42 @@ describe('quat', () => {
     closeAll(m.probe('b').spin, q.merge(about(2, 90), about(0, 45)));
     expect(rest).toEqual([0, 0, 0, 1]);
   });
+
+  it('lerps in place into an array it is given, and makes a new one for none', () => {
+    const into = lerpInto(q as Channel<unknown>);
+    expect(into).toBeDefined();
+    const a = about(2, 10);
+    const b = about(2, 50);
+    const out = [0, 0, 0, 0];
+    expect(into?.(out, a, b, 0.5)).toBe(out);
+    closeAll(out, about(2, 30));
+    const fresh = into?.(undefined, a, b, 0.5) as number[];
+    expect(fresh).not.toBe(a);
+    closeAll(fresh, about(2, 30));
+    closeAll(into?.(a, a, b, 0.5) as number[], about(2, 30));
+  });
+
+  for (const lanes of [true, false])
+    it(`reads a keys role of staggered quats as their slerps, frame on frame${lanes ? '' : ', lanes off'}`, () => {
+      const m = mix<string, { spin: Q }>(kit({ spin: q }), { lanes });
+      const turnOf = (axis: 0 | 1 | 2) =>
+        keys<string, { spin: Q }>(1000, [
+          { at: 0, delta: { spin: about(axis, 0) } },
+          { at: 1, delta: { spin: about(axis, 120) } },
+        ]);
+      const subjects = ['a', 'b', 'c'];
+      const stagger = (s: string) => subjects.indexOf(s) * 100;
+      m.cue({ patch: turnOf(2), subjects, stagger, role: 'r', weight: 0.75 });
+      m.cue({ patch: turnOf(2), subjects, stagger, role: 'r', weight: 0.25, start: 200 });
+      const out = { spin: [0, 0, 0, 1] as Q };
+      for (let t = 300; t <= 900; t += 100) {
+        m.sync(t);
+        for (const s of subjects) {
+          const e = t - stagger(s);
+          const first = about(2, (120 * e) / 1000);
+          const second = about(2, (120 * Math.max(0, e - 200)) / 1000);
+          closeAll(m.probe(s, out).spin, q.lerp(first, second, 0.25));
+        }
+      }
+    });
 });
