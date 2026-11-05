@@ -353,4 +353,20 @@ describe('arcs', () => {
     const p = m.project(350).probe(r);
     expect([p.a, p.b, p.c]).toEqual([0, 0, 1]);
   });
+
+  it('reads ahead past its active part as it will play', () => {
+    const m = make();
+    m.arc({
+      enter: { patch: part('a', 200) },
+      active: { patch: part('b', 100) },
+      exit: { patch: part('c', 300) },
+      hold: 500,
+    });
+    at(m, 100);
+    const ahead = [650, 750, 900].map((t) => {
+      const p = m.project(t).probe(r);
+      return [p.a, p.b, p.c].map((v) => Math.round(v * 1000) / 1000);
+    });
+    expect(ahead).toEqual([650, 750, 900].map((t) => at(m, t)));
+  });
 });
