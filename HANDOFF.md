@@ -630,19 +630,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    decided (the schema page's Decided against). A reach that changes over time (item 5) is another
    way to say offscreen.
 
-8. **blits-quarks and magicsmoke.** The driver changes magicsmoke's `docs/HANDOFF.md` asked for
-   are released in blits-quarks 0.14.0 (2026-11-03): `write` returns `quarks.emitted`, each subject's
-   particle count that write; `attach` takes `rate`, the host's own particles per second that no
-   voice weight scales, and `frame: 'world'`, a pure translation; `drive`'s `capture: 'write'`
-   rereads start values every write for live tuning; `quarks.burst(subject, n)`; and the carry
-   floors exactly, without the `1e-6` slack. magicsmoke switched (2026-11-03, its `650bd28`, on
-   engine 0.19.0, unpushed): fizz goes through a driver per fault, by `attach` with
-   `frame: 'world'`, `burst` and `write`, byte-identical to before over 1,200 stubbed-random
-   frames. It keeps its own carry (frame-late on 41 of 1,200 frames against exact), `MAX_STEP`
-   clamp and tuning, and writes each fault's driver right after its discharges to keep the
-   `Math.random` order, so it uses neither `rate`, `capture: 'write'` nor `emitted`. At 1,000
-   faults a frame costs about 5–10% more (2.00–2.10 ms against 1.83–2.02, three alternating runs).
-   Taking `rate` would mean accepting the carry's frame-late difference.
+8. **blits-quarks and magicsmoke.** magicsmoke emits fizz through quarks' `rate` (its `10a6ec9`,
+   2026-11-04, unpushed) with `drive`'s new `carry: 'float'` (Unreleased here), which sums
+   `rate * dt` in doubles as magicsmoke's own carry did; it matched magicsmoke's 650bd28 byte for
+   byte over 1,200 stubbed-random frames, with a fault cued mid-run and under reduced motion. The
+   exact carry stays the default because `checkDriver`'s rebase check fails under a float sum. A
+   driver now owes from when it was made, not from its first write. Left: magicsmoke links
+   `file:../blits/packages/quarks` until a quarks release carries `carry`, then pins it; its
+   typecheck, fleet suite and bench have not run against the link. The default exact carry also
+   matched on those 1,200 frames, so whether `'float'` earns its place is Mike's call.
    `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
    the survey proposed is this same question.
 
