@@ -4,6 +4,22 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- `drive`'s `carry: 'float'` sums `rate` in doubles, as a host's own loop sums `rate * dt`, so it
+  emits on the frames that loop does, a frame late where rounding leaves the sum a hair under a
+  whole particle. A host can move its own emitter onto `rate` without moving a particle. The exact
+  carry stays the default, since it emits the same however syncs split the time, across a `rebase`
+  included, which a float sum does not.
+
+### Changed
+
+- A driver owes the mix time played since it was made, where its first write owed nothing. A
+  driver made for a mix already playing emits for the frame after it was made, as an emitter
+  started then would; on a mix that has not synced nothing changes.
+
 ## 0.16.0
 
 ### Breaking

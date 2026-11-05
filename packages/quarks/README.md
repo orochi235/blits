@@ -95,12 +95,16 @@ batch.update(dt / 1000);    // your own BatchedRenderer
 ```
 
 
-- **`drive(mix, { kit, bursts?, capture? })`** returns the driver. `kit` is the mix's kit, which
+- **`drive(mix, { kit, bursts?, capture?, carry? })`** returns the driver. `kit` is the mix's kit, which
   tells the driver which of its channels are present; `bursts` is the tag it drains, and without
   one it drains nothing. `capture` says when it reads a system's authored start values: at the
   first `attach` (`'attach'`, the default), or at every `write` (`'write'`), so you can edit or
   replace a generator between writes, as a live tuning panel does, and the driver scales from
-  what it finds there.
+  what it finds there. `carry` says how `rate` becomes whole particles: exactly (`'exact'`, the
+  default), or summed in doubles (`'float'`), as a frame loop of your own sums `rate * dt`. Take
+  `'float'` to move an emitter you wrote onto `rate` without moving a particle: it emits on the
+  frames your loop did, a frame late where rounding leaves the sum a hair under a whole particle.
+  It does not emit the same across a `rebase` as straight through, as your loop did not.
 - **`attach(subject, system, { at, rate?, frame? })`** binds a subject to a system and a position:
   `{ x, y, z }`, `[x, y, z]`, or a function returning either, asked each frame the subject emits.
   The first subject attached to a system captures its authored start values, so scaling never
@@ -117,7 +121,7 @@ batch.update(dt / 1000);    // your own BatchedRenderer
   `emitter.burst` does.
 - **`write()`**, after `mix.sync`: probes each attached subject, adds `rate` times the mix time
   since the last write to its carry and emits the whole particles, on the frame exact arithmetic
-  would, adds the floored `count` of each burst drained for it,
+  would (or as `carry` says), adds the floored `count` of each burst drained for it,
   and emits them all at `at + offset` with that subject's values. A rate or count at or below 0,
   or not finite, adds nothing, and a burst for a subject not attached is ignored. Particles leave
   at the subject's position but with the emitter's world rotation and scale, as of its last
@@ -160,6 +164,6 @@ nothing itself, ahead or back: the frames played after it do.
   the captured generator and puts the captured values back each frame. Detach every subject on the
   system, change it, and attach again, or drive with `capture: 'write'`.
 - `write` emits everything a frame owes at once, so a long frame bursts its gap's worth of
-  particles, born together, up to the mix's `maxDt`. The first write owes nothing, and neither does
-  time `mix.rebase()` took out or a seek.
+  particles, born together, up to the mix's `maxDt`. A driver owes from when it was made, so on a
+  fresh mix the first write owes nothing; time `mix.rebase()` took out or a seek owes nothing either.
 - What quarks does to a particle after birth (forces, behaviors, color over life) stays quarks'.

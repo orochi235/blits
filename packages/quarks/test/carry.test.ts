@@ -50,6 +50,17 @@ describe('the carry', () => {
     expect(drift(13.75, 1000 / 75, 3000, 12_345.678)).toMatchObject({ early: 0, late: 0 });
   });
 
+  it('owes from when it was made, on a mix that was already playing', () => {
+    const m = mix<Spot, Emission>(K);
+    m.cue({ patch: hold({ rate: 3 }), subjects: [a] });
+    m.sync(0);
+    m.sync(500);
+    const q = drive(m, { kit: K });
+    q.attach(a, system(), { at: [0, 0, 0] });
+    m.sync(1500);
+    expect(q.write().get(a)).toBe(3);
+  });
+
   it('owes nothing for a hair under a whole particle', () => {
     const m = mix<Spot, Emission>(K);
     const s = system();
