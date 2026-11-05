@@ -182,7 +182,12 @@ export class Mirror<I> {
    * commits at 0 where `holds`, as a sample of a voice holding its first frame does. A row
    * `unread` says the CPU would not sample this frame, unreached or silent, commits nothing.
    */
-  prepare(t: number, horizon: number, holds = false, unread?: (row: number) => boolean): void {
+  prepare(
+    t: number,
+    horizon: number,
+    opts: { holds?: boolean; unread?: (row: number) => boolean } = {},
+  ): void {
+    const { holds = false, unread } = opts;
     const m = this.motions;
     if (m.listener !== this.listen) {
       this.watch();

@@ -132,7 +132,7 @@ describe('motion mirror', () => {
     const { s, m, motions, mirror } = setup(list, [], Float64Array.of(0, 200));
     m.sync(150);
     for (const c of list) s.to(c, 50);
-    mirror.prepare(150, Number.POSITIVE_INFINITY, true);
+    mirror.prepare(150, Number.POSITIVE_INFINITY, { holds: true });
     expect(motions.runs[motions.base(motions.known(list[1] as C) as number)]).toBe(0);
   });
 
@@ -141,7 +141,7 @@ describe('motion mirror', () => {
     const { s, m, motions, mirror } = setup(list);
     m.sync(150);
     for (const c of list) s.to(c, 50);
-    mirror.prepare(150, Number.POSITIVE_INFINITY, false, (row) => row === 1);
+    mirror.prepare(150, Number.POSITIVE_INFINITY, { unread: (row) => row === 1 });
     const s1 = motions.known(list[1] as C) as number;
     expect(motions.runs[motions.base(motions.known(list[0] as C) as number)]).toBe(150);
     expect(motions.pending?.[s1]?.[0]?.at).toBeUndefined();

@@ -60,10 +60,10 @@ export function prepare<I>(p: Preparing<I>): { table: Table; placed: Placement }
     const now = mix.now;
     const horizon = mix.horizonFor(v, 0, now);
     const unread = unreadOf(mix, u, answers, timings, reads.of(u), weighs[k] as Weighs);
-    if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread);
+    if (delays === null) m.prepare(elapsedOf(v, now), horizon, { unread });
     else {
       const t = v.unstarted(now) && !v.holdsFirst ? Number.NaN : v.rawAt(now, 0);
-      m.prepare(t, horizon, v.holdsFirst, unread);
+      m.prepare(t, horizon, { holds: v.holdsFirst, unread });
     }
     mirrors.push(m as Mirror<unknown>);
     return { owner: v, values: m.values() };
