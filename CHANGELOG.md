@@ -18,6 +18,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   the next `channel()` or `read` in its frame, and the check comparing that fold with the CPU
   destroys its staging buffer when the device refuses the map, and reports an error reading it
   back rather than leaving an unhandled rejection.
+- `gpuOf(m).read` lets go of a channel's last copy once a frame passes without reading it, rather
+  than holding it, about 32 MB for 1M subjects of eight numbers, until `subjects()` or `close()`; and
+  after a stretch of frames with no fold, it no longer copies the old fold only to turn it down.
 
 ## 1.0.0
 

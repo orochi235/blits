@@ -92,12 +92,17 @@ export class Readback<I> {
 
   /**
    * At a frame's first refresh, before anything is written: copies the last fold's wanted channels,
-   * if it is another frame's and not yet copied. Clears `want`.
+   * if it is another frame's, not yet copied, and at most one `seq` before `seq`, as `read` would
+   * take it. Lets go of the copies of channels not wanted, and clears `want`.
    */
-  turn(frame: number): void {
+  turn(frame: number, seq: number): void {
     const f = this.last;
     if (this.closed || f === null || f.frame >= frame) return;
-    const names = [...this.wanted].filter((n) => f.outputs.has(n) && !this.copied.has(n));
+    for (const name of this.held.keys()) if (!this.wanted.has(name)) this.held.delete(name);
+    const names =
+      f.seq >= seq - 1
+        ? [...this.wanted].filter((n) => f.outputs.has(n) && !this.copied.has(n))
+        : [];
     this.wanted.clear();
     if (names.length === 0) return;
     const parts = layout(f, names);

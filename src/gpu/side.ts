@@ -177,7 +177,7 @@ export class GpuSide<I> {
     this.stirs = this.mix.stirs;
     this.inputs = reading.inputs;
     this.outputs = new Map();
-    this.readback.turn(this.mix.frame);
+    this.readback.turn(this.mix.frame, this.mix.seq);
     this.dispatch();
   }
 
