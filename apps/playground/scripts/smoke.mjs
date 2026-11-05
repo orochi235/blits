@@ -1,5 +1,5 @@
 // Loads the built playground once per preset in headless Chromium, plays a second, and fails on any
-// console error, page error, a stage that drew nothing, or a flow, timing, both or desk diagram that drew nothing. `--shots <dir>`
+// console error, page error, a stage that drew nothing, or a flow, timing, both or desk diagram that drew nothing, or no read back and ahead panel. `--shots <dir>`
 // keeps the screenshots, which otherwise go to a temp directory removed on exit.
 import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -108,6 +108,16 @@ try {
     await page.screenshot({
       path: join(shots, `${String(i + 1).padStart(2, '0')}-${name.replaceAll(' ', '-')}.png`),
     });
+    await page
+      .locator('section[aria-label="read back and ahead"]')
+      .screenshot({
+        timeout: 5000,
+        path: join(
+          shots,
+          `${String(i + 1).padStart(2, '0')}-${name.replaceAll(' ', '-')}-read.png`,
+        ),
+      })
+      .catch(() => errors.push('read back and ahead panel missing'));
     await page.getByRole('tab', { name: 'Desk' }).click();
     await page.waitForTimeout(300);
     const deskPng = await page
