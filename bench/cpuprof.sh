@@ -5,6 +5,7 @@
 # A revision of `.` is the working tree. Each is built from `git archive` into a temporary
 # directory, removed on exit with its profiles. FRAMES defaults to 5000; PROF_INTERVAL (µs) to 100.
 # AB_BENCH names one bench file every revision runs, as in ab.sh, for a row older ones lack.
+# CALLERS="<name>..." also splits those functions' self time by caller (bench/profcallers.mjs).
 set -euo pipefail
 row="$1"; runs="$2"; shift 2
 root="$(git rev-parse --show-toplevel)"
@@ -39,6 +40,10 @@ for ((r = 1; r <= runs; r++)); do
     (cd "$dir" && FRAMES="${FRAMES:-5000}" node --cpu-prof --cpu-prof-dir=prof \
       --cpu-prof-interval "${PROF_INTERVAL:-100}" bench/frame.mjs "$row")
     node "$root/bench/profsum.mjs" "$dir"/prof/*.cpuprofile
+    if [[ -n "${CALLERS:-}" ]]; then
+      # shellcheck disable=SC2086
+      node "$root/bench/profcallers.mjs" "$dir"/prof/*.cpuprofile $CALLERS
+    fi
     done=$((done + 1))
     echo "onto: progress $done/$((runs * ${#revs[@]}))"
   done

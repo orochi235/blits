@@ -1,0 +1,156 @@
+# teitou (load about 4), onto task blits-heatmap-callers (2026-11-04, at 0d2bcb6's parent tree): AB_BENCH=bench/heatmap.mjs FRAMES=5000 CALLERS="subject base one call keepProbed primeLaned signalled signal numbers" bench/cpuprof.sh spring/input/ink/{on,off} 1 .
+  waiting for room
+teitou  chosen: 14.4 cores free, 30.0G available (env: 5 past runs, worst 2.0 cores / 4.8G)
+  keiei    scored 0.38 against teitou's 5.35
+  msb-uai  its blits tree is held by job 45e50e2d
+  orochi   refuses rotation
+  studio   its blits tree is held by job 572935fe
+  base   6785574c
+  delta  4 file(s), 0 deleted
+  sent   1 new file(s), 3 already there
+  commits sent directly, 3.8 KiB (not on origin)
+  updated blits on teitou at 6785574c + 4 uncommitted file(s)
+  job    8362de37 on teitou
+
+onto: agent-ac027606b81dfcbb5 is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+onto: plan 1
+== run 1/1 . spring/input/ink/on
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.218 ms  p90   6.785  step p50   1.027  load 4.29
+onto: progress 1/1
+total 33167.1 ms
+   7263.4 ms  21.9%  one fill.js:304
+   2271.2 ms   6.8%  numbers stretch.js:4
+   1605.0 ms   4.8%  subject numbers.js:73
+    939.9 ms   2.8%  changed strays.js:53
+    827.7 ms   2.5%  commit changes.js:148
+    826.7 ms   2.5%  runMotion sample.js:13
+    775.4 ms   2.3%  call fill.js:455
+    731.5 ms   2.2%  base weigh.js:113
+    722.9 ms   2.2%  change changes.js:12
+    692.2 ms   2.1%  (garbage collector)
+    602.1 ms   1.8%  prepare closed.js:25
+    556.8 ms   1.7%  get store.js:20
+    538.5 ms   1.6%  readAll pull.js:131
+    528.6 ms   1.6%  signalled fill.js:191
+    469.6 ms   1.4%  revive strays.js:65
+    465.0 ms   1.4%  primeLaned weigh.js:27
+    445.8 ms   1.3%  has named.js:50
+    412.3 ms   1.2%  closed closed.js:165
+    408.0 ms   1.2%  latest motions.js:429
+    381.4 ms   1.1%  (program)
+    343.1 ms   1.0%  foldWith fold.js:151
+    335.8 ms   1.0%  prune lives.js:158
+    330.6 ms   1.0%  pullRun columns.js:9
+    319.1 ms   1.0%  keepProbed lane.js:7
+    317.9 ms   1.0%  contribution contribution.js:49
+    293.8 ms   0.9%  base motions.js:398
+    284.9 ms   0.9%  seq strays.js:46
+    276.9 ms   0.8%  elapsedWith clock.js:109
+    276.3 ms   0.8%  next frame.mjs:48
+    275.6 ms   0.8%  evaluate motions.js:486
+    257.5 ms   0.8%  queue changes.js:45
+    249.0 ms   0.8%  turnInto turns.js:21
+    243.6 ms   0.7%  ready hosts.js:81
+    242.6 ms   0.7%  insert changes.js:173
+    227.1 ms   0.7%  now strays.js:43
+    216.0 ms   0.7%  flag motions.js:380
+    207.6 ms   0.6%  page strays.js:58
+    207.5 ms   0.6%  stretchChanged lanes.js:484
+    204.9 ms   0.6%  writeValue pull.js:12
+    185.3 ms   0.6%  record history.js:233
+total 33167.1 ms
+   7232.7 ms  21.8%  one fill.js:304 <- run fill.js:240
+   1920.1 ms   5.8%  numbers stretch.js:4 <- latest motions.js:429
+   1010.7 ms   3.0%  subject numbers.js:73 <- commit changes.js:148
+    740.6 ms   2.2%  call fill.js:455 <- one fill.js:304
+    712.1 ms   2.1%  base weigh.js:113 <- signal hosts.js:88
+    487.9 ms   1.5%  signalled fill.js:191 <- one fill.js:304
+    351.1 ms   1.1%  numbers stretch.js:4 <- applied changes.js:134
+    350.9 ms   1.1%  subject numbers.js:73 <- subjectAt fill.js:214
+    315.7 ms   1.0%  primeLaned weigh.js:27 <- signal hosts.js:88
+    279.8 ms   0.8%  keepProbed lane.js:7 <- one fill.js:304
+    243.4 ms   0.7%  subject numbers.js:73 <- prune lives.js:158
+    149.2 ms   0.4%  primeLaned weigh.js:27 <- ready hosts.js:81
+    135.6 ms   0.4%  signal hosts.js:88 <- signalled fill.js:191
+    119.5 ms   0.4%  base motions.js:398 <- quiet motions.js:339
+     44.6 ms   0.1%  base motions.js:398 <- latest motions.js:429
+     40.8 ms   0.1%  base motions.js:398 <- flag motions.js:380
+     39.3 ms   0.1%  keepProbed lane.js:7 <- runMotion sample.js:13
+     20.7 ms   0.1%  signalled fill.js:191 <- run fill.js:240
+     19.9 ms   0.1%  signalled fill.js:191 <- (root)
+     19.2 ms   0.1%  base weigh.js:113 <- weigh weigh.js:94
+     18.7 ms   0.1%  call fill.js:455 <- run fill.js:240
+     17.6 ms   0.1%  base motions.js:398 <- advance motions.js:277
+     17.6 ms   0.1%  base motions.js:398 <- insert changes.js:173
+     16.9 ms   0.1%  one fill.js:304 <- fillAll fill.js:37
+     16.1 ms   0.0%  call fill.js:455 <- (root)
+     13.8 ms   0.0%  one fill.js:304 <- (root)
+     12.6 ms   0.0%  base motions.js:398 <- write motions.js:410
+     10.5 ms   0.0%  base motions.js:398 <- scalar motions.js:234
+      8.8 ms   0.0%  base motions.js:398 <- prune lives.js:158
+      8.6 ms   0.0%  base motions.js:398 <- sample motions.js:256
+onto: progress 1/1
+onto: plan 1
+== run 1/1 . spring/input/ink/off
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   2.727 ms  p90   3.416  step p50   0.849  load 3.98
+onto: progress 1/1
+total 18367.6 ms
+   1828.6 ms  10.0%  numbers stretch.js:4
+   1660.8 ms   9.0%  contribution contribution.js:49
+    936.2 ms   5.1%  subject numbers.js:73
+    924.8 ms   5.0%  foldWith fold.js:151
+    639.8 ms   3.5%  apply fold.js:47
+    625.1 ms   3.4%  (garbage collector)
+    622.8 ms   3.4%  commit changes.js:148
+    584.7 ms   3.2%  prepare closed.js:25
+    564.3 ms   3.1%  change changes.js:12
+    479.2 ms   2.6%  next frame.mjs:48
+    459.0 ms   2.5%  get store.js:20
+    402.1 ms   2.2%  base weigh.js:113
+    383.5 ms   2.1%  readAll pull.js:131
+    352.9 ms   1.9%  closed closed.js:165
+    330.4 ms   1.8%  has named.js:50
+    325.6 ms   1.8%  advance motions.js:277
+    324.7 ms   1.8%  (program)
+    309.3 ms   1.7%  weigh weigh.js:94
+    278.3 ms   1.5%  latest motions.js:429
+    278.1 ms   1.5%  seq strays.js:46
+    264.4 ms   1.4%  prime weigh.js:6
+    261.9 ms   1.4%  prune lives.js:158
+    259.5 ms   1.4%  play frame.mjs:35
+    248.0 ms   1.4%  changed strays.js:53
+    235.7 ms   1.3%  revive strays.js:65
+    220.9 ms   1.2%  read contribution.js:359
+    204.0 ms   1.1%  elapsedAt voice.js:482
+    199.5 ms   1.1%  to motion.js:66
+    197.1 ms   1.1%  now strays.js:43
+    190.5 ms   1.0%  frame strays.js:38
+    189.9 ms   1.0%  early strays.js:49
+    182.3 ms   1.0%  copy clone.js:68
+    175.3 ms   1.0%  sample motions.js:256
+    175.2 ms   1.0%  page strays.js:58
+    173.1 ms   0.9%  fadeOf weigh.js:62
+    167.7 ms   0.9%  queue changes.js:45
+    166.5 ms   0.9%  moved moved.js:10
+    148.1 ms   0.8%  elapsedWith clock.js:109
+    144.4 ms   0.8%  insert changes.js:173
+    130.6 ms   0.7%  writeValue pull.js:12
+total 18367.6 ms
+   1503.3 ms   8.2%  numbers stretch.js:4 <- latest motions.js:429
+    693.5 ms   3.8%  subject numbers.js:73 <- commit changes.js:148
+    402.1 ms   2.2%  base weigh.js:113 <- weigh weigh.js:94
+    325.3 ms   1.8%  numbers stretch.js:4 <- applied changes.js:134
+    242.7 ms   1.3%  subject numbers.js:73 <- prune lives.js:158
+     17.3 ms   0.1%  base motions.js:398 <- latest motions.js:429
+     14.7 ms   0.1%  base motions.js:398 <- flag motions.js:380
+     11.4 ms   0.1%  base motions.js:398 <- advance motions.js:277
+      7.1 ms   0.0%  base motions.js:398 <- scalar motions.js:234
+      4.7 ms   0.0%  base motions.js:398 <- write motions.js:410
+      3.5 ms   0.0%  base motions.js:398 <- insert changes.js:173
+      1.7 ms   0.0%  base motions.js:398 <- prune lives.js:158
+      1.7 ms   0.0%  base motions.js:398 <- playing motions.js:466
+      0.6 ms   0.0%  base motions.js:398 <- sample motions.js:256
+onto: progress 1/1

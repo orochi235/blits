@@ -24,6 +24,11 @@ export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
   return inPlace.get(channel);
 }
 
+/** Gives a stock array channel made outside this module, as `quat` is, the in-place form of its `lerp`. */
+export function lerpsInPlace(channel: Channel<unknown>, into: LerpInto): void {
+  inPlace.set(channel, into);
+}
+
 /**
  * What a lane needs of a stock numeric channel beyond the channel: its arithmetic by name, its axes.
  * `'last'` has no rest: the last contribution to pass the band replaces, and a weight only gates it.

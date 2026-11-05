@@ -253,11 +253,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
    each run's raw records beside it. The bugs they found are fixed (CHANGELOG, Unreleased), each
    pinned by a test in `test/stress-findings.test.ts`; what is below is still open.
-   - **`from: 'current'` keeps the speed, and the docs say it does not.** `blending.mdx` says such a
-     fade carries position, not speed; CHANGELOG 0.2.0 and `src/patch.ts` bend its start to the
-     subject's speed, so a still fixture's linear fade eases in, and the first such fade a mix
-     plays runs straight, since no poses are kept until one is cued. Undecided which is right
-     (cues demo, frame 440: 0.6501 against 0.6529 straight).
+   - **Mike's call: should a `from: 'current'` voice carry the subject's speed, or only where it
+     is?** The code carries speed (CHANGELOG 0.2.0; the bend in `src/patch.ts` `read`), and the
+     site says it does not: `site/src/pages/blending.mdx` says it "carries position, not speed" and
+     calls carrying velocity a known gap. What turns on it: carrying speed makes a still
+     fixture's linear fade ease in (cues demo, frame 440: 0.6501 against 0.6529 straight), and the
+     first such voice a mix plays runs straight anyway, since the mix keeps no poses to take a
+     speed from until one is cued. Either answer fixes one of the two: the docs, or the code and
+     that first voice.
    - **`pull` on the heatmap is slower with lanes than without** (2026-11-03). 5,000 springs
      retargeted at 20–60 Hz, with three `ink` voices weighted per cell by `input` signals, read in
      5.40 ms a frame with lanes and 3.78 without (studio, solo, 7 rounds,
@@ -267,45 +270,45 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      swapped out (`bench/runs/2026-11-03-heatmap-parts-*.txt`): the signal weights against a
      constant and `ink` against `color()` cost little either way, and tweens cost what springs do.
      The lanes' loss needs a motion voice with retargets and other voices together: spring alone
-     reads 1.39 ms with lanes and 1.25 without, heat alone 0.96 and 0.89 (teitou). What is
-     left is not measured: the per-cell path the about 45% of cells retargeted each frame take
-     through `pull`, outside `pullRun`'s runs, and a lane's per-cell cost for voices weighted by
-     a signal (profiles: `bench/runs/2026-11-03-heatmap-profile-{on,off}.txt`). Most of the base
-     cost is the retargets themselves, about 3,000 `.to()` calls a frame, each committed when its
-     cell is read.
-   - **The rig's quats read in 1.2 ms for 1,000 bones** (`pull`, 70 voices), with lanes on only
-     about 20% faster than off: the off-lane path for quats in `keys`, named in the schema page's Open section.
-   - **Gaps, things the demos had to do themselves:** a voice's weight cannot cover some
-     components of a `vec` and not others (the rig's IK y-hold; weasel's item in
-     `NOTES-FROM-WEASEL.md`); a mix's `rate` cannot go below 0, so reverse is an owner turned
-     back; and the role fold of three or more quats depends on cue order (documented, sound).
-   - **The span-order fixes' cost is paid back** (2026-10-31). `own` and `tweens` never run the
-     code they changed: profiled at 008d580 and e3bfd3e, `own N=1000` reads 156.5 and 157.0 µs a
-     frame with no time in `move.ts` (`bench/runs/2026-10-31-own-profile.txt`), so the 3.4% and
-     2.4% were noise. Span frames did pay, about 5% in the `spans` row's profile
-     (`bench/runs/2026-10-31-spans-profile.txt`), mostly a second walk of each child's owners'
-     clocks per visit. fc8705a reads 5.0% faster than dd559a8 on `spans` (U 7) and 3.4% faster
-     than 008d580 (U 7), every other row within noise
-     (`bench/runs/2026-10-31-span-speed-vs-{dd559a8,008d580}.txt`). What 008d580 still does
-     better: its visit sat in `moveTo`'s loop, where `visitOne` and `meetsAt` are now calls, about
-     1% of a `spans` frame in `bench/runs/2026-10-31-spans-profile-due-list.txt`. One walk that
-     also reads `heading` was profiled and was no faster
-     (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
-   - **An owner's forward seek is restored by a mix seek back, not by every read back**
-     (2026-11-03): `Voice.leaps` (`src/leaps.ts`) records the children it left waiting, and
-     `leapBack` puts them back on a seek. An owner revived from a history store loses that record,
-     as `metRead` is lost, and `project`/`standing` reckon from the clock without it.
-   - **A span held by a span, sought forward while turned back, takes its span's fits on the way**
-     (2026-11-03): latest write wins, so the seek leaves it running forward at the fit's rate, not
-     turned back. Undecided whether a host's turn-back should survive that.
-   - **The audit's fixes cost nothing measurable** (2026-10-31): 6f39479 against 47c144c, 7 rounds
-     on msb-uai, every row's U at 9 or more, geometric mean 0.998
-     (`bench/runs/2026-10-31-audit-fixes-vs-47c144c.txt`).
-   - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
-     leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
-     `done`s; and the kiosk over 72 simulated hours (keiei, `bench/runs/2026-10-31-stress-kiosk-72h.txt`):
-     no findings, heap between 17 and 86 MB with no trend, 2 voices throughout, reads 0.28 ms at
-     hour 0 and 0.29 at hour 71.
+     reads 1.39 ms with lanes and 1.25 without, heat alone 0.96 and 0.89 (teitou). Most of the
+     base cost is the retargets themselves, about 3,000 `.to()` calls a frame, each committed when
+     its cell is read. Profiled by caller (teitou, loaded, 2026-11-04,
+     `bench/runs/2026-11-04-heatmap-callers.txt`; 5.22 ms on, 2.73 off): the lanes' extra is
+     `one`'s own body, 22% of the lanes-on frame (about 96 ns for each of the 15,000 calls a
+     frame, three `ink` voices over 5,000 cells), with `call` 2.3% and the signal's `base` 2.2%
+     beside it; the general path spends 9% in `contribution` and 5% in `foldWith` for the same
+     work. `one` does not keep deoptimizing (`bench/deopts.sh`: 2 deopts over 2,000 frames,
+     `bench/runs/2026-11-04-heatmap-deopts.txt`), so the cost is steady; what in its body costs
+     it is not split yet (V8 inlines its helpers into it). The demo itself plays a lanes twin, so
+     profile `bench/heatmap.mjs`, not `bench/stressprof.sh heatmap`.
+   - **The rig reads 1,000 bones in 1.2 ms** (`pull`, 70 voices), lanes on about 20% faster than
+     off. Profiled before its height hold moved onto `axes` (teitou, 2026-11-04,
+     `bench/stressprof.sh rig`, `bench/runs/2026-11-04-rig-profile.txt`), the quat folds are not
+     where it goes: `slerp`,
+     `multiply` and `foldInto` together are about 8% of a lanes-on frame. Each character's clips
+     are staggered, so every bone has a time of its own and each keys voice reads its stops once
+     a subject, not once a voice: `readKeys`, `segment`, `firstPast`, `read`, `phaseAt` and the
+     lerps are about 30% on and off alike, which is why lanes gain little; the role's gather and
+     fold (`gatherRole`, `gatherInto`, `meetRole`, `foldAt`, `foldRole`) are another 12%. A
+     staggered keys voice reading its stops once a distinct time, not once a subject, is what
+     would move it.
+   - **Mike's call: should a mix's `rate` go below 0?** It throws today, so the timeline demo
+     plays reverse as an owner turned back. What turns on it: whether reverse is the host's to
+     build from owners, or the mix's own, which would need an answer for every voice that keeps
+     state or moves (springs, tweens, kept patches) when its clock runs backward.
+   - **Mike's call: should a host's turn-back survive a span's fits on a seek forward?** A span
+     held by a span, sought forward while turned back, takes its outer span's fits on the way;
+     the latest write wins, so it ends running forward at the fit's rate (pinned by "a span held
+     by a span keeps the retiming" in `test/stress-findings.test.ts`). What turns on it: whether
+     a seek replays the fits as playing through would, or keeps what the host last set.
+   - **A read ahead made between an owner's forward seek and the next frame** starts the
+     children the seek crossed from the owner's clock as sought, where the frame starts them in
+     order (`test.fails` "a read ahead over a span sought forward while turned back"). Giving the
+     copy the mix's `leapt` set and an `owners` list was tried and still differs: by the end of
+     its move the copy holds fewer children (2026-11-04). A read back to a frame reads it as it
+     showed, so only a read ahead is wrong. A voice paged out to a history store also loses its
+     `met` and `metRead`, so a seek past memory to while it played may find the mix inert when a
+     subject met inside its stagger was not yet read; untested.
 
 3. **What is still slow.** Lanes, `pull`, `tween`, subject fades, a voice per node and crowds are
    built (the schema page's Lanes and motion sections, the changelog's 0.8.0 section); Mike set the
