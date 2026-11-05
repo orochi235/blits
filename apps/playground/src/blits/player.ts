@@ -2,6 +2,7 @@ import type { Doubt, Handle, Mix, Patch } from '@msb235/blits';
 import { type Built, close } from './compile';
 import type { Level } from './composition';
 import { EventLog } from './events';
+import { alignTo, movedElsewhere } from './follow';
 import { FRAME } from './frame';
 import { COLOR_AXES, type Mixed } from './kit';
 import type { Subject } from './stage';
@@ -57,6 +58,9 @@ export class Player {
   private hostFrame = -1;
   readonly columns: Columns;
   private frame = -1;
+  // Where the full mix's clock stood after the player's last sync of it; null before the first.
+  private lastNow: number | null = null;
+  private follows = false;
   // Per frame shown, each mix's `seq` there, full mix first: what `seek({ frame })` takes.
   private seqs: number[][] = [];
   private readonly scratch: Columns;
@@ -110,8 +114,20 @@ export class Player {
     if (target === this.frame) return;
     if (target < this.frame && !(this.seekBy === 'seek' && this.seekBack(target)))
       this.built = this.fresh();
-    for (let f = this.frame + 1; f <= target; f++) this.step(f);
+    for (let f = this.frame + 1; f <= target; f++) {
+      this.step(f);
+      if (this.follows) break;
+    }
     this.emit();
+  }
+
+  /**
+   * Whether the last frame's clock was moved by something other than the player, such as blits'
+   * debug panel holding, stepping or seeking it. The score then shows where the mix is, not where
+   * the player would have put it, and does not loop.
+   */
+  get following(): boolean {
+    return this.follows;
   }
 
   /** The picked subject's pose, per channel, as sure as blits' `assess` says; null with none picked. */
@@ -265,6 +281,7 @@ export class Player {
       return false;
     }
     this.seqs.length = target + 1;
+    this.lastNow = mix.now;
     mix.pull(this.subjects, this.columns);
     this.events.cut(mix.now);
     this.events.drain(this.built);
@@ -283,6 +300,8 @@ export class Player {
     if (this.at !== null) built.pointer.move(this.at.x, this.at.y);
     this.frame = -1;
     this.hostFrame = -1;
+    this.lastNow = null;
+    this.follows = false;
     this.isLive = false;
     this.samples = [];
     this.seqs = [];
@@ -290,16 +309,26 @@ export class Player {
     return built;
   }
 
-  private step(f: number): void {
-    const t = f * FRAME;
+  private step(at: number): void {
     this.hostFrame++;
     const host = this.hostFrame * FRAME;
     const { mix, solos } = this.built;
+    const before = mix.now;
+    const expect = this.lastNow === null ? Number.NaN : mix.time(host);
     mix.sync(host);
+    this.follows = movedElsewhere(this.lastNow, before, expect, mix.now);
+    this.lastNow = mix.now;
     mix.pull(this.subjects, this.columns);
     for (const solo of solos.values()) {
-      solo.sync(host);
+      if (this.follows) alignTo(solo, mix.now);
+      else solo.sync(host);
       solo.pull(this.subjects, this.scratch);
+    }
+    const f = this.follows ? frameOf(mix.now) : at;
+    const t = this.follows ? Math.max(0, mix.now) : f * FRAME;
+    if (this.follows && t < this.t) {
+      this.events.cut(mix.now);
+      this.samples = this.samples.filter((s) => s.t <= t);
     }
     this.events.drain(this.built);
     this.seqs.length = f;

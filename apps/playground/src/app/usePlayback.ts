@@ -30,7 +30,8 @@ export function usePlayback(
         owed -= frames * FRAME;
         const end = comp.current.length;
         let t = player.t + frames * FRAME;
-        if (t > end) {
+        // While something else moves the mix's clock, the score follows it and never loops.
+        if (t > end && !player.following) {
           if (!loop) {
             player.seek(end);
             tick();

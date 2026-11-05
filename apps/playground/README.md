@@ -411,7 +411,11 @@ owner or a span; deleting a group moves what it held up to its parent.
 - **The debug panel.** With `?panel` in the address, blits' debug panel mounts over the page. The
   Player's mixes are named `playground` and `playground · solo <voice>`; a compile the app is
   done with, the Player's last one, the score's and the tracks', is `close`d, so the panel lists
-  only what plays.
+  only what plays. When anything but the Player moves the full mix's clock (the panel holding,
+  stepping or seeking it), the Player sees it as the clock not landing where `mix.time` said its
+  own sync would, and follows: the score's playhead shows the mix's `now`, the solo mixes are
+  brought to it, and the score does not loop, so a hold outlasts the composition's length. Freed,
+  play carries on from there. A scrub back on the score while held replays, which drops the hold.
 - **The inspector reads only public API.** Each solo mix plays one voice and is read with `probe`;
   blits exposes no per-voice contribution, and the playground does not reach inside for one. The
   Player records the picked subject's history as it steps, so a plot never replays anything.

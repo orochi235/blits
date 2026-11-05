@@ -38,12 +38,56 @@ export async function actions(browser, origin, shots) {
     await page.getByText('bad.json holds no composition').waitFor({ timeout: 2000 });
 
     await page.goto(`${origin}?panel`, { waitUntil: 'networkidle' });
-    await page.locator('[data-blits-panel]').waitFor({ state: 'attached', timeout: 3000 });
-    await page.waitForTimeout(500);
+    errors.push(...(await panelHolds(page)));
     await page.screenshot({ path: join(shots, 'panel.png') });
   } catch (e) {
     errors.push(e.message.split('\n')[0]);
   }
   await page.close();
+  return errors;
+}
+
+const stageHash = (page) =>
+  page.locator('canvas[aria-label=stage]').evaluate((c) => {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let h = 0;
+    for (let k = 0; k < d.length; k += 97) h = (h * 31 + d[k]) | 0;
+    return h;
+  });
+const scoreTime = (page) =>
+  page
+    .getByText(/^\d+\.\d\ds \/ /)
+    .first()
+    .textContent();
+
+/** The panel's hold keeps the stage and the score still, its step and scrub move them, and a hold outlasts the score's length. */
+async function panelHolds(page) {
+  const errors = [];
+  await page.locator('.bp-pill').waitFor({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  await page.locator('button[title="hold the clock"]').click();
+  await page.waitForTimeout(150);
+  const held = [await stageHash(page), await scoreTime(page)];
+  await page.waitForTimeout(700);
+  const later = [await stageHash(page), await scoreTime(page)];
+  if (held[0] !== later[0]) errors.push("the stage moved under the panel's hold");
+  if (held[1] !== later[1])
+    errors.push(`the score ran on under the hold: ${held[1]} then ${later[1]}`);
+  await page.locator('button[title="step one frame"]').click();
+  await page.waitForTimeout(150);
+  if ((await stageHash(page)) === later[0])
+    errors.push("the panel's step left the stage where it was");
+  const before = await stageHash(page);
+  await page.locator('input.bp-scrub').evaluate((el) => {
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    set.call(el, String(Number(el.min) + 100));
+    el.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+  });
+  await page.waitForTimeout(150);
+  if ((await stageHash(page)) === before)
+    errors.push("the panel's scrub left the stage where it was");
+  await page.waitForTimeout(4500);
+  if ((await page.locator('button[title="free the clock"]').count()) === 0)
+    errors.push('the hold was lost within one score length');
   return errors;
 }
