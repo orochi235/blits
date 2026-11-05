@@ -46,7 +46,7 @@ const STALL = [3200, 3420] as const;
 describe('curves and notes through retimes, seeks, and stalled frames', () => {
   it.each([
     { grid: 5, freq: 0.04, gain: 1e-4 },
-    { grid: 25, freq: 0.1, gain: 2e-3 },
+    { grid: 25, freq: 0.04, gain: 2e-3 },
   ])('a $grid ms grid stays within $freq Hz of the mix', async ({ grid, freq, gain }) => {
     const r = await render({ acts, grid });
     const ref = reference(acts, r.done);

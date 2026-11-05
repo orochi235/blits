@@ -11,6 +11,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice can name the `track` it plays on, so a tool that draws the score puts the voices sharing
   one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
   carries it as `track`, and `watched` reports it for each voice.
+- `mix.trace` knows more shapes, where it read them every `grid` ms: a voice's fades in, out, set
+  ahead, and turned back, at a weight of at most 1; a voice whose rate is ramping; and a `wave`.
+  With `bends: true` each comes as its breakpoints and bends; without, a stretch whose reads fit a
+  line comes as a line, as a fade over a still value does. A subject no frame has met yet takes
+  its fade in from when it will be met. One stretch takes up to eight bends, where it took up to
+  four voices' eased stretches.
 
 ## 1.0.0
 

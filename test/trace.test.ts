@@ -1,54 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { kit, max, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { tween } from '../src/motion.js';
 import { keys } from '../src/patch.js';
 import { level } from '../src/signals.js';
-import type { Mix, Run } from '../src/types.js';
-
-interface Pose {
-  x: number;
-  gain: number;
-  top: number;
-  clip: number;
-}
-const K = kit<Pose>({ x: sum(), gain: mul(), top: max(), clip: sum({ bounds: [0, 5] }) });
-interface Part {
-  id: string;
-}
-
-/** The run's value at `t`, along its lines and bends; at a jump, the value after it. */
-function along(run: Run, t: number): number {
-  const { at, value } = run;
-  for (let i = at.length - 1; i >= 0; i--) {
-    if ((at[i] as number) > t) continue;
-    if ((at[i] as number) === t || i === at.length - 1) return value[i] as number;
-    const a = at[i] as number;
-    const b = at[i + 1] as number;
-    const va = value[i] as number;
-    const u = (t - a) / (b - a);
-    const off = run.bends?.find((bend) => bend.index === i)?.off(u) ?? 0;
-    return va + ((value[i + 1] as number) - va) * u + off;
-  }
-  return value[0] as number;
-}
-
-/** Checks a run against `project` every `step` ms, away from its points by `margin`. */
-function matches(m: Mix<Part, Pose>, run: Run, s: Part, ch: keyof Pose, step = 1, margin = 1e-3) {
-  const from = run.at[0] as number;
-  const to = run.at[run.at.length - 1] as number;
-  for (let t = from; t <= to; t += step) {
-    if (run.at.some((a) => Math.abs(a - t) < margin)) continue;
-    expect(along(run, t)).toBeCloseTo(m.project(t).probe(s)[ch], 6);
-  }
-  for (let i = 0; i < run.at.length; i++) {
-    const t = run.at[i] as number;
-    // At a jump the first value is where the line before arrives, which `project` does not read.
-    if (run.at[i + 1] === t) continue;
-    if (t === to && run.at[i - 1] !== t && t > from) continue;
-    expect(run.value[i]).toBeCloseTo(m.project(t).probe(s)[ch], 6);
-  }
-}
+import { K, matches, type Part, type Pose, rng } from './trace-helpers.js';
 
 const ramp = keys<Part, Pose>(400, [
   { at: 0, delta: { x: 0 } },
@@ -251,7 +206,7 @@ describe('trace', () => {
     matches(m, run, a, 'x');
   });
 
-  it('samples a voice while its rate ramps, and bends it exactly once the ramp is over', () => {
+  it('bends a voice exactly while its rate ramps, and after', () => {
     const a = { id: 'a' };
     const m = mix<Part, Pose>(K);
     m.sync(0);
@@ -265,7 +220,11 @@ describe('trace', () => {
     m.sync(50);
     h.ramp(0.5, 100);
     m.sync(100);
-    expect(m.trace(100, 600, { bends: true }).of(a, 'x').exact).toBe(false);
+    const during = m.trace(100, 600, { bends: true }).of(a, 'x');
+    expect(during.exact).toBe(true);
+    expect(during.at).toContain(150);
+    matches(m, during, a, 'x');
+    expect(m.trace(100, 600).of(a, 'x').exact).toBe(false);
     m.sync(160);
     const run = m.trace(160, 1200, { bends: true }).of(a, 'x');
     expect(run.exact).toBe(true);
@@ -346,18 +305,6 @@ describe('trace', () => {
 });
 
 describe('trace over random scenes', () => {
-  /** A seeded generator, so a failing scene comes back the same. */
-  function rng(seed: number): () => number {
-    let s = seed >>> 0;
-    return () => {
-      s = (s + 0x6d2b79f5) >>> 0;
-      let t = s;
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-
   it('agrees with project between its points wherever it says exact', () => {
     let exact = 0;
     for (let seed = 1; seed <= 40; seed++) {
