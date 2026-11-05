@@ -8,10 +8,12 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "allowJs": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
     "paths": {
       "@pg/*": ["./src/*"],
+      "@brand/*": ["../../brand/*"],
       "@msb235/blits": ["../../src/index.ts"],
       "@msb235/blits-panel": ["../../packages/panel/src/index.ts"]
     }

@@ -6,6 +6,7 @@ import boundedGlow from './bounded-glow';
 import crossfade from './crossfade';
 import foldRules from './fold-rules';
 import freezeHandover from './freeze-handover';
+import logo from './logo';
 import marksHits from './marks-hits';
 import ownerFade from './owner-fade';
 import pointerGlow from './pointer-glow';
@@ -27,6 +28,7 @@ export const PRESETS: { name: string; comp: Composition }[] = [
   { name: 'marks and hits', comp: marksHits },
   { name: 'anchors', comp: anchors },
   { name: 'backward', comp: backward },
+  { name: 'logo', comp: logo },
 ];
 
 export const DEFAULT: Composition = staggerWave;

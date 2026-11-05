@@ -15,6 +15,7 @@ export default defineConfig({
       '@msb235/blits': at('../../src/index.ts'),
       '@msb235/blits-panel': at('../../packages/panel/src/index.ts'),
       '@pg': at('./src'),
+      '@brand': at('../../brand'),
     },
     // A weasel package symlinked to a local checkout would otherwise bring that checkout's copies.
     dedupe: [

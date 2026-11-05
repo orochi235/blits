@@ -15,6 +15,7 @@ export default defineConfig({
       ),
       '@stress': fileURLToPath(new URL('./apps/stress/src', import.meta.url)),
       '@pg': fileURLToPath(new URL('./apps/playground/src', import.meta.url)),
+      '@brand': fileURLToPath(new URL('./brand', import.meta.url)),
     },
   },
   test: {

@@ -92,6 +92,7 @@ it('has the presets the spec lists, the first the default', () => {
     'marks and hits',
     'anchors',
     'backward',
+    'logo',
   ]);
   expect(DEFAULT).toBe(PRESETS[0]?.comp);
 });
