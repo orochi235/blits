@@ -14,8 +14,17 @@ const left: Shell = { x: -6, apex: 5, color: [1, 1, 1], stars: 90 };
 const right: Shell = { x: 6, apex: 5, color: [1, 1, 1], stars: 200 };
 const LATER = 2400;
 
-/** The show's two shells through the Tone driver, as `main.ts` plays them, rendered offline. */
-async function show(): Promise<{ l: Float32Array; r: Float32Array }> {
+/**
+ * The show's two shells through the Tone driver, as `main.ts` plays them, rendered offline. The
+ * noise is seeded, so two renders differ only where their shells do.
+ */
+async function show(late: Shell = right): Promise<{ l: Float32Array; r: Float32Array }> {
+  const random = Math.random;
+  let seed = 1;
+  Math.random = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
   const buffer = await Tone.Offline(
     () => {
       const m = mix<Shell, Pose>(KIT, { name: 'show' });
@@ -39,14 +48,16 @@ async function show(): Promise<{ l: Float32Array; r: Float32Array }> {
         read = f;
         m.sync(f);
         if (f === 0) launch(left);
-        if (f >= LATER && f - 1000 / 60 < LATER) launch(right);
+        if (f >= LATER && f - 1000 / 60 < LATER) launch(late);
         sound.write();
       }
     },
     DUR / 1000,
     2,
     SR,
-  );
+  ).finally(() => {
+    Math.random = random;
+  });
   // Copies: node-web-audio-api's arrays read freed memory once their AudioBuffer is collected.
   return { l: buffer.getChannelData(0).slice(), r: buffer.getChannelData(1).slice() };
 }
@@ -68,7 +79,11 @@ describe('the fireworks show, rendered', () => {
     const bangR = [rms(l, LATER + 1100, LATER + 1500), rms(r, LATER + 1100, LATER + 1500)] as const;
     expect(bangL[0] / bangL[1]).toBeGreaterThan(3);
     expect(bangR[1] / bangR[0]).toBeGreaterThan(3);
-    expect(bangR[1]).toBeGreaterThan(bangL[0]);
+    // Rendered after the first, which made Tone's noise buffers, so each of these draws the same noise.
+    const big = await show();
+    const small = await show({ ...right, stars: left.stars });
+    const at = [LATER + 1100, LATER + 1500] as const;
+    expect(rms(big.r, ...at)).toBeGreaterThan(rms(small.r, ...at));
     const whistle = [rms(l, 300, 900), rms(r, 300, 900)] as const;
     expect(whistle[0]).toBeGreaterThan(0.01);
     expect(whistle[0] / whistle[1]).toBeCloseTo(1, 2);
