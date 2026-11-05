@@ -841,13 +841,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   has met, as `VoiceSpec.stagger` documents (decided 2026-10-29), so a read ahead or a replay with
   no reads can end it earlier than the live mix did, and `waiting` leaves those properties out.
 
-- **weasel gaps blits still works around** (found on weasel 1.12.0, 2026-10-22; not rechecked since the move to 1.16.1, 2026-11-03). Since 1.16, labkit's `ControlPanel` lays rows out inline by default and sets layout only per panel or section, never per row; an inline `PropertyRow` keeps its label at full width, so a long label beside a slider widened three explainer pages at 390 px. The site now lets a slider row wrap (`.explainer-controls label:has(> input[type='range'])` in `site/src/styles/explainer.css`, 2026-11-04), which is close to 1.12 but not the same; worth reporting to weasel as a missing per-row layout. A leaf cannot set
+- **weasel gaps blits still works around** (found on weasel 1.12.0, 2026-10-22; rechecked against the installed 1.16.1 types, 2026-11-05: every one below still holds). Since 1.16, labkit's `ControlPanel` lays rows out inline by default and sets layout only per panel or section, never per row; an inline `PropertyRow` keeps its label at full width, so a long label beside a slider widened three explainer pages at 390 px. The site now lets a slider row wrap (`.explainer-controls label:has(> input[type='range'])` in `site/src/styles/explainer.css`, 2026-11-04), which is close to 1.12 but not the same; worth reporting to weasel as a missing per-row layout. A leaf cannot set
   its own row layout or an accessible name apart from its label, so the booker's two rows and the
   level rows keep `fieldRow` in `CompositionControls.tsx`. The number leaves stay custom, since
   labkit's `.clearable()` takes only a fixed placeholder and a voice's `start` names its default
   by the voice's rate. `DiagramView` never reports where its first layout put nodes, so the Both
   tab reads it back by hand through `diagramLayoutOf(specs)`. Not used on purpose: a plain
-  `ControlMatrix` grid, since `ChannelTiming` inherits.
+  `ControlMatrix` grid, since `ChannelTiming` inherits. The playground's weasel pass (2026-11-05)
+  found more that 1.16.1 lacks: no file picker (the open button drives a hidden `<input
+  type=file>`), no editable code pane (`CodePane` stays, for its gutter, Tab indent, and Cmd-Enter
+  commit), no `aria-expanded` on `Button` (Hide tracks lost it), and the ui `Transport` draws its
+  loop switch as a `⟲` character rather than its own `ui:loop` glyph, so it reads small beside the
+  16 px play glyph. Still hand-drawn here, and not weasel's to fix: the flow diagrams' palette is
+  hex in `widgets/FlowDiagram/style.ts`, which WebGL needs as values, and the desk repeats its
+  channel green as `--desk-bus`; moving both onto theme-resolved colors would change the look.
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
