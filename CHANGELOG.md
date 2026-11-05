@@ -29,6 +29,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - The `gpu` engine keeps a frame's fold on the CPU, with a reason in `reasons()`, where its output,
   subjects or table buffer would pass the device's `maxStorageBufferBindingSize`, rather than
   failing to bind them.
+- While the `gpu` engine's kernel compiles, a motion voice with a change waiting no longer starts
+  the fold over at every `channel()` or `read` call.
 
 ## 1.0.0
 

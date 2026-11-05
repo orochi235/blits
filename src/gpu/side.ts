@@ -65,6 +65,8 @@ export class GpuSide<I> {
   private readonly buffers: Buffers;
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
   private stale = true;
+  /** Set where the last fold waited on a kernel compiling or failed, which no mirror's change moves. */
+  private waiting = false;
   private readonly why = new Reasons();
   private readonly readback: Readback<I>;
 
@@ -171,7 +173,7 @@ export class GpuSide<I> {
       this.mix.frame === this.frame &&
       this.mix.stirs === this.stirs &&
       reading.inputs === this.inputs &&
-      !this.mirrors.stirred
+      (this.waiting || !this.mirrors.stirred)
     )
       return;
     this.frame = this.mix.frame;
@@ -179,6 +181,7 @@ export class GpuSide<I> {
     this.inputs = reading.inputs;
     this.outputs = new Map();
     this.readback.turn(this.mix.frame, this.mix.seq);
+    this.waiting = false;
     this.dispatch();
   }
 
@@ -227,7 +230,10 @@ export class GpuSide<I> {
         () => {},
       );
     }
-    if (b.pipeline === null || b.failed) return;
+    if (b.pipeline === null || b.failed) {
+      this.waiting = true;
+      return;
+    }
     const voices = e.voices as Voice<I, unknown>[];
     const sample = this.twins.before(mix, this.list, runners);
     const prepared = prepare({

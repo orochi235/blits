@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Col } from '../src/gpu/columns.js';
 import { gpu, gpuOf, mixerOf } from '../src/gpu/engine.js';
 import { MAX_ROLES } from '../src/gpu/kernel.js';
+import { Reasons } from '../src/gpu/reasons.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import type { GpuDevice } from '../src/gpu/webgpu.js';
 import { kit, level, mix, slew, spring, sum } from '../src/index.js';
@@ -223,6 +224,34 @@ describe('gpu engine', () => {
       m.sync(250);
     }
     for (const s of cells) expect(g.probe(s).y).toBe(c.probe(s).y);
+  });
+
+  it('waits on a compiling kernel without starting the fold again at each call', async () => {
+    const d = fakeDevice({ compile: 'held' });
+    const cells = [{ x: 0 }, { x: 1 }];
+    const m = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: d.device }) });
+    m.sync(0);
+    const s = spring<C, P>('y', { to: (c) => c.x });
+    m.cue({ patch: s, subjects: cells });
+    const side = gpuOf(m);
+    side.subjects(cells, () => ({}));
+    side.channel('y');
+    d.compiled();
+    await side.ready;
+    m.sync(16);
+    expect(side.channel('y')).not.toBeNull();
+    m.cue({ patch: wave, subjects: cells, loop: true });
+    expect(side.channel('y')).toBeNull();
+    s.to(cells[0] as C, 5);
+    const note = vi.spyOn(Reasons.prototype, 'note');
+    side.channel('y');
+    side.channel('y');
+    side.channel('y');
+    expect(note.mock.calls.length).toBeLessThanOrEqual(1);
+    note.mockRestore();
+    d.compiled();
+    await side.ready;
+    expect(side.channel('y')).not.toBeNull();
   });
 
   it('gives no channel before any subject is registered', () => {
