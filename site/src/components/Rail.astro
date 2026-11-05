@@ -1,8 +1,7 @@
 ---
 import pkg from '../../../package.json';
 import { extra, local, start, under, words } from '../nav';
-import bare from '@brand/out/wordmark-green.svg?raw';
-import panel from '@brand/out/wordmark-panel.svg?raw';
+import { still } from '../live/sign';
 import Search from './Search.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
@@ -12,8 +11,8 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
 ---
 <nav class="rail" aria-label="Pages">
   <a class="mark" href={link('')} aria-label="blits">
-    <span class="still panel"><Fragment set:html={panel} /></span>
-    <span class="still bare"><Fragment set:html={bare} /></span>
+    <span class="still panel"><Fragment set:html={still(true)} /></span>
+    <span class="still bare"><Fragment set:html={still(false)} /></span>
     <canvas aria-hidden="true"></canvas>
   </a>
   <p class="meta">
@@ -55,8 +54,13 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
   const mark = document.querySelector<HTMLElement>('.rail .mark');
   const canvas = mark?.querySelector('canvas');
   if (mark && canvas) {
-    playLogo(canvas);
-    mark.classList.add('lit');
+    try {
+      playLogo(canvas);
+      mark.classList.add('lit');
+    } catch (e) {
+      mark.classList.add('failed');
+      throw e;
+    }
   }
 </script>
 
@@ -162,30 +166,32 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     height: 100%;
   }
 
-  .bare {
-    /* Where the live sign draws the word, so the swap from this still to it moves nothing. */
-    padding: calc(5.14 / 24 * 100%) calc(3.14 / 24 * 100%) calc(2.14 / 24 * 100%);
-    box-sizing: border-box;
-  }
-
-  .bare :global(svg) {
-    width: auto;
-  }
-
-  /* The housing still stands at the foot of the taller live sign, where the word is. */
-  .panel {
-    display: flex;
-    align-items: flex-end;
-  }
-
-  .panel :global(svg) {
-    height: auto;
-  }
-
-  .mark canvas,
-  .mark.lit .still,
-  .bare {
+  /*
+   * The still is only a fallback: shown at once when the live sign fails, and otherwise only if
+   * the sign has not lit 1.5 s in, as without scripts or when its module never loads.
+   */
+  .still,
+  .mark canvas {
     visibility: hidden;
+  }
+
+  .mark:not(.lit) .still {
+    animation: fallback 0s 1.5s forwards;
+  }
+
+  .mark.failed .still {
+    animation: none;
+    visibility: visible;
+  }
+
+  @keyframes fallback {
+    to {
+      visibility: visible;
+    }
+  }
+
+  .bare {
+    display: none;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -198,10 +204,10 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
       translate: calc(-3.14 / 24 * 100%) 0;
     }
     .panel {
-      visibility: hidden;
+      display: none;
     }
-    .mark:not(.lit) .bare {
-      visibility: visible;
+    .bare {
+      display: block;
     }
   }
 

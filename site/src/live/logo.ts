@@ -1,10 +1,8 @@
-import { compose } from '@brand/glyphs.js';
 import { level, patch, slew } from '@msb235/blits';
 import {
   createMarquee,
   type EffectSpec,
   type Face,
-  marginOf,
   type Pose,
   type Scene,
   type Subject,
@@ -12,15 +10,7 @@ import {
 } from 'bree';
 import { CYCLE, followLogo, GREEN, hueAt, steered } from '../explainers/hues';
 import { loop } from './loop';
-
-const WORD = compose('blits');
-
-/**
- * Blank rows the face carries above the word, so the sign reaches the top of the page, and below
- * it, where the sign runs on behind the rail's links and search box.
- */
-const ABOVE = 3;
-const BELOW = 13;
+import { ABOVE, BELOW, SIGN, WORD } from './sign';
 
 /**
  * The whole wordmark as one glyph, so bree draws it exactly as the brand grid has it, standing on
@@ -102,8 +92,8 @@ export function playLogo(canvas: HTMLCanvasElement): () => void {
     };
     const sign = createMarquee(canvas, {
       name: 'logo',
-      cols: WORD.cols + 2 + 2 * marginOf(false),
-      rows: ABOVE + WORD.rows + BELOW + 2 * marginOf(false),
+      cols: SIGN.cols,
+      rows: SIGN.rows,
       border: false,
       housing: dark.matches ? 'none' : 'dark',
       program: program(calm.matches),
