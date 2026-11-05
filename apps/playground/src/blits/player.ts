@@ -33,8 +33,8 @@ export interface History {
   samples: readonly Sample[];
 }
 
-// Probes write into a pose the mix reuses, so each is copied before the next.
-const copied = (p: Mixed): Mixed => ({
+/** A probe's pose, copied: probes write into a pose the mix reuses. */
+export const copied = (p: Mixed): Mixed => ({
   ...p,
   offset: [...p.offset],
   ...(p.color ? { color: [...p.color] } : {}),

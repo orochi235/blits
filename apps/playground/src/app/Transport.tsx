@@ -3,6 +3,7 @@ import type { SeekBy } from '@pg/blits/player';
 import { Transport as WeaselTransport } from '@weasel-js/ui';
 import s from './App.module.css';
 import { docOf } from './docs';
+import { LiveMix } from './LiveMix';
 
 export interface TransportProps {
   playing: boolean;
@@ -24,7 +25,10 @@ export interface TransportProps {
   clock: { now: number; seq: number };
   /** The full mix's own rate: its voices slow while the score's clock runs on. */
   mixRate: number;
-  onMixRate(r: number): void;
+  /** Sets the full mix's rate, or ramps it there over `over` ms. */
+  onMixRate(r: number, over: number | undefined): void;
+  /** Fades every voice out, over `over` ms or each voice's own `fade.out`. */
+  onMute(over: number | undefined): void;
   /** Whether a live change is in force; the next edit drops it, and a replay back does too. */
   livened: boolean;
   levels: readonly Level[];
@@ -77,21 +81,7 @@ export function Transport(p: TransportProps) {
         <input type="checkbox" checked={p.live} onChange={(e) => p.onLive(e.target.checked)} />
         live
       </label>
-      {p.live && (
-        <label className={s.level} title={docOf('Mix.rate')}>
-          mix rate
-          <input
-            type="number"
-            min={0}
-            step={0.25}
-            value={p.mixRate}
-            onChange={(e) => {
-              const r = e.target.valueAsNumber;
-              if (Number.isFinite(r) && r >= 0) p.onMixRate(r);
-            }}
-          />
-        </label>
-      )}
+      {p.live && <LiveMix rate={p.mixRate} onRate={p.onMixRate} onMute={p.onMute} />}
       {p.levels.map((l) => (
         <label key={l.name} className={s.level}>
           {l.name}

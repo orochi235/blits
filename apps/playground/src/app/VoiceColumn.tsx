@@ -11,6 +11,7 @@ import type { Subject } from '@pg/blits/stage';
 import type { RefObject } from 'react';
 import s from './App.module.css';
 import { LevelsPanel } from './CompositionControls';
+import { FileButtons } from './FileButtons';
 import { GroupPanel } from './GroupPanel';
 import { LivePanel } from './LivePanel';
 import { MixPanel } from './MixPanel';
@@ -71,6 +72,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
         <button type="button" onClick={p.onShare}>
           share
         </button>
+        <FileButtons comp={p.comp} onOpen={p.onComp} />
         {p.shared?.copied && <span role="status">link copied</span>}
       </div>
       {p.shared && !p.shared.copied && (
