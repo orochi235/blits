@@ -72,12 +72,17 @@ export default function Live({ of }: { of: string }) {
       <div ref={root} className="live-stage" />
       {allowed && !focused ? (
         // Its loop waits out of focus; the click that focuses the window resumes it.
-        <button type="button" className="stage-control">
+        <button type="button" className="stage-control" data-glyph="play">
           Paused — focus to resume
         </button>
       ) : allowed ? (
         <span className="stage-controls">
-          <button type="button" className="stage-control" onClick={() => setPaused((p) => !p)}>
+          <button
+            type="button"
+            className="stage-control"
+            data-glyph={paused ? 'play' : 'pause'}
+            onClick={() => setPaused((p) => !p)}
+          >
             {paused ? 'Play' : 'Pause'}
           </button>
           <button type="button" className="stage-control" onClick={() => setRound((n) => n + 1)}>
@@ -85,7 +90,12 @@ export default function Live({ of }: { of: string }) {
           </button>
         </span>
       ) : (
-        <button type="button" className="stage-control" onClick={() => setAllowed(true)}>
+        <button
+          type="button"
+          className="stage-control"
+          data-glyph="play"
+          onClick={() => setAllowed(true)}
+        >
           Play
         </button>
       )}

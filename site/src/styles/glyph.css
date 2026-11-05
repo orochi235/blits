@@ -1,0 +1,18 @@
+/* A play or pause button's filled glyph, before its label, drawn in the button's own color. */
+[data-glyph]::before {
+  content: '';
+  display: inline-block;
+  width: 0.62em;
+  height: 0.7em;
+  margin-inline-end: 0.45em;
+  vertical-align: -0.04em;
+  background: currentColor;
+}
+
+[data-glyph='play']::before {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+[data-glyph='pause']::before {
+  background: linear-gradient(to right, currentColor 36%, transparent 36% 64%, currentColor 64%);
+}

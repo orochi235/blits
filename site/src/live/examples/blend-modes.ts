@@ -40,6 +40,7 @@ import {
 import { createHistory } from '@weasel-js/history';
 import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
+import { showPlay } from '../play';
 
 interface Cell {
   x: number;
@@ -342,7 +343,7 @@ export default function run(root: HTMLElement): () => void {
     for (const t of thumbs) t.button.addEventListener('click', () => choose(t.name));
 
     const showRate = () => {
-      play.textContent = show.rate === 0 ? 'Play' : 'Pause';
+      showPlay(play, show.rate === 0);
     };
     play.addEventListener('click', () => {
       show.rate = show.rate === 0 ? 1 : 0;

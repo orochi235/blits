@@ -254,7 +254,12 @@ function ExplainerBody<I, O, C>({
   return (
     <figure className="explainer" ref={figure}>
       <div className="explainer-stage">
-        <button type="button" className="stage-control" onClick={playPause}>
+        <button
+          type="button"
+          className="stage-control"
+          data-glyph={running ? 'pause' : 'play'}
+          onClick={playPause}
+        >
           {running ? 'Pause' : playing ? 'Paused — focus to resume' : 'Play'}
         </button>
         <canvas
