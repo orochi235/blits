@@ -24,6 +24,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - On the `gpu` engine, a motion change made to a subject after a seek back before its voice's cue,
   or after the subject's `drop`, is timed as on the CPU, which holds no record of it then, rather
   than as if the GPU's last fold had met it.
+- The `gpu` engine folds a `keys` patch whose first stop is eased by a function, which no segment
+  reads, rather than leaving it on the CPU.
 
 ## 1.0.0
 

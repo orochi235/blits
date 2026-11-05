@@ -61,6 +61,19 @@ describe('packing a keys patch', () => {
     ]);
     expect(pack(k)).toEqual({ why: 'its easing is a function' });
   });
+  it('packs a first stop eased by a function, since no segment reads its easing', () => {
+    const k = keys<unknown, O>(1000, [
+      { at: 0, delta: { v: 0 }, ease: (u: number) => u * u },
+      { at: 1, delta: { v: 1 } },
+    ]);
+    const plain = keys<unknown, O>(1000, [
+      { at: 0, delta: { v: 0 } },
+      { at: 1, delta: { v: 1 } },
+    ]);
+    const got = pack(k);
+    if (got === undefined || !('values' in got)) throw new Error('not packed');
+    expect([...got.values]).toEqual([...((pack(plain) as { values: Float32Array }).values ?? [])]);
+  });
   it('refuses a stop it cannot read', () => {
     const k = keys<unknown, O>(1000, [
       { at: 0, delta: { v: 'up' as never } },
