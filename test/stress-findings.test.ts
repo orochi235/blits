@@ -842,7 +842,8 @@ test('a seek back past memory with a store, over a span sought forward while tur
 
 // A read ahead made between an owner's forward seek and the next frame starts the children the seek
 // crossed from the owner's clock as sought, where the frame starts them in order. A copy given the
-// mix's `leapt` set still differs: by the end of its move it holds fewer children (2026-11-04).
+// mix's `leapt` set and an `owners` list still differs: by the end of its move it holds fewer
+// children (2026-11-04).
 test.fails('a read ahead over a span sought forward while turned back reads as the next frame', () => {
   const { m } = leapt({ history: { ms: 10_000, tape } });
   const ahead = m.project(1320);
