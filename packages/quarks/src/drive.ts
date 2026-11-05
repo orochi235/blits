@@ -1,7 +1,7 @@
 import type { Kit, Mix } from '@msb235/blits';
 import { type EmissionState, Matrix4, ParticleSystem } from 'three.quarks';
 import { Authored } from './authored.js';
-import { Carry } from './carry.js';
+import { Carry, Sum } from './carry.js';
 import type { Emission } from './channels.js';
 import { type Host, type Source, wire } from './source.js';
 
@@ -39,6 +39,14 @@ export interface DriveOptions<O> {
    * generator between writes and the driver scales from what it finds.
    */
   capture?: 'attach' | 'write';
+  /**
+   * How `rate` turns into whole particles: exactly (`'exact'`, the default), so a frame owes what
+   * the mix played however its syncs split it, or summed in doubles as a host's own loop sums
+   * `rate * dt` (`'float'`), on the frames that loop emits, a hair late where rounding leaves it
+   * under a whole particle. `'float'` lets a host move its own emitter onto `rate` without moving a
+   * particle; it gives up emitting the same across a `rebase`, as that loop does.
+   */
+  carry?: 'exact' | 'float';
 }
 
 export interface Driver<I, O = unknown> {
@@ -72,8 +80,8 @@ interface Bound<O> {
   rate: AttachOptions['rate'];
   world: boolean;
   pose: O;
-  /** Particle-milliseconds owed by `rate`, below one particle's worth. */
-  carry: Carry;
+  /** What `rate` owes, below one particle. */
+  carry: Carry | Sum;
   count: number;
   /** Particles `burst` owes on the next write. */
   extra: number;
@@ -129,7 +137,7 @@ export function drive<I, O extends Partial<Emission>>(
     travelDistance: 0,
   };
 
-  let played = Number.NaN;
+  let played = mix.played;
 
   const emit = (b: Bound<O>): void => {
     const at = typeof b.at === 'function' ? b.at() : b.at;
@@ -198,7 +206,7 @@ export function drive<I, O extends Partial<Emission>>(
         rate,
         world: frame === 'world',
         pose: {} as O,
-        carry: new Carry(),
+        carry: opts.carry === 'float' ? new Sum() : new Carry(),
         count: 0,
         extra: 0,
       });

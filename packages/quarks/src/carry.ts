@@ -60,3 +60,21 @@ export class Carry {
     this.lo = lo - (this.hi - hi);
   }
 }
+
+/**
+ * Particles owed, summed in plain doubles as a host's frame loop sums `rate * dt`, so it emits on
+ * the frames that loop does, rounding included.
+ */
+export class Sum {
+  private owed = 0;
+
+  add(rate: number, dt: number): void {
+    this.owed += rate * (dt / 1000);
+  }
+
+  take(): number {
+    const n = Math.floor(this.owed);
+    this.owed -= n;
+    return n;
+  }
+}

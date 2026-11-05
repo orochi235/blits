@@ -37,7 +37,7 @@ that it does not handle that case.
 
 | Rule | Learned from |
 |---|---|
-| **Turn rates into whole counts exactly**, with no slack and no drift from summing floats. | quarks' carry, twice |
+| **Turn rates into whole counts exactly**, with no slack and no drift from summing floats. A host moving its own float loop onto the driver may ask for that loop's rounding instead, as quarks' `carry: 'float'` gives it, at the cost of emitting the same across a `rebase`. | quarks' carry, twice; magicsmoke's fizz (2026-11-04) |
 | **Keep the order of draws from a shared random stream** when output must repeat. | magicsmoke interleaves each fault's fizz with its discharges |
 | **Treat a time within rounding of a scheduled point as that point.** | tone lost the line into a point a microsecond away |
 | **Get angle units right**: an `angle` channel's `turn` is 360 unless set. | rapier's 2D `rotation` blended radians the long way round |
