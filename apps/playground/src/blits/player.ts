@@ -1,5 +1,5 @@
 import type { Doubt, Handle, Mix, Patch } from '@msb235/blits';
-import type { Built } from './compile';
+import { type Built, close } from './compile';
 import type { Level } from './composition';
 import { EventLog } from './events';
 import { FRAME } from './frame';
@@ -33,8 +33,8 @@ export interface History {
   samples: readonly Sample[];
 }
 
-// Probes write into a pose the mix reuses, so each is copied before the next.
-const copied = (p: Mixed): Mixed => ({
+/** A probe's pose, copied: probes write into a pose the mix reuses. */
+export const copied = (p: Mixed): Mixed => ({
   ...p,
   offset: [...p.offset],
   ...(p.color ? { color: [...p.color] } : {}),
@@ -99,7 +99,10 @@ export class Player {
     if (init) this.author(init.levels);
     this.built = this.fresh();
     this.step(0);
-    if (from) this.seek(from.t);
+    if (from) {
+      this.seek(from.t);
+      close(from.built);
+    }
   }
 
   seek(t: number): void {
@@ -273,6 +276,8 @@ export class Player {
   }
 
   private fresh(): Built {
+    // Unset only while the constructor makes the first.
+    if (this.built as Built | undefined) close(this.built);
     const built = this.build();
     for (const [name, value] of this.slid) built.levels.get(name)?.set(value);
     if (this.at !== null) built.pointer.move(this.at.x, this.at.y);

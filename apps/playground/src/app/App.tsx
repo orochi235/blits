@@ -21,6 +21,7 @@ import { EventsPanel } from './EventsPanel';
 import { FlowPanel } from './FlowPanel';
 import { freshVoice } from './freshVoice';
 import { Inspector } from './Inspector';
+import { ReadBack } from './ReadBack';
 import { TimingPanel } from './TimingPanel';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
@@ -44,7 +45,7 @@ export function App() {
   const compiled = useRef<Composition | null>(null);
   // A new stage needs new columns, so a new player; it takes over the old one's playhead and sliders.
   const player = useMemo(() => {
-    const build = () => compile(compRef.current, subjects, { solos: true });
+    const build = () => compile(compRef.current, subjects, { solos: true, name: 'playground' });
     const p = new Player(build, subjects, { levels: compRef.current.levels, from: last.current });
     last.current = p;
     compiled.current = compRef.current;
@@ -197,6 +198,7 @@ export function App() {
             </TabList>
             <TabPanel id="plots">
               <Inspector player={player} comp={comp} />
+              <ReadBack player={player} />
             </TabPanel>
             <TabPanel id="voice">
               <VoiceColumn
@@ -288,10 +290,15 @@ export function App() {
             onStep={(n) => scrub(player.t + n * FRAME)}
             clock={player.clock}
             mixRate={player.built.mix.rate}
-            onMixRate={(r) => {
+            onMixRate={(r, over) => {
               player.liveMix((m) => {
-                m.rate = r;
+                if (over === undefined) m.rate = r;
+                else m.ramp(r, over);
               });
+              tick();
+            }}
+            onMute={(over) => {
+              player.liveMix((m) => m.mute(over === undefined ? undefined : { over }));
               tick();
             }}
             levels={comp.levels}

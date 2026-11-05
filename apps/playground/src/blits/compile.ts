@@ -47,7 +47,8 @@ export function mixOptionsOf(s: MixSettings = {}): MixOptions {
 export function compile(
   c: Composition,
   subjects: readonly Subject[],
-  opts: { solos?: boolean } = {},
+  /** `name` names the full mix and, after it, each solo, so the debug panel lists them. */
+  opts: { solos?: boolean; name?: string } = {},
 ): Built {
   const scope = scopeOf(c.levels);
   const kit = kitOf(c.rules);
@@ -61,8 +62,11 @@ export function compile(
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
     // History lets the player seek back with blits' own `seek` rather than replaying from 0.
+    const voice = only === null ? undefined : c.voices.find((v) => v.id === only);
+    const name = opts.name && (voice ? `${opts.name} · solo ${voice.name}` : opts.name);
     const m = mix<Subject, Mixed>(kit, {
       ...mixOptionsOf(c.mix),
+      ...(name ? { name } : {}),
       history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
     });
     if (xy !== null) m.plot(subjects, xy);
@@ -93,4 +97,10 @@ export function compile(
     colorAxes: Array.isArray(kit.color.rest) ? kit.color.rest.length : 4,
     pointer,
   };
+}
+
+/** Takes every mix of `b` off the debug panel's list, for a compile the app is done with. */
+export function close(b: Built): void {
+  b.mix.close();
+  for (const m of b.solos.values()) m.close();
 }

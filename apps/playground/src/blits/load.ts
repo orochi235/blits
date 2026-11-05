@@ -18,7 +18,7 @@ import {
 import { CSS } from './easing';
 import { levelsOk } from './edit';
 import { parentOf, treeFault } from './groups';
-import { CHANNELS, COLOR_RULES, NUMBER_RULES, SWINGS } from './kit';
+import { CHANNELS, COLOR_RULES, rulesFor, SWINGS, UNBOUNDED } from './kit';
 
 type Rec = Record<string, unknown>;
 
@@ -213,13 +213,13 @@ const numberRule =
     obj(v) &&
     rules.includes(v.rule as string) &&
     opt(v.bounds, bounds) &&
-    !(v.rule === 'last' && v.bounds !== undefined);
+    !(UNBOUNDED.includes(v.rule as never) && v.bounds !== undefined);
 const RULE_CHECKS: Record<string, (v: unknown) => boolean> = {
-  offset: numberRule(...NUMBER_RULES.filter((r) => r !== 'last')),
-  turn: numberRule(...NUMBER_RULES),
-  scale: numberRule(...NUMBER_RULES),
-  opacity: numberRule(...NUMBER_RULES),
-  glow: numberRule(...NUMBER_RULES),
+  offset: numberRule(...rulesFor('offset')),
+  turn: numberRule(...rulesFor('turn')),
+  scale: numberRule(...rulesFor('scale')),
+  opacity: numberRule(...rulesFor('opacity')),
+  glow: numberRule(...rulesFor('glow')),
   color: (v) =>
     obj(v) &&
     oneOf(...COLOR_RULES)(v.rule) &&

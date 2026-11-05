@@ -1,8 +1,8 @@
-import { type Built, compile } from '@pg/blits/compile';
+import { type Built, close, compile } from '@pg/blits/compile';
 import type { Composition } from '@pg/blits/composition';
 import { clipsOf, type Score } from '@pg/blits/score';
 import type { Subject } from '@pg/blits/stage';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 /**
  * The score of `comp`, and the folds it is viewed with, which are not part of the composition.
@@ -15,6 +15,7 @@ export function useScore(
 ): Score & { built: Built; fold(id: string, on: boolean): void } {
   const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set());
   const built = useMemo(() => compile(comp, subjects), [comp, subjects]);
+  useEffect(() => () => close(built), [built]);
   const score = useMemo(
     () => clipsOf(comp, subjects, { built, folded }),
     [comp, subjects, built, folded],

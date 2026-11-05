@@ -29,8 +29,9 @@ rows or the text; clicking a subject picks it for the inspector, top middle. The
 the diagrams, on four tabs: **Flow**, **Timing**, **Both** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
 selected voice's or group's panels and below them the composition's levels, mix and fold rules; and **Events**, what the score knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, loop, rate, a choice of how a
-scrub back moves the mixes, ‹ and › to step one frame, the live toggle with the mix's own `rate`
-beside it in live mode, and a slider per level. The transport's rate slows the playground's clock,
+scrub back moves the mixes, ‹ and › to step one frame, the live toggle with, in live mode, the mix's own `rate`, an `over`
+that ramps a rate change (`mix.ramp`) and fades a **mute** (`mix.mute`), and a slider per level.
+Blank, `over` sets a rate at once and mutes over each voice's own `fade.out`. The transport's rate slows the playground's clock,
 while the mix's slows the voices as the score's clock runs on.
 A scrub back either replays from 0, which shows exactly what playback showed, or calls blits'
 `mix.seek({ frame })` with the frame each mix played at that point of the score, which restores
@@ -78,8 +79,9 @@ interface Composition {
 edits them. Unset, `stepMs` is one frame and the rest are blits' defaults.
 
 `rules` picks each channel's fold rule, from which `kitOf` in `src/blits/kit.ts` makes the kit
-every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, `min`, `norm`, or `last`, and
-all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `last`; `color`
+every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, `min`, `norm`, or `last`, and `turn` also
+`angle`, which adds the short way round; all but `last` and `angle` take `bounds`; `offset` folds
+its two numbers alike, so not by `last`; `rulesFor` in `src/blits/kit.ts` holds which channel takes which; `color`
 replaces, averages, or blends by any of blits' blend modes (`multiply`, `overlay`, `hue`, and the
 rest; `BLENDS` in `src/blits/kit.ts` lists them) over the subject's base color, as a `color` (straight across OKLab, as light mixes) or an `ink` (round the
 hue, for colors that stand for something). The stage lays every color pose over the base color,
@@ -249,7 +251,7 @@ header, and its members sit under it, indented one step per depth.
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
 | hatched extension      | `freeze`                      | the clip's menu                                          |
 | shared color bracket   | `role`; "· blend" after the label where `mix.blend` cues it | drag a lane label onto another's, or the clip's menu |
-| dashed link            | `anchor`, where it names one voice | Alt-drag from the body (the start) or the right edge (the end) onto another clip, which takes the nearer of its edges: its end for `after`, its start for `with`; the voice panel for the rest |
+| dashed link            | `anchor`, where it names one voice or group, from a voice or a group header | Alt-drag from the body (the start) or the right edge (the end) onto another clip, which takes the nearer of its edges: its end for `after`, its start for `with`; the voice panel for the rest |
 | dotted link, close dots | an `all`: one link from each voice it waits on | the voice panel; an Alt-drag from the edge replaces the join |
 | dotted link, wide dots | an `any`, or a query by `tag`, `writes` or a `resolver`: one link from each voice it could wait on | the voice panel; an Alt-drag from the edge replaces it |
 | notch on the top edge  | a hit, every pass             | the voice panel                                          |
@@ -276,8 +278,9 @@ blits places it at that first sync.
 
 The dotted links come from `timingOf`, so the score and the Timing tab agree on which voices an
 anchor could wait on. A link is `all` only when every step from the anchor to that voice is an
-`all`; a query inside an `all` still picks one voice, so its links are `any`. A group or a mark at
-the far end draws no link.
+`all`; a query inside an `all` still picks one voice, so its links are `any`. A group at the far end of
+a join draws its link as a voice does; a mark draws none. A link drag starts and lands only on
+clips: a group's anchor is set in the group panel.
 
 ## The flow
 
@@ -380,6 +383,7 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 | Mix       | `stepMs` with a switch for a fixed step, `maxDt` with a switch to cap it, reduced motion, and lanes |
 | Fold rules | a row per channel; see [A composition](#a-composition)                                  |
 | Inspector | for the picked subject, a plot per channel over the last 3 s: each voice alone thin, the mix thick; then each voice's `weightOf`, and each enclosing group's |
+| Read back and ahead | under the inspector, for the picked subject in the full mix: whether it is `atRest` and the mix `inert`; a slider of ms back from the mix's `now`, and the pose `project` reads there with each channel's `assess`, or why it cannot; and `trace` over the next 1000 ms (or as set) of each one-number channel, drawn, with whether the run is exact or read on a grid. A composition whose code calls `around` keeps no history, so it projects back only where blits can say without it |
 
 Each error shows under its field's row; one on a `cue` or an `anchor`, or on a group's `start`
 under a span, which hides that row, is listed at the top of the panel. Two voices or groups with one name are an error on
@@ -404,6 +408,10 @@ owner or a span; deleting a group moves what it held up to its parent.
   'fresh'` changes anything only when the voice starts partway through a frame and its `stepMs`
   is shorter than one: it skips the steps from its start to that frame. A subject waiting out a
   `stagger` is already met, so it steps the same either way.
+- **The debug panel.** With `?panel` in the address, blits' debug panel mounts over the page. The
+  Player's mixes are named `playground` and `playground · solo <voice>`; a compile the app is
+  done with, the Player's last one, the score's and the tracks', is `close`d, so the panel lists
+  only what plays.
 - **The inspector reads only public API.** Each solo mix plays one voice and is read with `probe`;
   blits exposes no per-voice contribution, and the playground does not reach inside for one. The
   Player records the picked subject's history as it steps, so a plot never replays anything.
@@ -428,7 +436,9 @@ owner or a span; deleting a group moves what it held up to its parent.
   once and clears it from the address bar, so a reload keeps later edits. Every loaded composition, from a link or from
   storage, passes `load` (`src/blits/load.ts`): a wrong `version`, a missing field or a size past
   the `MAX_*` caps in `composition.ts` falls back to the default preset rather than a blank page.
-  Nothing is written to disk.
+  Save, beside Share, downloads the composition as `<title>.blits.json`; Open loads such a file
+  through the same `load`, as one edit undo takes back, and says so where the file holds nothing
+  it accepts.
 
 ## Presets
 
@@ -464,7 +474,7 @@ a composition gives, to the bit, the poses the matching hand-written `cue` gives
 span the poses of hand-written `owns` or `span`; each fit-step list matches its `pipe(...)`; a scrub back over
 a stateful voice lands on the pose continuous play showed; the score round-trips voice to clip to
 edit to voice; a bad expression errors on its field while compile still returns; a composition
-edit stays inside what `load` accepts; a drag between two diagram dots makes the edit it describes or none; every preset compiles and plays clean. The smoke run covers
+edit stays inside what `load` accepts; every preset round-trips through a file; a past frame reads back by `project` as play showed it, and a linear keys voice traces exactly; a drag between two diagram dots makes the edit it describes or none; every preset compiles and plays clean. The smoke run covers
 the rest in a real browser, failing on a console error, a page error, or a blank stage, flow, timing, both or desk diagram; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
 
@@ -475,12 +485,10 @@ the typecheck, the tests and the smoke run.
 
 ## Not in this version
 
-- Reading back (`history` and `project` at a past time), as a panel of its own.
 - A rate below 0 on a span, which blits refuses at its cue.
 - A booker with a clock other than the player's own.
-- A link on the score for an anchor on a group, or to one: header lanes take no links.
+- Dragging a link from or onto a group header: header lanes take no link drags.
 - Recording level moves.
-- Saving to a file.
 
 ## Chosen while building
 
@@ -538,3 +546,8 @@ Calls made while building, each the owner's to overturn, with how to reverse it.
   composition as written, so slider moves and live changes do not show. The path helpers in
   `ScoreLanes/track.ts` are copied from the site's `Timeline.tsx`, which keeps them private to the
   site. "Hide tracks" closes the lanes to scrubbing strips, remembered per viewer in localStorage.
+- **Read back and ahead is a section under the inspector**, not a tab, reading the full mix only
+  (2026-11-04). Its slider is ms back from `now` rather than a mix time, so it keeps its place as
+  play goes on. Reverse by giving `ReadBack` its own `Tab` in `App.tsx`.
+- **One `over` serves a live ramp and a mute** (2026-11-04), as both take a span of host time.
+  Split it in `src/app/LiveMix.tsx`.

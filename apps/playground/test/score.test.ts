@@ -101,6 +101,23 @@ describe('clipsOf', () => {
       { from: { clip: 'y', edge: 'end' }, to: { clip: 'b', edge: 'end' }, join: 'any' },
     ]);
   });
+  it('links an anchor on a group, and one to a group, as it does a voice’s', () => {
+    const d = {
+      ...c,
+      voices: [
+        v({ id: 'a' }),
+        v({ id: 'x', anchor: { start: { with: 'G' } } }),
+        v({ id: 'y', anchor: { start: { all: [{ after: 'G' }, { after: 'a' }] } } }),
+      ],
+      groups: [group({ id: 'g', name: 'G', anchor: { start: { after: 'a' } } })],
+    };
+    expect(clipsOf(d, subjects).links).toEqual([
+      { from: { clip: 'x', edge: 'start' }, to: { clip: 'g', edge: 'start' } },
+      { from: { clip: 'g', edge: 'start' }, to: { clip: 'a', edge: 'end' } },
+      { from: { clip: 'y', edge: 'start' }, to: { clip: 'g', edge: 'end' }, join: 'all' },
+      { from: { clip: 'y', edge: 'start' }, to: { clip: 'a', edge: 'end' }, join: 'all' },
+    ]);
+  });
   it('a query links from every voice it could pick, as any, and never from its own', () => {
     const d = {
       ...c,

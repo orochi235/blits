@@ -17,7 +17,7 @@ const edgeOfMark = (m: MarkName): Edge => (m === 'start' || m === 'in' ? 'start'
 /** The mark a link meets in place of an edge: one placed inside the voice. */
 const innerMark = (m: MarkName) => (MARKS.includes(m) ? {} : { mark: m });
 
-/** The voice name and edge an anchor points at, when it selects by name alone. */
+/** The voice or group name and edge an anchor points at, when it selects by name alone. */
 function targetOf(
   a: number | Anchor | undefined,
 ): { name: string; edge: Edge; mark?: string } | null {
@@ -97,12 +97,13 @@ export function clipsOf(
     }
   }
   const links: Link[] = [];
-  for (const v of c.voices) {
+  const named = [...c.voices, ...(c.groups ?? [])];
+  for (const v of named) {
     for (const edge of ['start', 'end'] as const) {
       const a =
         edge === 'start' ? (v.anchor?.start ?? v.anchor?.in) : (v.anchor?.end ?? v.anchor?.out);
       const t = targetOf(a);
-      const to = t && c.voices.find((x) => x.id !== v.id && x.name === t.name);
+      const to = t && named.find((x) => x.id !== v.id && x.name === t.name);
       if (t && to)
         links.push({
           from: { clip: v.id, edge },
@@ -129,9 +130,10 @@ function joinedLinks(c: Composition): Link[] {
     const n = kinds.get(node);
     const every = all && n?.kind === 'join' && n.label === 'all';
     for (const e of into.get(node) ?? []) {
-      if (e.from.startsWith('voice:')) {
+      const item = /^(voice|group):(.*)$/.exec(e.from);
+      if (item) {
         const to = {
-          clip: e.from.slice('voice:'.length),
+          clip: item[2] as string,
           edge: edgeOfMark(e.mark),
           ...innerMark(e.mark),
         };
@@ -142,12 +144,16 @@ function joinedLinks(c: Composition): Link[] {
         walk(e.from, from, every);
     }
   };
-  for (const v of c.voices)
-    for (const e of into.get(`voice:${v.id}`) ?? []) {
+  const items = [
+    ...c.voices.map((v) => ['voice', v.id] as const),
+    ...(c.groups ?? []).map((g) => ['group', g.id] as const),
+  ];
+  for (const [kind, id] of items)
+    for (const e of into.get(`${kind}:${id}`) ?? []) {
       if (e.sets === undefined || e.sets === 'turn') continue;
       if (!e.from.startsWith('join:') && !e.from.startsWith('query:')) continue;
       const edge: Edge = e.sets === 'start' || e.sets === 'in' ? 'start' : 'end';
-      walk(e.from, { clip: v.id, edge }, true);
+      walk(e.from, { clip: id, edge }, true);
     }
   return [...out.values()];
 }
