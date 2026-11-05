@@ -257,7 +257,7 @@ function ExplainerBody<I, O, C>({
         <button
           type="button"
           className="stage-control"
-          data-glyph={running ? 'pause' : 'play'}
+          data-glyph={running || playing ? 'pause' : 'play'}
           onClick={playPause}
         >
           {running ? 'Pause' : playing ? 'Paused — focus to resume' : 'Play'}

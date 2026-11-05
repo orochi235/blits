@@ -72,7 +72,7 @@ export default function Live({ of }: { of: string }) {
       <div ref={root} className="live-stage" />
       {allowed && !focused ? (
         // Its loop waits out of focus; the click that focuses the window resumes it.
-        <button type="button" className="stage-control" data-glyph="play">
+        <button type="button" className="stage-control" data-glyph="pause">
           Paused — focus to resume
         </button>
       ) : allowed ? (
