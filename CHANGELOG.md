@@ -26,6 +26,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   than as if the GPU's last fold had met it.
 - The `gpu` engine folds a `keys` patch whose first stop is eased by a function, which no segment
   reads, rather than leaving it on the CPU.
+- The `gpu` engine keeps a frame's fold on the CPU, with a reason in `reasons()`, where its output,
+  subjects or table buffer would pass the device's `maxStorageBufferBindingSize`, rather than
+  failing to bind them.
 
 ## 1.0.0
 
