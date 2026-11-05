@@ -7,8 +7,9 @@ import { mix } from '../src/mixer.js';
 import { tween } from '../src/motion.js';
 import { MOST } from '../src/origin.js';
 import { keys } from '../src/patch.js';
-import type { Handle, Mix } from '../src/types.js';
+import type { Handle, Mix, MixOptions } from '../src/types.js';
 import type { Earlier, Voice } from '../src/voice.js';
+import { memoryStore } from './store.js';
 
 // What the stress demos in apps/stress found. Each `test.fails` asserts the documented behavior and
 // fails today; once blits is fixed it starts failing, and its `.fails` comes off.
@@ -795,6 +796,60 @@ for (const outer of [false, true])
       m.seek(1320);
       expect(shown()).toEqual(live);
     });
+
+const leapt = (opts: MixOptions) => {
+  const m = mix<Part, Pose>(K, opts);
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  const s = m.span({
+    owner: reel,
+    start: 1000,
+    duration: 2000,
+    order: 'stagger',
+    share: 0.5,
+    spill: 'overrun',
+    fit: condense(),
+    faster: 3,
+    slower: 3,
+  });
+  for (const [i, p] of parts.entries())
+    m.cue({ owner: s, patch: ramp(lens[i] as number, 100, 400), subjects: [p], loop: false });
+  for (let t = 10; t <= 1300; t += 10) m.sync(t);
+  s.rate = -1;
+  m.sync(1310);
+  s.seek(1800);
+  return { m, s };
+};
+
+// With a store a seek reaches past memory, so the record of an owner's forward seek is kept past
+// it too, though a later forward seek ages the memory out.
+test('a seek back past memory with a store, over a span sought forward while turned back, fits as it played', async () => {
+  const { m, s } = leapt({
+    history: { ms: 100, tape, store: memoryStore() },
+    keyOf: (p: Part) => p.id,
+  });
+  m.sync(1320);
+  const shown = () => ({ ...s.result, rate: s.rate, x: parts.map((p) => m.probe(p).x) });
+  const live = shown();
+  for (let t = 1330; t <= 1700; t += 10) m.sync(t);
+  s.seek(2500);
+  for (let t = 1710; t <= 1800; t += 10) m.sync(t);
+  await m.prepare(1310);
+  m.seek(1310);
+  m.seek(1320);
+  expect(shown()).toEqual(live);
+});
+
+// A read ahead made between an owner's forward seek and the next frame starts the children the seek
+// crossed from the owner's clock as sought, where the frame starts them in order. A copy given the
+// mix's `leapt` set still differs: by the end of its move it holds fewer children (2026-11-04).
+test.fails('a read ahead over a span sought forward while turned back reads as the next frame', () => {
+  const { m } = leapt({ history: { ms: 10_000, tape } });
+  const ahead = m.project(1320);
+  const read = parts.map((p) => ahead.probe(p).x);
+  m.sync(1320);
+  expect(read).toEqual(parts.map((p) => m.probe(p).x));
+});
 
 // A motion subject met inside its stagger and not read once the stagger ran out has no run yet, so
 // the mix is not inert; a seek back to after the stagger ran out finds it so again.

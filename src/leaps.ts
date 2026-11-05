@@ -12,7 +12,11 @@ export function leap<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>): void {
   descendants(owner, (v) => {
     if (v.state === 'pending') pending.push(v);
   });
-  const reach = mix.now - (mix.opts.history as { ms: number }).ms;
+  // With a store a seek reaches past memory, so nothing ages out; the host bounds the tape.
+  const reach =
+    mix.transport.pager === null
+      ? mix.now - (mix.opts.history as { ms: number }).ms
+      : Number.NEGATIVE_INFINITY;
   const leaps = (owner.leaps ?? []).filter((l) => l.at >= reach);
   leaps.push({ seq: mix.transport.seq, at: mix.now, pending });
   owner.leaps = leaps;
