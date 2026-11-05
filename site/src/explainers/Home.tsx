@@ -1,6 +1,6 @@
 import { css, ink, keys, kit, mul, patch, sum, toHex } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
-import { CYCLE, hueAt, logoAt, turned } from './hues';
+import { CYCLE, hueAt, logoAt, steerLogo, turned } from './hues';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Scene, VoiceDef } from './kit/scene';
@@ -62,14 +62,20 @@ function scene(c: Config): Scene<Swatch, Pose, Config> {
       color: 'v2',
       spec: { patch: wave, loop: true, stagger: (s) => s.i * 140, fade: { in: 400 } },
     });
-  // Started where the logo is in its hues, so the two play in step until this clock pauses or turns.
+  // Started where the logo is in its hues; from then on this clock steers the logo's.
+  const from = logoAt();
   if (c.tint)
-    voices.push({ name: 'Tint', color: 'v3', spec: { patch: tint, loop: true, seek: logoAt() } });
+    voices.push({ name: 'Tint', color: 'v3', spec: { patch: tint, loop: true, seek: from } });
   return {
     kit: PART,
     subjects: () => swatches,
     voices: () => voices,
     ledger: { subject: (all) => all[2] as Swatch, channels: ['gain', 'lift', 'color'] },
+    attach(m) {
+      if (!c.tint) return { close() {} };
+      steerLogo(() => from + (Number.isNaN(m.now) ? 0 : m.now));
+      return { close: () => steerLogo(null) };
+    },
   };
 }
 

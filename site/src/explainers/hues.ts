@@ -57,6 +57,7 @@ export function turned(deg: number): number[] {
 }
 
 let logo: () => number = () => 0;
+let steer: (() => number) | null = null;
 
 /** How far into a pass of its hues the logo is, ms: where another mix starts, to play in step. */
 export const logoAt = (): number => logo();
@@ -65,3 +66,14 @@ export const logoAt = (): number => logo();
 export function followLogo(at: () => number): void {
   logo = at;
 }
+
+/**
+ * Hands the logo's hues to another clock: while set, the logo seeks its hue voice to `to()` ms into
+ * the pass every frame, and once cleared with null it plays on from there.
+ */
+export function steerLogo(to: (() => number) | null): void {
+  steer = to;
+}
+
+/** Where whatever is steering the logo's hues wants them, or null while nothing is. */
+export const steered = (): number | null => steer?.() ?? null;
