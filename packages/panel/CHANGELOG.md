@@ -1,10 +1,18 @@
 # Changelog
 
-This package follows [semver](https://semver.org). Below 1.0.0, a breaking change bumps the minor
-version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
+This package follows [semver](https://semver.org) and shares the engine's version: each release of
+`@msb235/blits` releases this package at the same number, and the release workflow refuses a
+`panel-v*` tag that differs from it. Before 1.1.0, a breaking change bumped the minor version and
+everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## Unreleased
+## 1.1.0
+
+### Breaking
+
+- Released in lockstep with `@msb235/blits`, so 0.9.0 is followed by 1.1.0.
+- `@msb235/blits` is a peer at `^1.1.0`, where it was `^1.0.0`. The plan's lanes need the `track` it
+  reports.
 
 ### Added
 

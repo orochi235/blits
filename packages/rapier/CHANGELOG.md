@@ -4,12 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
-## Unreleased
+## 0.7.0
 
 ### Breaking
 
-- Needs the engine's `mix.onSeek` and `mix.call`, released after `@msb235/blits` 1.0.0; the peer
-  range moves to that release when this one ships.
+- `@msb235/blits` is a peer at `^1.1.0`, where it was `^1.0.0`. It needs that release's `mix.onSeek`
+  and `mix.call`.
 
 ### Fixed
 
