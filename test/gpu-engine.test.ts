@@ -254,6 +254,28 @@ describe('gpu engine', () => {
     expect(side.channel('y')).not.toBeNull();
   });
 
+  it('warns once where two voices on one mix fold one motion patch', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const d = stub();
+    const cells = [{ x: 0 }, { x: 1 }];
+    const m = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: d.device }) });
+    m.sync(0);
+    const s = spring<C, P>('y', { to: (c) => c.x });
+    m.cue({ patch: s, subjects: cells });
+    m.cue({ patch: s, subjects: cells, weight: 0.5 });
+    const side = gpuOf(m);
+    side.subjects(cells, () => ({}));
+    side.channel('y');
+    await side.ready;
+    for (const t of [16, 32, 48]) {
+      m.sync(t);
+      side.channel('y');
+    }
+    const shared = warn.mock.calls.filter(([w]) => /folded by two voices at once/.test(String(w)));
+    expect(shared).toHaveLength(1);
+    warn.mockRestore();
+  });
+
   it('gives no channel before any subject is registered', () => {
     const g = mix<C, P>(kit<P>({ y: sum() }), { engine: gpu({ device: untouched }) });
     g.sync(0);

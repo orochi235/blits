@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Answers } from '../src/gpu/answers.js';
 import { codesOf } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
@@ -234,6 +234,21 @@ describe('motion mirror', () => {
     expect(mirror.rows[3 + 2 * motions.n]).toBe(9);
     s.to(list[1] as C, 4);
     expect(mirror.stirred).toBe(true);
+  });
+
+  it('warns once where another mirror took its watch, since both rebuild every frame', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const list = cells(2);
+    const { motions, mirror } = setup(list);
+    mirror.prepare(0, Number.POSITIVE_INFINITY);
+    expect(warn).not.toHaveBeenCalled();
+    const other = new Mirror(motions, list, mirror.values());
+    mirror.prepare(16, Number.POSITIVE_INFINITY);
+    other.prepare(16, Number.POSITIVE_INFINITY);
+    mirror.prepare(32, Number.POSITIVE_INFINITY);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/one motion patch is folded by two voices at once/);
+    warn.mockRestore();
   });
 
   it('hands every row over as one range when it re-anchors, each time counted from the new anchor', () => {

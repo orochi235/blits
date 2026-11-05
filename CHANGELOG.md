@@ -11,6 +11,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice can name the `track` it plays on, so a tool that draws the score puts the voices sharing
   one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
   carries it as `track`, and `watched` reports it for each voice.
+- The `gpu` engine warns once, in development, where two voices fold one motion patch at once, on
+  one mix or two, which rebuilds the GPU's copy of the patch's runs every frame.
 
 ### Fixed
 
