@@ -135,6 +135,7 @@ export type {
   Sent,
   Setting,
   Signal,
+  Sought,
   SpanHandle,
   SpanHints,
   SpanSpec,
