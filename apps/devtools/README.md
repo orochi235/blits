@@ -10,6 +10,10 @@ shows the same window as `@msb235/blits-panel`'s `mount()`, but the app imports 
 npm run build -w @blits/devtools
 ```
 
+The build gives the extension blits-panel's version, since it is that panel docked in DevTools,
+and the brand's `b` tile from `brand/out/png` as its icons; `public/manifest.json`'s own
+`version` is a placeholder.
+
 Then in Chrome, open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**
 and pick `apps/devtools/dist`. After a rebuild, press the extension's reload button there.
 
@@ -47,7 +51,7 @@ Nothing but `start.js` runs on a page until its DevTools tab connects.
 "Reload with history" and scrubbing. It launches a browser, so run it on the fleet:
 
 ```sh
-onto do -kind test -gui -- sh -c "npm run build -w @blits/devtools && node apps/devtools/scripts/smoke.mjs"
+onto do --kind test --gui -- sh -c "npm run build -w @blits/devtools && node apps/devtools/scripts/smoke.mjs"
 ```
 
 ## Chosen while building

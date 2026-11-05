@@ -1,16 +1,33 @@
 {
   "manifest_version": 3,
   "name": "blits",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "A DevTools tab for pages running blits: every mix, its voices and subjects, channels over time, and a clock to pause, step and scrub.",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
   "devtools_page": "devtools.html",
-  "background": { "service_worker": "worker.js", "type": "module" },
-  "permissions": ["scripting"],
-  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["start.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "start.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     }

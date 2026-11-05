@@ -1,6 +1,6 @@
 // Builds the unpacked extension into dist/: the panel and DevTools pages and the worker as modules,
 // and the three scripts that go into a page as classic scripts, which is all Chrome injects.
-import { rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { build } from 'vite';
@@ -56,5 +56,18 @@ for (const name of ['start', 'page', 'relay'])
       },
     },
   });
+
+// The extension is the panel, so it carries the panel's version, and the brand's b as its icon.
+const manifest = JSON.parse(readFileSync(at('../dist/manifest.json'), 'utf8'));
+manifest.version = JSON.parse(
+  readFileSync(at('../../../packages/panel/package.json'), 'utf8'),
+).version;
+writeFileSync(at('../dist/manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+mkdirSync(at('../dist/icons'), { recursive: true });
+for (const size of Object.keys(manifest.icons))
+  copyFileSync(
+    at(`../../../brand/out/png/mark-panel-${size}.png`),
+    at(`../dist/icons/${size}.png`),
+  );
 
 console.log(`built ${outDir}`);
