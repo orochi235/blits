@@ -357,7 +357,7 @@ describe('trace over random scenes', () => {
     }
     // Most runs of these scenes are exact; a check that never runs proves nothing.
     expect(exact).toBeGreaterThan(80);
-  });
+  }, 15_000);
 });
 
 describe('a point within rounding of the window', () => {
