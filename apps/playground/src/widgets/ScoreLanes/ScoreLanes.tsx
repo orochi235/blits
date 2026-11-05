@@ -140,11 +140,14 @@ function Lanes(props: ScoreLanesProps) {
   };
   const edgeAt = (id: string, edge: Edge, mark?: string) => {
     const c = clips.find((x) => x.id === id);
-    if (!c) return null;
-    const inner = mark === undefined ? undefined : c.inner?.find((m) => m.label === mark);
+    const h = c ? undefined : headers.find((x) => x.id === id);
+    const lane = c ?? h;
+    if (!lane) return null;
+    const inner = mark === undefined ? undefined : lane.inner?.find((m) => m.label === mark);
+    const end = c ? shownEnd(c) : (h?.end ?? 0);
     return {
-      x: scale.x(inner ? inner.at : edge === 'start' ? c.start : Math.min(shownEnd(c), duration)),
-      y: RULER + c.lane * laneH + laneH / 2,
+      x: scale.x(inner ? inner.at : edge === 'start' ? lane.start : Math.min(end, duration)),
+      y: RULER + lane.lane * laneH + laneH / 2,
     };
   };
   const linkDrag = drag && 'link' in drag ? drag : null;

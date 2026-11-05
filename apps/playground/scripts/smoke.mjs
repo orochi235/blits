@@ -1,5 +1,6 @@
 // Loads the built playground once per preset in headless Chromium, plays a second, and fails on any
-// console error, page error, a stage that drew nothing, or a flow, timing, both or desk diagram that drew nothing, or no read back and ahead panel. `--shots <dir>`
+// console error, page error, a stage that drew nothing, or a flow, timing, both or desk diagram that drew nothing, or no read back and ahead panel;
+// then a live ramp and mute and a save that opens again (`smoke-actions.mjs`). `--shots <dir>`
 // keeps the screenshots, which otherwise go to a temp directory removed on exit.
 import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -7,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { actions } from './smoke-actions.mjs';
 
 // Pixels differing from the corner-pixel background by more than 24 in any channel. A flow canvas is
 // WebGL, so it is read from a Playwright screenshot rather than from the canvas.
@@ -139,6 +141,10 @@ try {
     for (const e of errors) console.log(`       ${e}`);
     await page.close();
   }
+  const acted = await actions(browser, origin, shots);
+  if (acted.length > 0) failed++;
+  console.log(`${acted.length ? 'FAIL' : 'ok  '}  live ramp and mute, save and open`);
+  for (const e of acted) console.log(`       ${e}`);
 } finally {
   await browser.close();
   server.close();
