@@ -130,6 +130,11 @@ export interface Ramp {
   /** Begun where the voice ran back to its start, whose first frame it holds through the fade. */
   back?: boolean;
   /**
+   * Begun where an owner's clock ran back to its start as its own clock ran on to its end: it
+   * holds the frame it was cued at, its last, through the fade.
+   */
+  opening?: boolean;
+  /**
    * Begun where the passes of a voice an owner holds under history ran out: faded, it stays live
    * and quiet with its owner, which brings it back by taking its clock back into its passes.
    */
@@ -727,10 +732,12 @@ export class Voice<I, O> {
 
   /**
    * Whether a subject before its start shows its first frame: the voice freezes before, or is
-   * fading out from where it ran back to its start, as one fading from its end shows its last.
+   * fading out from where it, or its owner, ran back to its start, as one fading from its end
+   * shows its last.
    */
   get holdsFirst(): boolean {
-    return this.freezesBefore || this.out?.back === true;
+    const out = this.out;
+    return this.freezesBefore || (out !== null && (out.back === true || out.opening === true));
   }
 
   /**

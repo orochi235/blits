@@ -12,6 +12,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
   carries it as `track`, and `watched` reports it for each voice.
 
+### Fixed
+
+- A voice cued backward under an owner turned backward, so running forward overall, showed
+  nothing through its fade out once it reached its end; it now holds its last frame through the
+  fade, as a voice running forward on its own does.
+
 ## 1.0.0
 
 ### Added

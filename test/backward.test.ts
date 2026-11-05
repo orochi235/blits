@@ -355,6 +355,27 @@ describe.each([true, false])('a voice whose owner runs backward, lanes %s', (lan
     expect(owner.state).toBe('done');
   });
 
+  it('cued backward itself, runs forward to its end and fades out showing its last frame', async () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const owner = m.owns({});
+    const h = m.cue({ owner, patch: ramp, loop: false, rate: -1, fade: { out: 100 } });
+    m.sync(200);
+    expect(m.probe(a).x).toBeCloseTo(200, 9);
+    owner.rate = -1;
+    m.sync(300);
+    expect(m.probe(a).x).toBeCloseTo(300, 9);
+    // Its owner's clock is back at its start at 400, where its own clock reaches its end.
+    m.sync(390);
+    expect(h.state).toBe('live');
+    m.sync(450);
+    expect(h.state).toBe('fading');
+    expect(m.probe(a).x).toBeCloseTo(200, 9);
+    m.sync(500);
+    expect([h.state, owner.state]).toEqual(['done', 'done']);
+    expect(await h.played).toBe(true);
+  });
+
   it('shows a subject first read as it runs back, its fade in long done', () => {
     const m = mix<Part, Pose>(K, { lanes });
     m.sync(0);

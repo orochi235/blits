@@ -238,8 +238,8 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
     if (voice.state === 'live' && voice.out !== null && !voice.quietAt(now)) rouse(mix, voice, now);
     // Its passes run out at its end running forward, and at its start running back. A clock
     // standing still at or before its start is where it was: waiting, or frozen there.
-    const heads =
-      Math.sign(voice.rateAt(t)) * (voice.owner === null ? 1 : heading(voice.owner, now));
+    const owned = voice.owner === null ? 1 : heading(voice.owner, now);
+    const heads = Math.sign(voice.rateAt(t)) * owned;
     const at = t === Number.NEGATIVE_INFINITY ? t : elapsedWith(voice, t);
     const back = heads < 0;
     const atStart = !voice.beginless && at <= voice.soonest;
@@ -258,7 +258,11 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
           beginFade(
             mix,
             voice,
-            { back, stays: voice.owner !== null && mix.opts.history !== undefined },
+            {
+              back,
+              opening: !back && owned < 0,
+              stays: voice.owner !== null && mix.opts.history !== undefined,
+            },
             Math.max(startOf(voice), Math.min(now, voice.endsAt())),
           );
       }

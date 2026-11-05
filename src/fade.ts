@@ -149,7 +149,14 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
 export function beginFade<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
-  opts: { over?: number; at?: 'rest'; deadline?: number; back?: boolean; stays?: boolean },
+  opts: {
+    over?: number;
+    at?: 'rest';
+    deadline?: number;
+    back?: boolean;
+    opening?: boolean;
+    stays?: boolean;
+  },
   at?: number,
 ): void {
   if (voice.state === 'done' || voice.state === 'fading') return;
@@ -172,6 +179,7 @@ export function beginFade<I, O>(
     deadline: opts.deadline,
   };
   if (opts.back) voice.out.back = true;
+  if (opts.opening) voice.out.opening = true;
   if (opts.stays) voice.out.stays = true;
   noted(mix, voice);
   // A fade at rest, from a voice's start, or of a voice yet to start takes it off its lane.
