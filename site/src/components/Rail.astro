@@ -1,7 +1,7 @@
 ---
 import pkg from '../../../package.json';
 import { extra, local, start, under, words } from '../nav';
-import wordmark from '@brand/out/wordmark-green.svg?raw';
+import wordmark from '@brand/out/wordmark-panel.svg?raw';
 import Search from './Search.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
@@ -10,7 +10,10 @@ const link = (slug: string) => `${base}${slug ? `${slug}/` : ''}`;
 const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
 ---
 <nav class="rail" aria-label="Pages">
-  <a class="mark" href={link('')} aria-label="blits"><Fragment set:html={wordmark} /></a>
+  <a class="mark" href={link('')} aria-label="blits">
+    <Fragment set:html={wordmark} />
+    <canvas aria-hidden="true"></canvas>
+  </a>
   <p class="meta">
     <a href={link('changelog')}>v{pkg.version}</a>
     <a href="https://github.com/orochi235/blits">GitHub</a>
@@ -43,6 +46,17 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     {import.meta.env.DEV && local.map((w) => <li><a href={w.href}>{w.title}</a></li>)}
   </ul>
 </nav>
+
+<script>
+  import { playLogo } from '../live/logo';
+
+  const mark = document.querySelector<HTMLElement>('.rail .mark');
+  const canvas = mark?.querySelector('canvas');
+  if (mark && canvas) {
+    playLogo(canvas);
+    mark.classList.add('lit');
+  }
+</script>
 
 <style>
   .rail {
@@ -93,18 +107,27 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
 
   .mark {
     display: block;
-    width: 6rem;
-    margin-bottom: 0.8rem;
+    position: relative;
+    width: 9.5rem;
+    aspect-ratio: 22 / 9;
+    margin-bottom: 0.9rem;
   }
 
-  .mark :global(svg) {
-    display: block;
+  .mark :global(svg),
+  .mark canvas {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: auto;
+    height: 100%;
   }
 
-  .mark :global(g) {
-    fill: var(--logo);
+  .mark canvas,
+  .mark.lit :global(svg) {
+    visibility: hidden;
+  }
+
+  .mark.lit canvas {
+    visibility: visible;
   }
 
   .meta {
