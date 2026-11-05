@@ -63,6 +63,15 @@
   cursor: grab;
 }
 
+.tracked .body {
+  stroke-opacity: 0;
+}
+
+.tracked:where(:hover) .body,
+.tracked .body:where(:focus-visible) {
+  stroke-opacity: 0.7;
+}
+
 .selected .body {
   stroke: var(--wzl-fg);
   stroke-opacity: 1;

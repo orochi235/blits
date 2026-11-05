@@ -79,6 +79,9 @@ export interface ClipLaneProps {
   onEdit(edit: ClipEdit): void;
 }
 
+/** How far a pass's tick reaches down a clip that has a track. */
+const PASS_TICK = 5;
+
 /** One clip and its handles, on its lane. */
 export function ClipLane(p: ClipLaneProps) {
   const { raw, clip: c, scale, duration, labelW, hatchMask } = p;
@@ -91,7 +94,10 @@ export function ClipLane(p: ClipLaneProps) {
   const fill = hueColor(c.hue);
   const factor = factorText(c.factor);
   const points = clipPolygon(c, scale, top, h, duration);
-  const classes = [s.clip, p.selected && s.selected, c.locked && s.locked];
+  // Over its own track the body's outline only repeats the track's edges: it shows on hover,
+  // focus or selection, and the passes shrink to ticks along the top.
+  const tracked = p.track !== undefined && !c.skipped;
+  const classes = [s.clip, p.selected && s.selected, c.locked && s.locked, tracked && s.tracked];
   return (
     <g className={classes.filter(Boolean).join(' ')}>
       {/* The label drags onto another lane's label to group; the clip menu is its keyboard path. */}
@@ -158,7 +164,14 @@ export function ClipLane(p: ClipLaneProps) {
       )}
       {!c.skipped &&
         passLines(c, duration).map((t) => (
-          <line key={t} className={s.pass} x1={scale.x(t)} x2={scale.x(t)} y1={top} y2={top + h} />
+          <line
+            key={t}
+            className={s.pass}
+            x1={scale.x(t)}
+            x2={scale.x(t)}
+            y1={top}
+            y2={tracked ? top + PASS_TICK : top + h}
+          />
         ))}
       {!c.skipped && <ClipTicks clip={c} scale={scale} top={top} duration={duration} />}
       {!c.skipped && c.inner && (
