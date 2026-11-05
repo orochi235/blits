@@ -1,27 +1,13 @@
-import type { Handle, Kit, Mix, MixOptions, OwnerSpec, VoiceSpec } from '@msb235/blits';
+import type { Handle, Kit, Mix, MixOptions, VoiceSpec } from '@msb235/blits';
 
 /** One frame of every explainer's clock. Explainers never read a wall clock, so a run replays. */
 export const FRAME = 1000 / 60;
 
-export type VoiceDef<I, O> = {
+export interface VoiceDef<I, O> {
   name: string;
   /** A CSS color, or one of the voice slots, `v1`..`v5`. */
   color: string;
-} & (
-  | { spec: VoiceSpec<I, O>; group?: never }
-  | {
-      /** Voices cued under one owner, which the ledger and the tracks show as this one voice. */
-      group: { owner?: OwnerSpec<I>; parts: readonly VoiceSpec<I, O>[] };
-      spec?: never;
-    }
-);
-
-/** Cues `v` on `m`: its voice, or its group's owner with every part under it. */
-export function cueDef<I, O>(m: Mix<I, O>, v: VoiceDef<I, O>): Handle<I> {
-  if (v.spec) return m.cue({ name: v.name, ...v.spec });
-  const owner = m.owns({ name: v.name, ...v.group.owner });
-  for (const part of v.group.parts) m.cue({ ...part, owner });
-  return owner;
+  spec: VoiceSpec<I, O>;
 }
 
 export interface SceneEvent<I, O> {

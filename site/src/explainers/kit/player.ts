@@ -3,7 +3,6 @@ import { css, mix } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
 import {
   type Attached,
-  cueDef,
   FRAME,
   type Frame,
   HISTORY,
@@ -93,7 +92,7 @@ export class Player<I, O, C> {
     this.subjects = scene.subjects(config);
     const play = (voices: VoiceDef<I, O>[], name?: string): Played<I, O> => {
       const m = mix<I, O>(scene.kit, { ...options, name });
-      return { mix: m, handles: voices.map((v) => cueDef(m, v)), seqs: [] };
+      return { mix: m, handles: voices.map((v) => m.cue({ name: v.name, ...v.spec })), seqs: [] };
     };
     this.main = play(this.voices, opts.name);
     this.attached = listed ? (scene.attach?.(this.main.mix, config) ?? null) : null;

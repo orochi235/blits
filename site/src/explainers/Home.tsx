@@ -1,6 +1,6 @@
 import { css, ink, keys, kit, mul, patch, sum, toHex } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
-import { showing, TURNS, turned } from './hues';
+import { CYCLE, hueAt, logoAt, turned } from './hues';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Scene, VoiceDef } from './kit/scene';
@@ -41,15 +41,12 @@ const wave = keys<Swatch, Pose>(
   {},
 );
 
-/** One steady voice per hue the logo steps through, each as loud as the logo is showing it. */
-const tints = TURNS.map((deg, k) => {
-  const color = turned(deg);
-  return {
-    patch: patch<Swatch, Pose>(1000, () => ({ color }), { writes: ['color'] }),
-    loop: true,
-    weight: showing[k],
-  };
-});
+/** The logo's hues on the swatches, each change sweeping across them as it does across the logo. */
+const tint = patch<Swatch, Pose>(
+  CYCLE,
+  (phase, s) => ({ color: turned(hueAt(phase * CYCLE, s.i, 0, swatches.length, 1)) }),
+  { writes: ['color'] },
+);
 
 function scene(c: Config): Scene<Swatch, Pose, Config> {
   const voices: VoiceDef<Swatch, Pose>[] = [];
@@ -65,7 +62,9 @@ function scene(c: Config): Scene<Swatch, Pose, Config> {
       color: 'v2',
       spec: { patch: wave, loop: true, stagger: (s) => s.i * 140, fade: { in: 400 } },
     });
-  if (c.tint) voices.push({ name: 'Tint', color: 'v3', group: { parts: tints } });
+  // Started where the logo is in its hues, so the two play in step until this clock pauses or turns.
+  if (c.tint)
+    voices.push({ name: 'Tint', color: 'v3', spec: { patch: tint, loop: true, seek: logoAt() } });
   return {
     kit: PART,
     subjects: () => swatches,
@@ -87,7 +86,7 @@ export default function Home() {
         { name: 'Wave', color: 'v2', key: 'wave' },
         { name: 'Tint', color: 'v3', key: 'tint' },
       ]}
-      duration={12000}
+      duration={CYCLE}
       aspect={0.36}
       caption="Five subjects under three voices. Each voice runs on its own clock, and the mix folds whatever is playing into one pose per swatch: its gain, its lift and its color. Switch a voice off in the table and the others carry on."
       format={{

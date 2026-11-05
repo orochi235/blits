@@ -10,7 +10,7 @@ import {
   type Subject,
   type Ticker,
 } from 'bree';
-import { between, CYCLE, GREEN, SHADE, showing, TURNS } from '../explainers/hues';
+import { CYCLE, followLogo, GREEN, hueAt } from '../explainers/hues';
 import { loop } from './loop';
 
 const WORD = compose('blits');
@@ -56,45 +56,12 @@ function program(still: boolean): Scene[] {
   return [standing, ...EFFECTS.map((effect) => ({ ...LOOK, hex: GREEN, effect, hold: REST }))];
 }
 
-/** How long a change of hue takes to cross the sign, and how long each dot takes to turn. */
-const SWEEP = 900;
-const TURN = 320;
-
-/**
- * Where each change of hue reaches a dot first, as a share of `SWEEP`: one way of crossing the sign
- * for each change, in turn, from a dot's place on a sign `cols` x `rows`.
- */
-const CROSSINGS: ((x: number, y: number, cols: number, rows: number) => number)[] = [
-  (x, _y, cols) => x / cols,
-  (_x, y, _cols, rows) => 1 - y / rows,
-  (x, y, cols, rows) => Math.hypot(x / cols - 0.5, (y / rows - 0.5) * (rows / cols)) * 1.9,
-  (x, y) => (((Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1) + 1) % 1,
-  (x, _y, cols) => 1 - x / cols,
-  (x, y, cols, rows) => (x / cols + y / rows) / 2,
-];
-
-/** When, into each hue's `SHADE`, the change to the next one sets out. */
-const LEAVE = SHADE - SWEEP - TURN;
-
-/** How far a dot `cross` along the change out of hue `k` has turned, 0 to 1, `into` ms into it. */
-function turnedBy(into: number, cross: number): number {
-  const u = Math.min(1, Math.max(0, (into - LEAVE - cross * SWEEP) / TURN));
-  return u * u * (3 - 2 * u);
-}
-
-/** Each dot's turn of the brand green over one pass of every hue, changing by `CROSSINGS`. */
+/** Each dot's turn of the brand green over one pass of every hue. */
 function hues(cols: number, rows: number) {
   return patch<Subject, Pose>(
     CYCLE,
-    (phase, dot) => {
-      if (dot.kind !== 'dot') return {};
-      const t = phase * CYCLE;
-      const k = Math.min(TURNS.length - 1, Math.floor(t / SHADE));
-      const from = TURNS[k];
-      const to = TURNS[(k + 1) % TURNS.length];
-      const cross = CROSSINGS[k % CROSSINGS.length](dot.x, dot.y, cols, rows);
-      return { hue: from + between(from, to) * turnedBy(t - k * SHADE, cross) };
-    },
+    (phase, dot) =>
+      dot.kind === 'dot' ? { hue: hueAt(phase * CYCLE, dot.x, dot.y, cols, rows) } : {},
     { writes: ['hue'] },
   );
 }
@@ -105,19 +72,10 @@ const GLOW = patch<Subject, Pose>(1000, () => ({ lit: 0.5, hue: 60 }), { writes:
 /** The halo's radius, in dot pitches. */
 const REACH = 5;
 
-/** Sets `showing` from where the logo's hues stand, `t` ms into a pass, as its middle dot sees them. */
-function publish(t: number | null) {
-  const at = t === null ? 0 : ((t % CYCLE) + CYCLE) % CYCLE;
-  const k = Math.min(TURNS.length - 1, Math.floor(at / SHADE));
-  const u = t === null ? 0 : turnedBy(at - k * SHADE, 0.5);
-  const next = (k + 1) % TURNS.length;
-  for (const [i, l] of showing.entries()) l.set(i === k ? 1 - u : i === next ? u : 0);
-}
-
 /**
  * Plays the wordmark on `canvas` as a bree sign, synced while the site's live demos are, focus or not.
- * Its hue turns on a voice of its own, apart from the program moving its dots, and `showing` tells
- * other mixes which hue it is on. Pointing at it, or focusing its link, runs a rainbow across it,
+ * Its hue turns on a voice of its own, apart from the program moving its dots, and `logoAt` tells
+ * other mixes where in its pass of hues it is. Pointing at it, or focusing its link, runs a rainbow across it,
  * and a halo of lit dots follows the pointer. On a
  * dark page the dots stand on the page itself; on a light one, where green would wash out, they
  * keep the sign's dark housing. A sign's housing is set when it is made, so a change of theme makes
@@ -153,6 +111,7 @@ export function playLogo(canvas: HTMLCanvasElement): () => void {
     // Cued before the mix's first frame, a voice starts at its time 0.
     const from = Number.isNaN(m.now) ? 0 : m.now;
     const turning = m.cue({ name: 'hues', patch: hues(cols, rows), subjects: dots, loop: true });
+    followLogo(() => (Number.isNaN(m.now) ? 0 : (m.now - from) % CYCLE));
     const recolor = () => {
       sign.setProgram(program(calm.matches));
       turning.weight = calm.matches ? 0 : 1;
@@ -200,7 +159,6 @@ export function playLogo(canvas: HTMLCanvasElement): () => void {
       canvas,
       (now) => {
         for (const fn of fns) fn(now);
-        publish(calm.matches || Number.isNaN(m.now) ? null : m.now - from);
       },
       { focus: false },
     );

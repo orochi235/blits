@@ -6,7 +6,7 @@ description: Concurrent effects, each on its own clock with its own state and we
 import Home from '../explainers/Home';
 import Source from '../components/Source.astro';
 
-# blits
+<h1 class="unseen">blits</h1>
 
 <p class="lede">Concurrent effects, mixed. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per subject per frame, by rules that belong to the channel rather than to the effect.</p>
 
@@ -15,7 +15,7 @@ import Source from '../components/Source.astro';
 <Home client:only="react" />
 <Source of="Home.tsx" />
 
-The table under the swatches is the middle swatch, itemized: what each voice would do to it alone, and what the mix makes of all of them together. Pulse multiplies its gain, Wave adds to its lift, and Tint sets its color: one voice per hue of the logo in the sidebar, each weighted by a [signal](signal/) the logo sets to how much of that hue it shows. None of them knows the others exist.
+The table under the swatches is the middle swatch, itemized: what each voice would do to it alone, and what the mix makes of all of them together. Pulse multiplies its gain, Wave adds to its lift, and Tint sets its color, stepping through the hues of the logo in the sidebar on the logo's own schedule, started in step with it. None of them knows the others exist.
 
 ## The words
 

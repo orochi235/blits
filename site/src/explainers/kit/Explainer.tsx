@@ -113,7 +113,7 @@ function ExplainerBody<I, O, C>({
     const byTrack = new Map<string, Track>();
     voices.forEach((v, i) => {
       const course = courses[i] ?? { weights: [] };
-      const key = v.spec?.track ?? v.name;
+      const key = v.spec.track ?? v.name;
       const held = byTrack.get(key);
       if (!held) {
         byTrack.set(key, { name: key, color: v.color, ...course });
