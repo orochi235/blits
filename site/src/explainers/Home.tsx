@@ -1,5 +1,6 @@
-import { css, ink, keys, kit, mul, oklab, patch, sum, toHex } from '@msb235/blits';
+import { css, ink, keys, kit, mul, patch, sum, toHex } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
+import { showing, TURNS, turned } from './hues';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Scene, VoiceDef } from './kit/scene';
@@ -40,16 +41,15 @@ const wave = keys<Swatch, Pose>(
   {},
 );
 
-const tint = keys<Swatch, Pose>(
-  6000,
-  [
-    { at: 0, delta: { color: oklab(0x2f66d8) } },
-    { at: 0.33, delta: { color: oklab(0xc23d7a) } },
-    { at: 0.66, delta: { color: oklab(0xd99a12) } },
-    { at: 1, delta: { color: oklab(0x2f66d8) } },
-  ],
-  {},
-);
+/** One steady voice per hue the logo steps through, each as loud as the logo is showing it. */
+const tints = TURNS.map((deg, k) => {
+  const color = turned(deg);
+  return {
+    patch: patch<Swatch, Pose>(1000, () => ({ color }), { writes: ['color'] }),
+    loop: true,
+    weight: showing[k],
+  };
+});
 
 function scene(c: Config): Scene<Swatch, Pose, Config> {
   const voices: VoiceDef<Swatch, Pose>[] = [];
@@ -65,7 +65,7 @@ function scene(c: Config): Scene<Swatch, Pose, Config> {
       color: 'v2',
       spec: { patch: wave, loop: true, stagger: (s) => s.i * 140, fade: { in: 400 } },
     });
-  if (c.tint) voices.push({ name: 'Tint', color: 'v3', spec: { patch: tint, loop: true } });
+  if (c.tint) voices.push({ name: 'Tint', color: 'v3', group: { parts: tints } });
   return {
     kit: PART,
     subjects: () => swatches,

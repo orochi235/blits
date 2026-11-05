@@ -70,6 +70,8 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     align-self: start;
     height: 100vh;
     overflow-y: auto;
+    /* The dark-mode mark's blank margins hang past the rail. */
+    overflow-x: hidden;
   }
 
   ol,
@@ -107,11 +109,19 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     border-top: 1px solid var(--rule);
   }
 
+  /*
+   * The sign is 24 x 14 pitches, and its dots of the word span 3.14 to 20.86 across and 5.14 to
+   * 11.86 down; the rows above the word reach the top of the page. In light mode its housing fills the rail; in dark, with no housing, the word does.
+   */
   .mark {
+    --fill: 100%;
+    /* One dot pitch: the empty frame bree keeps round the dots, lifted past the top of the page. */
+    --pitch: calc(var(--fill) / 24);
     display: block;
     position: relative;
-    width: 9.5rem;
-    aspect-ratio: 22 / 9;
+    width: var(--fill);
+    aspect-ratio: 24 / 14;
+    margin-top: calc(-2rem - var(--pitch));
     margin-bottom: 0.9rem;
   }
 
@@ -130,12 +140,22 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
 
   .bare {
     /* Where the live sign draws the word, so the swap from this still to it moves nothing. */
-    padding: 7.9% 22.6% 8% 11.6%;
+    padding: calc(5.14 / 24 * 100%) calc(3.14 / 24 * 100%) calc(2.14 / 24 * 100%);
     box-sizing: border-box;
   }
 
   .bare :global(svg) {
     width: auto;
+  }
+
+  /* The housing still stands at the foot of the taller live sign, where the word is. */
+  .panel {
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .panel :global(svg) {
+    height: auto;
   }
 
   .mark canvas,
@@ -145,9 +165,10 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
   }
 
   @media (prefers-color-scheme: dark) {
-    /* With no housing, the b's left edge is the mark's: 3.14 of the sign's 11 pitches down, 9/22 of its width tall. */
     .mark {
-      translate: calc(-3.14 * 9 / 22 / 11 * 100%) 0;
+      --pitch: calc(var(--fill) / 17.72);
+      width: calc(var(--fill) * 24 / 17.72);
+      translate: calc(-3.14 / 24 * 100%) 0;
     }
     .panel {
       visibility: hidden;
@@ -196,6 +217,10 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     }
     .sub {
       display: none;
+    }
+    .mark {
+      --fill: 9.5rem;
+      margin-top: calc(-1rem - var(--pitch));
     }
   }
 </style>
