@@ -15,6 +15,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   it with no `start`. Such a voice starts at 0 on the sync clock, so a page that cues before its
   first `requestAnimationFrame` and syncs to that frame's timestamp never shows it.
 
+### Fixed
+
+- A voice cued backward under an owner turned backward, so running forward overall, showed
+  nothing through its fade out once it reached its end; it now holds its last frame through the
+  fade, as a voice running forward on its own does.
+
 ## 1.0.0
 
 ### Added

@@ -42,8 +42,10 @@ export function delist<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   detour(mix);
 }
 
-/** Counts the list over from nothing, for a seek or a projection's copy. `owners` is the caller's. */
+/** Counts the list over from nothing, for a seek or a projection's copy. */
 export function recount<I, O>(mix: Mixer<I, O>): void {
+  const owners = mix.cued.filter((v) => v.holding !== null);
+  mix.owners = owners.length > 0 ? owners : null;
   mix.named = new Store<I, Voice<I, O>[]>();
   mix.naming = 0;
   mix.general = [];

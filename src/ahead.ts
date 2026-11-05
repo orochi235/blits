@@ -184,9 +184,7 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
     });
   c.waking = mix.waking;
   ownBlends(c.cued);
-  // A copy keeps no list of owners, so the one before says only by its voices.
-  if (mix.owners !== null || (mix.projecting && c.cued.some((v) => v.holding !== null)))
-    relink(c.cued);
+  if (mix.owners !== null) relink(c.cued);
   recount(c);
 }
 
