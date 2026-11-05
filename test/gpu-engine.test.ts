@@ -95,7 +95,7 @@ describe('gpu engine', () => {
     try {
       // The first fold of a runner maps a sample back to check against the CPU.
       await folding(d.device);
-      expect(d.log).toContain('map ');
+      expect(d.log).toContain('map twins');
       d.refuse();
       await new Promise((r) => setTimeout(r, 0));
     } finally {

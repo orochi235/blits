@@ -223,6 +223,7 @@ export class GpuSide<I> {
     }
     if (b.pipeline === null || b.failed) return;
     const voices = e.voices as Voice<I, unknown>[];
+    const sample = this.twins.before(mix, this.list, runners);
     const prepared = prepare({
       mix,
       voices,
@@ -272,6 +273,6 @@ export class GpuSide<I> {
     const { frame, seq, now, timestamp } = mix;
     this.readback.fold({ out, outputs: this.outputs, frame, seq, now, timestamp, list: this.list });
     this.stale = false;
-    this.twins.first(this.device, mix, this.list, k, out, runners);
+    this.twins.after(this.device, k, out, sample);
   }
 }

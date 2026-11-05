@@ -12,6 +12,13 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   one on one row, as the lines a part sings. The mix never reads it; each mark and booked hit
   carries it as `track`, and `watched` reports it for each voice.
 
+### Fixed
+
+- On the `gpu` engine in development, a motion voice's first fold no longer folds a second time at
+  the next `channel()` or `read` in its frame, and the check comparing that fold with the CPU
+  destroys its staging buffer when the device refuses the map, and reports an error reading it
+  back rather than leaving an unhandled rejection.
+
 ## 1.0.0
 
 ### Added
