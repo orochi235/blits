@@ -1,7 +1,30 @@
 ---
-/** A copy button on every code block, added once the page has loaded. */
+/**
+ * A copy button on every code block, added once the page has loaded, and copying for any button
+ * marked `data-copy`, which copies its own text and says so beside it.
+ */
 ---
 <script>
+  /** Copies `text`, then says how that went on `say` for a moment. */
+  async function copy(text: string, say: (word: string | null) => void) {
+    try {
+      await navigator.clipboard.writeText(text);
+      say('Copied');
+    } catch {
+      say('Select and copy');
+    }
+    setTimeout(() => say(null), 1500);
+  }
+
+  for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-copy]')) {
+    button.addEventListener('click', () =>
+      copy(button.innerText.trim(), (word) => {
+        if (word === null) delete button.dataset.said;
+        else button.dataset.said = word;
+      }),
+    );
+  }
+
   for (const pre of document.querySelectorAll<HTMLPreElement>('pre.astro-code')) {
     const wrap = document.createElement('div');
     wrap.className = 'code';
@@ -11,17 +34,11 @@
     button.type = 'button';
     button.className = 'copy';
     button.textContent = 'Copy';
-    button.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(pre.innerText);
-        button.textContent = 'Copied';
-      } catch {
-        button.textContent = 'Select and copy';
-      }
-      setTimeout(() => {
-        button.textContent = 'Copy';
-      }, 1500);
-    });
+    button.addEventListener('click', () =>
+      copy(pre.innerText, (word) => {
+        button.textContent = word ?? 'Copy';
+      }),
+    );
     wrap.append(button);
   }
 </script>
@@ -49,6 +66,35 @@
   .code:hover .copy,
   .code .copy:focus-visible {
     opacity: 1;
+  }
+
+  button[data-copy] {
+    position: relative;
+    font: inherit;
+    padding: 0;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: copy;
+  }
+
+  button[data-copy] code {
+    display: block;
+  }
+
+  button[data-copy]:hover code {
+    outline: 1px solid var(--rule);
+  }
+
+  button[data-copy][data-said]::after {
+    content: attr(data-said);
+    position: absolute;
+    left: calc(100% + 0.6rem);
+    top: 50%;
+    translate: 0 -50%;
+    font: 500 0.75rem var(--label);
+    color: var(--ink-soft);
+    white-space: nowrap;
   }
 
   @media (hover: none) {
