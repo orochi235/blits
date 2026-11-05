@@ -63,7 +63,7 @@ export function createSurface(
     draw: opts.draw ?? true,
     backend: opts.backend,
     gpu: opts.gpu,
-    backed: false,
+    housing: 'clear',
     grid: GRIDS.square,
     lights: lightsOf(layout),
   });

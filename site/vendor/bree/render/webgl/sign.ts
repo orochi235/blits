@@ -4,8 +4,9 @@ import type { Lamps, Shape, Sign } from '../../draw.js';
 import type { Grid } from '../../grid.js';
 import type { Fade, Ghost } from '../../optics.js';
 import { webglSlot } from '../backend.js';
-import { BLOOM, HOUSING } from '../bloom-params.js';
+import { BLOOM } from '../bloom-params.js';
 import { gaussian } from '../blur.js';
+import { backingRgba, type Housing, housingPaint } from '../housing.js';
 import { LAMP_SIZE, LED } from '../lights.js';
 import { createOpticsFrame, lit } from '../optics-frame.js';
 import { boardLights, type SignLights } from '../sign-lights.js';
@@ -34,18 +35,19 @@ export function createWebGlSign(
   canvas: HTMLCanvasElement,
   b: Board,
   leds: readonly Led[],
-  backed: boolean,
+  housing: Housing,
   grid: Grid,
 ): (Sign & { readonly backend: 'webgl' }) | null {
-  return createWebGlSignOf(canvas, boardLights(b, leds, grid), backed);
+  return createWebGlSignOf(canvas, boardLights(b, leds, grid), housing);
 }
 
 /** `createWebGlSign` for any lights. */
 export function createWebGlSignOf(
   canvas: HTMLCanvasElement,
   lights: SignLights,
-  backed: boolean,
+  housing: Housing,
 ): (Sign & { readonly backend: 'webgl' }) | null {
+  const paint = housingPaint(housing);
   const release = webglSlot();
   if (!release) return shed.has(canvas) ? dark() : null;
   const made = canvas.getContext('webgl2', {
@@ -125,9 +127,9 @@ export function createWebGlSignOf(
     if (!r.targets) return;
     uploadViews(gl, r.views, placement.views);
     into(r.targets.house);
-    const [hr, hg, hb] = backed ? rgb(HOUSING) : [0, 0, 0];
-    gl.clearColor(hr, hg, hb, backed ? 1 : 0);
+    gl.clearColor(...backingRgba(paint));
     gl.clear(gl.COLOR_BUFFER_BIT);
+    if (!paint.sockets) return;
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     run(r.housing, r);
@@ -172,7 +174,10 @@ export function createWebGlSignOf(
     }
     into(null);
     gl.disable(gl.BLEND);
-    full(r, r.copy, t.house);
+    if (paint.blank) {
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    } else full(r, r.copy, t.house);
     gl.enable(gl.BLEND);
     // As in 2D, glow and bodies both add onto the housing.
     gl.blendFunc(gl.ONE, gl.ONE);

@@ -7,6 +7,7 @@ import { fieldsOf } from '../modulators/shader.js';
 import { CHANNELS } from '../optics.js';
 import { type Backend, pickBackend } from './backend.js';
 import type { Gpu } from './gpu.js';
+import type { Housing } from './housing.js';
 import { boardLights, type SignLights } from './sign-lights.js';
 import { createWebGlSignOf } from './webgl/sign.js';
 import { type ChannelSource, createWebGpuSignOf, type WebGpuSign } from './webgpu/sign.js';
@@ -49,7 +50,7 @@ export interface DrawingOptions {
   readonly draw: boolean;
   readonly backend: Backend | undefined;
   readonly gpu: Gpu | null | undefined;
-  readonly backed: boolean;
+  readonly housing: Housing;
   readonly grid: Grid;
   /** What to draw, where it isn't the board's dots and bulbs on `grid`. */
   readonly lights?: SignLights;
@@ -80,14 +81,14 @@ export function attach(
   let webgpu: WebGpuSign | null = null;
   const lights = opts.lights ?? boardLights(b, leds, opts.grid);
   if (want === 'webgpu' && opts.gpu) {
-    webgpu = createWebGpuSignOf(canvas, lights, opts.gpu, source, opts.backed);
+    webgpu = createWebGpuSignOf(canvas, lights, opts.gpu, source, opts.housing);
     sign = webgpu;
     backend = 'webgpu';
   } else if (want === 'webgl') {
-    sign = createWebGlSignOf(canvas, lights, opts.backed);
+    sign = createWebGlSignOf(canvas, lights, opts.housing);
     if (sign) backend = 'webgl';
   }
-  if (opts.draw && !sign) sign = createSign2d(canvas, lights, opts.backed);
+  if (opts.draw && !sign) sign = createSign2d(canvas, lights, opts.housing);
   let subjects: readonly Subject[] = [...b.dots, ...b.cells];
   let mix: Mix<Subject, Pose> | null = null;
   const device = webgpu && opts.gpu ? opts.gpu.device : null;

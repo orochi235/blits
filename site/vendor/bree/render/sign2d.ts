@@ -5,11 +5,11 @@ import {
   BLOOM,
   BULB_COLOR,
   DOT_COLOR,
-  HOUSING,
   PLATE_COLOR,
   SEGMENT_COLOR,
   WIRE_COLOR,
 } from './bloom-params.js';
+import { type Housing, housingPaint } from './housing.js';
 import { LAMP_SIZE, LED } from './lights.js';
 import { createOpticsFrame, type Lit, lit } from './optics-frame.js';
 import { paintTraced, traceOwn, tracePrim } from './paint2d.js';
@@ -39,11 +39,13 @@ const hexOf = (out: Lit, l: number) =>
   (Math.round((out.rgb[l * 3 + 1] as number) * 255) << 8) |
   Math.round((out.rgb[l * 3 + 2] as number) * 255);
 
-/**
- * A sign drawing `lights` on `canvas` with the 2D canvas API. Unless `backed` is false its housing
- * is painted dark, rather than left showing the page.
- */
-export function createSign2d(canvas: HTMLCanvasElement, lights: SignLights, backed = true): Sign {
+/** A sign drawing `lights` on `canvas` with the 2D canvas API, round a `housing` housing. */
+export function createSign2d(
+  canvas: HTMLCanvasElement,
+  lights: SignLights,
+  housing: Housing = 'dark',
+): Sign {
+  const paint = housingPaint(housing);
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
   const layer = () => {
     const c = document.createElement('canvas');
@@ -51,7 +53,7 @@ export function createSign2d(canvas: HTMLCanvasElement, lights: SignLights, back
   };
   const glow = layer();
   const body = layer();
-  const housing = layer();
+  const house = layer();
   let shape: Shape = lights;
   let frame = createOpticsFrame(shape.board, shape.leds);
   let out = lit(shape.leds.length);
@@ -86,13 +88,14 @@ export function createSign2d(canvas: HTMLCanvasElement, lights: SignLights, back
   };
 
   function paintHousing(): void {
-    const h = housing.x;
+    const h = house.x;
     h.setTransform(1, 0, 0, 1, 0, 0);
-    h.clearRect(0, 0, housing.c.width, housing.c.height);
-    if (backed) {
-      h.fillStyle = cssOf(HOUSING);
-      h.fillRect(0, 0, housing.c.width, housing.c.height);
+    h.clearRect(0, 0, house.c.width, house.c.height);
+    if (paint.backing !== null) {
+      h.fillStyle = cssOf(paint.backing);
+      h.fillRect(0, 0, house.c.width, house.c.height);
     }
+    if (!paint.sockets) return;
     const lamp = lamps.size ?? LAMP_SIZE;
     const { prims } = shape;
     perView(h, (k, scale) => {
@@ -107,7 +110,7 @@ export function createSign2d(canvas: HTMLCanvasElement, lights: SignLights, back
   }
 
   const stop = placement.start(canvas, () => {
-    for (const l of [glow, body, housing]) {
+    for (const l of [glow, body, house]) {
       l.c.width = canvas.width;
       l.c.height = canvas.height;
     }
@@ -170,9 +173,9 @@ export function createSign2d(canvas: HTMLCanvasElement, lights: SignLights, back
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
       ctx.filter = 'none';
-      // An unbacked housing covers nothing, so the last frame's glow is cleared first.
-      if (!backed) ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(housing.c, 0, 0);
+      // A housing with no backing covers nothing, so the last frame's glow is cleared first.
+      if (paint.backing === null) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!paint.blank) ctx.drawImage(house.c, 0, 0);
       ctx.globalCompositeOperation = 'lighter';
       if (placement.blur)
         ctx.filter = `blur(${(placement.pitch * BLOOM.spread * spread).toFixed(1)}px)`;

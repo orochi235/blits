@@ -36,7 +36,7 @@ export function createMarquee(canvas: HTMLCanvasElement, opts: MarqueeOptions = 
     draw: opts.draw ?? true,
     backend: opts.backend,
     gpu: opts.gpu,
-    backed: opts.housing ?? true,
+    housing: opts.housing ?? 'dark',
     grid: gridOf(opts.grid),
   });
   const { sign, backend } = drawing;

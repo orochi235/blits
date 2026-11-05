@@ -8,6 +8,7 @@ import type { Follow, Marquee } from './marquee-api.js';
 import { rowsToShow } from './orders.js';
 import type { Backend } from './render/backend.js';
 import type { Gpu } from './render/gpu.js';
+import type { Housing } from './render/housing.js';
 import { createTicker, type Ticker } from './ticker.js';
 
 export interface ThumbnailOptions extends Look {
@@ -22,8 +23,8 @@ export interface ThumbnailOptions extends Look {
   /** Dots across and down. Default 32 across and as many rows as show every dot of the text, at least 7. */
   readonly cols?: number;
   readonly rows?: number;
-  /** False leaves the housing see-through, so the page shows between the dots. Default true. */
-  readonly housing?: boolean;
+  /** What shows round the lights, as `createMarquee` takes it. Default `dark`. */
+  readonly housing?: Housing;
   /**
    * A sign whose planes it wears, as `createMarquee` takes it. Held, it then stays on the ticker
    * repainting the moment it holds, without running its mix, so it follows a moving sign.

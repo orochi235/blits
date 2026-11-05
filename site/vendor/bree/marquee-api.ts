@@ -13,6 +13,7 @@ import type { Plane } from './planes.js';
 import type { Scene } from './program.js';
 import type { Backend } from './render/backend.js';
 import type { Gpu } from './render/gpu.js';
+import type { Housing } from './render/housing.js';
 import type { Ticker } from './ticker.js';
 
 /** What one frame cost, smoothed over about twenty frames. */
@@ -66,8 +67,11 @@ export interface MarqueeOptions {
    * none.
    */
   readonly follow?: Follow;
-  /** False leaves the housing round the dots see-through rather than dark. Default true. */
-  readonly housing?: boolean;
+  /**
+   * What shows round the lights: `dark` a dark housing with a socket for every dot, `clear` the
+   * sockets over the page, `none` only lit light, so an unlit dot is absent. Default `dark`.
+   */
+  readonly housing?: Housing;
   /** The color of a lit dot nothing has tinted. Default amber. */
   readonly color?: number;
   /** The mix's rate. Default 1. */

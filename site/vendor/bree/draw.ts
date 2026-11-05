@@ -2,6 +2,7 @@ import type { Board, Led } from './board.js';
 import type { Defect } from './defects.js';
 import { frameOf, GRIDS, type Grid } from './grid.js';
 import { axesOf, CHANNELS, type Fade, type Ghost, type SignColumns, shownLit } from './optics.js';
+import type { Housing } from './render/housing.js';
 import { boardLights, type SignLights } from './render/sign-lights.js';
 import { createSign2d, haloRadius } from './render/sign2d.js';
 
@@ -75,14 +76,14 @@ export interface Lamps {
 
 /**
  * A sign drawn on `canvas`, each of `leds` at its place on `grid`; the mix's columns arrive in that
- * order. Unless `backed` is false its housing is painted dark, rather than left showing the page.
+ * order, round a `housing` housing (`Housing`).
  */
 export function createSign(
   canvas: HTMLCanvasElement,
   b: Board,
   leds: readonly Led[],
-  backed = true,
+  housing: Housing = 'dark',
   grid: Grid = GRIDS.square,
 ): Sign {
-  return createSign2d(canvas, boardLights(b, leds, grid), backed);
+  return createSign2d(canvas, boardLights(b, leds, grid), housing);
 }

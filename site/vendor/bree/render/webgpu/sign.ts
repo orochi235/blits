@@ -3,6 +3,7 @@ import type { Lamps, Shape, Sign } from '../../draw.js';
 import type { Grid } from '../../grid.js';
 import { CHANNELS, type Fade, type Ghost, type SignColumns } from '../../optics.js';
 import type { Gpu } from '../gpu.js';
+import { type Housing, housingPaint } from '../housing.js';
 import { LAMP_SIZE } from '../lights.js';
 import { boardLights, type SignLights } from '../sign-lights.js';
 import { createGpuOptics } from './optics.js';
@@ -38,12 +39,12 @@ export function createWebGpuSign(
   canvas: HTMLCanvasElement,
   b: Board,
   leds: readonly Led[],
-  backed: boolean,
+  housing: Housing,
   grid: Grid,
   handle: Gpu,
   source: ChannelSource | null,
 ): WebGpuSign {
-  return createWebGpuSignOf(canvas, boardLights(b, leds, grid), handle, source, backed);
+  return createWebGpuSignOf(canvas, boardLights(b, leds, grid), handle, source, housing);
 }
 
 /** `createWebGpuSign` for any lights. */
@@ -52,8 +53,9 @@ export function createWebGpuSignOf(
   lights: SignLights,
   handle: Gpu,
   source: ChannelSource | null,
-  backed: boolean,
+  housing: Housing,
 ): WebGpuSign {
+  const paint = housingPaint(housing);
   const { device, format } = handle;
   const ctx = canvas.getContext('webgpu') as GPUCanvasContext | null;
   if (!ctx) throw new Error('bree: this canvas has no WebGPU context to give');
@@ -91,7 +93,7 @@ export function createWebGpuSignOf(
     }
   };
   const sized = () =>
-    guard(() => parts.painter.size(canvas.width, canvas.height, look(), backed, placement.views));
+    guard(() => parts.painter.size(canvas.width, canvas.height, look(), paint, placement.views));
   const stop = placement.start(canvas, sized);
   const free = () => {
     parts.painter.destroy();
@@ -110,7 +112,7 @@ export function createWebGpuSignOf(
     },
     render(cols, fallback, dt) {
       guard(() => {
-        if (placement.update()) parts.painter.repaint(look(), backed, placement.views);
+        if (placement.update()) parts.painter.repaint(look(), paint, placement.views);
         const enc = device.createCommandEncoder();
         parts.sources.gather(enc, cols, source);
         parts.optics.step(enc, fallback, dt, Math.max(lamps.brightness ?? 1, 0));

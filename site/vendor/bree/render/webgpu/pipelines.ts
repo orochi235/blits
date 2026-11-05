@@ -1,6 +1,7 @@
 import { rgb } from '../../color.js';
-import { BLOOM, HOUSING } from '../bloom-params.js';
+import { BLOOM } from '../bloom-params.js';
 import { gaussian, TAPS } from '../blur.js';
+import { backingRgba, type HousingPaint } from '../housing.js';
 import { LED } from '../lights.js';
 import { VIEW } from '../placement.js';
 import { GEOM, type Prims } from '../prims.js';
@@ -29,9 +30,9 @@ export interface Look {
 /** The WebGL sign's draw (`webgl/sign.ts`) in WebGPU, from the optics' `shows` buffer. */
 export interface Painter {
   /** Makes the targets for a canvas `w` × `h` and paints the housing into one. */
-  size(w: number, h: number, look: Look, backed: boolean, views: Float32Array): void;
+  size(w: number, h: number, look: Look, paint: HousingPaint, views: Float32Array): void;
   /** Paints the housing again, the views having moved. */
-  repaint(look: Look, backed: boolean, views: Float32Array): void;
+  repaint(look: Look, paint: HousingPaint, views: Float32Array): void;
   /** Records the frame into `enc`, drawn to `view`. */
   draw(enc: GPUCommandEncoder, view: GPUTextureView, look: Look): void;
   destroy(): void;
@@ -147,6 +148,7 @@ export function createPainter(
 
   let canvas = { w: 0, h: 0 };
   let half = { w: 1, h: 1 };
+  let blank = false;
   let targets: { house: Target; splat: Target; across: Target; blurred: Target } | null = null;
   let groups: {
     house: GPUBindGroup;
@@ -207,7 +209,7 @@ export function createPainter(
   };
 
   return {
-    size(w, h, look, backed, views) {
+    size(w, h, look, paint, views) {
       drop();
       canvas = { w, h };
       half = { w: Math.max(1, Math.ceil(w / 2)), h: Math.max(1, Math.ceil(h / 2)) };
@@ -226,17 +228,17 @@ export function createPainter(
         blurY: texGroup(blurLayout, t.across, blurU[1]),
         blurred: texGroup(copyLayout, t.blurred),
       };
-      this.repaint(look, backed, views);
+      this.repaint(look, paint, views);
     },
-    repaint(look, backed, views) {
+    repaint(look, paint, views) {
       const t = targets;
       if (!t) return;
       device.queue.writeBuffer(viewsBuf, 0, views.subarray(0, Math.max(viewCount, 1) * VIEW));
       writeLook(look);
       const enc = device.createCommandEncoder();
-      const [hr, hg, hb] = backed ? rgb(HOUSING) : [0, 0, 0];
-      const pass = into(enc, t.house.view, [hr, hg, hb, backed ? 1 : 0]);
-      instances(pass, housing);
+      blank = paint.blank;
+      const pass = into(enc, t.house.view, backingRgba(paint));
+      if (paint.sockets) instances(pass, housing);
       pass.end();
       device.queue.submit([enc.finish()]);
     },
@@ -263,7 +265,7 @@ export function createPainter(
         blurred.end();
       }
       const out = into(enc, view);
-      full(out, copy, g.house);
+      if (!blank) full(out, copy, g.house);
       // As in 2D, glow and bodies both add onto the housing.
       if (glows) full(out, copyAdd, sigma > 0 ? g.blurred : g.splat);
       instances(out, body);
