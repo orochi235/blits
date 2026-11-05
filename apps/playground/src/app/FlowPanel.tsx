@@ -2,6 +2,7 @@ import type { Composition } from '@pg/blits/composition';
 import { flowOf, foldOf } from '@pg/blits/flow';
 import { type ChannelName, kitOf } from '@pg/blits/kit';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
+import { Glyph } from '@pg/widgets/Glyph';
 import { useMemo, useRef, useState } from 'react';
 import s from './FlowPanel.module.css';
 import { flowKey } from './flowKey';
@@ -43,7 +44,7 @@ export function FlowPanel({ comp, faulted, selected, onVoice }: FlowPanelProps) 
             <button type="button" onClick={() => setFold(null)}>
               Flow
             </button>
-            <span aria-hidden>›</span>
+            <Glyph name="ui:chevron" className={s.onward} />
             <span>{fold}</span>
           </>
         ) : (

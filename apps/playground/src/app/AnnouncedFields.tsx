@@ -7,7 +7,7 @@ import {
   f,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
-import { Button, PropertyControl, PropertyRow } from '@weasel-js/ui';
+import { CloseButton, PropertyControl, PropertyRow } from '@weasel-js/ui';
 import { useMemo } from 'react';
 import s from './App.module.css';
 import { actionRow, useLatest } from './CompositionControls';
@@ -86,15 +86,10 @@ export function AnnouncedFields({
               onInput={ignore}
               onChange={(at: number) => tune(i, { at })}
             />
-            <Button
-              iconOnly
-              variant="ghost"
-              size="sm"
+            <CloseButton
               ariaLabel={`remove mark ${i + 1}`}
               onClick={() => set(list.filter((_, k) => k !== i))}
-            >
-              ×
-            </Button>
+            />
           </span>
         </PropertyRow>
       );

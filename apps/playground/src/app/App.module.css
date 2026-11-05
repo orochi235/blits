@@ -1,6 +1,8 @@
 .split {
   flex: 1;
   min-height: 0;
+  /* weasel's hook for a Button's glyph, at the 16 labkit's toolbars use; unset it is 12 to 14. */
+  --wzl-button-icon-size: 16px;
 }
 
 .grid {

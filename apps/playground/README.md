@@ -35,7 +35,7 @@ column's edge, or focusing it and pressing the arrow keys, sets its width, which
 clamps so the stage and diagrams keep room; the width, like whether the score's tracks are open and
 whether Both shows port labels, is kept per viewer through labkit's `Persistence` over
 localStorage. The score fills the bottom under the stage and diagrams, with the transport above it: play and pause, loop, rate, a choice of how a
-scrub back moves the mixes, ‹ and › to step one frame, the live toggle with, in live mode, the mix's own `rate`, an `over`
+scrub back moves the mixes, step back and step forward one frame, the live toggle with, in live mode, the mix's own `rate`, an `over`
 that ramps a rate change (`mix.ramp`) and fades a **mute** (`mix.mute`), and a slider per level.
 Blank, `over` sets a rate at once and mutes over each voice's own `fade.out`. The transport's rate slows the playground's clock,
 while the mix's slows the voices as the score's clock runs on.
@@ -263,16 +263,16 @@ header, and its members sit under it, indented one step per depth.
 | notch on the top edge  | a hit, every pass             | the voice panel                                          |
 | labeled line across it | a mark placed inside it, where blits put it; a link to it lands there | the voice panel |
 | dotted line down the score | an announced mark, named on the ruler | the Events tab                                 |
-| header bar             | a group, from its start to its end, sloped by its `fade` | ▾ folds its members away; click to select |
+| header bar             | a group, from its start to its end, sloped by its `fade` | its chevron folds its members away; click to select |
 | clip cut at a group's end | a member still playing when a group above it ends, sloped by that group's `fade.out` | the right edge stops at the cut; dragging it left snaps to whole passes before it |
 | budget line, red hatch | a span's `duration`, and `result.over` past it; "fell" when `spill` decided | the group panel |
 | clip under a span      | where the fit put it, ×1.5 after the label for a fitted rate | locked; the span places it |
 | dashed outline         | a child the fit skipped, at its natural length | none                                    |
 
-A clip's menu, the ⋯ beside its label once it is selected, sets the hatch and groups it with
+A clip's menu, the more button (three dots) beside its label once it is selected, sets the hatch and groups it with
 another lane's voice or out of its role. Every handle takes keys too: the arrow keys move a body
 or a fade 100 ms, 1 s with Shift, and a right edge one pass; Enter or Space selects a clip or a
-header, and folds from ▾; the ruler scrubs with the arrow keys, Home and End.
+header, and folds from its chevron; the ruler scrubs with the arrow keys, Home and End.
 
 A voice whose period is 0, an aperiodic `fn` or a motion voice, has no passes, so its right edge
 does not drag. A voice at rate 0 never ends, and neither does one cued backward that loops for
@@ -546,7 +546,7 @@ Calls made while building, each the owner's to overturn, with how to reverse it.
   the book-and-drain tag stays per session on the `EventLog` (2026-10-17). Moving the tag to
   `book.tag` would save and share it too.
 - **A scrub back by `mix.seek` always seeks by frame**: the Player keeps each mix's `seq` for every
-  score frame it showed and passes that, with ‹ › on the transport to step one frame. There is no
+  score frame it showed and passes that, with the step buttons on the transport to step one frame. There is no
   separate stepper over the held frames alone (2026-10-17). Reverse by passing `target * FRAME` to
   `m.seek` in `seekBack` (`src/blits/player.ts`), which lands on the last held frame.
 - **The Events list's seek cut goes by the full mix's `now`**, the clock `Sent.timestamp` reads,

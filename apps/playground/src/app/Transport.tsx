@@ -1,6 +1,7 @@
 import type { Level } from '@pg/blits/composition';
 import type { SeekBy } from '@pg/blits/player';
-import { Transport as WeaselTransport } from '@weasel-js/ui';
+import { Glyph } from '@pg/widgets/Glyph';
+import { Button, Transport as WeaselTransport } from '@weasel-js/ui';
 import s from './App.module.css';
 import { docOf } from './docs';
 import { LiveMix } from './LiveMix';
@@ -62,12 +63,12 @@ export function Transport(p: TransportProps) {
         </select>
       </label>
       <span className={s.level}>
-        <button type="button" aria-label="back one frame" onClick={() => p.onStep(-1)}>
-          ‹
-        </button>
-        <button type="button" aria-label="forward one frame" onClick={() => p.onStep(1)}>
-          ›
-        </button>
+        <Button iconOnly variant="ghost" ariaLabel="back one frame" onClick={() => p.onStep(-1)}>
+          <Glyph name="ui:stepBack" />
+        </Button>
+        <Button iconOnly variant="ghost" ariaLabel="forward one frame" onClick={() => p.onStep(1)}>
+          <Glyph name="ui:stepForward" />
+        </Button>
       </span>
       <button type="button" aria-expanded={p.tracksOpen} onClick={p.onTracks}>
         {p.tracksOpen ? 'Hide tracks' : 'Show tracks'}

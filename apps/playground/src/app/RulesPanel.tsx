@@ -12,7 +12,7 @@ import {
   rulesFor,
   UNBOUNDED,
 } from '@pg/blits/kit';
-import { scopedIcon } from '@weasel-js/icons';
+import { Glyph } from '@pg/widgets/Glyph';
 import {
   type ConfigEntry,
   ControlPanel,
@@ -20,13 +20,11 @@ import {
   f,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
-import { Button, Icon, PropertyControl, PropertyRow } from '@weasel-js/ui';
+import { Button, PropertyControl, PropertyRow } from '@weasel-js/ui';
 import { useMemo } from 'react';
 import s from './App.module.css';
 import { actionRow, useLatest } from './CompositionControls';
 import r from './Rows.module.css';
-
-const icon = scopedIcon('ui');
 
 type NumberChannel = Exclude<keyof Rules, 'color'>;
 
@@ -108,7 +106,7 @@ export function RulesPanel({
         tooltip={`back to blits' default: ${label(DEFAULT_RULES[ch])}`}
         onClick={() => set(ch, DEFAULT_RULES[ch])}
       >
-        <Icon name={icon('ui:reset')} />
+        <Glyph name="ui:reset" />
       </Button>
     </span>
   );

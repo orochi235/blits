@@ -164,9 +164,13 @@
 
 .arrow,
 .arrowStill {
-  fill: var(--wzl-fg);
+  color: var(--wzl-fg);
   opacity: 0.6;
-  font-size: var(--wzl-font-size-lg);
+}
+
+/* A glyph's own strokes are thin; this takes the press anywhere in its box. */
+.hit {
+  fill: transparent;
 }
 
 .arrow {
@@ -226,13 +230,12 @@
 }
 
 .fold {
-  fill: var(--wzl-fg-muted);
-  font-size: var(--wzl-font-size-md);
+  color: var(--wzl-fg-muted);
   cursor: pointer;
 }
 
 .fold:hover {
-  fill: var(--wzl-fg);
+  color: var(--wzl-fg);
 }
 
 .fell {

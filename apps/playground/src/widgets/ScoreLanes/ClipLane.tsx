@@ -1,4 +1,5 @@
 import { hueColor } from '@msb235/blits-panel';
+import { GLYPH_PX, Glyph } from '@pg/widgets/Glyph';
 import { MenuButton, type MenuButtonItem } from '@weasel-js/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { dragEdit, fadeRoom, type Handle, hatchOf } from './drag';
@@ -151,7 +152,7 @@ export function ClipLane(p: ClipLaneProps) {
           {/* Menu presses, portaled or not, must not reach the score's deselect. */}
           <div className={s.menu} onPointerDown={(e) => e.stopPropagation()}>
             <MenuButton
-              label="⋯"
+              label={<Glyph name="ui:more" />}
               aria-label={`${c.label} menu`}
               items={menuItems(raw, p.clips)}
               onAction={(v) => {
@@ -253,11 +254,10 @@ export function ClipLane(p: ClipLaneProps) {
         />
       )}
       {open && c.pass > 0 && (
-        // biome-ignore lint/a11y/useSemanticElements: SVG text cannot be a <button>
-        <text
+        // biome-ignore lint/a11y/useSemanticElements: an SVG group cannot be a <button>
+        <g
           className={s.arrow}
-          x={WIDTH - 16}
-          y={top + h / 2 + 5}
+          transform={`translate(${WIDTH - 18} ${top + h / 2 - GLYPH_PX / 2})`}
           role="button"
           tabIndex={0}
           aria-label={`end ${c.label}'s loop`}
@@ -269,13 +269,18 @@ export function ClipLane(p: ClipLaneProps) {
             if (edit) p.onEdit(edit);
           }}
         >
-          →
-        </text>
+          <rect className={s.hit} width={GLYPH_PX} height={GLYPH_PX} />
+          <Glyph name="ui:arrowRight" />
+        </g>
       )}
       {open && c.pass <= 0 && (
-        <text className={s.arrowStill} x={WIDTH - 16} y={top + h / 2 + 5} aria-hidden>
-          →
-        </text>
+        <g
+          className={s.arrowStill}
+          transform={`translate(${WIDTH - 18} ${top + h / 2 - GLYPH_PX / 2})`}
+          aria-hidden
+        >
+          <Glyph name="ui:arrowRight" />
+        </g>
       )}
     </g>
   );

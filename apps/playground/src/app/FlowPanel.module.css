@@ -14,6 +14,10 @@
   color: var(--wzl-fg);
 }
 
+.onward {
+  rotate: -90deg;
+}
+
 .crumbs label {
   white-space: nowrap;
 }

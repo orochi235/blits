@@ -1,4 +1,5 @@
 import { hueColor } from '@msb235/blits-panel';
+import { GLYPH_PX, Glyph } from '@pg/widgets/Glyph';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { INDENT, type Scale, slopePolygon, WIDTH } from './geometry';
 import type { Header, Track } from './index';
@@ -70,11 +71,10 @@ export function HeaderLane(p: HeaderLaneProps) {
           played={p.played}
         />
       )}
-      {/* biome-ignore lint/a11y/useSemanticElements: SVG text cannot be a <button> */}
-      <text
+      {/* biome-ignore lint/a11y/useSemanticElements: an SVG group cannot be a <button> */}
+      <g
         className={s.fold}
-        x={foldX}
-        y={mid + 4}
+        transform={`translate(${foldX - 2} ${mid - GLYPH_PX / 2})${hd.folded ? ` rotate(-90 ${GLYPH_PX / 2} ${GLYPH_PX / 2})` : ''}`}
         role="button"
         tabIndex={0}
         aria-label={`${hd.folded ? 'unfold' : 'fold'} ${hd.label}`}
@@ -83,8 +83,9 @@ export function HeaderLane(p: HeaderLaneProps) {
         onClick={fold}
         onKeyDown={(e) => key(e, fold)}
       >
-        {hd.folded ? '▸' : '▾'}
-      </text>
+        <rect className={s.hit} width={GLYPH_PX} height={GLYPH_PX} />
+        <Glyph name="ui:chevron" />
+      </g>
       <text
         className={s.headerLabel}
         x={foldX + FOLD_W}

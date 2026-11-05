@@ -1,6 +1,7 @@
 import { FIT_PRESETS, type FitStep } from '@pg/blits/composition';
 import { fitFaultKey } from '@pg/blits/cueGroups';
 import { CodePane } from '@pg/widgets/CodePane';
+import { Glyph } from '@pg/widgets/Glyph';
 import type { ControlRenderer } from '@weasel-js/labkit';
 import {
   Button,
@@ -111,7 +112,7 @@ function FitRow({ row }: { row: PrefRenderContext }) {
                       disabled={i === 0}
                       onClick={() => move(i, -1)}
                     >
-                      ↑
+                      <Glyph name="ui:arrowUp" />
                     </Button>
                     <Button
                       size="sm"
@@ -121,7 +122,7 @@ function FitRow({ row }: { row: PrefRenderContext }) {
                       disabled={i === list.length - 1}
                       onClick={() => move(i, 1)}
                     >
-                      ↓
+                      <Glyph name="ui:arrowDown" />
                     </Button>
                     <CloseButton
                       ariaLabel={`remove ${step.kind}`}
