@@ -4,7 +4,15 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
-## 0.12.0
+## Unreleased
+
+### Added
+
+- A fade, a sine `wave`, and a voice whose rate is ramping play as curves, where they were read
+  every `grid` ms, against an engine whose `mix.trace` knows them (the engine's Unreleased
+  section). At a 25 ms `grid` the test scene's retimed sweep stays within 0.04 Hz, where it was
+  0.1.
+
 
 ### Breaking
 
