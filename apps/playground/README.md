@@ -26,10 +26,15 @@ each field.
 ## The screen
 
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
-rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
-the diagrams, on four tabs: **Flow**, **Timing**, **Both** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
-selected voice's or group's panels and below them the composition's levels, mix and fold rules; and **Events**, what the score knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. The
-score fills the bottom, with the transport above it: play and pause, loop, rate, a choice of how a
+rows or the text; clicking a subject picks it for the inspector. Beside the stage are the diagrams,
+on four tabs: **Flow**, **Timing**, **Both**, and **Desk**. The right column runs the full height and
+has three tabs: **Plots**, the inspector; **Voice**, which holds the selected voice's or group's
+panels and below them the composition's levels, mix, and fold rules; and **Events**, what the score
+knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. Dragging the right
+column's edge, or focusing it and pressing the arrow keys, sets its width, which labkit's `Split`
+clamps so the stage and diagrams keep room; the width, like whether the score's tracks are open and
+whether Both shows port labels, is kept per viewer through labkit's `Persistence` over
+localStorage. The score fills the bottom under the stage and diagrams, with the transport above it: play and pause, loop, rate, a choice of how a
 scrub back moves the mixes, ‹ and › to step one frame, the live toggle with, in live mode, the mix's own `rate`, an `over`
 that ramps a rate change (`mix.ramp`) and fades a **mute** (`mix.mute`), and a slider per level.
 Blank, `over` sets a rate at once and mutes over each voice's own `fade.out`. The transport's rate slows the playground's clock,
@@ -285,7 +290,7 @@ clips: a group's anchor is set in the group panel.
 
 ## The flow
 
-The right column draws the composition's signal flow, top to bottom: levels, the signal ops and
+The diagrams' Flow tab draws the composition's signal flow, top to bottom: levels, the signal ops and
 expressions they feed, the groups and voices those weigh, each group feeding what it holds, the channels each voice writes with the rule each
 folds by (its `kind` in the composition's kit), and the pose. `flowOf` in `src/blits/flow.ts` builds it from the
 composition alone, finding the levels and signal calls in each `weight`, `stagger` and `target`
@@ -295,7 +300,7 @@ fold: everything that reaches it, and the rest it folds from, under a breadcrumb
 
 ## The timing
 
-The right column's Timing tab draws what waits on what. An edge runs from each voice, group or
+The diagrams' Timing tab draws what waits on what. An edge runs from each voice, group or
 announced mark an anchor names to what it places, labeled with the mark it sets and how: `start
 after +200 ms`, `out with`, `in its coast`. An `all` or `any` is a node its anchors feed. A query
 that selects among voices (`{ tag }`, `{ writes }`, a `resolver`) is a node too, fed by a dashed
@@ -313,7 +318,7 @@ when its source's state says the awaited mark is behind it, which ignores the an
 
 ## Both
 
-The right column's Both tab draws the flow and the timing as one diagram: every node of either, the
+The diagrams' Both tab draws the flow and the timing as one diagram: every node of either, the
 flow's edges in blue and the timing's in amber, lit as the Timing tab lights them. A voice or group
 carries both details, what it plays over where it starts. Owners and spans are the timing's boxes,
 so the flow's edge from a group to each thing it holds is left out; a group's weight still feeds
@@ -354,7 +359,7 @@ otherwise listens for keys page-wide and would take Space from the transport.
 
 ## The desk
 
-The right column's Desk tab draws the flow as a mixing desk. Each channel the composition writes
+The diagrams' Desk tab draws the flow as a mixing desk. Each channel the composition writes
 is a horizontal bus, running right into a box naming the rule it folds by; each voice is a vertical
 strip, its name along the top, with a tap where it crosses each bus it writes and a meter at the
 bottom. A group is a bracket over the strips it holds, nested groups stacking upward, and strips
@@ -499,6 +504,13 @@ the typecheck, the tests and the smoke run.
 
 Calls made while building, each the owner's to overturn, with how to reverse it.
 
+- **The diagrams sit beside the stage and the panels' tabs in the full-height right column**
+  (2026-11-05), read from the owner's "swap the left sidebar contents with the panel between it
+  and the stage", where there is no left sidebar. Reverse it by swapping `DiagramTabs` and
+  `PanelTabs` in `App.tsx`.
+- **The right column is labkit's `Split`, not ui's `ResizeHandle` beside a `Sidebar`** (2026-11-05):
+  this is a labkit app, and `Split` clamps against the content's floor and brings its own keyboard
+  seam. It starts at 440 px and keeps 280 to 960, leaving the stage and diagrams at least 560.
 - **The Both tab is one diagram with both kinds of edge**, not the two views linked side by side
   (2026-10-17). Reverse it by replacing `BothPanel` with a `FlowPanel` over a `TimingPanel`,
   sharing `selected`.
@@ -550,7 +562,7 @@ Calls made while building, each the owner's to overturn, with how to reverse it.
   the channel is read off the picked subject alone (`coursesOf` in `src/blits/course.ts`), from the
   composition as written, so slider moves and live changes do not show. The path helpers in
   `ScoreLanes/track.ts` are copied from the site's `Timeline.tsx`, which keeps them private to the
-  site. "Hide tracks" closes the lanes to scrubbing strips, remembered per viewer in localStorage.
+  site. "Hide tracks" closes the lanes to scrubbing strips, remembered per viewer.
 - **Read back and ahead is a section under the inspector**, not a tab, reading the full mix only
   (2026-11-04). Its slider is ms back from `now` rather than a mix time, so it keeps its place as
   play goes on. Reverse by giving `ReadBack` its own `Tab` in `App.tsx`.

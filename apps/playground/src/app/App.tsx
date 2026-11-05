@@ -10,19 +10,16 @@ import { applyEdit } from '@pg/blits/score';
 import { subjectsOf } from '@pg/blits/stage';
 import { Stage } from '@pg/blits/stages/Stage';
 import { type ClipEdit, ScoreLanes } from '@pg/widgets/ScoreLanes';
-import { LabShell } from '@weasel-js/labkit';
-import { Tab, TabList, TabPanel, Tabs } from '@weasel-js/ui';
+import { LabShell, Split, usePersistedState } from '@weasel-js/labkit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
-import { BothPanel } from './BothPanel';
 import { CompFields, StageControls } from './CompositionControls';
-import { DeskPanel } from './DeskPanel';
+import { DiagramTabs } from './DiagramTabs';
 import { EventsPanel } from './EventsPanel';
-import { FlowPanel } from './FlowPanel';
 import { freshVoice } from './freshVoice';
 import { Inspector } from './Inspector';
+import { type PanelTab, PanelTabs } from './PanelTabs';
 import { ReadBack } from './ReadBack';
-import { TimingPanel } from './TimingPanel';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
 import { usePlayback } from './usePlayback';
@@ -30,11 +27,10 @@ import { useScore } from './useScore';
 import { useTracksOpen } from './useTracksOpen';
 import { VoiceColumn } from './VoiceColumn';
 
-type MiddleTab = 'plots' | 'voice' | 'events';
-type SideTab = 'flow' | 'timing' | 'both' | 'desk';
-
 /** How long "link copied" stays up. */
 const NOTICE_MS = 3000;
+/** The right column's width before anyone drags its edge. */
+const PANEL_WIDTH = 440;
 
 export function App() {
   const { comp, set, undo, redo, share } = useComposition(DEFAULT);
@@ -62,8 +58,10 @@ export function App() {
     player.seekBy = seekBy;
   }, [player, seekBy]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [tab, setTab] = useState<MiddleTab>('plots');
-  const [side, setSide] = useState<SideTab>('flow');
+  const [tab, setTab] = useState<PanelTab>('plots');
+  const [panelWidth, setPanelWidth] = usePersistedState('panelWidth', PANEL_WIDTH, {
+    scope: 'lab',
+  });
   const faultKey = player.built.errors.map((e) => e.voice ?? '').join('|');
   const faulted = useMemo(() => new Set(faultKey.split('|').filter(Boolean)), [faultKey]);
   const pickVoice = (id: string | null) => {
@@ -170,9 +168,57 @@ export function App() {
     </div>
   );
 
+  const panels = (
+    <PanelTabs
+      tab={tab}
+      onTab={setTab}
+      plots={
+        <>
+          <Inspector player={player} comp={comp} />
+          <ReadBack player={player} />
+        </>
+      }
+      voice={
+        <VoiceColumn
+          comp={comp}
+          onComp={set}
+          voice={voice}
+          group={group}
+          player={player}
+          subject={shown !== null ? subjects[shown] : undefined}
+          live={live}
+          shared={shared}
+          linkRef={linkRef}
+          onAddVoice={addVoice}
+          onAddGroup={addGroupOf}
+          onDeleteVoice={deleteVoice}
+          onVoice={setVoice}
+          onGroup={(g) => set(setGroup(compRef.current, g))}
+          onDeleteGroup={removeGroup}
+          onShare={copyLink}
+          onCloseShare={() => setShared(null)}
+          onActed={tick}
+        />
+      }
+      events={<EventsPanel player={player} comp={comp} onComp={set} live={live} onActed={tick} />}
+    />
+  );
+
   return (
     <LabShell title="blits playground" mode="dark" header={header}>
-      <div className={s.grid}>
+      <Split
+        className={s.split}
+        contentClassName={s.grid}
+        side="end"
+        label="panels"
+        width={panelWidth}
+        defaultWidth={PANEL_WIDTH}
+        minWidth={280}
+        maxWidth={960}
+        contentMinWidth={560}
+        onWidthChange={setPanelWidth}
+        sidebar={panels}
+      >
         <section className={s.stage} aria-label="stage">
           <StageControls comp={comp} onChange={set} />
           <Stage
@@ -189,89 +235,14 @@ export function App() {
             }}
           />
         </section>
-        <section className={s.inspector} aria-label="inspector">
-          <Tabs selectedKey={tab} onSelectionChange={(k) => setTab(k as MiddleTab)}>
-            <TabList aria-label="middle column">
-              <Tab id="plots">Plots</Tab>
-              <Tab id="voice">Voice</Tab>
-              <Tab id="events">Events</Tab>
-            </TabList>
-            <TabPanel id="plots">
-              <Inspector player={player} comp={comp} />
-              <ReadBack player={player} />
-            </TabPanel>
-            <TabPanel id="voice">
-              <VoiceColumn
-                comp={comp}
-                onComp={set}
-                voice={voice}
-                group={group}
-                player={player}
-                subject={shown !== null ? subjects[shown] : undefined}
-                live={live}
-                shared={shared}
-                linkRef={linkRef}
-                onAddVoice={addVoice}
-                onAddGroup={addGroupOf}
-                onDeleteVoice={deleteVoice}
-                onVoice={setVoice}
-                onGroup={(g) => set(setGroup(compRef.current, g))}
-                onDeleteGroup={removeGroup}
-                onShare={copyLink}
-                onCloseShare={() => setShared(null)}
-                onActed={tick}
-              />
-            </TabPanel>
-            <TabPanel id="events">
-              <EventsPanel player={player} comp={comp} onComp={set} live={live} onActed={tick} />
-            </TabPanel>
-          </Tabs>
-        </section>
-        <aside className={s.side} aria-label="diagrams">
-          <Tabs
-            className={s.sideTabs}
-            selectedKey={side}
-            onSelectionChange={(k) => setSide(k as SideTab)}
-          >
-            <TabList aria-label="right column">
-              <Tab id="flow">Flow</Tab>
-              <Tab id="timing">Timing</Tab>
-              <Tab id="both">Both</Tab>
-              <Tab id="desk">Desk</Tab>
-            </TabList>
-            <TabPanel id="flow" className={s.sidePanel}>
-              <FlowPanel comp={comp} faulted={faulted} selected={selected} onVoice={pickVoice} />
-            </TabPanel>
-            <TabPanel id="timing" className={s.sidePanel}>
-              <TimingPanel
-                comp={comp}
-                faulted={faulted}
-                player={player}
-                selected={selected}
-                onVoice={pickVoice}
-              />
-            </TabPanel>
-            <TabPanel id="both" className={s.sidePanel}>
-              <BothPanel
-                comp={comp}
-                faulted={faulted}
-                player={player}
-                selected={selected}
-                onVoice={pickVoice}
-                onComp={set}
-              />
-            </TabPanel>
-            <TabPanel id="desk" className={s.sidePanel}>
-              <DeskPanel
-                comp={comp}
-                faulted={faulted}
-                player={player}
-                selected={selected}
-                onVoice={pickVoice}
-              />
-            </TabPanel>
-          </Tabs>
-        </aside>
+        <DiagramTabs
+          comp={comp}
+          faulted={faulted}
+          player={player}
+          selected={selected}
+          onVoice={pickVoice}
+          onComp={set}
+        />
         <section className={s.score}>
           <Transport
             playing={playing}
@@ -326,7 +297,7 @@ export function App() {
             onEdit={edit}
           />
         </section>
-      </div>
+      </Split>
     </LabShell>
   );
 }

@@ -5,6 +5,7 @@ import type { Player } from '@pg/blits/player';
 import { lit, liveOf, timingOf } from '@pg/blits/timing';
 import { type End, jobOf, toneOf, wired } from '@pg/blits/wire';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
+import { usePersistedState } from '@weasel-js/labkit';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import s from './FlowPanel.module.css';
 import { flowKey } from './flowKey';
@@ -23,15 +24,6 @@ export interface BothPanelProps {
 }
 
 type At = { x: number; y: number };
-const LABELS = 'blits-playground:port-labels';
-
-function readLabels(): boolean {
-  try {
-    return localStorage.getItem(LABELS) === 'on';
-  } catch {
-    return false;
-  }
-}
 // Where nodes were dragged, kept while the page is open so a tab switch does not lose them.
 let dragged: ReadonlyMap<string, At> = new Map();
 
@@ -45,13 +37,7 @@ export function BothPanel({ comp, faulted, player, selected, onVoice, onComp }: 
   const shown = kept.current.flow;
   const [size, ref] = useSize();
   const [editing, setEditing] = useState(false);
-  const [labeled, setLabeled] = useState(readLabels);
-  const label = (on: boolean) => {
-    setLabeled(on);
-    try {
-      localStorage.setItem(LABELS, on ? 'on' : 'off');
-    } catch {}
-  };
+  const [labeled, label] = usePersistedState('portLabels', false, { scope: 'lab' });
   const portLabel = useCallback(
     (node: string, port: string) => jobOf(flow.code, node, port),
     [flow.code],
