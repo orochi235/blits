@@ -63,7 +63,11 @@ describe('load', () => {
       color: { rule: 'average', type: 'ink' },
     };
     expect(load({ ...copy(), rules })?.rules).toEqual(rules);
-    const more = { glow: { rule: 'norm' }, offset: { rule: 'min', bounds: [0, 9] } };
+    const more = {
+      glow: { rule: 'norm' },
+      offset: { rule: 'min', bounds: [0, 9] },
+      turn: { rule: 'angle' },
+    };
     expect(load({ ...copy(), rules: more })?.rules).toEqual(more);
     const blend = { color: { rule: 'screen', type: 'color' } };
     expect(load({ ...copy(), rules: blend })?.rules).toEqual(blend);
@@ -121,6 +125,9 @@ describe('load', () => {
       { ...copy(), book: { ahead: '100' } },
       { ...copy(), rules: { offset: { rule: 'last' } } },
       { ...copy(), rules: { turn: { rule: 'last', bounds: [0, 1] } } },
+      { ...copy(), rules: { turn: { rule: 'angle', bounds: [0, 1] } } },
+      { ...copy(), rules: { scale: { rule: 'angle' } } },
+      { ...copy(), rules: { offset: { rule: 'angle' } } },
       { ...copy(), rules: { scale: { rule: 'sum', bounds: [2, 1] } } },
       { ...copy(), rules: { color: { rule: 'replace' } } },
       { ...copy(), rules: { size: { rule: 'sum' } } },

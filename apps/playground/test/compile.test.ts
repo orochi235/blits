@@ -37,6 +37,7 @@ describe('kitOf', () => {
     });
     expect(kinds(k)).toMatchObject({ scale: 'sum[0, 3]', color: 'color(sum)' });
     expect(kinds(kitOf({ color: { rule: 'multiply', type: 'ink' } })).color).toBe('ink(multiply)');
+    expect(kinds(kitOf({ turn: { rule: 'angle' } })).turn).toBe('angle(360)');
     expect(kinds(kitOf({ color: { rule: 'overlay', type: 'color' } })).color).toBe(
       'color(overlay)',
     );

@@ -1,5 +1,6 @@
 import {
   add,
+  angle,
   color,
   colorBurn,
   colorDodge,
@@ -66,9 +67,19 @@ export type SwingName = { [K in keyof Mixed]: Mixed[K] extends number ? K : neve
 
 export const SWINGS: readonly SwingName[] = ['turn', 'scale', 'opacity', 'glow'];
 
-/** How a channel of one or more numbers folds its voices. `last` has no rest and takes no bounds. */
-export const NUMBER_RULES = ['sum', 'mul', 'max', 'min', 'norm', 'last'] as const;
+/** How a channel of one or more numbers folds its voices. */
+export const NUMBER_RULES = ['sum', 'mul', 'max', 'min', 'norm', 'last', 'angle'] as const;
 export type NumberRule = (typeof NUMBER_RULES)[number];
+
+/** The rules that take no bounds: `last` has no rest, and an `angle` wraps round. */
+export const UNBOUNDED: readonly NumberRule[] = ['last', 'angle'];
+
+/**
+ * The rules a number channel takes: `angle` only for `turn`, the one rotation, and not `last` for
+ * `offset`, two numbers folded alike, which `last` cannot vouch for.
+ */
+export const rulesFor = (ch: Exclude<ChannelName, 'color'>): readonly NumberRule[] =>
+  NUMBER_RULES.filter((r) => (r === 'angle' ? ch === 'turn' : !(ch === 'offset' && r === 'last')));
 
 export interface NumberRuleSpec {
   rule: NumberRule;
@@ -120,9 +131,9 @@ export interface ColorRuleSpec {
   type: 'color' | 'ink';
 }
 
-/** Each channel's fold rule; `offset` is two numbers folded alike, which `last` cannot vouch for. */
+/** Each channel's fold rule; `rulesFor` says which a channel takes. */
 export interface Rules {
-  offset: NumberRuleSpec & { rule: Exclude<NumberRule, 'last'> };
+  offset: NumberRuleSpec & { rule: Exclude<NumberRule, 'last' | 'angle'> };
   turn: NumberRuleSpec;
   scale: NumberRuleSpec;
   color: ColorRuleSpec;
@@ -143,6 +154,7 @@ const RULES = { sum, mul, max, min, norm } as const;
 
 function numberChannel({ rule, bounds }: NumberRuleSpec) {
   if (rule === 'last') return last<number>();
+  if (rule === 'angle') return angle();
   return RULES[rule](bounds ? { bounds } : undefined);
 }
 

@@ -6,10 +6,11 @@ import {
   type ColorRuleSpec,
   DEFAULT_RULES,
   kitOf,
-  NUMBER_RULES,
   type NumberRule,
   type NumberRuleSpec,
   type Rules,
+  rulesFor,
+  UNBOUNDED,
 } from '@pg/blits/kit';
 import { scopedIcon } from '@weasel-js/icons';
 import {
@@ -78,7 +79,8 @@ export function RulesPanel({
   const config: Record<string, unknown> = { changed: comp.rules !== undefined };
   for (const ch of CHANNELS) {
     const spec = rules[ch];
-    if (!('type' in spec)) config[bandOf(ch)] = spec.rule !== 'last' && spec.bounds !== undefined;
+    if (!('type' in spec))
+      config[bandOf(ch)] = !UNBOUNDED.includes(spec.rule) && spec.bounds !== undefined;
   }
 
   const select = (
@@ -115,7 +117,7 @@ export function RulesPanel({
     (ch: NumberChannel): ControlRenderer =>
     () => {
       const spec = rules[ch];
-      const options = ch === 'offset' ? NUMBER_RULES.filter((x) => x !== 'last') : NUMBER_RULES;
+      const options = rulesFor(ch);
       const kind = kit[ch].kind ?? 'custom';
       return (
         <PropertyRow
@@ -129,9 +131,12 @@ export function RulesPanel({
           <span className={r.controls}>
             {select(`${ch} rule`, spec.rule, options, (v) => {
               const rule = v as NumberRule;
-              set(ch, rule === 'last' ? { rule } : ({ ...spec, rule } as Rules[typeof ch]));
+              set(
+                ch,
+                (UNBOUNDED.includes(rule) ? { rule } : { ...spec, rule }) as Rules[typeof ch],
+              );
             })}
-            {spec.rule !== 'last' && (
+            {!UNBOUNDED.includes(spec.rule) && (
               <PropertyControl
                 kind="boolean"
                 control="toggle"
