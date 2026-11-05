@@ -10,7 +10,7 @@ const owners: Record<string, string[]> = {
   anchored: ['roster.ts'],
   general: ['roster.ts', 'move.ts', 'chain.ts'],
   sharers: ['roster.ts', 'move.ts', 'everyone.ts'],
-  owners: ['roster.ts', 'seek.ts'],
+  owners: ['roster.ts'],
   detours: ['roster.ts'],
   pulled: ['pull.ts'],
   pulledHeads: ['pull.ts'],
