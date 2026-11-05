@@ -18,7 +18,7 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   the next `channel()` or `read` in its frame, and the check comparing that fold with the CPU
   destroys its staging buffer when the device refuses the map, and reports an error reading it
   back rather than leaving an unhandled rejection.
-- `gpuOf(m).read` lets go of a channel's last copy once a frame passes without reading it, rather
+- `gpuOf(m).read` lets go of a channel's last copy once it goes unread and too old to give, rather
   than holding it, about 32 MB for 1M subjects of eight numbers, until `subjects()` or `close()`; and
   after a stretch of frames with no fold, it no longer copies the old fold only to turn it down.
 - On the `gpu` engine, a motion change made to a subject after a seek back before its voice's cue,
@@ -31,6 +31,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   failing to bind them.
 - While the `gpu` engine's kernel compiles, a motion voice with a change waiting no longer starts
   the fold over at every `channel()` or `read` call.
+- The `gpu` engine folds a voice waiting for its start that freezes before it, as the CPU does,
+  rather than showing nothing where the voice holds its first frame, or the frame a seek ahead put
+  it at.
 
 ## 1.0.0
 

@@ -164,21 +164,24 @@ describe('gpu readback ring', () => {
     expect((await pending)?.timestamp).toBe(f101.timestamp);
   });
 
-  it('lets go of a channel’s copy at the first turn after a frame that did not read it', async () => {
-    const { d, r, fold, read } = ring();
+  it('lets go of an unread channel’s copy once it is too old for a read to give', async () => {
+    const { d, r, fold } = ring();
     const held = (r as unknown as { held: Map<string, unknown> }).held;
     r.want('s');
     r.want('p');
     r.fold(fold(1));
     r.turn(2, 2);
     await d.settle();
-    await read('s', 2);
-    r.want('s');
+    // A frame a control change starts, with no sync since: a read could still give the copy.
     r.fold(fold(2));
-    r.turn(3, 3);
-    expect([...held.keys()]).toEqual(['s']);
+    r.turn(3, 2);
+    expect([...held.keys()].sort()).toEqual(['p', 's']);
+    r.want('s');
     r.fold(fold(3));
     r.turn(4, 4);
+    expect([...held.keys()]).toEqual(['s']);
+    r.fold(fold(4));
+    r.turn(5, 5);
     expect(held.size).toBe(0);
   });
 
