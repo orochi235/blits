@@ -135,7 +135,7 @@ let GLYPHS = {
     'taller bar capped': path(`M${F} ${N}V9.4M${K} ${N}V${D}`) + path(`M${C} ${D}H${N}`, thin),
     'upper envelope': path(`M3.6 14.4L16.4 5.6`, thin) + path(`M3.6 5.6L16.4 14.4`, thin) + path(`M3.6 5.6L10 10L16.4 5.6`),
     'caret under ceiling': path(`M4.4 14L10 8L15.6 14`) + path(`M4.4 4.4H15.6`),
-    'two peaks': path(`M3 16L7 10L10 13L14 5L17 16`) + dot(14, 2.4, 1.1),
+    'two peaks': path(`M3 16L7 10.4L10 13L14 6L17 16`) + dot(14, 2.4, 1.1),
   },
   min: {
     wedge: path(`M4.4 14.4L10 5L15.6 14.4`),
@@ -143,7 +143,7 @@ let GLYPHS = {
     'shorter bar capped': path(`M${F} ${N}V9.4M${K} ${N}V${D}`) + path(`M${C} 9.4H${N}`, thin),
     'lower envelope': path(`M3.6 14.4L16.4 5.6`, thin) + path(`M3.6 5.6L16.4 14.4`, thin) + path(`M3.6 14.4L10 10L16.4 14.4`),
     'caret over floor': path(`M4.4 6L10 12L15.6 6`) + path(`M4.4 15.6H15.6`),
-    'two valleys': path(`M3 4L7 10L10 7L14 15L17 4`) + dot(14, 17.6, 1.1),
+    'two valleys': path(`M3 4L7 9.6L10 7L14 14L17 4`) + dot(14, 17.6, 1.1),
   },
   norm: {
     hypotenuse: path(`M${D} ${D}V${M}H${M}`, thin) + path(`M${D} ${D}L${M} ${M}`),
