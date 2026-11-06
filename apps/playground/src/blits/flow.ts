@@ -71,22 +71,23 @@ export function writesOf(p: PatchSource): ChannelName[] {
   return [p.channel];
 }
 
-function voiceDetail(v: Voice, blended: boolean): string {
-  const parts: string[] = [v.patch.kind];
+/** A voice's detail line, or nothing when it has none to say. */
+function voiceDetail(v: Voice, blended: boolean): { detail?: string } {
+  const parts: string[] = [];
   const period = periodOf(v.patch);
   if (period !== undefined) parts.push(`${period} ms`);
   if (v.loop === true) parts.push('loop');
   else if (typeof v.loop === 'number') parts.push(`×${v.loop}`);
   if (blended) parts.push('blend');
   else if (typeof v.weight === 'number') parts.push(`w ${v.weight}`);
-  return parts.join(' · ');
+  return parts.length ? { detail: parts.join(' · ') } : {};
 }
 
-function groupDetail(g: Group): string {
-  const parts: string[] = [g.kind];
+function groupDetail(g: Group): { detail?: string } {
+  const parts: string[] = [];
   if (g.span?.duration !== undefined) parts.push(`${g.span.duration} ms`);
   if (typeof g.weight === 'number') parts.push(`w ${g.weight}`);
-  return parts.join(' · ');
+  return parts.length ? { detail: parts.join(' · ') } : {};
 }
 
 /** A flow, with the source of each node that stands for a signal: a level, a signal call, or a whole `weight`. */
@@ -212,7 +213,8 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       id: `group:${g.id}`,
       kind: 'group',
       label: g.name,
-      detail: groupDetail(g),
+      aside: g.kind,
+      ...groupDetail(g),
       hue: g.hue,
       ...(faulted.has(g.id) ? { faulted: true } : {}),
     });
@@ -230,7 +232,8 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       id: `voice:${v.id}`,
       kind: 'voice',
       label: v.name,
-      detail: voiceDetail(v, by !== undefined),
+      aside: v.patch.kind,
+      ...voiceDetail(v, by !== undefined),
       hue: v.hue,
       ...(faulted.has(v.id) ? { faulted: true } : {}),
     });

@@ -140,8 +140,9 @@ describe('flowOf', () => {
         group({ id: 'k', kind: 'span', owner: 'g', span: { duration: 2000 } }),
       ],
     };
-    expect(node(c, 'group:g')).toMatchObject({ kind: 'group', label: 'g', detail: 'owner' });
-    expect(node(c, 'group:k')?.detail).toBe('span · 2000 ms · w 1');
+    expect(node(c, 'group:g')).toMatchObject({ kind: 'group', label: 'g', aside: 'owner' });
+    expect(node(c, 'group:g')?.detail).toBeUndefined();
+    expect(node(c, 'group:k')).toMatchObject({ aside: 'span', detail: '2000 ms · w 1' });
     const e = edges(c);
     expect(e).toContainEqual(['level:x', 'step:group:g:weight', '']);
     expect(e).toContainEqual(['group:g', 'step:group:g:weight', '']);

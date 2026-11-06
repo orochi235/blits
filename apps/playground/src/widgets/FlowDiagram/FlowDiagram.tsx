@@ -6,6 +6,8 @@ import {
   isBodyEnd,
   type LayoutDirection,
   type NodeMove,
+  registerOutline,
+  roundRectOutline,
 } from '@weasel-js/diagram';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { boxStyleOf, edgeStyleOf, portColorOf, rowsOf, styleOf } from './style';
@@ -15,6 +17,7 @@ import type { Flow, FlowBox, FlowEnd, FlowNode, FlowPortTone } from './types';
 // that isn't registered.
 registerCanvasFont('sans-serif');
 registerCanvasFont('Oswald');
+registerOutline('card', roundRectOutline(5));
 
 const endsOf = (e: { from: string; to: string; label?: string }) =>
   `${e.from}\n${e.to}\n${e.label ?? ''}`;
@@ -107,7 +110,7 @@ export function FlowDiagram({
         groups: [...boxes.values()].map((b) => ({ id: b.id, label: b.label, members: b.members })),
       },
       {
-        outline: 'roundRect',
+        outline: 'card',
         layoutOptions: { direction, order: 'barycenter', nodeGap: 40, rankGap: 56 },
         nodeStyle: (d) => styleOf(byId.get(d.id) as FlowNode),
         groupStyle: (g) => boxStyleOf(boxes.get(g.id) as FlowBox),

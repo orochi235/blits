@@ -17,6 +17,8 @@ export interface FlowNode {
   id: string;
   kind: FlowKind;
   label: string;
+  /** A word set apart from the name, at the right of its title bar: a voice's patch kind, a group's kind. */
+  aside?: string;
   detail?: string;
   hue?: number;
   faulted?: boolean;

@@ -28,7 +28,7 @@ const STROKE: Record<FlowKind, string> = {
 };
 
 /** labkit's control label face: Oswald, upper case, tracked wide. */
-const HEADER_FACE = { fontFamily: 'Oswald', fontSize: 12, weight: 400, tracking: 0.06 };
+const HEADER_FACE = { fontFamily: 'Oswald', fontSize: 11, weight: 400, tracking: 0.06 };
 
 /** Kinds whose label is a name; a signal's or an expression's is its code. */
 const NAMED: ReadonlySet<FlowKind> = new Set<FlowKind>([
@@ -50,7 +50,11 @@ export function rowsOf(n: FlowNode): Row[] {
     (text): Row => ({ kind: 'label', text }),
   );
   if (!NAMED.has(n.kind)) return [{ kind: 'label', text: n.label }, ...detail];
-  return [{ kind: 'header', text: n.label.toUpperCase(), style: HEADER_FACE }, ...detail];
+  const aside = n.aside === undefined ? {} : { aside: n.aside.toUpperCase() };
+  return [
+    { kind: 'header', text: n.label.toUpperCase(), style: HEADER_FACE, pad: 3, ...aside },
+    ...detail,
+  ];
 }
 
 /** What a tone does to a box that is otherwise `plain`. */

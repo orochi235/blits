@@ -33,7 +33,9 @@ export function deskOf(comp: Composition, flow: Flow): Desk {
       id: r.id,
       label: n.label,
       taps: taps.get(n.id) ?? [],
-      ...(n.detail !== undefined ? { detail: n.detail } : {}),
+      ...(n.aside !== undefined || n.detail !== undefined
+        ? { detail: [n.aside, n.detail].filter(Boolean).join(' · ') }
+        : {}),
       ...(n.hue !== undefined ? { hue: n.hue } : {}),
       ...(n.faulted ? { faulted: true } : {}),
     });
