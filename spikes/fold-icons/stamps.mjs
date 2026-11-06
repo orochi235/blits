@@ -2,7 +2,7 @@
 // per voice value, overlaid. The merges mirror blits' (src/channels.ts, src/extremes.ts) at weight 1.
 import { writeFileSync } from 'node:fs';
 
-const S = 128, PAD = 10, CURVES = 28, STEPS = 96;
+const S = 128, PAD = 10, STEPS = 96;
 const RULES = [
   ['sum', [-1, 1], [-2, 2], (a, v) => a + v],
   ['mul', [0, 2], [0, 4], (a, v) => a * v],
@@ -13,12 +13,15 @@ const RULES = [
   ['angle', [0, 1], [0, 1], (a, v) => (a + v) % 1],
 ];
 
-function stamp([, [lo, hi], [ylo, yhi], f], color) {
+let ids = 0;
+function stamp([, [lo, hi], [ylo, yhi], f], look) {
+  const { curves, ink, opacity, width, blend, glow, bg } = look;
+  const id = `s${ids++}`;
   const X = (a) => PAD + ((a - lo) / (hi - lo)) * (S - 2 * PAD);
   const Y = (o) => S - PAD - ((o - ylo) / (yhi - ylo)) * (S - 2 * PAD);
   let out = '';
-  for (let k = 0; k < CURVES; k++) {
-    const v = lo + ((hi - lo) * (k + 0.5)) / CURVES;
+  for (let k = 0; k < curves; k++) {
+    const v = lo + ((hi - lo) * (k + 0.5)) / curves;
     let d = '', prev = null;
     for (let i = 0; i <= STEPS; i++) {
       const a = lo + ((hi - lo) * i) / STEPS;
@@ -28,20 +31,28 @@ function stamp([, [lo, hi], [ylo, yhi], f], color) {
       d += `${d === '' || jump ? 'M' : 'L'}${X(a).toFixed(1)} ${Y(o).toFixed(1)}`;
       prev = o;
     }
-    out += `<path d="${d}" stroke="${color(k / (CURVES - 1))}"/>`;
+    out += `<path d="${d}"/>`;
   }
-  return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" fill="none" stroke-width="1.5" stroke-opacity="0.22" stroke-linecap="round" stroke-linejoin="round"><clipPath id="c"><rect width="${S}" height="${S}" rx="10"/></clipPath><g clip-path="url(#c)">${out}</g></svg>`;
+  const lines = `<g stroke="${ink}" stroke-opacity="${opacity}" stroke-width="${width}"${blend ? ' style="mix-blend-mode:plus-lighter"' : ''}>${out}</g>`;
+  const halo = glow
+    ? `<filter id="${id}g" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="${glow}"/></filter><g filter="url(#${id}g)" opacity="0.9">${lines}</g>`
+    : '';
+  return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" fill="none" stroke-linecap="round" stroke-linejoin="round"><clipPath id="${id}"><rect width="${S}" height="${S}" rx="10"/></clipPath><g clip-path="url(#${id})"><rect width="${S}" height="${S}" fill="${bg}"/><g style="isolation:isolate">${halo}${lines}</g></g></svg>`;
 }
 
-const SCHEMES = [
-  ['one ink', () => '#7fc8ff'],
-  ['voice value as hue', (t) => `hsl(${200 + t * 120} 80% 66%)`],
+const BASE = { curves: 28, ink: '#7fc8ff', opacity: 0.22, width: 1.5, blend: false, glow: 0, bg: '#16222c' };
+const LOOKS = [
+  ['before', BASE],
+  ['heavier, fewer', { ...BASE, curves: 16, ink: '#a8dcff', opacity: 0.55, width: 1.75 }],
+  ['additive', { ...BASE, curves: 22, ink: '#5fb4ff', opacity: 0.45, width: 1.5, blend: true, bg: '#0b1218' }],
+  ['additive + glow', { ...BASE, curves: 22, ink: '#5fb4ff', opacity: 0.45, width: 1.5, blend: true, glow: 2.2, bg: '#0b1218' }],
+  ['additive, hot', { ...BASE, curves: 22, ink: '#7ad0ff', opacity: 0.6, width: 1.75, blend: true, glow: 1.4, bg: '#070c10' }],
 ];
 
 let body = '';
-for (const [name, color] of SCHEMES) {
+for (const [name, look] of LOOKS) {
   body += `<h2>${name}</h2><div class="row">`;
-  for (const r of RULES) body += `<figure>${stamp(r, color)}<figcaption>${r[0]}</figcaption></figure>`;
+  for (const r of RULES) body += `<figure>${stamp(r, look)}<figcaption>${r[0]}</figcaption></figure>`;
   body += `</div>`;
 }
 
@@ -52,7 +63,7 @@ body{margin:0;padding:12px 20px;background:#0f151b;color:#dbe7f2;font:12px Menlo
 h2{font-size:12px;color:#7ba7c7;margin:8px 0}
 .row{display:flex;gap:14px}
 figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
-svg{background:#16222c;border-radius:10px}
+svg{border-radius:10px}
 figcaption{color:#6f8496}
 </style>${body}`,
 );
