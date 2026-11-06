@@ -195,6 +195,8 @@ const PICKS = {
   last: ['last (history)', 'head at 9'], // 2026-11-05
   mul: ['mul', 'nested corners'], // 2026-11-05
   angle: ['angle', 'angle mark'], // 2026-11-05
+  max: ['max', 'two peaks'], // 2026-11-05
+  min: ['min', 'two valleys'], // 2026-11-05
 };
 GLYPHS = {
   picked: Object.fromEntries(Object.entries(PICKS).map(([rule, [row, name]]) => [rule, GLYPHS[row][name]])),
