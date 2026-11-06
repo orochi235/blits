@@ -1,0 +1,24 @@
+.stamp {
+  display: block;
+  border-radius: 10px;
+  background: #16222c;
+}
+
+.lines {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.glowing {
+  background: #070c10;
+}
+
+/* Overlapping curves add light, so where they crowd the stamp burns toward white. */
+.glowing .lines {
+  isolation: isolate;
+}
+
+.glowing path {
+  mix-blend-mode: plus-lighter;
+}

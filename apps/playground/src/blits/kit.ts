@@ -152,7 +152,7 @@ export const DEFAULT_RULES: Rules = {
 
 const RULES = { sum, mul, max, min, norm } as const;
 
-function numberChannel({ rule, bounds }: NumberRuleSpec) {
+export function numberChannel({ rule, bounds }: NumberRuleSpec) {
   if (rule === 'last') return last<number>();
   if (rule === 'angle') return angle();
   return RULES[rule](bounds ? { bounds } : undefined);

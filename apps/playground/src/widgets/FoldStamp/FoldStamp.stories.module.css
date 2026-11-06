@@ -1,0 +1,34 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  font-family: var(--wzl-font-ui);
+  color: var(--wzl-fg);
+}
+
+.sheet h2 {
+  margin: 0 0 6px;
+  font-size: var(--wzl-font-size-sm);
+  font-weight: var(--wzl-font-weight-normal);
+  color: var(--wzl-fg-muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.row figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.row figcaption {
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}
