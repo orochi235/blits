@@ -823,6 +823,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
+- **Parked: channel nodes shaped by their fold rule** (unbuilt; parked 2026-11-05 to work on the
+  diagrams themselves first, liked as a starting point). The node's left edge stands for the input
+  range and its right edge for the output, so the outline is the region the rule sweeps through:
+  `sum` leans, `mul` and `min` lower the top, `max` raises the bottom, `last` narrows to a funnel.
+  Called for: neither end narrower than half the node's height, shifts capped small, flat ends for
+  ports and the label, a few faint lines inside to tell `min` from `mul`, and no wrap mark on
+  `angle`, which reads fine without one. Weight eases the shape from a plain rectangle.
+  `node spikes/fold-shapes/shapes.mjs > shapes.svg` draws the sketch. weasel already takes a
+  unit-square `Path` as an outline and moves ports onto it; it draws `detail` lines only for a
+  named, registered outline, so the inner lines need weasel to take detail beside a `Path`.
+
 - **The playground's plots label their time axis `0.0000000002…` at time 0** (seen 2026-11-05, on
   `/playground/` and standalone): before the first frame the plotted range is zero wide, and the
   ticks print it at full precision. It clears once playback moves.
