@@ -25,6 +25,8 @@ export interface FlowNode {
   detail?: string;
   /** The number rule a channel folds by, drawn as its stamp. */
   stamp?: NumberRule;
+  /** The stage as a grid, a number per subject in stage order, drawn shaded low to high. */
+  grid?: { cols: number; rows: number; values: readonly number[] };
   /** Named inputs a parameter plugs into, drawn on its side with their names inside it. */
   inputs?: readonly string[];
   /** The weight its stamp is drawn at, 0 to 1. Unset: 1. */

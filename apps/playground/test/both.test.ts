@@ -27,9 +27,7 @@ describe('bothOf', () => {
 
   it('gives a voice both details, the flow first', () => {
     const c = comp([voice({ id: 'a', patch: keys, start: 300 })]);
-    expect(both(c).nodes.find((n) => n.id === 'voice:a')?.detail).toBe(
-      'at 300 ms',
-    );
+    expect(both(c).nodes.find((n) => n.id === 'voice:a')?.detail).toBe('at 300 ms');
   });
 
   it('marks every timing edge and keeps its ids apart from the flow edges', () => {

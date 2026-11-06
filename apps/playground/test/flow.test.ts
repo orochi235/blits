@@ -1,9 +1,10 @@
 import type { Composition, Voice } from '@pg/blits/composition';
-import { flowOf, foldOf, itemOf, stampWeights, writesOf } from '@pg/blits/flow';
+import { flowOf, foldOf, itemOf, writesOf } from '@pg/blits/flow';
 import { KIT } from '@pg/blits/kit';
 import crossfade from '@pg/blits/presets/crossfade';
 import pointerGlow from '@pg/blits/presets/pointer-glow';
 import staggerWave from '@pg/blits/presets/stagger-wave';
+import { stampWeights } from '@pg/blits/stamps';
 import { describe, expect, it } from 'vitest';
 import { group } from './helpers';
 

@@ -1,7 +1,8 @@
 import type { Composition } from '@pg/blits/composition';
-import { flowOf, foldOf, stampWeights } from '@pg/blits/flow';
+import { flowOf, foldOf } from '@pg/blits/flow';
 import { type ChannelName, kitOf } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
+import { stampDelays, stampWeights } from '@pg/blits/stamps';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
 import { Glyph } from '@pg/widgets/Glyph';
 import { Button } from '@weasel-js/ui';
@@ -23,7 +24,7 @@ export interface FlowPanelProps {
 
 export function FlowPanel({ comp, faulted, player, selected, onVoice }: FlowPanelProps) {
   const [fold, setFold] = useState<ChannelName | null>(null);
-  const built = useMemo(() => flowOf(comp, faulted), [comp, faulted]);
+  const built = useMemo(() => stampDelays(flowOf(comp, faulted), comp), [comp, faulted]);
   const kept = useRef({ key: flowKey(built), flow: built });
   const key = flowKey(built);
   if (kept.current.key !== key) kept.current = { key, flow: built };
@@ -36,9 +37,10 @@ export function FlowPanel({ comp, faulted, player, selected, onVoice }: FlowPane
   const weights = samples.at(-1)?.weights;
   const lit = weights ? stampWeights(shown, weights) : shown;
   const litKey = lit.nodes.map((n) => n.stampWeight ?? '').join(',');
-  const drawn = useRef({ shown, key: litKey, flow: lit });
+  // A stamp redrawn alone keeps every node where it stands; only a new flow is laid out again.
+  const drawn = useRef({ shown, key: litKey, flow: lit, hold: false });
   if (drawn.current.shown !== shown || drawn.current.key !== litKey)
-    drawn.current = { shown, key: litKey, flow: lit };
+    drawn.current = { shown, key: litKey, flow: lit, hold: drawn.current.shown === shown };
   const [size, ref] = useSize();
   const nodeOf = (id: string) =>
     comp.groups?.some((g) => g.id === id) ? `group:${id}` : `voice:${id}`;
@@ -69,6 +71,7 @@ export function FlowPanel({ comp, faulted, player, selected, onVoice }: FlowPane
           size && (
             <FlowDiagram
               flow={drawn.current.flow}
+              hold={drawn.current.hold}
               width={size.width}
               height={size.height}
               direction={fold ? 'up' : 'down'}

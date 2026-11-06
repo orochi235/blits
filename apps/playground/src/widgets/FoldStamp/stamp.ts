@@ -19,19 +19,25 @@ export interface StampOptions {
   ramp?: StampRamp;
 }
 
+/** What a glowing stamp is drawn on. */
+export const STAMP_BG = '#070c10';
+
 const LINES: Record<
   StampLine,
   { count: number; width: number; opacity: number; ink: string; bg: string }
 > = {
   fine: { count: 28, width: 1.5, opacity: 0.22, ink: '#7fc8ff', bg: '#16222c' },
   bold: { count: 16, width: 1.75, opacity: 0.55, ink: '#a8dcff', bg: '#16222c' },
-  glowing: { count: 22, width: 1.75, opacity: 0.6, ink: '#7ad0ff', bg: '#070c10' },
+  glowing: { count: 22, width: 1.75, opacity: 0.6, ink: '#7ad0ff', bg: STAMP_BG },
 };
 
 const RAMPS: Record<StampRamp, (t: number) => string> = {
   cool: (t) => `hsl(${205 + t * 115} 95% 66%)`,
   warm: (t) => `hsl(${190 - t * 155} 95% 62%)`,
 };
+
+/** The hues a value runs through, low to high, in `ramp`. */
+export const rampOf = (ramp: StampRamp) => RAMPS[ramp];
 
 const PAD = 10 / 128;
 const RADIUS = 10 / 128;

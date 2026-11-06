@@ -1,6 +1,6 @@
 import { hueColor } from '@msb235/blits-panel';
 import type { NumberRule } from '@pg/blits/kit';
-import { stampUrl } from '@pg/widgets/FoldStamp';
+import { gridHeight, gridUrl, stampUrl } from '@pg/widgets/FoldStamp';
 import type { EdgeStyle, NodeStyle, Row } from '@weasel-js/diagram';
 import type { FlowBox, FlowEdge, FlowKind, FlowNode, FlowPortTone, FlowTone } from './types';
 
@@ -50,12 +50,16 @@ const NAMED: ReadonlySet<FlowKind> = new Set<FlowKind>([
 const STAMP = 48;
 const STAMP_DRAWN = 96;
 
-const stampRow = (rule: NumberRule, weight = 1): Row => ({
+const picture = (src: string, height = STAMP): Row => ({
   kind: 'slot',
-  height: STAMP,
+  height,
   width: STAMP,
-  image: { src: stampUrl({ rule, weight, size: STAMP_DRAWN }) },
+  image: { src },
 });
+const gridRow = (g: NonNullable<FlowNode['grid']>) =>
+  picture(gridUrl({ ...g, size: STAMP_DRAWN }), gridHeight(g.cols, g.rows, STAMP));
+const stampRow = (rule: NumberRule, weight = 1) =>
+  picture(stampUrl({ rule, weight, size: STAMP_DRAWN }));
 
 /** A named node's name in its title bar over each line of the detail; any other's label first. */
 export function rowsOf(n: FlowNode): Row[] {
@@ -63,7 +67,10 @@ export function rowsOf(n: FlowNode): Row[] {
   const lines = (n.detail ? n.detail.split('\n') : []).map(
     (text): Row => ({ kind: 'label', text }),
   );
-  const stamp = n.stamp === undefined ? [] : [stampRow(n.stamp, n.stampWeight)];
+  const stamp = [
+    ...(n.stamp === undefined ? [] : [stampRow(n.stamp, n.stampWeight)]),
+    ...(n.grid === undefined ? [] : [gridRow(n.grid)]),
+  ];
   const inputs: Row[] = n.inputs?.length
     ? [{ kind: 'ports', left: n.inputs.map((id) => ({ id, label: id })) }]
     : [];

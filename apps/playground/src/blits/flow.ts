@@ -323,30 +323,3 @@ export function itemOf(flow: Flow, id: string): string {
   }
   return at;
 }
-
-/** How finely a stamp follows its weight: a stamp is redrawn only when this much has changed. */
-const STAMP_STEP = 0.1;
-
-/** `flow` with each stamped channel drawn at the weight of the strongest voice writing it now, by
- *  `weights` (a voice's `weightOf` by its id), to a tenth; the same flow when nothing moved. */
-export function stampWeights(flow: Flow, weights: ReadonlyMap<string, number>): Flow {
-  const strongest = new Map<string, number>();
-  for (const e of flow.edges) {
-    if (!e.to.startsWith('ch:')) continue;
-    const item = itemOf(flow, e.from);
-    if (!item.startsWith('voice:')) continue;
-    const w = weights.get(item.slice('voice:'.length)) ?? 0;
-    strongest.set(e.to, Math.max(strongest.get(e.to) ?? 0, w));
-  }
-  let moved = false;
-  const nodes = flow.nodes.map((n) => {
-    if (n.stamp === undefined) return n;
-    const w =
-      Math.round(Math.min(Math.max(strongest.get(n.id) ?? 0, 0), 1) / STAMP_STEP) * STAMP_STEP;
-    const stampWeight = Number(w.toFixed(1));
-    if (n.stampWeight === stampWeight) return n;
-    moved = true;
-    return { ...n, stampWeight };
-  });
-  return moved ? { ...flow, nodes } : flow;
-}

@@ -35,7 +35,14 @@ describe('voiceParams', () => {
       role: 'r',
       tags: ['a', 'b'],
       marks: { peak: 300 },
-      patch: { kind: 'wave', period: 800, shape: 'sine', cycles: 2, phase: 0, depth: { scale: 0.2 } },
+      patch: {
+        kind: 'wave',
+        period: 800,
+        shape: 'sine',
+        cycles: 2,
+        phase: 0,
+        depth: { scale: 0.2 },
+      },
     });
     expect(voiceParams(v, true)).toEqual([
       ['period', '800 ms'],
