@@ -1,3 +1,4 @@
+import type { NumberRule } from '@pg/blits/kit';
 export type FlowKind =
   | 'level'
   | 'signal'
@@ -22,6 +23,8 @@ export interface FlowNode {
   /** Its parameters, each a name then a value, drawn a row apiece under its title bar. */
   params?: readonly (readonly [label: string, value: string])[];
   detail?: string;
+  /** The number rule a channel folds by, drawn as its stamp. */
+  stamp?: NumberRule;
   hue?: number;
   faulted?: boolean;
   tone?: FlowTone;

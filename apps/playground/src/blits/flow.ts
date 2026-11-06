@@ -11,7 +11,15 @@ import {
   periodOf,
   type Voice,
 } from './composition';
-import { CHANNELS, type ChannelName, KIT, kitOf, type Mixed, type SwingName } from './kit';
+import {
+  CHANNELS,
+  type ChannelName,
+  DEFAULT_RULES,
+  KIT,
+  kitOf,
+  type Mixed,
+  type SwingName,
+} from './kit';
 import { groupParams, levelParams, voiceParams } from './params';
 import { subjectsOf } from './stage';
 
@@ -240,9 +248,17 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       writes.push([end, ch]);
     }
   }
+  const rules = { ...DEFAULT_RULES, ...comp.rules };
   for (const ch of CHANNELS) {
-    if (written.has(ch))
-      b.node({ id: `ch:${ch}`, kind: 'channel', label: ch, detail: kit[ch].kind ?? 'custom' });
+    if (!written.has(ch)) continue;
+    const rule = ch === 'color' ? undefined : rules[ch].rule;
+    b.node({
+      id: `ch:${ch}`,
+      kind: 'channel',
+      label: ch,
+      detail: kit[ch].kind ?? 'custom',
+      ...(rule ? { stamp: rule } : {}),
+    });
   }
   for (const [id, ch] of writes) b.edge(id, `ch:${ch}`);
   const subjects = subjectsOf(comp.stage).length;

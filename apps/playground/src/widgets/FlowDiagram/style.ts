@@ -1,4 +1,6 @@
 import { hueColor } from '@msb235/blits-panel';
+import type { NumberRule } from '@pg/blits/kit';
+import { stampUrl } from '@pg/widgets/FoldStamp';
 import type { EdgeStyle, NodeStyle, Row } from '@weasel-js/diagram';
 import type { FlowBox, FlowEdge, FlowKind, FlowNode, FlowPortTone, FlowTone } from './types';
 
@@ -44,13 +46,25 @@ const NAMED: ReadonlySet<FlowKind> = new Set<FlowKind>([
   'step',
 ]);
 
+/** A stamp's side on a node, and the side it is drawn at, so it stays sharp at twice the scale. */
+const STAMP = 48;
+const STAMP_DRAWN = 96;
+
+const stampRow = (rule: NumberRule): Row => ({
+  kind: 'slot',
+  height: STAMP,
+  width: STAMP,
+  image: { src: stampUrl({ rule, size: STAMP_DRAWN }) },
+});
+
 /** A named node's name in its title bar over each line of the detail; any other's label first. */
 export function rowsOf(n: FlowNode): Row[] {
   const params = (n.params ?? []).map(([label, value]): Row => ({ kind: 'field', label, value }));
   const lines = (n.detail ? n.detail.split('\n') : []).map(
     (text): Row => ({ kind: 'label', text }),
   );
-  const detail = [...params, ...lines];
+  const stamp = n.stamp === undefined ? [] : [stampRow(n.stamp)];
+  const detail = [...stamp, ...params, ...lines];
   if (!NAMED.has(n.kind)) return [{ kind: 'label', text: n.label }, ...detail];
   const aside = n.aside === undefined ? {} : { aside: n.aside.toUpperCase() };
   return [
