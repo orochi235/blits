@@ -26,6 +26,19 @@ function Rows({ rows }: { rows: [string, Omit<FoldStampProps, 'rule'>][] }) {
   );
 }
 
+export const Controls: StoryObj<FoldStampProps> = {
+  args: { rule: 'sum', size: 128, weight: 1, line: 'glowing', encode: 'hue', ramp: 'cool' },
+  argTypes: {
+    rule: { control: 'select', options: NUMBER_RULES },
+    size: { control: { type: 'range', min: 32, max: 256, step: 8 } },
+    weight: { control: { type: 'range', min: 0, max: 1, step: 0.05 } },
+    line: { control: 'inline-radio', options: ['fine', 'bold', 'glowing'] },
+    encode: { control: 'inline-radio', options: ['none', 'hue', 'opacity', 'both'] },
+    ramp: { control: 'inline-radio', options: ['cool', 'warm'] },
+  },
+  render: (args) => <FoldStamp {...args} />,
+};
+
 export const Looks: StoryObj<typeof FoldStamp> = {
   render: () => (
     <Rows

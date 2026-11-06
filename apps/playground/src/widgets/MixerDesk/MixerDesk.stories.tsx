@@ -39,6 +39,19 @@ const LIT: Desk = {
   groups: DESK.groups?.map((g) => ({ ...g, level: g.id === 'pair' ? 1 : 0.85 })),
 };
 
+const CROWDED: Desk = {
+  buses,
+  strips: Array.from({ length: 16 }, (_, i) => ({
+    id: `v${i}`,
+    label: `voice ${i}`,
+    hue: (i * 47) % 360,
+    taps: [i, i * 3 + 1].map((k) => buses[k % buses.length]?.id ?? 'glow'),
+    level: (i % 5) / 4,
+  })),
+};
+
+const DESKS = { unlit: DESK, lit: LIT, crowded: CROWDED };
+
 function Picking({ desk, width }: { desk: Desk; width: number }) {
   const [picked, setPicked] = useState<string | null>(null);
   return (
@@ -49,24 +62,25 @@ function Picking({ desk, width }: { desk: Desk; width: number }) {
   );
 }
 
+interface ControlsArgs {
+  desk: keyof typeof DESKS;
+  width: number;
+}
+
+export const Controls: StoryObj<ControlsArgs> = {
+  args: { desk: 'lit', width: 360 },
+  argTypes: {
+    selected: { control: false },
+    desk: { control: 'inline-radio', options: Object.keys(DESKS) },
+    width: { control: { type: 'range', min: 160, max: 900, step: 10 } },
+  },
+  render: ({ desk, width }) => <Picking desk={DESKS[desk]} width={width} />,
+};
+
 export const Unlit: Story = { render: () => <Picking desk={DESK} width={360} /> };
 export const Lit: Story = { render: () => <Picking desk={LIT} width={360} /> };
 
 /** More strips than fit: the desk grows wider than the room it was given. */
 export const Crowded: Story = {
-  render: () => (
-    <Picking
-      width={360}
-      desk={{
-        buses,
-        strips: Array.from({ length: 16 }, (_, i) => ({
-          id: `v${i}`,
-          label: `voice ${i}`,
-          hue: (i * 47) % 360,
-          taps: [i, i * 3 + 1].map((k) => buses[k % buses.length]?.id ?? 'glow'),
-          level: (i % 5) / 4,
-        })),
-      }}
-    />
-  ),
+  render: () => <Picking width={360} desk={CROWDED} />,
 };

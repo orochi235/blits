@@ -3,6 +3,7 @@ import { flowOf, foldOf } from '@pg/blits/flow';
 import { PRESETS } from '@pg/blits/presets';
 import { timingOf } from '@pg/blits/timing';
 import { toneOf, wired } from '@pg/blits/wire';
+import type { LayoutDirection } from '@weasel-js/diagram';
 import type { Meta, StoryObj } from '@weasel-js/forge';
 import { useState } from 'react';
 import { FlowDiagram } from './index';
@@ -18,6 +19,61 @@ function preset(name?: string) {
   if (found === undefined) throw new Error(`no preset ${name}`);
   return found.comp;
 }
+
+const VIEWS = {
+  flow: (name: string) => flowOf(preset(name)),
+  timing: (name: string) => timingOf(preset(name)),
+  both: (name: string) => {
+    const comp = preset(name);
+    return bothOf(flowOf(comp), timingOf(comp));
+  },
+};
+
+interface ControlsArgs {
+  preset: string;
+  view: keyof typeof VIEWS;
+  direction: LayoutDirection;
+  width: number;
+  height: number;
+  minScale: number;
+  hold: boolean;
+}
+
+function Controlled({ preset: name, view, ...rest }: ControlsArgs) {
+  const [picked, setPicked] = useState<string | null>(null);
+  return (
+    <div>
+      <div>picked: {picked ?? 'none'}</div>
+      <FlowDiagram {...rest} flow={VIEWS[view](name)} selected={picked} onSelect={setPicked} />
+    </div>
+  );
+}
+
+export const Controls: StoryObj<ControlsArgs> = {
+  args: {
+    preset: 'crossfade',
+    view: 'flow',
+    direction: 'down',
+    width: 360,
+    height: 560,
+    minScale: 0.75,
+    hold: false,
+  },
+  argTypes: {
+    selected: { control: false },
+    preset: { control: 'select', options: PRESETS.map((p) => p.name) },
+    view: { control: 'inline-radio', options: Object.keys(VIEWS) },
+    direction: { control: 'inline-radio', options: ['down', 'up', 'right', 'left'] },
+    width: { control: { type: 'range', min: 200, max: 1200, step: 20 } },
+    height: { control: { type: 'range', min: 200, max: 1200, step: 20 } },
+    minScale: { control: { type: 'range', min: 0.25, max: 1.5, step: 0.05 } },
+    hold: {
+      control: 'boolean',
+      description: 'Keep nodes where they stood when the preset or view changes',
+    },
+  },
+  render: (args) => <Controlled {...args} />,
+};
 
 function Picking({ name }: { name: string }) {
   const comp = preset(name);

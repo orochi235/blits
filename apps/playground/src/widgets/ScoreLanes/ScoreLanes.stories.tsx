@@ -1,7 +1,14 @@
 import type { Meta, StoryObj } from '@weasel-js/forge';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { blockEnd } from './geometry';
-import { type Clip, type ClipEdit, type Header, type Link, ScoreLanes } from './index';
+import {
+  type Clip,
+  type ClipEdit,
+  type Header,
+  type Link,
+  ScoreLanes,
+  type ScoreLanesProps,
+} from './index';
 
 const meta: Meta<typeof ScoreLanes> = { title: 'playground/ScoreLanes', component: ScoreLanes };
 export default meta;
@@ -114,21 +121,29 @@ function apply(clips: Clip[], e: ClipEdit): Clip[] {
   });
 }
 
-function Harness() {
+/** What the Controls story sets on a harness's score, and how wide it is drawn. */
+type View = Partial<Pick<ScoreLanesProps, 'duration' | 'open' | 'laneHeight' | 'labelWidth'>> & {
+  width?: number;
+  playhead?: number;
+};
+
+function Harness({ width = 900, duration = 6000, playhead: start = 1300, ...view }: View) {
   const [clips, setClips] = useState(CLIPS);
   const [links, setLinks] = useState(LINKS);
-  const [playhead, setPlayhead] = useState(1300);
+  const [playhead, setPlayhead] = useState(start);
+  useEffect(() => setPlayhead(start), [start]);
   const [selected, setSelected] = useState<string | null>(null);
   const edit = (e: ClipEdit) => {
     if (e.kind === 'link') setLinks((l) => [...l.filter((x) => x.from.clip !== e.clip), e.link]);
     else setClips((c) => apply(c, e));
   };
   return (
-    <div style={{ width: 900 }}>
+    <div style={{ width }}>
       <ScoreLanes
+        {...view}
         clips={clips}
         links={links}
-        duration={6000}
+        duration={duration}
         playhead={playhead}
         selected={selected}
         onSelect={setSelected}
@@ -138,8 +153,6 @@ function Harness() {
     </div>
   );
 }
-
-export const Arrangement: StoryObj<typeof ScoreLanes> = { render: () => <Harness /> };
 
 const HEADERS: Header[] = [
   {
@@ -221,21 +234,23 @@ function unfolded(folded: ReadonlySet<string>) {
   };
 }
 
-function GroupsHarness() {
+function GroupsHarness({ width = 900, duration = 5000, playhead: start = 1800, ...view }: View) {
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<string | null>('intro');
-  const [playhead, setPlayhead] = useState(1800);
+  const [playhead, setPlayhead] = useState(start);
+  useEffect(() => setPlayhead(start), [start]);
   const { clips, headers } = unfolded(folded);
   const fold = (id: string, on: boolean) =>
     setFolded((was) => new Set(on ? [...was, id] : [...was].filter((x) => x !== id)));
   return (
-    <div style={{ width: 900 }}>
+    <div style={{ width }}>
       <ScoreLanes
+        {...view}
         clips={clips}
         links={[]}
         headers={headers}
         onFold={fold}
-        duration={5000}
+        duration={duration}
         playhead={playhead}
         selected={selected}
         onSelect={setSelected}
@@ -245,6 +260,40 @@ function GroupsHarness() {
     </div>
   );
 }
+
+const SCORES = { arrangement: Harness, groups: GroupsHarness };
+
+interface ControlsArgs extends Required<View> {
+  score: keyof typeof SCORES;
+}
+
+export const Controls: StoryObj<ControlsArgs> = {
+  args: {
+    score: 'arrangement',
+    duration: 6000,
+    playhead: 1300,
+    open: true,
+    laneHeight: 36,
+    labelWidth: 140,
+    width: 900,
+  },
+  argTypes: {
+    selected: { control: false },
+    score: { control: 'inline-radio', options: Object.keys(SCORES) },
+    duration: { control: { type: 'range', min: 1000, max: 12000, step: 250 } },
+    playhead: { control: { type: 'range', min: 0, max: 12000, step: 50 } },
+    open: { control: 'boolean', description: 'Closed, the lanes shrink to thin strips that scrub' },
+    laneHeight: { control: { type: 'range', min: 16, max: 72, step: 2 } },
+    labelWidth: { control: { type: 'range', min: 60, max: 300, step: 10 } },
+    width: { control: { type: 'range', min: 400, max: 1400, step: 20 } },
+  },
+  render: ({ score, ...view }) => {
+    const Score = SCORES[score];
+    return <Score key={score} {...view} />;
+  },
+};
+
+export const Arrangement: StoryObj<typeof ScoreLanes> = { render: () => <Harness /> };
 
 /** An owner holding a span that ran over its budget and fell, with a fitted clip and a shed one. */
 export const Groups: StoryObj<typeof ScoreLanes> = { render: () => <GroupsHarness /> };
