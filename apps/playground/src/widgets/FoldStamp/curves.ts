@@ -18,6 +18,9 @@ export interface StampCurve {
   runs: [number, number][][];
 }
 
+/** What the fold holds when a `last` voice comes in, in its stamp. */
+const HELD = 0.5;
+
 /**
  * The output of `rule` against what the fold holds so far, once for each of `count` voice values,
  * folded by the kit's own channel at `weight`.
@@ -26,13 +29,9 @@ export function stampCurves(rule: NumberRule, count: number, weight = 1, steps =
   const channel = numberChannel({ rule });
   const [lo, hi] = SPAN[rule];
   const wrap = rule === 'angle' ? (o: number) => ((o % hi) + hi) % hi : (o: number) => o;
-  // A channel with no `scale` (`last`) takes a voice whole or not at all; the mix's gate sits near half.
-  const fold = (a: number, v: number) =>
-    channel.scale
-      ? channel.merge(a, channel.scale(v, weight))
-      : weight >= 0.5
-        ? channel.merge(a, v)
-        : a;
+  const fold = (a: number, v: number) => channel.merge(a, channel.scale?.(v, weight) ?? v);
+  // With no `scale`, a weight can only switch the voice in or out, so the stamp sweeps weight instead.
+  if (!channel.scale) return gateCurves(channel, count, steps);
   const raw = Array.from({ length: count }, (_, k) => {
     const v = lo + ((hi - lo) * (k + 0.5)) / count;
     return Array.from({ length: steps + 1 }, (_, i) => {
@@ -51,5 +50,21 @@ export function stampCurves(rule: NumberRule, count: number, weight = 1, steps =
       prev = o;
     }
     return { t: count > 1 ? k / (count - 1) : 0.5, runs };
+  });
+}
+
+/** Each of `count` voice values against weight: the held value until the mix lets the voice in. */
+function gateCurves(
+  channel: ReturnType<typeof numberChannel>,
+  count: number,
+  steps: number,
+): StampCurve[] {
+  return Array.from({ length: count }, (_, k) => {
+    const v = (k + 0.5) / count;
+    const points = Array.from({ length: steps + 1 }, (_, i): [number, number] => {
+      const w = i / steps;
+      return [w, channel.lerp(HELD, channel.merge(HELD, v), w)];
+    });
+    return { t: count > 1 ? k / (count - 1) : 0.5, runs: [points] };
   });
 }
