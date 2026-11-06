@@ -29,7 +29,7 @@ export function usePlayback(
       if (frames > 0) {
         owed -= frames * FRAME;
         const end = comp.current.length;
-        let t = player.t + frames * FRAME;
+        const t = player.t + frames * FRAME;
         // While something else moves the mix's clock, the score follows it and never loops.
         if (t > end && !player.following) {
           if (!loop) {
@@ -38,7 +38,10 @@ export function usePlayback(
             setPlaying(false);
             return;
           }
-          t = end > 0 ? t % end : 0;
+          player.lap(end > 0 ? t % end : 0, end);
+          tick();
+          id = requestAnimationFrame(step);
+          return;
         }
         player.seek(t);
         tick();

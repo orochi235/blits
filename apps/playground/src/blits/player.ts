@@ -51,6 +51,8 @@ export type SeekBy = 'replay' | 'seek';
 export class Player {
   built: Built;
   t = 0;
+  // Score ms of the loops played before this one, so the plots run on past a lap instead of starting over.
+  private lapped = 0;
   seekBy: SeekBy = 'replay';
   /** What the full mix booked and sent since it was last built. */
   readonly events = new EventLog();
@@ -118,6 +120,22 @@ export class Player {
       this.step(f);
       if (this.follows) break;
     }
+    this.emit();
+  }
+
+  /**
+   * Starts the score over at `t` after a loop `length` ms long, as a seek back would, but keeps the
+   * picked subject's history: the plots carry on from the lap before rather than starting empty.
+   */
+  lap(t: number, length: number): void {
+    const kept = this.samples;
+    this.lapped += length;
+    this.seek(t);
+    const first = this.samples[0]?.t ?? Number.POSITIVE_INFINITY;
+    this.samples = [...kept.filter((s) => s.t < first), ...this.samples];
+    const last = this.samples.at(-1)?.t ?? 0;
+    while (this.samples.length > 0 && (this.samples[0] as Sample).t < last - WINDOW)
+      this.samples.shift();
     this.emit();
   }
 
@@ -287,7 +305,7 @@ export class Player {
     this.events.drain(this.built);
     this.frame = target;
     this.t = time;
-    this.samples = this.samples.filter((s) => s.t <= time);
+    this.samples = this.samples.filter((s) => s.t <= this.lapped + time);
     this.record();
     return true;
   }
@@ -328,7 +346,7 @@ export class Player {
     const t = this.follows ? Math.max(0, mix.now) : f * FRAME;
     if (this.follows && t < this.t) {
       this.events.cut(mix.now);
-      this.samples = this.samples.filter((s) => s.t <= t);
+      this.samples = this.samples.filter((s) => s.t <= this.lapped + t);
     }
     this.events.drain(this.built);
     this.seqs.length = f;
@@ -352,9 +370,10 @@ export class Player {
     for (const [id, handle] of handles) weights.set(id, handle.weightOf(subject));
     for (const [id, handle] of groupHandles) weights.set(id, handle.weightOf(subject));
     const h = this.samples;
-    if (h.length > 0 && (h[h.length - 1] as Sample).t === this.t) h.pop();
-    h.push({ t: this.t, full: copied(mix.probe(subject)), solos: soloPoses, weights });
-    while (h.length > 0 && (h[0] as Sample).t < this.t - WINDOW) h.shift();
+    const t = this.lapped + this.t;
+    if (h.length > 0 && (h[h.length - 1] as Sample).t === t) h.pop();
+    h.push({ t, full: copied(mix.probe(subject)), solos: soloPoses, weights });
+    while (h.length > 0 && (h[0] as Sample).t < t - WINDOW) h.shift();
   }
 
   private emit(): void {

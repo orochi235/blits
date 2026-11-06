@@ -368,4 +368,18 @@ describe('Player', () => {
     stop();
     expect(seen.length).toBeGreaterThan(2);
   });
+
+  it('carries the history on through a lap, its clock still rising', () => {
+    const p = player();
+    p.pick(0);
+    p.seek(c.length);
+    const before = p.getSnapshot().samples;
+    p.lap(5 * FRAME, c.length);
+    const after = p.getSnapshot().samples;
+    const times = after.map((s) => s.t);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+    expect(after.at(-1)?.t).toBeCloseTo(c.length + p.t, 6);
+    expect(after[0]?.t).toBeGreaterThanOrEqual((after.at(-1)?.t ?? 0) - WINDOW);
+    expect(before).toContain(after[0]);
+  });
 });
