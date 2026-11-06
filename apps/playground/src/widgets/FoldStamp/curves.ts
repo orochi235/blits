@@ -42,12 +42,23 @@ export function stampCurves(rule: NumberRule, count: number, weight = 1, steps =
   const ys = raw.flat().map(([, o]) => o);
   const [ylo, yhi] = rule === 'angle' ? [lo, hi] : [Math.min(...ys, lo), Math.max(...ys, hi)];
   return raw.map((points, k) => {
+    const span = yhi - ylo || 1;
     const runs: [number, number][][] = [[]];
-    let prev: number | null = null;
+    let prev: [number, number] | null = null;
     for (const [a, o] of points) {
-      if (prev !== null && Math.abs(o - prev) > (yhi - ylo) / 2) runs.push([]);
-      runs[runs.length - 1]?.push([(a - lo) / (hi - lo), (o - ylo) / (yhi - ylo || 1)]);
-      prev = o;
+      const x = (a - lo) / (hi - lo);
+      const y = (o - ylo) / span;
+      if (prev && Math.abs(y - prev[1]) > 0.5) {
+        // A wrap: end the run where it crosses the edge, and start the next on the opposite one.
+        const up = y < prev[1];
+        const edge = up ? 1 : 0;
+        const f = (edge - prev[1]) / (y + (up ? 1 : -1) - prev[1]);
+        const xc = prev[0] + f * (x - prev[0]);
+        runs[runs.length - 1]?.push([xc, edge]);
+        runs.push([[xc, 1 - edge]]);
+      }
+      runs[runs.length - 1]?.push([x, y]);
+      prev = [x, y];
     }
     return { t: count > 1 ? k / (count - 1) : 0.5, runs };
   });
