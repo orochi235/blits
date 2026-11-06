@@ -26,6 +26,10 @@ import { subjectsOf } from './stage';
 const OPS = new Set(['gate', 'lag', 'around', 'peak', 'slew']);
 /** A voice's fields that act on what it plays, in the order they act: when, then who, then how much. */
 const STEPS = ['stagger', 'target', 'weight'] as const;
+
+/** The input a step's parameter plugs into, by the step it sets. */
+const INPUT = { stagger: 'delay', target: 'match', weight: 'amount', blend: 'amount' } as const;
+type Step = keyof typeof INPUT;
 const MAX_LABEL = 28;
 
 type AstNode = { type: string; start: number; end: number; [k: string]: unknown };
@@ -96,7 +100,8 @@ class Builder {
     return n.id;
   }
 
-  edge(from: string, to: string, label?: string, param = false) {
+  /** An edge; one with a `port` carries a parameter into that named input of `to`. */
+  edge(from: string, to: string, label?: string, port?: string) {
     const id = `${from}->${to}${label ? `:${label}` : ''}`;
     if (!this.edges.has(id))
       this.edges.set(id, {
@@ -104,7 +109,7 @@ class Builder {
         from,
         to,
         ...(label ? { label } : {}),
-        ...(param ? { param } : {}),
+        ...(port ? { param: true, port } : {}),
       });
   }
 
@@ -188,17 +193,19 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
   for (const l of comp.levels) b.level(l.name);
   // A field a voice or group sets as an expression acts on what it plays on the way out: a step
   // in its chain, with the expression feeding in. Returns the end of the chain.
-  const chain = (from: string, hue: number | undefined, steps: [string, string][]) => {
+  const chain = (from: string, hue: number | undefined, steps: [Step, string][]) => {
     let at = from;
     for (const [label, input] of steps) {
+      const port = INPUT[label];
       const id = b.node({
         id: `step:${from}:${label}`,
         kind: 'step',
         label,
+        inputs: [port],
         ...(hue !== undefined ? { hue } : {}),
       });
       b.edge(at, id);
-      b.edge(input, id, undefined, true);
+      b.edge(input, id, undefined, port);
       at = id;
     }
     return at;
@@ -215,7 +222,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       hue: g.hue,
       ...(faulted.has(g.id) ? { faulted: true } : {}),
     });
-    const steps: [string, string][] = isExpr(g.weight)
+    const steps: [Step, string][] = isExpr(g.weight)
       ? [['weight', b.field(g, 'weight', g.weight)]]
       : [];
     out.set(g.id, chain(id, g.hue, steps));
@@ -234,7 +241,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       hue: v.hue,
       ...(faulted.has(v.id) ? { faulted: true } : {}),
     });
-    const steps: [string, string][] = [];
+    const steps: [Step, string][] = [];
     for (const field of STEPS) {
       const e = v[field];
       if (field === 'weight' && by)
@@ -315,4 +322,31 @@ export function itemOf(flow: Flow, id: string): string {
     at = back.from;
   }
   return at;
+}
+
+/** How finely a stamp follows its weight: a stamp is redrawn only when this much has changed. */
+const STAMP_STEP = 0.1;
+
+/** `flow` with each stamped channel drawn at the weight of the strongest voice writing it now, by
+ *  `weights` (a voice's `weightOf` by its id), to a tenth; the same flow when nothing moved. */
+export function stampWeights(flow: Flow, weights: ReadonlyMap<string, number>): Flow {
+  const strongest = new Map<string, number>();
+  for (const e of flow.edges) {
+    if (!e.to.startsWith('ch:')) continue;
+    const item = itemOf(flow, e.from);
+    if (!item.startsWith('voice:')) continue;
+    const w = weights.get(item.slice('voice:'.length)) ?? 0;
+    strongest.set(e.to, Math.max(strongest.get(e.to) ?? 0, w));
+  }
+  let moved = false;
+  const nodes = flow.nodes.map((n) => {
+    if (n.stamp === undefined) return n;
+    const w =
+      Math.round(Math.min(Math.max(strongest.get(n.id) ?? 0, 0), 1) / STAMP_STEP) * STAMP_STEP;
+    const stampWeight = Number(w.toFixed(1));
+    if (n.stampWeight === stampWeight) return n;
+    moved = true;
+    return { ...n, stampWeight };
+  });
+  return moved ? { ...flow, nodes } : flow;
 }

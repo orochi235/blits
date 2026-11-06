@@ -42,7 +42,7 @@ export function DiagramTabs({
           <Tab id="desk">Desk</Tab>
         </TabList>
         <TabPanel id="flow" className={s.panel}>
-          <FlowPanel {...shared} />
+          <FlowPanel {...shared} player={player} />
         </TabPanel>
         <TabPanel id="timing" className={s.panel}>
           <TimingPanel {...shared} player={player} />

@@ -25,6 +25,10 @@ export interface FlowNode {
   detail?: string;
   /** The number rule a channel folds by, drawn as its stamp. */
   stamp?: NumberRule;
+  /** Named inputs a parameter plugs into, drawn on its side with their names inside it. */
+  inputs?: readonly string[];
+  /** The weight its stamp is drawn at, 0 to 1. Unset: 1. */
+  stampWeight?: number;
   hue?: number;
   faulted?: boolean;
   tone?: FlowTone;
@@ -40,6 +44,8 @@ export interface FlowEdge {
   /** Sets how the node it enters acts rather than carrying what it acts on, so it meets that node
    *  from the side, off the flow's axis. */
   param?: boolean;
+  /** The named input of the node it enters, one of that node's `inputs`. */
+  port?: string;
   /** Whether what it waits on has happened; unset draws it plain. */
   met?: boolean;
 }

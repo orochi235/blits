@@ -11,7 +11,7 @@ import {
 } from '@weasel-js/diagram';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { boxStyleOf, edgeStyleOf, portColorOf, rowsOf, styleOf } from './style';
-import type { Flow, FlowBox, FlowEnd, FlowNode, FlowPortTone } from './types';
+import type { Flow, FlowBox, FlowEdge, FlowEnd, FlowNode, FlowPortTone } from './types';
 
 // diagramScene sets text in sans-serif and title bars in Oswald; text paints blank in a family
 // that isn't registered.
@@ -32,9 +32,9 @@ const AXIS: Record<LayoutDirection, { out: string; in: string; param: string }> 
   right: { out: 'e', in: 'w', param: 'n' },
   left: { out: 'w', in: 'e', param: 'n' },
 };
-const portsOf = (direction: LayoutDirection, param: boolean) => {
+const portsOf = (direction: LayoutDirection, e: Pick<FlowEdge, 'param' | 'port'>) => {
   const a = AXIS[direction];
-  return { fromPort: a.out, toPort: param ? a.param : a.in };
+  return { fromPort: a.out, toPort: e.port ?? (e.param ? a.param : a.in) };
 };
 
 function labelsOf(node: string, label: (node: string, port: string) => string | null) {
@@ -118,7 +118,7 @@ export function FlowDiagram({
         edges: flow.edges.map((e) => ({
           from: e.from,
           to: e.to,
-          ...(e.timing ? {} : portsOf(direction, e.param === true)),
+          ...(e.timing ? {} : portsOf(direction, e)),
           ...(e.label ? { label: e.label } : {}),
         })),
         groups: [...boxes.values()].map((b) => ({ id: b.id, label: b.label, members: b.members })),

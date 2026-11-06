@@ -1,5 +1,5 @@
 import type { Composition, Voice } from '@pg/blits/composition';
-import { flowOf, foldOf, itemOf, writesOf } from '@pg/blits/flow';
+import { flowOf, foldOf, itemOf, stampWeights, writesOf } from '@pg/blits/flow';
 import { KIT } from '@pg/blits/kit';
 import crossfade from '@pg/blits/presets/crossfade';
 import pointerGlow from '@pg/blits/presets/pointer-glow';
@@ -104,7 +104,32 @@ describe('flowOf', () => {
     expect(itemOf(flowOf(c), 'step:voice:v:weight')).toBe('voice:v');
     const param = (from: string) => flowOf(c).edges.find((x) => x.from === from)?.param;
     expect(param('expr:v:stagger')).toBe(true);
+    expect(flowOf(c).edges.find((x) => x.from === 'expr:v:stagger')?.port).toBe('delay');
+    expect(node(c, 'step:voice:v:stagger')?.inputs).toEqual(['delay']);
     expect(param('voice:v')).toBeUndefined();
+  });
+
+  it("stamps a number channel with its rule, at its strongest writer's weight to a tenth", () => {
+    const c = comp([voice({ id: 'a', weight: { code: '(s) => 1' } }), voice({ id: 'b' })]);
+    const f = flowOf(c);
+    expect(node(c, 'ch:glow')?.stamp).toBe('max');
+    const lit = stampWeights(
+      f,
+      new Map([
+        ['a', 0.33],
+        ['b', 0.71],
+      ]),
+    );
+    expect(lit.nodes.find((n) => n.id === 'ch:glow')?.stampWeight).toBe(0.7);
+    expect(
+      stampWeights(
+        lit,
+        new Map([
+          ['a', 0.33],
+          ['b', 0.68],
+        ]),
+      ),
+    ).toBe(lit);
   });
 
   it('draws a voice that writes nothing, with no channel', () => {

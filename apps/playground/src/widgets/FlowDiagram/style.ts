@@ -50,11 +50,11 @@ const NAMED: ReadonlySet<FlowKind> = new Set<FlowKind>([
 const STAMP = 48;
 const STAMP_DRAWN = 96;
 
-const stampRow = (rule: NumberRule): Row => ({
+const stampRow = (rule: NumberRule, weight = 1): Row => ({
   kind: 'slot',
   height: STAMP,
   width: STAMP,
-  image: { src: stampUrl({ rule, size: STAMP_DRAWN }) },
+  image: { src: stampUrl({ rule, weight, size: STAMP_DRAWN }) },
 });
 
 /** A named node's name in its title bar over each line of the detail; any other's label first. */
@@ -63,8 +63,11 @@ export function rowsOf(n: FlowNode): Row[] {
   const lines = (n.detail ? n.detail.split('\n') : []).map(
     (text): Row => ({ kind: 'label', text }),
   );
-  const stamp = n.stamp === undefined ? [] : [stampRow(n.stamp)];
-  const detail = [...stamp, ...params, ...lines];
+  const stamp = n.stamp === undefined ? [] : [stampRow(n.stamp, n.stampWeight)];
+  const inputs: Row[] = n.inputs?.length
+    ? [{ kind: 'ports', left: n.inputs.map((id) => ({ id, label: id })) }]
+    : [];
+  const detail = [...inputs, ...stamp, ...params, ...lines];
   if (!NAMED.has(n.kind)) return [{ kind: 'label', text: n.label }, ...detail];
   const aside = n.aside === undefined ? {} : { aside: n.aside.toUpperCase() };
   return [
