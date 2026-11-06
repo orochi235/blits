@@ -70,7 +70,7 @@ function caliper({ beam = D, slide = I, tip = L, lean = 1.6, box = 2.5, ticks = 
   );
 }
 
-const GLYPHS = {
+let GLYPHS = {
   'norm (caliper, single strokes)': {
     plain: caliper({}),
     'ticks on beam': caliper({ slide: H, ticks: [L, M, N] }),
@@ -189,6 +189,17 @@ const GLYPHS = {
 const ATTRS =
   'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
 const svg = (body, size) => `<svg viewBox="0 0 20 20" width="${size}" height="${size}" ${ATTRS}>${body}</svg>`;
+
+/** The candidate chosen for each rule, by the row it is in and its name there. */
+const PICKS = {
+  last: ['last (history)', 'head at 9'], // 2026-11-05
+  mul: ['mul', 'nested corners'], // 2026-11-05
+  angle: ['angle', 'angle mark'], // 2026-11-05
+};
+GLYPHS = {
+  picked: Object.fromEntries(Object.entries(PICKS).map(([rule, [row, name]]) => [rule, GLYPHS[row][name]])),
+  ...GLYPHS,
+};
 
 let rows = '';
 for (const [op, stabs] of Object.entries(GLYPHS)) {
