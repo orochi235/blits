@@ -24,6 +24,7 @@ const STROKE: Record<FlowKind, string> = {
   mark: '#c98a1c',
   join: '#8a63d2',
   query: '#8a63d2',
+  step: '#7ba7c7',
 };
 
 /** labkit's control label face: Oswald, upper case, tracked wide. */
@@ -40,6 +41,7 @@ const NAMED: ReadonlySet<FlowKind> = new Set<FlowKind>([
   'mark',
   'join',
   'query',
+  'step',
 ]);
 
 /** A named node's name in its title bar over each line of the detail; any other's label first. */
@@ -62,7 +64,7 @@ function toned(plain: NodeStyle, tone: FlowTone | undefined): NodeStyle {
 export function styleOf(n: FlowNode): NodeStyle {
   if (n.faulted) return { fill: FILL, text: TEXT, stroke: FAULT, strokeWidth: 3 };
   const stroke =
-    (n.kind === 'voice' || n.kind === 'group') && n.hue !== undefined
+    (n.kind === 'voice' || n.kind === 'group' || n.kind === 'step') && n.hue !== undefined
       ? hueColor(n.hue)
       : STROKE[n.kind];
   return toned({ fill: FILL, text: TEXT, stroke }, n.tone);

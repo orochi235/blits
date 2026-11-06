@@ -9,7 +9,8 @@ export type FlowKind =
   | 'rest'
   | 'mark'
   | 'join'
-  | 'query';
+  | 'query'
+  | 'step';
 /** Where something is in its life as the mix plays; unset draws it plain. */
 export type FlowTone = 'waiting' | 'playing' | 'done';
 export interface FlowNode {

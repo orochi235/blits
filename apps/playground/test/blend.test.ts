@@ -162,9 +162,9 @@ describe('a blend elsewhere', () => {
       'm1 · keys · blend',
     ]);
     const edges = flowOf({ ...c, levels: [{ name: 'k', value: 0, min: 0, max: 1 }] }).edges;
-    expect(edges.filter((e) => e.label === 'blend').map((e) => [e.from, e.to])).toEqual([
-      ['level:k', 'voice:m0'],
-      ['level:k', 'voice:m1'],
+    expect(edges.filter((e) => e.from === 'level:k').map((e) => [e.from, e.to])).toEqual([
+      ['level:k', 'step:voice:m0:blend'],
+      ['level:k', 'step:voice:m1:blend'],
     ]);
   });
 });

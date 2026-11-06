@@ -1,6 +1,6 @@
 import { bothOf } from '@pg/blits/both';
 import type { Composition } from '@pg/blits/composition';
-import { flowOf } from '@pg/blits/flow';
+import { flowOf, itemOf } from '@pg/blits/flow';
 import { PRESETS } from '@pg/blits/presets';
 import anchors from '@pg/blits/presets/anchors';
 import { timingOf } from '@pg/blits/timing';
@@ -11,12 +11,13 @@ const keys = { kind: 'keys' as const, period: 500, stops: [{ at: 0, delta: { glo
 const both = (c: Composition) => bothOf(flowOf(c), timingOf(c));
 
 describe('bothOf', () => {
-  it('holds every node of the flow and of the timing once, less groups drawn as boxes', () => {
+  it('holds every node of the flow and of the timing once, less groups drawn as boxes and their steps', () => {
     for (const { name, comp: c } of PRESETS) {
       const t = timingOf(c);
+      const f = flowOf(c);
       const boxed = new Set(t.boxes.map((b) => b.id));
       const want = new Set(
-        [...flowOf(c).nodes, ...t.nodes].map((n) => n.id).filter((id) => !boxed.has(id)),
+        [...f.nodes, ...t.nodes].map((n) => n.id).filter((id) => !boxed.has(itemOf(f, id))),
       );
       const ids = both(c).nodes.map((n) => n.id);
       expect(new Set(ids), name).toEqual(want);

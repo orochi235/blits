@@ -1,5 +1,5 @@
 import type { Composition, Voice } from '@pg/blits/composition';
-import { flowOf, foldOf, writesOf } from '@pg/blits/flow';
+import { flowOf, foldOf, itemOf, writesOf } from '@pg/blits/flow';
 import { KIT } from '@pg/blits/kit';
 import crossfade from '@pg/blits/presets/crossfade';
 import pointerGlow from '@pg/blits/presets/pointer-glow';
@@ -39,7 +39,9 @@ describe('flowOf', () => {
         'level:mix',
         'voice:warm',
         'expr:warm:weight',
+        'step:voice:warm:weight',
         'voice:cool',
+        'step:voice:cool:weight',
         'ch:color',
         'ch:scale',
         'pose',
@@ -48,12 +50,14 @@ describe('flowOf', () => {
     expect(new Set(edges(crossfade))).toEqual(
       new Set([
         ['level:mix', 'expr:warm:weight', ''],
-        ['expr:warm:weight', 'voice:warm', 'weight'],
-        ['level:mix', 'voice:cool', 'weight'],
-        ['voice:warm', 'ch:color', ''],
-        ['voice:warm', 'ch:scale', ''],
-        ['voice:cool', 'ch:color', ''],
-        ['voice:cool', 'ch:scale', ''],
+        ['voice:warm', 'step:voice:warm:weight', ''],
+        ['expr:warm:weight', 'step:voice:warm:weight', ''],
+        ['voice:cool', 'step:voice:cool:weight', ''],
+        ['level:mix', 'step:voice:cool:weight', ''],
+        ['step:voice:warm:weight', 'ch:color', ''],
+        ['step:voice:warm:weight', 'ch:scale', ''],
+        ['step:voice:cool:weight', 'ch:color', ''],
+        ['step:voice:cool:weight', 'ch:scale', ''],
         ['ch:color', 'pose', ''],
         ['ch:scale', 'pose', ''],
       ]),
@@ -68,7 +72,7 @@ describe('flowOf', () => {
   it('makes a signal op a node of its own', () => {
     expect(node(pointerGlow, 'sig:glow:weight:0')?.label).toBe('slew(riseMs 150, fallMs 900)');
     expect(edges(pointerGlow)).toContainEqual(['level:mouse', 'sig:glow:weight:0', '']);
-    expect(edges(pointerGlow)).toContainEqual(['sig:glow:weight:0', 'voice:glow', 'weight']);
+    expect(edges(pointerGlow)).toContainEqual(['sig:glow:weight:0', 'step:voice:glow:weight', '']);
   });
 
   it('marks a level the composition lacks', () => {
@@ -79,8 +83,25 @@ describe('flowOf', () => {
   it('gives an expression with no signal calls a node with no inputs', () => {
     const c = comp([voice({ stagger: { code: '(s) => s.index / 10' } })]);
     expect(node(c, 'expr:v:stagger')?.label).toBe('s.index / 10');
-    expect(edges(c)).toContainEqual(['expr:v:stagger', 'voice:v', 'stagger']);
+    expect(edges(c)).toContainEqual(['expr:v:stagger', 'step:voice:v:stagger', '']);
     expect(edges(c).filter(([, to]) => to === 'expr:v:stagger')).toEqual([]);
+  });
+
+  it('chains a voice through its stagger, target and weight, in that order', () => {
+    const c = comp([
+      voice({
+        weight: { code: '(s) => 0.5' },
+        target: { code: '(s) => s.index > 0' },
+        stagger: { code: '(s) => s.index * 10' },
+      }),
+    ]);
+    const e = edges(c);
+    expect(e).toContainEqual(['voice:v', 'step:voice:v:stagger', '']);
+    expect(e).toContainEqual(['step:voice:v:stagger', 'step:voice:v:target', '']);
+    expect(e).toContainEqual(['step:voice:v:target', 'step:voice:v:weight', '']);
+    expect(e).toContainEqual(['step:voice:v:weight', 'ch:glow', '']);
+    expect(node(c, 'step:voice:v:target')).toMatchObject({ kind: 'step', label: 'target', hue: 0 });
+    expect(itemOf(flowOf(c), 'step:voice:v:weight')).toBe('voice:v');
   });
 
   it('draws a voice that writes nothing, with no channel', () => {
@@ -122,10 +143,11 @@ describe('flowOf', () => {
     expect(node(c, 'group:g')).toMatchObject({ kind: 'group', label: 'g', detail: 'owner' });
     expect(node(c, 'group:k')?.detail).toBe('span · 2000 ms · w 1');
     const e = edges(c);
-    expect(e).toContainEqual(['level:x', 'group:g', 'weight']);
-    expect(e).toContainEqual(['group:g', 'voice:a', '']);
-    expect(e).toContainEqual(['group:g', 'voice:b', '']);
-    expect(e).toContainEqual(['group:g', 'group:k', '']);
+    expect(e).toContainEqual(['level:x', 'step:group:g:weight', '']);
+    expect(e).toContainEqual(['group:g', 'step:group:g:weight', '']);
+    expect(e).toContainEqual(['step:group:g:weight', 'voice:a', '']);
+    expect(e).toContainEqual(['step:group:g:weight', 'voice:b', '']);
+    expect(e).toContainEqual(['step:group:g:weight', 'group:k', '']);
     expect(e.filter(([, to]) => to === 'voice:c')).toEqual([]);
     expect(flowOf(c, new Set(['g'])).nodes.find((n) => n.id === 'group:g')?.faulted).toBe(true);
   });
@@ -163,6 +185,8 @@ describe('foldOf', () => {
         'ch:scale',
         'voice:warm',
         'voice:cool',
+        'step:voice:warm:weight',
+        'step:voice:cool:weight',
         'expr:warm:weight',
         'level:mix',
         'rest:scale',

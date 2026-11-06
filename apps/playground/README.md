@@ -291,8 +291,11 @@ clips: a group's anchor is set in the group panel.
 ## The flow
 
 The diagrams' Flow tab draws the composition's signal flow, top to bottom: levels, the signal ops and
-expressions they feed, the groups and voices those weigh, each group feeding what it holds, the channels each voice writes with the rule each
-folds by (its `kind` in the composition's kit), and the pose. `flowOf` in `src/blits/flow.ts` builds it from the
+expressions they feed, the groups and voices, each group feeding what it holds, the channels each voice writes with the rule each
+folds by (its `kind` in the composition's kit), and the pose. A `stagger`, `target` or `weight` a voice sets as an
+expression is a step on the voice's way to its channels, in that order (when, then who, then how much), with the
+expression feeding into it; a group's `weight` is a step on the way to what it holds. In the Both tab a group drawn
+as a box takes its steps' inputs itself. Named nodes wear a title bar; clicking it folds the node to the bar. `flowOf` in `src/blits/flow.ts` builds it from the
 composition alone, finding the levels and signal calls in each `weight`, `stagger` and `target`
 with acorn; `FlowDiagram` draws it with `@weasel-js/diagram`. A voice or group that failed to compile, or a
 level an expression names that the composition lacks, is outlined red. Clicking a channel shows its

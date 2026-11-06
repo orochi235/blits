@@ -3,6 +3,7 @@ import type { Flow } from '@pg/widgets/FlowDiagram/types';
 import type { Desk, DeskBus, DeskGroup, DeskStrip } from '@pg/widgets/MixerDesk/types';
 import { hexOf } from './color';
 import type { Composition } from './composition';
+import { itemOf } from './flow';
 import { rowsOf } from './groups';
 import type { ChannelName, Mixed } from './kit';
 
@@ -19,8 +20,9 @@ export function deskOf(comp: Composition, flow: Flow): Desk {
   const taps = new Map<string, string[]>();
   for (const e of flow.edges) {
     const to = nodes.get(e.to);
-    if (to?.kind !== 'channel' || nodes.get(e.from)?.kind !== 'voice') continue;
-    taps.set(e.from, [...(taps.get(e.from) ?? []), to.label]);
+    const from = itemOf(flow, e.from);
+    if (to?.kind !== 'channel' || nodes.get(from)?.kind !== 'voice') continue;
+    taps.set(from, [...(taps.get(from) ?? []), to.label]);
   }
   const rows = rowsOf(comp);
   const strips: DeskStrip[] = [];

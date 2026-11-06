@@ -15,7 +15,8 @@ import { CHANNELS, type ChannelName, KIT, kitOf, type Mixed, type SwingName } fr
 import { subjectsOf } from './stage';
 
 const OPS = new Set(['gate', 'lag', 'around', 'peak', 'slew']);
-const FIELDS = ['weight', 'stagger', 'target'] as const;
+/** A voice's fields that act on what it plays, in the order they act: when, then who, then how much. */
+const STEPS = ['stagger', 'target', 'weight'] as const;
 const MAX_LABEL = 28;
 
 type AstNode = { type: string; start: number; end: number; [k: string]: unknown };
@@ -163,7 +164,7 @@ class Builder {
     return found;
   }
 
-  field(v: { id: string }, field: (typeof FIELDS)[number], expr: Expr): string {
+  field(v: { id: string }, field: (typeof STEPS)[number], expr: Expr): string {
     const path = `${v.id}:${field}`;
     const root = parse(expr.code);
     const whole = root && this.signal(root, expr.code, `${path}:0`);
@@ -187,6 +188,25 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
   const kit = kitOf(comp.rules);
   const b = new Builder(new Map(comp.levels.map((l) => [l.name, l])));
   for (const l of comp.levels) b.level(l.name);
+  // A field a voice or group sets as an expression acts on what it plays on the way out: a step
+  // in its chain, with the expression feeding in. Returns the end of the chain.
+  const chain = (from: string, hue: number | undefined, steps: [string, string][]) => {
+    let at = from;
+    for (const [label, input] of steps) {
+      const id = b.node({
+        id: `step:${from}:${label}`,
+        kind: 'step',
+        label,
+        ...(hue !== undefined ? { hue } : {}),
+      });
+      b.edge(at, id);
+      b.edge(input, id);
+      at = id;
+    }
+    return at;
+  };
+  const out = new Map<string, string>();
+  const ownerOut = (owner: string) => out.get(owner) ?? `group:${owner}`;
   for (const g of comp.groups ?? []) {
     const id = b.node({
       id: `group:${g.id}`,
@@ -196,8 +216,11 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       hue: g.hue,
       ...(faulted.has(g.id) ? { faulted: true } : {}),
     });
-    if (isExpr(g.weight)) b.edge(b.field(g, 'weight', g.weight), id, 'weight');
-    if (g.owner !== undefined) b.edge(`group:${g.owner}`, id);
+    const steps: [string, string][] = isExpr(g.weight)
+      ? [['weight', b.field(g, 'weight', g.weight)]]
+      : [];
+    out.set(g.id, chain(id, g.hue, steps));
+    if (g.owner !== undefined) b.edge(ownerOut(g.owner), id);
   }
   const written = new Set<ChannelName>();
   const writes: [string, ChannelName][] = [];
@@ -211,15 +234,18 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       hue: v.hue,
       ...(faulted.has(v.id) ? { faulted: true } : {}),
     });
-    if (by) b.edge(b.field({ id: `blend:${v.role}` }, 'weight', by), id, 'blend');
-    for (const field of FIELDS) {
+    const steps: [string, string][] = [];
+    for (const field of STEPS) {
       const e = v[field];
-      if (isExpr(e) && !(by && field === 'weight')) b.edge(b.field(v, field, e), id, field);
+      if (field === 'weight' && by)
+        steps.push(['blend', b.field({ id: `blend:${v.role}` }, 'weight', by)]);
+      else if (isExpr(e)) steps.push([field, b.field(v, field, e)]);
     }
-    if (v.owner !== undefined) b.edge(`group:${v.owner}`, id);
+    const end = chain(id, v.hue, steps);
+    if (v.owner !== undefined) b.edge(ownerOut(v.owner), id);
     for (const ch of writesOf(v.patch)) {
       written.add(ch);
-      writes.push([id, ch]);
+      writes.push([end, ch]);
     }
   }
   for (const ch of CHANNELS) {
@@ -264,4 +290,21 @@ export function foldOf(flow: Flow, ch: ChannelName, kit: Kit<Mixed> = KIT): Flow
     edges.push({ id: `${id}->${root}`, from: id, to: root });
   }
   return { nodes, edges };
+}
+
+/** The voice or group whose chain `id` ends, followed back through its steps; `id` itself for
+ *  anything else. */
+export function itemOf(flow: Flow, id: string): string {
+  const kinds = new Map(flow.nodes.map((n) => [n.id, n.kind]));
+  let at = id;
+  while (kinds.get(at) === 'step') {
+    const here = at;
+    const back = flow.edges.find((e) => {
+      const k = e.to === here ? kinds.get(e.from) : undefined;
+      return k === 'voice' || k === 'group' || k === 'step';
+    });
+    if (back === undefined) break;
+    at = back.from;
+  }
+  return at;
 }
