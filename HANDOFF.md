@@ -823,6 +823,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
+- **The playground's flow diagram needs weasel's unreleased header rows** (2026-11-05, branch
+  `diagram-style`). Named nodes wear a title bar and fold to it on a click, through `Row` kind
+  `'header'`, `DataNode.collapsed`, and `DiagramView.onHeaderClick`, which are on weasel's local
+  `main` (`20aef2e2e`), unpushed and in no release. Until one ships, the worktree's
+  `apps/playground/node_modules/@weasel-js/diagram` is a symlink to `~/src/weasel/packages/diagram`;
+  `npm ci` replaces it with 1.16.1 from npm, which breaks the build. Once weasel releases, pin that
+  version and delete this paragraph. Open gaps: a click on the title's text selects the node
+  without folding it (seen on `scale`; the band beside the text folds it), and a folded node
+  narrows instead of keeping its width.
+
 - **Parked: channel nodes shaped by their fold rule** (unbuilt; parked 2026-11-05 to work on the
   diagrams themselves first, liked as a starting point). The node's left edge stands for the input
   range and its right edge for the output, so the outline is the region the rule sweeps through:

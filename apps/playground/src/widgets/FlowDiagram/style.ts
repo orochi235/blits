@@ -1,5 +1,5 @@
 import { hueColor } from '@msb235/blits-panel';
-import type { EdgeStyle, NodeStyle } from '@weasel-js/diagram';
+import type { EdgeStyle, NodeStyle, Row } from '@weasel-js/diagram';
 import type { FlowBox, FlowEdge, FlowKind, FlowNode, FlowPortTone, FlowTone } from './types';
 
 export const FAULT = '#e5484d';
@@ -26,8 +26,30 @@ const STROKE: Record<FlowKind, string> = {
   query: '#8a63d2',
 };
 
-/** The label, then each line of the detail. */
-export const linesOf = (n: FlowNode) => (n.detail ? [n.label, ...n.detail.split('\n')] : [n.label]);
+/** labkit's control label face: Oswald, upper case, tracked wide. */
+const HEADER_FACE = { fontFamily: 'Oswald', fontSize: 12, weight: 400, tracking: 0.06 };
+
+/** Kinds whose label is a name; a signal's or an expression's is its code. */
+const NAMED: ReadonlySet<FlowKind> = new Set<FlowKind>([
+  'level',
+  'group',
+  'voice',
+  'channel',
+  'pose',
+  'rest',
+  'mark',
+  'join',
+  'query',
+]);
+
+/** A named node's name in its title bar over each line of the detail; any other's label first. */
+export function rowsOf(n: FlowNode): Row[] {
+  const detail = (n.detail ? n.detail.split('\n') : []).map(
+    (text): Row => ({ kind: 'label', text }),
+  );
+  if (!NAMED.has(n.kind)) return [{ kind: 'label', text: n.label }, ...detail];
+  return [{ kind: 'header', text: n.label.toUpperCase(), style: HEADER_FACE }, ...detail];
+}
 
 /** What a tone does to a box that is otherwise `plain`. */
 function toned(plain: NodeStyle, tone: FlowTone | undefined): NodeStyle {

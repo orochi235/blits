@@ -7,12 +7,14 @@ import {
   type LayoutDirection,
   type NodeMove,
 } from '@weasel-js/diagram';
-import { useMemo, useRef } from 'react';
-import { boxStyleOf, edgeStyleOf, linesOf, portColorOf, styleOf } from './style';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { boxStyleOf, edgeStyleOf, portColorOf, rowsOf, styleOf } from './style';
 import type { Flow, FlowBox, FlowEnd, FlowNode, FlowPortTone } from './types';
 
-// diagramScene sets text in sans-serif; labels paint blank unless the family is registered.
+// diagramScene sets text in sans-serif and title bars in Oswald; text paints blank in a family
+// that isn't registered.
 registerCanvasFont('sans-serif');
+registerCanvasFont('Oswald');
 
 const endsOf = (e: { from: string; to: string; label?: string }) =>
   `${e.from}\n${e.to}\n${e.label ?? ''}`;
@@ -70,6 +72,16 @@ export function FlowDiagram({
   hold = false,
 }: FlowDiagramProps) {
   const stood = useRef(new Map<string, { x: number; y: number }>());
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const toggle = useCallback(
+    (id: string) =>
+      setCollapsed((was) => {
+        const next = new Set(was);
+        if (!next.delete(id)) next.add(id);
+        return next;
+      }),
+    [],
+  );
   const specs = useMemo(() => {
     const byId = new Map(flow.nodes.map((n) => [n.id, n]));
     const boxes = new Map((flow.boxes ?? []).map((b) => [b.id, b]));
@@ -81,9 +93,10 @@ export function FlowDiagram({
           const labels = portLabel && labelsOf(n.id, portLabel);
           return {
             id: n.id,
-            lines: linesOf(n),
+            rows: rowsOf(n),
             ...(labels ? { portLabels: labels } : {}),
             ...(at ? { at, pinned: true } : {}),
+            ...(collapsed.has(n.id) ? { collapsed: true } : {}),
           };
         }),
         edges: flow.edges.map((e) => ({
@@ -94,6 +107,7 @@ export function FlowDiagram({
         groups: [...boxes.values()].map((b) => ({ id: b.id, label: b.label, members: b.members })),
       },
       {
+        outline: 'roundRect',
         layoutOptions: { direction, order: 'barycenter', nodeGap: 40, rankGap: 56 },
         nodeStyle: (d) => styleOf(byId.get(d.id) as FlowNode),
         groupStyle: (g) => boxStyleOf(boxes.get(g.id) as FlowBox),
@@ -104,7 +118,7 @@ export function FlowDiagram({
       built.flatMap((x) => (x.id && byId.has(x.id) ? [[x.id, { x: x.pose.x, y: x.pose.y }]] : [])),
     );
     return built;
-  }, [flow, direction, positions, hold, portLabel]);
+  }, [flow, direction, positions, hold, portLabel, collapsed]);
   // DiagramView rebuilds its port layer when these change, so they read the latest props instead.
   const latest = useRef({ canConnect, portTone });
   latest.current = { canConnect, portTone };
@@ -149,6 +163,7 @@ export function FlowDiagram({
             ...ports,
           }
         : {})}
+      onHeaderClick={toggle}
       enableKeybindings={false}
     />
   );
