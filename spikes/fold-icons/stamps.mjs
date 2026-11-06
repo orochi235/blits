@@ -31,9 +31,12 @@ function stamp([, [lo, hi], [ylo, yhi], f], look) {
       d += `${d === '' || jump ? 'M' : 'L'}${X(a).toFixed(1)} ${Y(o).toFixed(1)}`;
       prev = o;
     }
-    out += `<path d="${d}"/>`;
+    const t = curves > 1 ? k / (curves - 1) : 0.5;
+    const inkOf = typeof ink === "function" ? ink(t) : ink;
+    const opOf = typeof opacity === "function" ? opacity(t) : opacity;
+    out += `<path d="${d}" stroke="${inkOf}" stroke-opacity="${opOf}"/>`;
   }
-  const lines = `<g stroke="${ink}" stroke-opacity="${opacity}" stroke-width="${width}"${blend ? ' style="mix-blend-mode:plus-lighter"' : ''}>${out}</g>`;
+  const lines = `<g stroke-width="${width}"${blend ? ' style="mix-blend-mode:plus-lighter"' : ''}>${out}</g>`;
   const halo = glow
     ? `<filter id="${id}g" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="${glow}"/></filter><g filter="url(#${id}g)" opacity="0.9">${lines}</g>`
     : '';
@@ -41,12 +44,13 @@ function stamp([, [lo, hi], [ylo, yhi], f], look) {
 }
 
 const BASE = { curves: 28, ink: '#7fc8ff', opacity: 0.22, width: 1.5, blend: false, glow: 0, bg: '#16222c' };
+const HOT = { ...BASE, curves: 22, ink: '#7ad0ff', opacity: 0.6, width: 1.75, blend: true, glow: 1.4, bg: '#070c10' };
 const LOOKS = [
-  ['before', BASE],
-  ['heavier, fewer', { ...BASE, curves: 16, ink: '#a8dcff', opacity: 0.55, width: 1.75 }],
-  ['additive', { ...BASE, curves: 22, ink: '#5fb4ff', opacity: 0.45, width: 1.5, blend: true, bg: '#0b1218' }],
-  ['additive + glow', { ...BASE, curves: 22, ink: '#5fb4ff', opacity: 0.45, width: 1.5, blend: true, glow: 2.2, bg: '#0b1218' }],
-  ['additive, hot', { ...BASE, curves: 22, ink: '#7ad0ff', opacity: 0.6, width: 1.75, blend: true, glow: 1.4, bg: '#070c10' }],
+  ['hot', HOT],
+  ['hot, hue by voice value (blue to magenta)', { ...HOT, ink: (t) => `hsl(${205 + t * 115} 95% 66%)` }],
+  ['hot, hue by voice value (cyan to amber)', { ...HOT, ink: (t) => `hsl(${190 - t * 155} 95% 62%)` }],
+  ['hot, opacity by voice value', { ...HOT, opacity: (t) => 0.12 + t * 0.78 }],
+  ['hot, hue and opacity', { ...HOT, ink: (t) => `hsl(${205 + t * 115} 95% 66%)`, opacity: (t) => 0.15 + t * 0.75 }],
 ];
 
 let body = '';
