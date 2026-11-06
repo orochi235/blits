@@ -38,6 +38,14 @@ function history({ r = 6.4, from, to, hands, head = 2.6, spread = 40, dot: hub =
 }
 
 const GLYPHS = {
+  'norm (calipers)': {
+    vernier: path(`M3.6 4.4H16.4M5 4.4V13.6L7.2 11.6V4.4M15 4.4V13.6L12.8 11.6V4.4`),
+    'vernier on a dot': path(`M3.6 4.4H16.4M5.6 4.4V12.4L7.6 10.4V4.4M14.4 4.4V12.4L12.4 10.4V4.4`) + circle(10, 13.6, 2.4),
+    dividers: path(`M10 3.4L4.6 16.4M10 3.4L15.4 16.4M7.4 9.8H12.6`) + dot(10, 3.4, 1.2),
+    'dividers on a hypotenuse': path(`M3.6 16.4H16.4V3.6`, thin) + path(`M3.6 16.4L16.4 3.6`, ' stroke-dasharray="1.25 1.9" stroke-width="1"') + path(`M3.6 16.4L6.4 6.4L16.4 3.6`) + dot(6.4, 6.4, 1.2),
+    'outside calipers': path(`M10 3.4C4 5 3.2 12 6.4 16M10 3.4C16 5 16.8 12 13.6 16`) + dot(10, 3.4, 1.2) + path(`M6.4 16H13.6`, thin),
+    'jaws on two legs': path(`M3.6 3.6H13.6M3.6 3.6V8M13.6 3.6V8`) + path(`M3.6 16.4H16.4V8.4`, thin) + path(`M3.6 8L16.4 8.4`, ' stroke-dasharray="1.25 1.9" stroke-width="1"'),
+  },
   'last (history)': {
     'head at 9': history({ from: 220, to: 180, hands: [[90, 3.6], [-30, 2.6]] }),
     'head at 10': history({ from: 190, to: 150, hands: [[90, 3.6], [0, 2.8]] }),
