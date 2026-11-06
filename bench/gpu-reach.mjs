@@ -9,7 +9,7 @@
 //     node bench/gpu-reach.mjs --out bench/runs/<date>-gpu-signal     writes <out>.jsonl
 //   node bench/gpu-reach.mjs --digest <out>.jsonl     medians, p95, and each part's median
 // MIX=signal is gpu-stock's full mix with no spring, the first keys voice weighted per subject by
-// `(c) => 0.5 + 0.5 * Math.sin(c.i * 0.37)`. MIX=owned is bree's shape: a program owner holding four
+// `(c) => 0.5 + 0.5 * Math.sin(c.i * 0.37)`. MIX=owned is blinken's shape: a program owner holding four
 // scene owners 1250 ms apart, each scene's voices cued on it over every subject before frame 1: a
 // faded keys move on x and y, a wave on y looping for the scene's length, and a keys layer on x
 // staggered by `(c.i % 256) * 4` that fades in. Rows `mixer` and `gpu` only.

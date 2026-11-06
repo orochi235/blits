@@ -37,7 +37,7 @@ const CASES: Case[] = [
     }),
   ],
   [
-    "nested owners, as bree's program and scenes",
+    "nested owners, as blinken's program and scenes",
     true,
     () => ({
       owners: [{}, { owner: 0, start: 400 }, { owner: 0, start: 1400 }],

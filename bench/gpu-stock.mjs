@@ -94,7 +94,7 @@ window.bench = async (engine, n, frames, warm, variant) => {
   ]);
   const sway = wave(1000, { depth: { y: 3 }, shape: 'triangle' });
   const settle = spring('p', { from: 0, to: (c) => c.i % 10, stiffness: 170, damping: 26 });
-  // Staggered by a rank, as bree writes its per-dot offsets; bounce reaches the even subjects,
+  // Staggered by a rank, as blinken writes its per-dot offsets; bounce reaches the even subjects,
   // asked as met, and the keys voices fade in so the per-subject fade runs in the first frames.
   const staggered = variant === 'stagger';
   const lag = staggered ? { stagger: (c) => (c.i % 256) * 4 } : {};

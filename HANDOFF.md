@@ -36,7 +36,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
   | Consumer | Pins |
   |---|---|
-  | bree | `0.12.1` |
+  | blinken | `0.12.1` |
   | astv; weasel core, animator and labkit | `0.12.0` |
   | klieg | `0.11.0` |
   | wod | `^0.10.0` |
@@ -100,7 +100,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   - A relay's `bye` ends whichever page agent is current, not the one its port served. The
     order of calls makes a re-attach to the same page lose that race only in theory; not
     reproduced.
-- **The marquee** (an LED sign demo, one subject per dot) lives in bree; `apps/marquee` was deleted
+- **The marquee** (an LED sign demo, one subject per dot) lives in blinken; `apps/marquee` was deleted
   (2026-10-23). Its smoke run (headless, msb-uai, 2026-10-22) read mix 0.19 ms a frame at 652 lights
   and 4.33 ms at 20,548; the schema page's "Subject aliases" (decided against) and "Layered
   subjects" (open) are about that load.
@@ -163,7 +163,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **The vocabulary is called**, every role enshrined on 2026-09-29, and
   `docs/vocabulary.picks.json` is where it lives: delta, channel, kit, subject, patch, voice, mix,
   signal, handle, engine, pose, contribution, setting, timestamp, duration, phase, rest, weight, role,
-  arc (renamed from series 2026-10-22), plane (a group of a kit's channels, 2026-10-22; bree's word, which blits's code does not read), host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
+  arc (renamed from series 2026-10-22), plane (a group of a kit's channels, 2026-10-22; blinken's word, which blits's code does not read), host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
   resolver, projection (synonym image), doubt, snapshot, interval; cue, fade, sync, probe, project,
   assess, seek, blend, mute, drop; merge, scale, lerp, fold. The code and the schema page read in
   them. `name`, `query` and `resolver` are marked informal. `contribution` replaced `influence` on

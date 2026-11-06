@@ -21,7 +21,7 @@ export const N = 257;
 export const CELLS: C[] = Array.from({ length: N }, (_, id) => ({ id }));
 export const fieldsOf = (s: C) => ({ id: s.id, x: s.id / (N - 1) });
 
-/** A seeded shuffle of 0..N-1, the order a host such as bree's gives its subjects. */
+/** A seeded shuffle of 0..N-1, the order a host such as blinken's gives its subjects. */
 const RANK: number[] = (() => {
   let seed = 7;
   const rand = () => {
