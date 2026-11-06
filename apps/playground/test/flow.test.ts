@@ -102,6 +102,9 @@ describe('flowOf', () => {
     expect(e).toContainEqual(['step:voice:v:weight', 'ch:glow', '']);
     expect(node(c, 'step:voice:v:target')).toMatchObject({ kind: 'step', label: 'target', hue: 0 });
     expect(itemOf(flowOf(c), 'step:voice:v:weight')).toBe('voice:v');
+    const param = (from: string) => flowOf(c).edges.find((x) => x.from === from)?.param;
+    expect(param('expr:v:stagger')).toBe(true);
+    expect(param('voice:v')).toBeUndefined();
   });
 
   it('draws a voice that writes nothing, with no channel', () => {
@@ -142,7 +145,7 @@ describe('flowOf', () => {
     };
     expect(node(c, 'group:g')).toMatchObject({ kind: 'group', label: 'g', aside: 'owner' });
     expect(node(c, 'group:g')?.detail).toBeUndefined();
-    expect(node(c, 'group:k')).toMatchObject({ aside: 'span', detail: '2000 ms · w 1' });
+    expect(node(c, 'group:k')).toMatchObject({ aside: 'span', params: [['duration', '2000 ms']] });
     const e = edges(c);
     expect(e).toContainEqual(['level:x', 'step:group:g:weight', '']);
     expect(e).toContainEqual(['group:g', 'step:group:g:weight', '']);

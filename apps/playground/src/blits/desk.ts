@@ -1,11 +1,18 @@
 import { blendMode, css, toHex } from '@msb235/blits';
-import type { Flow } from '@pg/widgets/FlowDiagram/types';
+import type { Flow, FlowNode } from '@pg/widgets/FlowDiagram/types';
 import type { Desk, DeskBus, DeskGroup, DeskStrip } from '@pg/widgets/MixerDesk/types';
 import { hexOf } from './color';
 import type { Composition } from './composition';
 import { itemOf } from './flow';
 import { rowsOf } from './groups';
 import type { ChannelName, Mixed } from './kit';
+import { paramLine } from './params';
+
+/** A strip's one line: its kind, then its parameters. */
+function summary(n: FlowNode): { detail?: string } {
+  const line = [n.aside, n.params ? paramLine(n.params) : n.detail].filter(Boolean).join(' · ');
+  return line ? { detail: line } : {};
+}
 
 /**
  * The mixer desk of a composition: a bus per channel its `flow` (what `flowOf` built from it)
@@ -33,9 +40,7 @@ export function deskOf(comp: Composition, flow: Flow): Desk {
       id: r.id,
       label: n.label,
       taps: taps.get(n.id) ?? [],
-      ...(n.aside !== undefined || n.detail !== undefined
-        ? { detail: [n.aside, n.detail].filter(Boolean).join(' · ') }
-        : {}),
+      ...summary(n),
       ...(n.hue !== undefined ? { hue: n.hue } : {}),
       ...(n.faulted ? { faulted: true } : {}),
     });

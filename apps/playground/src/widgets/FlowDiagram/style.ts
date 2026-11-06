@@ -46,9 +46,11 @@ const NAMED: ReadonlySet<FlowKind> = new Set<FlowKind>([
 
 /** A named node's name in its title bar over each line of the detail; any other's label first. */
 export function rowsOf(n: FlowNode): Row[] {
-  const detail = (n.detail ? n.detail.split('\n') : []).map(
+  const params = (n.params ?? []).map(([label, value]): Row => ({ kind: 'field', label, value }));
+  const lines = (n.detail ? n.detail.split('\n') : []).map(
     (text): Row => ({ kind: 'label', text }),
   );
+  const detail = [...params, ...lines];
   if (!NAMED.has(n.kind)) return [{ kind: 'label', text: n.label }, ...detail];
   const aside = n.aside === undefined ? {} : { aside: n.aside.toUpperCase() };
   return [

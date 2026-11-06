@@ -12,6 +12,7 @@ import {
   type Voice,
 } from './composition';
 import { CHANNELS, type ChannelName, KIT, kitOf, type Mixed, type SwingName } from './kit';
+import { groupParams, levelParams, voiceParams } from './params';
 import { subjectsOf } from './stage';
 
 const OPS = new Set(['gate', 'lag', 'around', 'peak', 'slew']);
@@ -71,25 +72,6 @@ export function writesOf(p: PatchSource): ChannelName[] {
   return [p.channel];
 }
 
-/** A voice's detail line, or nothing when it has none to say. */
-function voiceDetail(v: Voice, blended: boolean): { detail?: string } {
-  const parts: string[] = [];
-  const period = periodOf(v.patch);
-  if (period !== undefined) parts.push(`${period} ms`);
-  if (v.loop === true) parts.push('loop');
-  else if (typeof v.loop === 'number') parts.push(`×${v.loop}`);
-  if (blended) parts.push('blend');
-  else if (typeof v.weight === 'number') parts.push(`w ${v.weight}`);
-  return parts.length ? { detail: parts.join(' · ') } : {};
-}
-
-function groupDetail(g: Group): { detail?: string } {
-  const parts: string[] = [];
-  if (g.span?.duration !== undefined) parts.push(`${g.span.duration} ms`);
-  if (typeof g.weight === 'number') parts.push(`w ${g.weight}`);
-  return parts.length ? { detail: parts.join(' · ') } : {};
-}
-
 /** A flow, with the source of each node that stands for a signal: a level, a signal call, or a whole `weight`. */
 export interface SignalFlow extends Flow {
   code: ReadonlyMap<string, string>;
@@ -106,9 +88,16 @@ class Builder {
     return n.id;
   }
 
-  edge(from: string, to: string, label?: string) {
+  edge(from: string, to: string, label?: string, param = false) {
     const id = `${from}->${to}${label ? `:${label}` : ''}`;
-    if (!this.edges.has(id)) this.edges.set(id, { id, from, to, ...(label ? { label } : {}) });
+    if (!this.edges.has(id))
+      this.edges.set(id, {
+        id,
+        from,
+        to,
+        ...(label ? { label } : {}),
+        ...(param ? { param } : {}),
+      });
   }
 
   level(name: string): string {
@@ -118,7 +107,7 @@ class Builder {
       id: `level:${name}`,
       kind: 'level',
       label: name,
-      ...(l ? { detail: `${l.min}–${l.max}` } : { detail: 'missing: reads 0', faulted: true }),
+      ...(l ? { params: levelParams(l) } : { detail: 'missing: reads 0', faulted: true }),
     });
   }
 
@@ -201,7 +190,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
         ...(hue !== undefined ? { hue } : {}),
       });
       b.edge(at, id);
-      b.edge(input, id);
+      b.edge(input, id, undefined, true);
       at = id;
     }
     return at;
@@ -214,7 +203,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       kind: 'group',
       label: g.name,
       aside: g.kind,
-      ...groupDetail(g),
+      params: groupParams(g),
       hue: g.hue,
       ...(faulted.has(g.id) ? { faulted: true } : {}),
     });
@@ -233,7 +222,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       kind: 'voice',
       label: v.name,
       aside: v.patch.kind,
-      ...voiceDetail(v, by !== undefined),
+      params: voiceParams(v, by !== undefined),
       hue: v.hue,
       ...(faulted.has(v.id) ? { faulted: true } : {}),
     });

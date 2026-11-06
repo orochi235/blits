@@ -28,7 +28,7 @@ describe('bothOf', () => {
   it('gives a voice both details, the flow first', () => {
     const c = comp([voice({ id: 'a', patch: keys, start: 300 })]);
     expect(both(c).nodes.find((n) => n.id === 'voice:a')?.detail).toBe(
-      '500 ms · loop · w 1\nat 300 ms',
+      'at 300 ms',
     );
   });
 

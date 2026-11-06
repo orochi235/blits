@@ -19,6 +19,8 @@ export interface FlowNode {
   label: string;
   /** A word set apart from the name, at the right of its title bar: a voice's patch kind, a group's kind. */
   aside?: string;
+  /** Its parameters, each a name then a value, drawn a row apiece under its title bar. */
+  params?: readonly (readonly [label: string, value: string])[];
   detail?: string;
   hue?: number;
   faulted?: boolean;
@@ -32,6 +34,9 @@ export interface FlowEdge {
   dashed?: boolean;
   /** Drawn in the timing color, apart from the flow's edges. */
   timing?: boolean;
+  /** Sets how the node it enters acts rather than carrying what it acts on, so it meets that node
+   *  from the side, off the flow's axis. */
+  param?: boolean;
   /** Whether what it waits on has happened; unset draws it plain. */
   met?: boolean;
 }

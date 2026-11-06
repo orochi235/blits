@@ -24,6 +24,19 @@ const endsOf = (e: { from: string; to: string; label?: string }) =>
 
 const COMPASS = ['n', 'e', 's', 'w'] as const;
 
+/** Where a flow edge leaves and meets its nodes: what a node acts on runs along the flow's axis, in
+ *  at the near side and out at the far one; a parameter comes in across it. */
+const AXIS: Record<LayoutDirection, { out: string; in: string; param: string }> = {
+  down: { out: 's', in: 'n', param: 'w' },
+  up: { out: 'n', in: 's', param: 'w' },
+  right: { out: 'e', in: 'w', param: 'n' },
+  left: { out: 'w', in: 'e', param: 'n' },
+};
+const portsOf = (direction: LayoutDirection, param: boolean) => {
+  const a = AXIS[direction];
+  return { fromPort: a.out, toPort: param ? a.param : a.in };
+};
+
 function labelsOf(node: string, label: (node: string, port: string) => string | null) {
   const out: Record<string, string> = {};
   for (const port of COMPASS) {
@@ -105,6 +118,7 @@ export function FlowDiagram({
         edges: flow.edges.map((e) => ({
           from: e.from,
           to: e.to,
+          ...(e.timing ? {} : portsOf(direction, e.param === true)),
           ...(e.label ? { label: e.label } : {}),
         })),
         groups: [...boxes.values()].map((b) => ({ id: b.id, label: b.label, members: b.members })),
