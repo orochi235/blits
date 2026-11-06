@@ -17,8 +17,6 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
   </a>
   <p class="meta">
     <a href={link('changelog')}>v{pkg.version}</a>
-    <a href="https://github.com/orochi235/blits">GitHub</a>
-    <a href={`https://www.npmjs.com/package/${pkg.name}`}>npm</a>
   </p>
   <Search />
   <ul class="group">
@@ -45,6 +43,10 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
       <li><a href={link(w.slug)} aria-current={current(w.slug)}>{w.title}</a></li>
     ))}
   </ul>
+  <p class="meta out">
+    <a href="https://github.com/orochi235/blits">GitHub</a>
+    <a href={`https://www.npmjs.com/package/${pkg.name}`}>npm</a>
+  </p>
 </nav>
 
 <script>
@@ -73,6 +75,8 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     align-self: start;
     height: 100vh;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     /* The dark-mode mark's blank margins hang past the rail. */
     overflow-x: hidden;
   }
@@ -222,6 +226,12 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     font-variant-numeric: tabular-nums;
   }
 
+  /* Out of the site, at the rail's foot. */
+  .meta.out {
+    margin: auto 0 0;
+    padding-top: 1.5rem;
+  }
+
   .meta a {
     color: var(--ink-soft);
     text-decoration: none;
@@ -235,6 +245,7 @@ const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
     .rail {
       position: static;
       height: auto;
+      display: block;
       border-bottom: 1px solid var(--rule);
       padding: 1rem;
     }
