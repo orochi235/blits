@@ -1,22 +1,19 @@
 import { hueColor } from '@msb235/blits-panel';
-import { edgeStyleOf, FAULT, linesOf, styleOf } from '@pg/widgets/FlowDiagram/style';
+import { edgeStyleOf, FAULT, rowsOf, styleOf } from '@pg/widgets/FlowDiagram/style';
 import { describe, expect, it } from 'vitest';
 
 describe('FlowDiagram styling', () => {
-  it('puts the label, then the detail, on lines', () => {
-    expect(linesOf({ id: 'ch:color', kind: 'channel', label: 'color', detail: 'hex' })).toEqual([
-      'color',
-      'hex',
+  it('puts the label, then each line of the detail, on rows', () => {
+    expect(rowsOf({ id: 'sig', kind: 'signal', label: 'sig', detail: 'x\ny' })).toEqual([
+      { kind: 'label', text: 'sig' },
+      { kind: 'label', text: 'x' },
+      { kind: 'label', text: 'y' },
     ]);
-    expect(linesOf({ id: 'pose', kind: 'pose', label: 'pose' })).toEqual(['pose']);
   });
 
-  it('puts each line of a detail on its own line', () => {
-    expect(linesOf({ id: 'voice:a', kind: 'voice', label: 'a', detail: 'keys\nat 0 ms' })).toEqual([
-      'a',
-      'keys',
-      'at 0 ms',
-    ]);
+  it('heads a named node with its label, uppercased, and the aside beside it', () => {
+    const [head] = rowsOf({ id: 'voice:a', kind: 'voice', label: 'a', aside: 'keys' });
+    expect(head).toMatchObject({ kind: 'header', text: 'A', aside: 'KEYS' });
   });
 
   it('draws a timing edge in a color of its own, met or not', () => {
