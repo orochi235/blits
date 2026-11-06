@@ -37,7 +37,63 @@ function history({ r = 6.4, from, to, hands, head = 2.6, spread = 40, dot: hub =
   return path(arc) + path(chevron([x1, y1], ccwTangent(to), head, spread)) + path(handPaths.join('')) + (hub ? dot(10, 10, 1) : '');
 }
 
+/** A vernier caliper: a beam at `beam`, a fixed jaw at the left whose measuring face is at `fixed`, and a
+ *  slider whose face is at `slide`, both faces running down to `tip`. Each jaw tapers on its outer side. */
+function vernier({ beam = F, fixed = E, slide = I, tip = M, taper = 2.5, ticks = [], upper = false, head = 3.75 }) {
+  const left = n(fixed - 2.5);
+  const right = n(slide + 2.5);
+  const box = `M${slide} ${n(beam - 1.9)}H${n(slide + head)}V${n(beam + 1.9)}H${slide}Z`;
+  const jaws =
+    `M${left} ${beam}V${n(tip - taper)}L${fixed} ${tip}V${beam}` +
+    `M${right} ${n(beam + 1.9)}V${n(tip - taper)}L${slide} ${tip}V${n(beam + 1.9)}`;
+  const up = upper ? `M${fixed} ${beam}V${n(beam - 3.1)}M${slide} ${n(beam - 1.9)}V${n(beam - 3.1)}` : '';
+  return (
+    path(`M${left} ${beam}H${N}`) +
+    path(box) +
+    path(jaws + up) +
+    (ticks.length ? path(ticks.map((x) => `M${x} ${beam}V${n(beam - 1.25)}`).join(''), thin) : '')
+  );
+}
+
+/** A caliper drawn in single strokes: a beam across at `beam`, a jaw hanging from its left end, and a slider
+ *  box at `slide` with its own jaw; each jaw comes to a point at `tip`, leaning in toward the other. */
+function caliper({ beam = D, slide = I, tip = L, lean = 1.6, box = 2.5, ticks = [], dots = [] }) {
+  const b = n(beam);
+  const jaws = `M${C} ${b}V${n(tip - 2)}L${n(C + lean)} ${tip}M${slide} ${n(b + 1.25)}V${n(tip - 2)}L${n(slide - lean)} ${tip}`;
+  const slider = `M${n(slide - 0.6)} ${n(b - 1.25)}H${n(slide + box)}V${n(b + 1.25)}H${n(slide - 0.6)}Z`;
+  return (
+    path(`M${C} ${b}H${N}`) +
+    path(slider) +
+    path(jaws) +
+    (ticks.length ? path(ticks.map((x) => `M${x} ${b}V${n(b + 1.9)}`).join(''), thin) : '') +
+    dots.map(([x, y, r]) => dot(x, y, r)).join('')
+  );
+}
+
 const GLYPHS = {
+  'norm (caliper, single strokes)': {
+    plain: caliper({}),
+    'ticks on beam': caliper({ slide: H, ticks: [L, M, N] }),
+    'on a dot': caliper({ slide: K, lean: 1.6, dots: [[8.1, 11, 1.7]] }),
+    'jaws low': caliper({ beam: F, tip: N }),
+    'slider far': caliper({ slide: L, box: 2 }),
+    'tilted': `<g transform="rotate(-30 10 10)">${caliper({ slide: H, ticks: [L, M] })}</g>`,
+  },
+  'norm (vernier, long beam)': {
+    'short jaws': vernier({ beam: E, fixed: E, slide: H, head: 2.5, tip: K, taper: 2, ticks: [K, L, M] }),
+    'short jaws, inside too': vernier({ beam: G, fixed: E, slide: H, head: 2.5, tip: M, taper: 2, upper: true, ticks: [K, L, M] }),
+    'slider far': vernier({ beam: E, fixed: E, slide: J, head: 2.5, tip: K, taper: 2, ticks: [G, H] }),
+    'on a dot': vernier({ beam: E, fixed: E, slide: J, head: 2.5, tip: K, taper: 2, ticks: [] }) + dot(8.75, 10.8, 1.5),
+    'tilted, short jaws': `<g transform="rotate(-30 10 10)">${vernier({ beam: G, fixed: E, slide: H, head: 2.5, tip: L, taper: 2, ticks: [K, L, M] })}</g>`,
+  },
+  'norm (vernier)': {
+    classic: vernier({ ticks: [G, H] }),
+    'inside jaws too': vernier({ upper: true, ticks: [G, H] }),
+    'on a dot': vernier({ fixed: E, slide: J, tip: L, ticks: [] }) + dot(8.75, 12.6, 1.6),
+    'wide, long beam': vernier({ fixed: E, slide: K, head: 2.5, ticks: [F, H, J] }),
+    'on two dots': vernier({ fixed: E, slide: K, head: 2.5, tip: L }) + dot(7.6, 12.4, 1.2) + dot(11.2, 12.4, 1.2),
+    tilted: `<g transform="rotate(-35 10 10)">${vernier({ ticks: [G, H] })}</g>`,
+  },
   'norm (calipers)': {
     vernier: path(`M3.6 4.4H16.4M5 4.4V13.6L7.2 11.6V4.4M15 4.4V13.6L12.8 11.6V4.4`),
     'vernier on a dot': path(`M3.6 4.4H16.4M5.6 4.4V12.4L7.6 10.4V4.4M14.4 4.4V12.4L12.4 10.4V4.4`) + circle(10, 13.6, 2.4),
