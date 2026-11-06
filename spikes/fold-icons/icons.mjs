@@ -21,7 +21,32 @@ const [A, B, C, D, E, F, G, H, I, J, K, L, M, N] = Array.from({ length: 14 }, (_
 // A..N are pixel centers 0..13: C 3.13, D 4.38, E 5.63, F 6.88, G 8.13, H 9.38, I 10.63, J 11.88,
 // K 13.13, L 14.38, M 15.63, N 16.88.
 
+const onCircle = (cx, cy, r, deg) => [n(cx + r * Math.cos(R(deg))), n(cy - r * Math.sin(R(deg)))];
+const ccwTangent = (deg) => [-Math.sin(R(deg)), -Math.cos(R(deg))];
+/** A clock face whose rim runs counterclockwise from `from` the long way to `to`, an arrowhead at `to`, and
+ *  hands from the center to each of `hands` (math angles). `gap` leaves the rim open short of the head. */
+function history({ r = 6.4, from, to, hands, head = 2.6, spread = 40, dot: hub = false }) {
+  const [x0, y0] = onCircle(10, 10, r, from);
+  const [x1, y1] = onCircle(10, 10, r, to);
+  const sweep = (((to - from) % 360) + 360) % 360;
+  const arc = `M${x0} ${y0}A${r} ${r} 0 ${sweep > 180 ? 1 : 0} 0 ${x1} ${y1}`;
+  const handPaths = hands.map(([deg, len]) => {
+    const [hx, hy] = onCircle(10, 10, len, deg);
+    return `M10 10L${hx} ${hy}`;
+  });
+  return path(arc) + path(chevron([x1, y1], ccwTangent(to), head, spread)) + path(handPaths.join('')) + (hub ? dot(10, 10, 1) : '');
+}
+
 const GLYPHS = {
+  'last (history)': {
+    'head at 9': history({ from: 220, to: 180, hands: [[90, 3.6], [-30, 2.6]] }),
+    'head at 10': history({ from: 190, to: 150, hands: [[90, 3.6], [0, 2.8]] }),
+    'head at 8': history({ from: 250, to: 210, hands: [[90, 3.6], [-30, 2.6]] }),
+    'wide gap': history({ from: 240, to: 160, hands: [[90, 3.4], [0, 2.6]] }),
+    'tight, one hand': history({ from: 195, to: 165, hands: [[60, 3.6]], hub: true }),
+    'hands 12 + 9': history({ from: 250, to: 210, hands: [[90, 3.6], [180, 2.6]] }),
+    'tail out': path(`M3.4 10A6.6 6.6 0 1 0 5.2 5.4`) + path(chevron([5.2, 5.4], [-0.75, 0.66], 2.6, 40)) + path(`M3.4 10H1.8`) + path(`M10 6.4V10L12.6 11.6`),
+  },
   sum: {
     plus: path(`M10 4.9v10.2M4.9 10h10.2`),
     'plus in circle': circle(10, 10, 6.6) + path(`M10 6.6v6.8M6.6 10h6.8`),
