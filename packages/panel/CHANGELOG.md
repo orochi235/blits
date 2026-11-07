@@ -6,6 +6,19 @@ This package follows [semver](https://semver.org) and shares the engine's versio
 everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Breaking
+
+- `@msb235/blits` is a peer at exactly the panel's own version, where it was `^1.1.0`. An app on a
+  different engine now fails to install, where before npm could pair it with a panel built for
+  another.
+
+### Changed
+
+- `@weasel-js/history`, `theme`, and `ui` are pinned at 1.17.1, so an app on weasel 1.17.1 no longer
+  installs a second weasel and blits under the panel.
+
 ## 1.1.0
 
 ### Breaking

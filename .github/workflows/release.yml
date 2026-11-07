@@ -92,6 +92,11 @@ jobs:
             echo "blits-panel is at $panel, but the engine is at $engine; they release in lockstep" >&2
             exit 1
           fi
+          peer="$(node -p 'require("./packages/panel/package.json").peerDependencies["@msb235/blits"]')"
+          if [ "$peer" != "$engine" ]; then
+            echo "blits-panel's @msb235/blits peer is $peer, but the engine is at $engine; pin it exactly" >&2
+            exit 1
+          fi
 
       - name: The changelog has a section for this version
         working-directory: ${{ steps.pick.outputs.dir }}

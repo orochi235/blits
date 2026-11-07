@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 1.1.0 (2026-11-05), with blits-panel 1.1.0 and blits-rapier 0.7.0 taking it as a `^1.1.0` peer, blits-quarks 0.17.0 and blits-tone 0.12.1 as a `^1.0.0` peer, and all four pinning 1.1.0 to build against. blits-panel releases in lockstep with the engine, at its version, from 1.1.0 on (owner's call, 2026-11-05); the release workflow holds it there. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 1.1.0 (2026-11-05), with blits-panel 1.1.0 and blits-rapier 0.7.0 taking it as a `^1.1.0` peer (the panel's peer pinned exactly from the next release, 2026-11-07), blits-quarks 0.17.0 and blits-tone 0.12.1 as a `^1.0.0` peer, and all four pinning 1.1.0 to build against. blits-panel releases in lockstep with the engine, at its version, from 1.1.0 on (owner's call, 2026-11-05); the release workflow holds it there. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
   An engine release runs the whole check twice: release.yml's own lint, typecheck, and test
   steps, then `npm publish`'s `prepublishOnly` (`npm run check`) again, so a flaky or slow test
   gets two chances to sink it. 1.1.0 needed four tags (2026-11-05); dropping one of the two runs
