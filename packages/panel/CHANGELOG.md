@@ -16,8 +16,9 @@ section here.
 
 ### Changed
 
-- `@weasel-js/history`, `theme`, and `ui` are pinned at 1.17.1, so an app on weasel 1.17.1 no longer
-  installs a second weasel and blits under the panel.
+- weasel is bundled into the panel, at 1.17.1, where it was a dependency at 1.16.1. An app on any
+  weasel no longer installs a second weasel, or the blits that weasel brought with it, under the
+  panel. The panel's JavaScript grows from 56 KB to 84 KB gzipped.
 
 ## 1.1.0
 

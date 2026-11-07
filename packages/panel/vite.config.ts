@@ -3,13 +3,13 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 // The JavaScript is bundled here so the stylesheets reach the shadow root as strings; `tsc -b`
-// writes the declarations. Everything the package depends on stays an import.
+// writes the declarations. weasel is bundled too, so an app on another weasel installs no second
+// copy; blits and React stay imports, so the panel shares the app's.
 const external = (id: string) =>
   id === '@msb235/blits' ||
   id === 'react' ||
   id.startsWith('react/') ||
-  id.startsWith('react-dom') ||
-  (id.startsWith('@weasel-js/') && !id.includes('.css'));
+  id.startsWith('react-dom');
 
 export default defineConfig({
   plugins: [react()],
