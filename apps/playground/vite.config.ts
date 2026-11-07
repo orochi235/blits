@@ -8,6 +8,8 @@ const stories = process.argv.some((a) => a.includes('weaselforge'));
 
 export default defineConfig({
   base: './',
+  // The two servers run side by side, and a shared cache has each one's rebuild stale the other's.
+  ...(stories ? { cacheDir: 'node_modules/.vite-stories' } : {}),
   plugins: [react(), ...(stories ? forge({ stories: ['src/widgets/**/*.stories.tsx'] }) : [])],
   resolve: {
     alias: {
