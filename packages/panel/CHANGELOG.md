@@ -6,7 +6,7 @@ This package follows [semver](https://semver.org) and shares the engine's versio
 everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## Unreleased
+## 1.2.0
 
 ### Fixed
 
