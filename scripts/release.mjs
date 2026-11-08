@@ -106,14 +106,23 @@ if (run('git', ['rev-list', '--count', 'main..origin/main']) !== '0') throw new 
 
 // The engine.
 const engineTag = `v${version}`;
-if (!tagExists(engineTag)) {
+// A run that failed after the release commit has the version in place already; it only needs tagging.
+if (!tagExists(engineTag) && readJson('package.json').version !== version) {
   if (!unreleased('CHANGELOG.md')?.trim()) throw new Error("the engine's CHANGELOG has nothing under Unreleased");
   stamp('CHANGELOG.md', version);
   const root = readJson('package.json');
   root.version = version;
   writeJson('package.json', root);
+  const shared = readFileSync('src/shared.ts', 'utf8');
+  const stamped = shared.replace(/^export const release = '[^']*';$/m, `export const release = '${version}';`);
+  if (stamped === shared && !shared.includes(`release = '${version}'`)) {
+    throw new Error("src/shared.ts has no `export const release = '…';` line to stamp");
+  }
+  writeFileSync('src/shared.ts', stamped);
   sh('npm', ['install', '--package-lock-only', '--ignore-scripts']);
   sh('git', ['commit', '-qam', `release ${ENGINE} ${version}`]);
+}
+if (!tagExists(engineTag)) {
   sh('git', ['tag', engineTag]);
   sh('git', ['push', '-q', 'origin', 'main', engineTag]);
   await watch(engineTag);
