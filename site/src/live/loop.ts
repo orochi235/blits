@@ -1,10 +1,8 @@
 import type { Handle } from '@msb235/blits';
+import { SETTLE } from '../explainers/kit/settle-ms';
 
 /** Sent to a live demo's root to pause it (`detail: true`) or resume it (`detail: false`). */
 export const HOLD = 'blits:hold';
-
-/** How long a demo takes to settle to rest as the window loses focus, and to rise from it. */
-const SETTLE = 400;
 
 /** A mix the loop can settle: its voices, and its clock. */
 interface Settles {

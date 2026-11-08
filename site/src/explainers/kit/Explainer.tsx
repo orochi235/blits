@@ -7,6 +7,7 @@ import { type Ink, readInk } from './ink';
 import { Ledger } from './Ledger';
 import { coursesOver, Player } from './player';
 import { FRAME, type Frame, type Scene } from './scene';
+import { settled, useSettle } from './settle';
 import { onSpace } from './space';
 import { Timeline, type Track } from './Timeline';
 
@@ -92,12 +93,15 @@ function ExplainerBody<I, O, C>({
   const [config, setConfig] = useState<C>(() => s.defaults());
   const built = useMemo(() => scene(config), [scene, config]);
   const duration = typeof length === 'function' ? length(config) : length;
-  const player = useMemo(() => {
+  const name = useMemo(() => {
     const page = document.title.replace(/^blits: /, '');
     const voices = built.voices(config).map((v) => v.name);
-    const name = voices.length > 0 ? `${page}: ${voices.join(', ')}` : page;
-    return new Player(built, config, { name, duration });
-  }, [built, config, duration]);
+    return voices.length > 0 ? `${page}: ${voices.join(', ')}` : page;
+  }, [built, config]);
+  const player = useMemo(
+    () => new Player(built, config, { name, duration }),
+    [built, config, name, duration],
+  );
   useEffect(() => () => player.close(), [player]);
   const second = useMemo(() => {
     if (!twin) return null;
@@ -175,6 +179,8 @@ function ExplainerBody<I, O, C>({
   const size = useWidth(canvas, aspect);
   const visible = useVisible(canvas);
   const focused = useFocused();
+  // Leaving the window, it settles to rest over the frame it stopped on, and rises from it.
+  const shown = useSettle(`${name}: settle`, playing && visible && !focused);
 
   useEffect(() => {
     if (!playing || !visible || !focused) return;
@@ -232,8 +238,16 @@ function ExplainerBody<I, O, C>({
     if (!ctx) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
-    draw(ctx, f, size, readInk(el), config, second?.at(f.t));
-  }, [player, second, t, size, draw, config]);
+    const other = second?.at(f.t);
+    draw(
+      ctx,
+      settled(built.kit, f, shown),
+      size,
+      readInk(el),
+      config,
+      other && settled(built.kit, other, shown),
+    );
+  }, [player, second, t, size, draw, config, built, shown]);
 
   // Paused by the window losing focus reads as paused, though it plays again on its own when focus returns.
   const running = playing && focused;

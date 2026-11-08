@@ -135,6 +135,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Decided in conversation, and in no doc
 
+- **An explainer settles to rest on blur over the frame it stopped on** (2026-11-08, Mike's
+  call): its own mix (`site/src/explainers/kit/settle.ts`) fades the held poses toward rest
+  through each channel's `scale` over the 400 ms `loop()` uses, while explainer time holds, so
+  the run its player replays never holds a fade. Explainer source may import only from under
+  `src/explainers`, which is why the shared 400 lives in `kit/settle-ms.ts`.
+
 - **The gpu engine's shape** (2026-11-02): a shader patch carries WGSL and a JS `at` side by side,
   over a JS subset compiled to WGSL and over WGSL alone; the host draws from GPU buffers, with
   `pull` reading back; it ships as the core subpath `@msb235/blits/gpu`, not a companion, so it
@@ -824,15 +830,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `node spikes/fold-shapes/shapes.mjs > shapes.svg` draws the sketch. weasel already takes a
   unit-square `Path` as an outline and moves ports onto it; it draws `detail` lines only for a
   named, registered outline, so the inner lines need weasel to take detail beside a `Path`.
-
-- **Explainers don't settle to rest on blur yet** (unbuilt, 2026-11-05). `loop()` settles the live
-  demos as focus goes (voices fade over 400 ms, rise on focus; the owner chose settling to rest over
-  slowing to a stop or playing to a boundary, 2026-11-05). The explainer kit keeps its own clock
-  (`site/src/explainers/kit/Explainer.tsx`, `useFocused`) and still stops at once. Its player
-  replays a scene from its timeline, so the settle has to be part of what it replays, not a host
-  fade on the main mix. Open for Mike (2026-11-08): whether the 400 ms fade moves explainer time,
-  so a scrub back shows it as part of the run, or runs on a clock of its own over a held frame,
-  leaving the run as it was (recommended).
 
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**
   (2026-10-23; narrowed 2026-10-29). A voice cued with `subjects` asks `stagger` for each at cue
