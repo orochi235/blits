@@ -263,6 +263,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
    each run's raw records beside it. The bugs they found are fixed (CHANGELOG, Unreleased), each
    pinned by a test in `test/stress-findings.test.ts`; what is below is still open.
+   - **The first `from: 'current'` voice on a host probing into its own object starts from this
+     frame's fold** (2026-11-08): no speed, and from rest where the voice before it was cut off in
+     the same frame. `pull` closed this with a copy of its columns (`src/trail.ts`); a probe has no
+     columns, and keeping a pose a subject on every probe measured 1.20 → 2.2 ms on `keys`
+     10,000 × 3 and 0.72 → 1.5 on `tweens` (`bench/runs/2026-11-08-keep-ab.txt`). What would close
+     it cheaply is a record that needs no per-subject lookup, such as one on the subject's chain.
+     The trail itself costs `pull` about 0.01 ms a frame on `tweens^` 10,000 (0.186 → 0.200,
+     `bench/runs/2026-11-08-trail-ab.txt`), copying the subject list and columns each frame; a
+     list unchanged since the last frame need not be copied again.
    - **`pull` on the heatmap is slower with lanes than without** (2026-11-03). 5,000 springs
      retargeted at 20–60 Hz, with three `ink` voices weighted per cell by `input` signals, read in
      5.40 ms a frame with lanes and 3.78 without (studio, solo, 7 rounds,

@@ -4,6 +4,7 @@ import type { Values } from './fold.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Subject } from './subject.js';
+import { Trail } from './trail.js';
 import type { Channel, Columns } from './types.js';
 
 /** What `pull` remembers at a position it has read no subject at. */
@@ -135,6 +136,11 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   } finally {
     if (lanes !== null) lanes.pulls.flush(lanes);
   }
+  // Until a retarget asks for poses, none are kept, so the columns are, to give it a speed.
+  if (live && !mix.wantsPose && !mix.projecting) {
+    mix.pullTrail ??= new Trail();
+    mix.pullTrail.record(now, list, columns);
+  }
   // Every head is current only if nothing relinked or changed version while they were read.
   const unchanged = live && mix.version === version && mix.relinks === relinks;
   mix.pulledVersion = unchanged ? version : Number.NaN;
@@ -253,6 +259,7 @@ function columnsOf<I, O>(mix: Mixer<I, O>, into: Columns<O>): Column[] {
 
 /** Forgets the array `pull` last read, whose heads a seek has made stale. */
 export function unpull<I, O>(mix: Mixer<I, O>): void {
+  mix.pullTrail?.clear();
   mix.pulled = [];
   mix.pulledHeads = [];
   mix.pulledSlots = new Int32Array(0);

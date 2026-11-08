@@ -37,13 +37,12 @@ export function model(s: Show) {
   const fader = new Float64Array(GROUPS);
   let parts: Part[] = [];
   let current = -1;
-  /** The first frame read with a `from: 'current'` cue on stage: blits keeps poses from then. */
-  let kept = Number.POSITIVE_INFINITY;
 
   function begin(p: Part, f: number): void {
     // `from: 'current'` starts from what the last frame showed, every other voice folded in (blending.mdx).
     p.from = { level: shown.level.slice(), hue: shown.hue.slice() };
-    if (f - 2 < kept) return;
+    // Blits keeps every frame read, so a fade has a speed to leave at once two frames are on record.
+    if (f < 2) return;
     const dt = (f - 1) * FRAME_MS - (f - 2) * FRAME_MS;
     const d = (a: Float64Array, b: Float64Array) => a.map((v, i) => (v - (b[i] as number)) / dt);
     p.slope = { level: d(shown.level, before.level), hue: d(shown.hue, before.hue) };
@@ -66,7 +65,6 @@ export function model(s: Show) {
       parts.push(prev);
     }
     current = k;
-    kept = Math.min(kept, f);
   }
 
   function back(at: number): void {

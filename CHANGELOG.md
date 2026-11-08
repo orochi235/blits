@@ -20,6 +20,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A `from: 'current'` voice cued on a channel or axis that was standing still runs its first
   segment as written, where it eased out of a standstill: a linear fade on a still fixture is
   linear again. One cued on a moving subject still leaves at the speed the subject had.
+- The first `from: 'current'` voice a mix plays, read through `pull`, starts where the subject was
+  in the last frame read and leaves at its speed, where it started from standing, and from rest
+  where the voice before it was cut off that frame: `pull` keeps its last two frames' columns until
+  a retarget asks the mix to keep poses.
 - A shader patch's `pass_index` is an `i32`, exact to 2^31 passes, where as an `f32` it was exact
   only to 2^24, about 75 hours of a 16 ms loop. WGSL that does float math with it reads
   `f32(pass_index)`.

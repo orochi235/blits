@@ -314,6 +314,40 @@ describe('retarget on interruption', () => {
     expect(m.probe(part).crawl).toBeLessThan(10);
   });
 
+  const readers = {
+    pull: (m: ReturnType<typeof mix<Part, Pose>>) => {
+      const crawl = new Float64Array(1);
+      m.pull([part], { crawl });
+      return crawl[0] as number;
+    },
+  };
+  for (const [how, read] of Object.entries(readers))
+    for (const lanes of [true, false])
+      it(`the first from: 'current' voice a mix plays leaves at the subject's speed, read by ${how}${lanes ? '' : ', without lanes'}`, () => {
+        const m = mix<Part, Pose>(PART, { lanes });
+        const moving = m.cue({
+          patch: keys<Part, Pose>(1000, [
+            { at: 0, delta: { crawl: 0 } },
+            { at: 1, delta: { crawl: 100 } },
+          ]),
+          loop: false,
+        });
+        m.sync(384);
+        read(m);
+        m.sync(400);
+        const before = read(m);
+        moving.fade({ over: 0 });
+        m.cue({
+          patch: keys<Part, Pose>(1000, [{ at: 1, delta: { crawl: 0 } }]),
+          from: 'current',
+        });
+        m.sync(401);
+        const a = read(m);
+        expect(a - before).toBeCloseTo(0.1, 2);
+        m.sync(402);
+        expect(read(m) - a).toBeCloseTo(0.1, 2);
+      });
+
   it("a from: 'current' voice cued on a still subject runs its segment as written", () => {
     const m = mix<Part, Pose>(PART);
     const held = m.cue({

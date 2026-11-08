@@ -58,6 +58,7 @@ import type { Subject } from './subject.js';
 import { record } from './tape.js';
 import { touch } from './touch.js';
 import { traceMix } from './trace.js';
+import type { Trail } from './trail.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
   ArcHandle,
@@ -173,6 +174,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   pulledRelinks = -1;
   /** What `pull` knows of each channel it has written, by name; none until the first pull. */
   pullColumns: Map<string, Column> | null = null;
+  /** What `pull` wrote in its last two frames before a retarget was cued; see `Trail`. */
+  pullTrail: Trail<I> | null = null;
   /** Counts chains made stale one subject at a time, which `version` does not. */
   relinks = 0;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
