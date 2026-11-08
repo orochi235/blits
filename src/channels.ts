@@ -129,7 +129,7 @@ export interface NumberOptions {
 }
 
 /** Bounds change how a value folds at its edges, so they are part of the kind. */
-const kindOf = (name: string, bounds?: readonly [number, number]) =>
+export const kindOf = (name: string, bounds?: readonly [number, number]) =>
   bounds === undefined ? name : `${name}[${bounds[0]}, ${bounds[1]}]`;
 
 /**

@@ -1,4 +1,4 @@
-import { labOf, linearOf } from './oklab.js';
+import { clip, labOf, linearOf } from './oklab.js';
 
 /**
  * The blend modes whose pose keeps every layer, in voice order, for `toHex` to lay over `under`
@@ -40,8 +40,6 @@ export interface Stacked {
   axis?: (b: number, s: number) => number;
   whole?: (base: number[], s0: number, s1: number, s2: number) => void;
 }
-
-const clip = (v: number): number => (v <= 0 ? 0 : v >= 1 ? 1 : v);
 
 const hard = (b: number, s: number): number => (s <= 0.5 ? 2 * b * s : 1 - 2 * (1 - b) * (1 - s));
 

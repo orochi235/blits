@@ -152,12 +152,15 @@ export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: numb
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;
 }
 
+/** Whether a subject's record has gone unread since its origin. */
+export const unread = (held: Subject<unknown>): boolean => !(held.probed >= held.since);
+
 /**
  * Whether a listed record stays listed at `now`: its origin is ahead, or it is a motion voice's,
  * unread since its origin, which `still` asks after since the motion has no run for it yet.
  */
 function stillEarly<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): boolean {
-  return !(held.since <= now) || (voice.motion !== undefined && !(held.probed >= held.since));
+  return !(held.since <= now) || (voice.motion !== undefined && unread(held));
 }
 
 /** Lists a record whose origin is still ahead of `now`, for a later change to the clock to move. */

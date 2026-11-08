@@ -26,6 +26,9 @@ export const toByte = (v: number): number => {
   return c < 255 && v >= (ROUNDS_UP[c + 1] as number) ? c + 1 : c;
 };
 
+/** `v` held to [0, 1], as a linear RGB axis is before it becomes a byte. */
+export const clip = (v: number): number => (v <= 0 ? 0 : v >= 1 ? 1 : v);
+
 /** The last `lab` conversion's result, so the hot path allocates nothing. */
 export const LAB = [0, 0, 0];
 

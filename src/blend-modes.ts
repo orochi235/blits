@@ -1,6 +1,6 @@
 import { doubles, foldsInto, lerpNumber, max, mul, sum, vouch } from './channels.js';
-import { extremes } from './extremes.js';
-import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
+import { extremes, min } from './extremes.js';
+import { clip, fromLinear, labOf, linearByte, linearOf } from './oklab.js';
 import { shared } from './shared.js';
 import {
   type OrderedMode,
@@ -56,8 +56,6 @@ function tagged(pose: ArrayLike<number>): Mode | undefined {
   return pose.length === 4 ? BY_TAG[-(pose[3] ?? 0)] : undefined;
 }
 
-const clip = (v: number): number => (v <= 0 ? 0 : v >= 1 ? 1 : v);
-const toward = (v: number, w: number): number => 1 + (v - 1) * w;
 const screened = (a: number, b: number): number => a + b - a * b;
 
 /**
@@ -121,13 +119,7 @@ export function lighten(): Channel<number> {
  * @category channel
  */
 export function darken(): Channel<number> {
-  const channel: Channel<number> = {
-    kind: 'darken',
-    rest: 1,
-    merge: (a, b) => (a < b ? a : b),
-    scale: toward,
-    lerp: lerpNumber,
-  };
+  const channel: Channel<number> = { ...min(), kind: 'darken' };
   extremes.set(channel, { op: 'min', top: 1 });
   return channel;
 }

@@ -572,7 +572,7 @@ function early<I, O>(mix: Mixer<I, O>, now: number): void {
   for (const v of mix.cued) {
     if (v.owner !== null || v.spec.start !== undefined || v.cuedAt !== Number.NEGATIVE_INFINITY)
       continue;
-    if (v.start !== 0 || v.span > now) continue;
+    if (v.start !== 0 || v.endsAt() > now) continue;
     warnOnce(
       mix,
       `${mix.name ?? 'a mix'}: ${v.spec.name ?? `voice ${v.id}`} was cued before the first sync, so it started at 0 and sync(${now}) finds it already past its end; cue it after the first sync, or give it a start`,

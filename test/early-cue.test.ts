@@ -35,4 +35,28 @@ describe('a voice cued before the first sync', () => {
     after.sync(6500);
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it("judges its end in mix time, by the voice's rate and seek", () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const slow = mix<string, Pose>(K, { name: 'slow' });
+    slow.cue({ patch: second, subjects: ['a'], rate: 0.5 });
+    slow.sync(1500);
+    expect(slow.probe('a').x).toBe(1);
+    expect(warn).not.toHaveBeenCalled();
+    const sought = mix<string, Pose>(K, { name: 'sought' });
+    sought.cue({ patch: second, subjects: ['a'], seek: 900 });
+    sought.sync(500);
+    expect(sought.probe('a').x).toBe(0);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/sought.*sync\(500\)/);
+  });
+
+  it('stays quiet while a staggered subject still plays', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const m = mix<string, Pose>(K);
+    m.cue({ patch: second, subjects: ['a', 'b'], stagger: (s) => (s === 'b' ? 2000 : 0) });
+    m.sync(2500);
+    expect(m.probe('b').x).toBe(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

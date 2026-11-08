@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- The warning for a voice cued before the first sync judges the voice's end in mix time, by its
+  rate, seek, and stagger: a slowed or staggered voice still playing no longer warns, and one
+  sought past its end does.
+
 ## 1.1.1
 
 No change to the engine. Released alongside blits-panel 1.1.1, which bundles weasel instead of

@@ -1,4 +1,4 @@
-import { lerpNumber, type NumberOptions } from './channels.js';
+import { kindOf, lerpNumber, type NumberOptions } from './channels.js';
 import { shared } from './shared.js';
 import type { Channel } from './types.js';
 
@@ -14,10 +14,6 @@ export const extremes = shared<object, Extreme>('extreme@1');
 export function extremeOf(channel: Channel<unknown>): Extreme | undefined {
   return extremes.get(channel);
 }
-
-/** Bounds change how a value folds at its edges, so they are part of the kind. */
-const kindOf = (name: string, bounds?: readonly [number, number]) =>
-  bounds === undefined ? name : `${name}[${bounds[0]}, ${bounds[1]}]`;
 
 /**
  * A number where the smallest contribution wins, resting at the top of its bounds, or at 1 without

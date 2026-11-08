@@ -1,6 +1,6 @@
 import type { BlendRule } from './blend-modes.js';
 import { foldsInto, vouch } from './channels.js';
-import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
+import { clip, fromLinear, labOf, linearByte, linearOf } from './oklab.js';
 import { shared } from './shared.js';
 import { BY_TAG, type OrderedMode, STACKED, type Stacked } from './stack-blends.js';
 import type { Channel } from './types.js';
@@ -40,8 +40,6 @@ function stackOf(pose: ArrayLike<number>): Stacked | undefined {
   const t = pose[0] ?? 0;
   return t < 0 && pose.length % 4 === 2 ? BY_TAG[-6 - t] : undefined;
 }
-
-const clip = (v: number): number => (v <= 0 ? 0 : v >= 1 ? 1 : v);
 
 /** An empty stack with room for `layers`, its mode `tag`. */
 function empty(tag: number, layers: number): number[] {
