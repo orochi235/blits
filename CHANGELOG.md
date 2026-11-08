@@ -4,7 +4,7 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
-## Unreleased
+## 1.2.0
 
 ### Added
 
