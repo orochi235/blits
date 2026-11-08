@@ -100,7 +100,7 @@ export function kernel(
     const writes = r.writes.map((n) => ({ n, axes: inputOf(types.get(n)) }));
     add(`struct Out_${i} { ${writes.map((w) => `o_${w.n}: ${ty(w.axes)},`).join(' ')} }`);
     add(
-      `fn run_${i}(phase: f32, pass_index: f32, subject: Subject, base: u32, sub: u32, lag: f32) -> Out_${i} {`,
+      `fn run_${i}(phase: f32, pass_index: i32, subject: Subject, base: u32, sub: u32, lag: f32) -> Out_${i} {`,
     );
     add(`  var out: Out_${i};`, `  ${prefixed(r.wgsl)}`, '  return out;', '}');
   });

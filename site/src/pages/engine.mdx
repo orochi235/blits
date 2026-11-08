@@ -47,7 +47,7 @@ For the values in JavaScript, `read` copies a channel back from the GPU and reso
 
 A `spring`, `glide` or `tween` keeps working as on the CPU: a `to()`, `set()` or `push()` lands at the voice's time, though nothing reads the subject on the CPU.
 
-For math no stock patch does, such as a disc whose position each cell is tested against, write a `shaderPatch`, twice: as WGSL for the GPU, and as a JS `at` for everything that runs on the CPU. The WGSL sets `out.<channel>` from `phase`, `pass_index`, `subject.<field>`, and `params.<name>`:
+For math no stock patch does, such as a disc whose position each cell is tested against, write a `shaderPatch`, twice: as WGSL for the GPU, and as a JS `at` for everything that runs on the CPU. The WGSL sets `out.<channel>` from `phase`, `pass_index` (an `i32`), `subject.<field>`, and `params.<name>`:
 
 ```ts
 import { shaderPatch } from '@msb235/blits/gpu';

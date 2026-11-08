@@ -17,6 +17,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - The warning for a voice cued before the first sync judges the voice's end in mix time, by its
   rate, seek, and stagger: a slowed or staggered voice still playing no longer warns, and one
   sought past its end does.
+- A shader patch's `pass_index` is an `i32`, exact to 2^31 passes, where as an `f32` it was exact
+  only to 2^24, about 75 hours of a 16 ms loop. WGSL that does float math with it reads
+  `f32(pass_index)`.
 
 ## 1.1.1
 

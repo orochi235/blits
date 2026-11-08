@@ -11,6 +11,7 @@ export enum Col {
   /** Where the voice's packed values start in the values buffer, in f32s. */
   VALUES = 1,
   PHASE = 2,
+  /** An i32's bits, as `passBits` writes them; so are `PASS_BASE` and `LAST_PASS`. */
   PASS = 3,
   WEIGHT = 4,
   /** 0 for no role, else 1 + the role's index among this frame's roles. */
@@ -41,4 +42,9 @@ export enum Col {
   EASE = 19,
   /** Where its per-subject weight reads start in `persub`, in f32s; NONE for none. */
   WEIGHTS = 20,
+}
+
+/** A pass count as the kernel's i32 reads it, held at the i32 range: exact to 2^31 passes. */
+export function passBits(pass: number): number {
+  return Math.max(-0x80000000, Math.min(0x7fffffff, Math.round(pass))) >>> 0;
 }

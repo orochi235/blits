@@ -1,7 +1,7 @@
 import { passAt, phaseAt, phaseBefore, weighed } from '../clock.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
-import { Col, ROW } from './columns.js';
+import { Col, passBits, ROW } from './columns.js';
 import { rowClock } from './row-clock.js';
 import type { TimingSlot } from './timings.js';
 import type { Weighs } from './weight.js';
@@ -93,7 +93,7 @@ export function voiceTable<I, O>(
       elapsed < 0
         ? phaseBefore(elapsed, voice.duration)
         : phaseAt(elapsed, voice.duration, voice.passes);
-    rows[o + Col.PASS] = passAt(elapsed, voice.duration, voice.passes);
+    bits[o + Col.PASS] = passBits(passAt(elapsed, voice.duration, voice.passes));
     // Where the kernel multiplies each subject's read in, it clamps after.
     const owned = fade * weigh.owned;
     rows[o + Col.WEIGHT] = slot.weights === undefined ? weighed(weigh.base, owned, 1) : owned;

@@ -1,6 +1,7 @@
 import { fadeInAt, passAt } from '../../src/clock.js';
 import { phaseOf } from '../../src/contribution.js';
 import { CURVE_WIDTH, type Curve, curve, curveData } from '../../src/easing.js';
+import { passBits } from '../../src/gpu/columns.js';
 import type { GpuDevice } from '../../src/gpu/webgpu.js';
 import { EASING_WGSL } from '../../src/gpu/wgsl/easing.js';
 import { CLOCK_WGSL, FADE_WGSL, Flag, NONE } from '../../src/gpu/wgsl/timing.js';
@@ -98,7 +99,9 @@ test('blits_clock matches before, shownAt, phaseAt, passAt and phaseBefore', asy
     for (const passes of [1, 3, Number.POSITIVE_INFINITY]) {
       const finite = duration > 0 && Number.isFinite(passes);
       // B is the start of a pass the voice can be in: never past its last.
-      const Bs = [0, 2 * duration, 1e6 * duration].filter(
+      // Past 2^24 passes an f32 can't hold an odd count; at 1 ms the samples at -B still fit one.
+      const past = duration === 1 ? [2 ** 25 + 1] : [];
+      const Bs = [0, 2 * duration, 1e6 * duration, ...past].filter(
         (B, k, all) => all.indexOf(B) === k && (!finite || B <= (passes - 1) * duration),
       );
       for (const B of Bs)
@@ -147,23 +150,24 @@ test('blits_clock matches before, shownAt, phaseAt, passAt and phaseBefore', asy
     f[i * IN + 2] = -B;
     f[i * IN + 3] = finite ? duration * passes - B : 0;
     f[i * IN + 4] = duration;
-    f[i * IN + 5] = duration > 0 ? B / duration : 0;
-    f[i * IN + 6] = finite ? passes - 1 : 0;
+    u[i * IN + 5] = passBits(duration > 0 ? B / duration : 0);
+    u[i * IN + 6] = passBits(finite ? passes - 1 : 0);
   });
   const got = await run(
     device,
     buf,
     IN,
     4,
-    `let c = blits_clock(ins[b], bitcast<u32>(ins[b + 1u]), ins[b + 2u], ins[b + 3u], ins[b + 4u], ins[b + 5u], ins[b + 6u]);
+    `let c = blits_clock(ins[b], bitcast<u32>(ins[b + 1u]), ins[b + 2u], ins[b + 3u], ins[b + 4u], bitcast<i32>(ins[b + 5u]), bitcast<i32>(ins[b + 6u]));
   outs[o] = select(0.0, 1.0, c.shows);
   outs[o + 1u] = c.elapsed;
   outs[o + 2u] = c.phase;
-  outs[o + 3u] = c.pass_index;`,
+  outs[o + 3u] = bitcast<f32>(c.pass_index);`,
     new Float32Array(4),
     CLOCK_WGSL,
   );
 
+  const passes = new Int32Array(got.buffer, got.byteOffset, got.length);
   let failures = 0;
   const errors: string[] = [];
   samples.forEach((s, i) => {
@@ -175,12 +179,11 @@ test('blits_clock matches before, shownAt, phaseAt, passAt and phaseBefore', asy
       const shows = got[i * 4] === 1;
       if (shows !== want.shows) throw new Error(`${what}: GPU shows ${shows}, CPU ${want.shows}`);
       if (!shows) return;
-      const g = [1, 2, 3].map((k) => got[i * 4 + k] as number);
+      const g = [got[i * 4 + 1] as number, got[i * 4 + 2] as number, passes[i * 4 + 3] as number];
       const read = (r: ReturnType<typeof at>) => [r.elapsed, r.phase, r.pass];
       const match = (a: readonly number[], w: readonly number[]) => {
         close(a[0] as number, w[0] as number, `${what} elapsed`);
         close(a[1] as number, w[1] as number, `${what} phase`);
-        // An integer f32 holds exactly here, where `close` would let a pass off by 100 through.
         if (a[2] !== w[2]) throw new Error(`${what} pass: GPU ${a[2]}, CPU ${w[2]}`);
       };
       if (s.near) closeNearAll(g, (t) => read(at(t)), s.raw, what, match);

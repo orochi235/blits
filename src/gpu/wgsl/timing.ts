@@ -25,10 +25,10 @@ export const NONE = 0xffffffff;
  * under `FINITE`), `pass_base` is B / duration, `last_pass` is passes - 1. Needs nothing in scope.
  */
 export const CLOCK_WGSL = /* wgsl */ `
-struct BlitsClock { shows: bool, elapsed: f32, phase: f32, pass_index: f32 }
+struct BlitsClock { shows: bool, elapsed: f32, phase: f32, pass_index: i32 }
 
-fn blits_clock(raw: f32, flags: u32, start: f32, span: f32, duration: f32, pass_base: f32, last_pass: f32) -> BlitsClock {
-  let hidden = BlitsClock(false, 0.0, 0.0, 0.0);
+fn blits_clock(raw: f32, flags: u32, start: f32, span: f32, duration: f32, pass_base: i32, last_pass: i32) -> BlitsClock {
+  let hidden = BlitsClock(false, 0.0, 0.0, 0i);
   let beginless = (flags & ${Flag.BEGINLESS}u) != 0u;
   let holds = (flags & ${Flag.HOLDS_FIRST}u) != 0u;
   let finite = (flags & ${Flag.FINITE}u) != 0u;
@@ -47,15 +47,15 @@ fn blits_clock(raw: f32, flags: u32, start: f32, span: f32, duration: f32, pass_
       if ((flags & ${Flag.FREEZES_AFTER}u) != 0u) { e = span; }
     }
   }
-  if (!(duration > 0.0)) { return BlitsClock(true, e, 0.0, 0.0); }
+  if (!(duration > 0.0)) { return BlitsClock(true, e, 0.0, 0i); }
   if (finite && e >= span) { return BlitsClock(true, e, 1.0, last_pass); }
   // Voice time 0 exactly, which e - start in f32 can't promise once B is large.
-  if (at_start) { return BlitsClock(true, e, 0.0, 0.0); }
+  if (at_start) { return BlitsClock(true, e, 0.0, 0i); }
   var q = floor(e / duration);
   var r = e - q * duration;
   if (r < 0.0) { r += duration; q -= 1.0; }
   if (r >= duration) { r -= duration; q += 1.0; }
-  return BlitsClock(true, e, r / duration, pass_base + q);
+  return BlitsClock(true, e, r / duration, pass_base + i32(q));
 }
 `;
 
@@ -77,6 +77,7 @@ fn blits_fade_in(end: f32, shown: f32, fade_in: f32, ease_at: u32) -> f32 {
 
 const col = (c: Col) => `table[o + ${c}u]`;
 const u32At = (c: Col) => `bitcast<u32>(${col(c)})`;
+const i32At = (c: Col) => `bitcast<i32>(${col(c)})`;
 
 /**
  * `blits_take(o, i)`: subject `i`'s take of the voice whose row starts at `o`: whether it shows,
@@ -84,10 +85,10 @@ const u32At = (c: Col) => `bitcast<u32>(${col(c)})`;
  * Needs `table`, `persub`, `CLOCK_WGSL`, `FADE_WGSL` and `EASING_WGSL` (so `values`) in scope.
  */
 export const TAKE_WGSL = /* wgsl */ `
-struct BlitsTake { shows: bool, w: f32, phase: f32, pass_index: f32, lag: f32 }
+struct BlitsTake { shows: bool, w: f32, phase: f32, pass_index: i32, lag: f32 }
 
 fn blits_take(o: u32, i: u32) -> BlitsTake {
-  let hidden = BlitsTake(false, 0.0, 0.0, 0.0, 0.0);
+  let hidden = BlitsTake(false, 0.0, 0.0, 0i, 0.0);
   let mask = ${u32At(Col.MASK)};
   if (mask != ${NONE}u && ((bitcast<u32>(persub[mask + (i >> 5u)]) >> (i & 31u)) & 1u) == 0u) { return hidden; }
   let flags = ${u32At(Col.FLAGS)};
@@ -100,10 +101,10 @@ fn blits_take(o: u32, i: u32) -> BlitsTake {
       w = w * persub[weights + i];
       w = clamp(w, 0.0, 1.0);
     }
-    return BlitsTake(true, w, ${col(Col.PHASE)}, ${col(Col.PASS)}, 0.0);
+    return BlitsTake(true, w, ${col(Col.PHASE)}, ${i32At(Col.PASS)}, 0.0);
   }
   let raw = ${col(Col.CLOCK)};
-  let c = blits_clock(raw - persub[delays + i], flags, ${col(Col.START)}, ${col(Col.SPAN)}, ${col(Col.DURATION)}, ${col(Col.PASS_BASE)}, ${col(Col.LAST_PASS)});
+  let c = blits_clock(raw - persub[delays + i], flags, ${col(Col.START)}, ${col(Col.SPAN)}, ${col(Col.DURATION)}, ${i32At(Col.PASS_BASE)}, ${i32At(Col.LAST_PASS)});
   if (!c.shows) { return hidden; }
   var held = false;
   if ((flags & ${Flag.FADE}u) != 0u) {

@@ -1,7 +1,7 @@
 import { clampWeight, envelope } from '../clock.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
-import { Col } from './columns.js';
+import { Col, passBits } from './columns.js';
 import type { Slot } from './table.js';
 import type { Weighs } from './weight.js';
 import { Flag, NONE } from './wgsl/timing.js';
@@ -27,13 +27,14 @@ export function rowClock<I, O>(
   const { duration, passes, span } = voice;
   const finite = Number.isFinite(span);
   const raw = voice.rawAt(now, 0);
-  let base = 0;
+  let first = 0;
   if (Number.isFinite(raw) && duration > 0) {
     // A beginless voice runs on below 0 for good, so its B follows it there.
     const q = Math.floor(raw / duration);
     const pass = voice.beginless ? q : Math.max(0, q);
-    base = duration * (Number.isFinite(passes) ? Math.min(pass, passes - 1) : pass);
+    first = Number.isFinite(passes) ? Math.min(pass, passes - 1) : pass;
   }
+  const base = duration * first;
   let flags =
     (voice.beginless ? Flag.BEGINLESS : 0) |
     (voice.holdsFirst ? Flag.HOLDS_FIRST : 0) |
@@ -46,8 +47,8 @@ export function rowClock<I, O>(
   rows[o + Col.START] = -base;
   rows[o + Col.SPAN] = finite ? span - base : 0;
   rows[o + Col.DURATION] = duration;
-  rows[o + Col.PASS_BASE] = duration > 0 ? base / duration : 0;
-  rows[o + Col.LAST_PASS] = finite ? passes - 1 : 0;
+  bits[o + Col.PASS_BASE] = passBits(first);
+  bits[o + Col.LAST_PASS] = passBits(finite ? passes - 1 : 0);
 
   const fadeIn = voice.fade.in ?? 0;
   const out = voice.out;
