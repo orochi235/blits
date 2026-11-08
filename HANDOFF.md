@@ -285,7 +285,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      work. `one` does not keep deoptimizing (`bench/deopts.sh`: 2 deopts over 2,000 frames,
      `bench/runs/2026-11-04-heatmap-deopts.txt`), so the cost is steady; what in its body costs
      it is not split yet (V8 inlines its helpers into it). The demo itself plays a lanes twin, so
-     profile `bench/heatmap.mjs`, not `bench/stressprof.sh heatmap`.
+     profile `bench/heatmap.mjs`, not `bench/stressprof.sh heatmap`; `bench/heatprof.sh` does,
+     with `INLINE=off`, `LINES` and `CALLERS`. Split by caller (teitou, loaded, 2026-11-08), the
+     largest piece is `subjectAt`'s own body called from `call`, 5.3% of the frame, with `call`'s
+     `subject === absent` line after it another 6% by line: the lookup of each slot's subject,
+     not the weak-reference deref behind it (1.1% from `subjectAt`, 3.2% from a motion's
+     `commit`). With inlining off, `base` in `src/weigh.ts` was 8–11%, most of it on the `record`
+     call that returns at once with no history; it now asks `keepsInputs` first, which measured
+     5.53 → 5.24 ms lanes on and unchanged off, inside the noise of a node at load 5–6.
    - **The rig reads 1,000 bones in 1.2 ms** (`pull`, 70 voices), lanes on about 20% faster than
      off. Profiled before its height hold moved onto `axes` (teitou, 2026-11-04,
      `bench/stressprof.sh rig`, `bench/runs/2026-11-04-rig-profile.txt`), the quat folds are not

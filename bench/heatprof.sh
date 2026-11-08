@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # CPU-profile one bench/heatmap.mjs setting (default the demo, lanes on) and print self time by
 # function. INLINE=off keeps V8 from inlining, so a function's helpers show as their own rows.
-# LINES="<function>..." also prints the lines of `dist/` with the most self time in each.
+# LINES="<function>..." also prints the lines of `dist/` with the most self time in each, and
+# CALLERS="<function>..." splits those functions' self time by caller.
 #   bench/heatprof.sh [setting]   e.g. spring/input/ink/off
 # The profile is written to a temporary directory and removed on exit.
 set -euo pipefail
@@ -14,6 +15,10 @@ flags=(--cpu-prof --cpu-prof-dir="$tmp" --cpu-prof-interval="${PROF_INTERVAL:-10
 if [[ "${INLINE:-on}" == off ]]; then flags+=(--no-turbo-inlining); fi
 node "${flags[@]}" "$root/bench/heatmap.mjs" "$setting"
 node "$root/bench/profsum.mjs" "$tmp"/*.cpuprofile "${TOP:-30}"
+if [[ -n "${CALLERS:-}" ]]; then
+  # shellcheck disable=SC2086
+  node "$root/bench/profcallers.mjs" "$tmp"/*.cpuprofile $CALLERS
+fi
 if [[ -n "${LINES:-}" ]]; then
   # shellcheck disable=SC2086
   TOP="${LINE_TOP:-12}" node "$root/bench/lines.mjs" "$tmp" $LINES

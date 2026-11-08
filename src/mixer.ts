@@ -188,6 +188,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   unheld: ((voice: Voice<I, O>, subject: I) => number | undefined) | null = null;
   /** The gpu side's: told of each subject `drop` lets go of. Null with no gpu engine attached. */
   unmet: ((subject: I) => void) | null = null;
+  /** Whether history records each input signal's reads, which `record` keeps. */
+  readonly keepsInputs: boolean;
   /**
    * The gpu side's: told where a voice lets go of a subject by a drop or a bringing back, after
    * which the CPU asks its `target` and `stagger` afresh. Null with no gpu engine attached.
@@ -336,6 +338,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     /** The lanes an entry was built with; null in one that leaves them out. */
     readonly lanesOf: typeof Lanes | null,
   ) {
+    this.keepsInputs = opts.history?.inputs === true;
     this.names = Object.keys(kit as object) as Key<O>[];
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
     this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));
