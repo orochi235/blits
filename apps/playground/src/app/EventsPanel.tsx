@@ -10,6 +10,7 @@ import s from './App.module.css';
 import { fieldRow } from './CompositionControls';
 import { docOf } from './docs';
 import e from './Events.module.css';
+import { ms } from './ms';
 
 const BOOKER = resolveConfigSchema(
   f.schema({
@@ -41,7 +42,6 @@ const BOOKER = resolveConfigSchema(
 
 /** The most rows a list draws, newest first. */
 const SHOWN = 60;
-const ms = (t: number) => t.toFixed(1);
 const text = (event: unknown) => (typeof event === 'string' ? event : JSON.stringify(event));
 
 type Cells = { id: string; canceled?: boolean } & Record<

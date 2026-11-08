@@ -5,6 +5,7 @@ import { Button, PropertyField, Transport as WeaselTransport } from '@weasel-js/
 import s from './App.module.css';
 import { docOf } from './docs';
 import { LiveMix } from './LiveMix';
+import { msWide } from './ms';
 
 const SEEK_BY: { value: SeekBy; label: string }[] = [
   { value: 'replay', label: 'replay from 0' },
@@ -81,7 +82,7 @@ export function Transport(p: TransportProps) {
       <Button onClick={p.onTracks}>{p.tracksOpen ? 'Hide tracks' : 'Show tracks'}</Button>
       {p.seekBy === 'seek' && (
         <span className={s.clock} title={docOf('Mix.seq')}>
-          mix {p.clock.now.toFixed(1).padStart(7)} ms · frame {String(p.clock.seq).padStart(5)}
+          mix {msWide(p.clock.now)} · frame {String(p.clock.seq).padStart(5)}
         </span>
       )}
       <PropertyField

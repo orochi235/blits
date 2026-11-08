@@ -7,6 +7,7 @@ import { DataGrid, type DataGridColumn, PropertyField } from '@weasel-js/ui';
 import { useState, useSyncExternalStore } from 'react';
 import s from './App.module.css';
 import { docOf } from './docs';
+import { ms } from './ms';
 
 const AHEAD = 1000;
 const fixed = (n: number) => (Number.isFinite(n) ? n.toFixed(3).padStart(9) : '        –');
@@ -18,7 +19,7 @@ const shown = (pose: Mixed, ch: keyof Mixed) => {
 type Read = { id: string; value: string; doubt: string };
 const readColumns = (at: number): DataGridColumn<Read>[] => [
   { id: 'id', header: 'channel', sortable: false },
-  { id: 'value', header: `at ${at.toFixed(1)} ms`, numeric: true, sortable: false },
+  { id: 'value', header: `at ${ms(at)} ms`, numeric: true, sortable: false },
   { id: 'doubt', header: 'doubt', sortable: false },
 ];
 

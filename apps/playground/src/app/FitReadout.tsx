@@ -4,16 +4,15 @@ import num from '@weasel-js/theme/numeric.module.css';
 import { type PrefRenderContext, PropertyRow } from '@weasel-js/ui';
 import { docOf } from './docs';
 import g from './Group.module.css';
+import { msWide } from './ms';
 import { useSpec } from './SpecFields';
-
-const ms = (n: number) => (Number.isFinite(n) ? `${n.toFixed(1).padStart(7)} ms` : '   none   ');
 
 /** How a span's children were last fitted, read afresh every frame. */
 export function FitReadout({ result: r }: { result: FitResult }) {
   const cells: [keyof FitResult, string][] = [
-    ['budget', ms(r.budget)],
-    ['length', ms(r.length)],
-    ['over', ms(r.over)],
+    ['budget', msWide(r.budget)],
+    ['length', msWide(r.length)],
+    ['over', msWide(r.over)],
     ['skipped', String(r.skipped).padStart(3)],
     ['fell', r.fell ? 'yes' : ' no'],
   ];
