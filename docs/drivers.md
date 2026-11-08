@@ -54,7 +54,7 @@ that it does not handle that case.
 | **Calls on the driver are not on the tape unless it puts them there.** Wiring, attaching and `burst` are the host's, and a seek does not undo or replay them; say so, or put what must replay on the tape with `mix.call`, or route it through the mix (an event a patch `send`s). | tone's wiring; quarks' `burst` |
 | **Several drivers on one mix share its drains.** A drain takes every event under its tag, so a driver draining a shared tag hands on what belongs to another. | quarks lost another driver's bursts (fixed 2026-11-03) |
 | **A late subscriber gets the current state**, not only changes after it subscribes. | the panel after a reload |
-| **Peer range and pin**: widen the `@msb235/blits` peer range with every engine minor, pin the engine to build and test against, and work with two copies of blits loaded. | every release |
+| **Peer range and pin**: take the engine's major from the oldest minor whose API the driver uses (`^1.1.0` for one calling `mix.onSeek`), widen the range at each new major, pin the engine to build and test against, and work with two copies of blits loaded. | every release |
 | **Name the mixes the driver makes**, so the debug panel lists them, and **keep the history a debugger gives** (`watched().history`) a mix made with none. | the site's demos; rapier's mix was unnamed and logged one frame of pushes under the panel's history (fixed 2026-11-03) |
 
 ## What `checkDriver` checks
@@ -68,6 +68,6 @@ keeps (`size`) stops growing. A run that gives `call`, a call the host makes on 
 checked to have it made again past a seek back, left behind by a host call after the seek, and
 brought back by `switchBranch`. It cannot say what a long frame
 should put out, or what a seek owes a driver whose output stays once sent, since both are the
-driver's to decide: those rules stay in the driver's own tests. `packages/quarks/test/conformance.test.ts`
-and `packages/tone/test/conformance.test.ts` are scenes to copy.
+driver's to decide: those rules stay in the driver's own tests. `packages/quarks/test/conformance.test.ts`,
+`packages/tone/test/conformance.test.ts`, and `packages/rapier/test/conformance.test.ts` are scenes to copy.
 

@@ -62,15 +62,29 @@ function bump(current, body) {
   return added ? `${major}.${minor + 1}.0` : `${major}.${minor}.${patch + 1}`;
 }
 
-/** Waits on the release run for `tag`, failing the release if it fails. */
+/** Waits on the release run for `tag`, failing the release if it fails. A run that already failed is run again. */
 async function watch(tag) {
   for (let i = 0; i < 30; i++) {
     const runs = JSON.parse(
-      run('gh', ['run', 'list', '-w', 'release.yml', '-L', '20', '--json', 'databaseId,headBranch,headSha']),
+      run('gh', [
+        'run',
+        'list',
+        '-w',
+        'release.yml',
+        '-L',
+        '20',
+        '--json',
+        'databaseId,headBranch,headSha,status,conclusion',
+      ]),
     );
     const sha = run('git', ['rev-list', '-n', '1', tag]);
     const found = runs.find((r) => r.headBranch === tag && r.headSha === sha);
     if (found) {
+      if (found.status === 'completed' && found.conclusion !== 'success') {
+        console.log(`${tag}: run ${found.databaseId} ended ${found.conclusion}; running it again`);
+        sh('gh', ['run', 'rerun', String(found.databaseId)]);
+        await sleep(5000);
+      }
       console.log(`${tag}: watching run ${found.databaseId}`);
       sh('gh', ['run', 'watch', String(found.databaseId), '--exit-status', '--interval', '30']);
       return;
@@ -103,10 +117,30 @@ async function onNpm(name, v) {
   throw new Error(`${name}@${v} never appeared on npm`);
 }
 
-// What goes out.
+/** Whether a `^a.b.c` peer range takes `v`. Any other form of range is left to the workflow's check. */
+function takes(range, v) {
+  const m = /^\^(\d+)\.(\d+)\.(\d+)$/.exec(range ?? '');
+  if (!m) return true;
+  const [a, b, c] = m.slice(1).map(Number);
+  const [x, y, z] = v.split('.').map(Number);
+  if (a !== x) return false;
+  if (a === 0 && b !== y) return false;
+  return y > b || (y === b && z >= c);
+}
+
+// What goes out. A package whose release commit already builds on this engine, from a run that
+// stopped after it, keeps the version that commit gave it.
 const plan = PACKAGES.map((p) => {
   const pkg = readJson(`${p.dir}/package.json`);
-  const next = p.lockstep ? version : bump(pkg.version, unreleased(`${p.dir}/CHANGELOG.md`));
+  const log = `${p.dir}/CHANGELOG.md`;
+  const done =
+    pkg.devDependencies[ENGINE] === version &&
+    unreleased(log) === undefined &&
+    new RegExp(`^## ${pkg.version.replaceAll('.', '\\.')}$`, 'm').test(readFileSync(log, 'utf8'));
+  const next = p.lockstep ? version : done ? pkg.version : bump(pkg.version, unreleased(log));
+  if (!p.lockstep && !takes(pkg.peerDependencies[ENGINE], version)) {
+    throw new Error(`${pkg.name}'s peer range ${pkg.peerDependencies[ENGINE]} does not take ${version}; widen it first`);
+  }
   return { ...p, name: pkg.name, from: pkg.version, to: next };
 });
 console.log(`${ENGINE} ${readJson('package.json').version} -> ${version}`);
