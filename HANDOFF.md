@@ -835,10 +835,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   unit-square `Path` as an outline and moves ports onto it; it draws `detail` lines only for a
   named, registered outline, so the inner lines need weasel to take detail beside a `Path`.
 
-- **The playground's plots label their time axis `0.0000000002…` at time 0** (seen 2026-11-05, on
-  `/playground/` and standalone): before the first frame the plotted range is zero wide, and the
-  ticks print it at full precision. It clears once playback moves.
-
 - **Explainers don't settle to rest on blur yet** (unbuilt, 2026-11-05). `loop()` settles the live
   demos as focus goes (voices fade over 400 ms, rise on focus; the owner chose settling to rest over
   slowing to a stop or playing to a boundary, 2026-11-05). The explainer kit keeps its own clock

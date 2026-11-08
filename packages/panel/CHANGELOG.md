@@ -6,6 +6,13 @@ This package follows [semver](https://semver.org) and shares the engine's versio
 everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- A plot holding one sample, before the first frame or on picking a subject while paused, labels
+  its time axis across a second, not in ticks a nanosecond apart.
+
 ## 1.1.1
 
 ### Breaking

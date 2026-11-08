@@ -1,5 +1,6 @@
 import { modelToPlot } from '@weasel-js/ui';
 import { useId } from 'react';
+import { timeSpan } from './path.js';
 
 export interface ColorStripProps {
   label: string;
@@ -41,8 +42,7 @@ export function ColorStrip({
   const check = `bp-check${useId().replace(/[^\w-]/g, '')}`;
   const layers = colors.reduce((n, c) => Math.max(n, (c?.length ?? 1) - 1), 0);
   const height = SHOWN + layers * (LAYER + GAP);
-  const xMin = span?.[0] ?? times[0] ?? 0;
-  const xMax = Math.max(xMin + 1e-9, span?.[1] ?? times[times.length - 1] ?? 1);
+  const [xMin, xMax] = timeSpan(times, span);
   const range = { xMin, xMax, yMin: 0, yMax: 1 };
   const x = (t: number) => modelToPlot({ x: t, y: 0 }, range, { width, height }).x;
   const px = x(Math.min(xMax, Math.max(xMin, playhead)));

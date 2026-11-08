@@ -1,6 +1,6 @@
 import { modelToPlot, Plot2D } from '@weasel-js/ui';
 import { hueColor } from './hue.js';
-import { insetRange, pathOf, rangeOf, type Series } from './path.js';
+import { insetRange, pathOf, rangeOf, type Series, timeSpan } from './path.js';
 
 export interface ChannelPlotProps {
   label: string;
@@ -40,8 +40,7 @@ export function ChannelPlot({
   height = 90,
 }: ChannelPlotProps) {
   const [yMin, yMax] = insetRange(rangeOf(series), LABEL_ROOM, height);
-  const xMin = span?.[0] ?? times[0] ?? 0;
-  const xMax = Math.max(xMin + 1e-9, span?.[1] ?? times[times.length - 1] ?? 1);
+  const [xMin, xMax] = timeSpan(times, span);
   const range = { xMin, xMax, yMin, yMax };
   const size = { width, height };
   const x = (t: number) => modelToPlot({ x: t, y: yMin }, range, size).x;

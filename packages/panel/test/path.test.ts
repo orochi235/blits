@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { insetRange, pathOf, rangeOf } from '../src/ui/path.js';
+import { insetRange, pathOf, rangeOf, timeSpan } from '../src/ui/path.js';
 
 describe('ChannelPlot paths', () => {
   it('pads the range and never collapses it', () => {
@@ -12,6 +12,12 @@ describe('ChannelPlot paths', () => {
     expect(lo).toBeCloseTo(-0.125);
     expect(hi).toBeCloseTo(1.125);
     expect(((0 - lo) / (hi - lo)) * 100).toBeCloseTo(10);
+  });
+  it('shows at least a second of time, so one sample does not ask for ticks a nanosecond apart', () => {
+    expect(timeSpan([1500])).toEqual([1500, 2500]);
+    expect(timeSpan([])).toEqual([0, 1000]);
+    expect(timeSpan([0, 40, 3000])).toEqual([0, 3000]);
+    expect(timeSpan([0, 40], [200, 800])).toEqual([200, 800]);
   });
   it('builds a polyline path, skipping non-finite values', () => {
     expect(
