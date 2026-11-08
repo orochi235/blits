@@ -9,6 +9,8 @@ import type { Voice } from './voice.js';
 export interface HandleHost<I, O> {
   /** The mix clock, or its owner's for a voice one holds; the voice's start before either reads. */
   nowFor(voice: Voice<I, O>): number;
+  /** The mix clock; NaN before the first sync. */
+  mixNow(): number;
   /** A handle write changed the voice: reschedule it, and refill the lanes. */
   changed(voice: Voice<I, O>): void;
   /**
@@ -126,6 +128,13 @@ export class VoiceHandle<I, O> implements Handle<I> {
       this.#host.record(this, 'weight', (h) => {
         h.weight = w;
       });
+  }
+
+  get elapsed(): number {
+    const voice = this.#cued;
+    if (voice === null || voice.state === 'done') return Number.NaN;
+    const now = this.#host.mixNow();
+    return Number.isNaN(now) ? voice.anchorElapsed : voice.rawAt(now, 0);
   }
 
   get rate(): number {

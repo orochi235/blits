@@ -184,13 +184,14 @@ export default function run(root: HTMLElement): () => void {
     let sweep: Handle | undefined;
     const place = scrubbed(show, play, scrub, PERIOD, () => [sweep]);
     const choose = () => {
+      const at = place();
       m?.close();
       m = mix<Cell, Wipe>(kit<Wipe>({ w: color(MODES[mode]()) }), {
         name: 'threshold-wipe',
         transport: show,
         ...(device === null ? {} : { engine: gpu({ device }) }),
       });
-      sweep = m.cue({ patch: level, subjects: cells, loop: true, seek: place() });
+      sweep = m.cue({ patch: level, subjects: cells, loop: true, seek: at });
       regrid();
       drawn = -1;
     };

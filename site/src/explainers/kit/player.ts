@@ -384,6 +384,7 @@ const inert: Handle = {
   state: 'done',
   weight: 0,
   rate: 1,
+  elapsed: Number.NaN,
   seek: () => 'exact',
   fade() {},
   ramp() {},

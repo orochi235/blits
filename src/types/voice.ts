@@ -442,6 +442,13 @@ export interface Handle<I = unknown> {
    */
   rate: number;
   /**
+   * Where the voice's clock is now, in voice ms: what `seek` moves. It counts every pass of a looping
+   * voice, so `elapsed % span` is the place in the current one; a voice under an owner reads its own
+   * clock. A voice still pending reads where it will start. NaN once the voice is done, and while a
+   * history store holds it.
+   */
+  readonly elapsed: number;
+  /**
    * Moves the rate to `rate` linearly over `over` mix ms. A pause or a slow-motion then eases in
    * rather than snapping. The voice clock integrates the ramp, so its position stays continuous and
    * its speed does too. A later `rate` write or `ramp` replaces it; `seek` keeps it.

@@ -6,6 +6,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ## Unreleased
 
+### Added
+
+- A voice's handle reads where its clock is, `elapsed`, in voice ms: what `seek` moves. It counts
+  every pass of a looping voice and reads NaN once the voice is done, so a slider can show where a
+  voice is rather than keep a time of its own.
+
 ### Fixed
 
 - The warning for a voice cued before the first sync judges the voice's end in mix time, by its

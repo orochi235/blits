@@ -205,6 +205,7 @@ export function handle<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Handle<I> {
 
 function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
   return {
+    mixNow: () => mix.now,
     nowFor: (voice) => {
       if (Number.isNaN(mix.now)) return voice.start;
       const local = localNow(mix, voice);

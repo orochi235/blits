@@ -20,20 +20,16 @@ export function playPause(clock: { rate: number }, button: HTMLElement): () => v
 
 /**
  * A play button and a slider over sweeps that loop every `period`: dragging pauses `clock` and
- * seeks each of `sweeps()` there. Returns where they stand, the clock's time shifted by the last
- * drag.
+ * seeks each of `sweeps()` there. Returns where the first of them is in its pass, for the slider.
  */
 export function scrubbed(
-  clock: { rate: number; readonly now: number },
+  clock: { rate: number },
   button: HTMLElement,
   slider: HTMLInputElement,
   period: number,
-  sweeps: () => Iterable<{ seek(elapsed: number): unknown } | undefined>,
+  sweeps: () => Iterable<{ readonly elapsed: number; seek(elapsed: number): unknown } | undefined>,
 ): () => number {
   const label = playPause(clock, button);
-  let shift = 0;
-  // `now` is NaN until the first sync.
-  const now = () => (Number.isFinite(clock.now) ? clock.now : 0);
   slider.addEventListener('input', () => {
     if (clock.rate !== 0) {
       clock.rate = 0;
@@ -41,7 +37,11 @@ export function scrubbed(
     }
     const to = Number(slider.value);
     for (const s of sweeps()) s?.seek(to);
-    shift = to - now();
   });
-  return () => (((now() + shift) % period) + period) % period;
+  return () => {
+    for (const s of sweeps())
+      if (s !== undefined && Number.isFinite(s.elapsed))
+        return ((s.elapsed % period) + period) % period;
+    return 0;
+  };
 }

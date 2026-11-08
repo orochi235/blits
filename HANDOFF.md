@@ -835,13 +835,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   unit-square `Path` as an outline and moves ports onto it; it draws `detail` lines only for a
   named, registered outline, so the inner lines need weasel to take detail beside a `Path`.
 
-- **A slider can't show where a voice is, since a handle has no readable time** (found 2026-11-07).
-  `Handle.seek(elapsed)` has no getter beside it, so the scrubbed examples (`scrubbed` in
-  `site/src/live/play.ts`) show the transport's time shifted by the last drag. After the panel seeks
-  the transport back past a drag, the voice goes back on the tape but the shift does not, and the
-  slider and the stage disagree. A `Handle.elapsed` reading `voice.elapsedAt(mix.now)` would close
-  it; unbuilt, since it is public surface for the owner to name.
-
 - **Explainers don't settle to rest on blur yet** (unbuilt, 2026-11-05). `loop()` settles the live
   demos as focus goes (voices fade over 400 ms, rise on focus; the owner chose settling to rest over
   slowing to a stop or playing to a boundary, 2026-11-05). The explainer kit keeps its own clock
