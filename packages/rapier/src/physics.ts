@@ -115,10 +115,17 @@ export function physicsStore(store: HistoryStore): HistoryStore {
       const all = await store.load(t);
       for (const w of worlds) {
         // A replay to t starts from the world's latest copy at or before it, which needs the frames from there.
-        let from = t;
+        let from = Number.NEGATIVE_INFINITY;
         for (const r of all)
-          if (r.mix === w.name && r.stream === 'snap' && r.subject === 'world' && r.at < from)
+          if (
+            r.mix === w.name &&
+            r.stream === 'snap' &&
+            r.subject === 'world' &&
+            r.at <= t &&
+            r.at > from
+          )
             from = r.at;
+        if (from === Number.NEGATIVE_INFINITY) from = t;
         w.restore(from < t ? await store.load(from) : all, from);
       }
       return all.filter((r) => !(r.stream === 'host' && r.subject === FRAMES));

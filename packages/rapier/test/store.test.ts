@@ -166,6 +166,30 @@ describe.each([2, 3] as const)('%iD, with a history store', (dims) => {
     expect(new Set(ats).size).toBe(ats.length);
     expect(ats.length).toBeGreaterThanOrEqual(frames - 48);
   });
+  it("replays from the world's latest copy before the time sought, when the store returns everything", async () => {
+    const frames = 1200;
+    const straight = scene(dims);
+    const want = [];
+    for (let f = 0; f <= frames; f++) want.push(straight.frame(f));
+
+    const inner = jsonStore();
+    const loads: number[] = [];
+    const store: HistoryStore = {
+      ...inner,
+      load(t) {
+        loads.push(t);
+        return inner.load(t);
+      },
+    };
+    const sought = scene(dims, store);
+    for (let f = 0; f <= frames; f++) sought.frame(f);
+    await sought.seek(frames, 600);
+    // Copies are 250 ms apart, so the replay starts within one of the time sought, not at the first.
+    expect(Math.min(...loads)).toBeGreaterThan(at(600) - 300);
+    const got = [];
+    for (let f = 601; f <= frames; f++) got.push(sought.frame(f));
+    expect(got).toEqual(want.slice(601));
+  });
   it('replays a seek forward past what memory reached, after a seek back past memory', async () => {
     const straight = scene(dims);
     const want = [];

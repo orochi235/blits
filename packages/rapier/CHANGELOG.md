@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- A seek past memory through a store that returns everything replays from the world's latest copy
+  before the time sought, not its first, so the log of frames it brings back stays bounded.
+
 ## 0.7.1
 
 ### Changed
