@@ -100,7 +100,7 @@ describe('voice table', () => {
     const loop = staggered({ loop: true })(2250);
     expect(loop.rows[Col.CLOCK]).toBe(250);
     expect(loop.rows[Col.START]).toBe(-2000);
-    expect(loop.rows[Col.PASS_BASE]).toBe(2);
+    expect((loop.bits[Col.PASS_BASE] as number) | 0).toBe(2);
     expect(loop.rows[Col.DURATION]).toBe(1000);
     expect((loop.bits[Col.FLAGS] as number) & Flag.FINITE).toBe(0);
     expect((loop.bits[Col.FLAGS] as number) & Flag.SHOWS).toBe(0);
@@ -108,8 +108,8 @@ describe('voice table', () => {
     const three = staggered({ loop: 3, freeze: 'after' })(5000);
     expect(three.rows[Col.CLOCK]).toBe(3000);
     expect(three.rows[Col.START]).toBe(-2000);
-    expect(three.rows[Col.PASS_BASE]).toBe(2);
-    expect(three.rows[Col.LAST_PASS]).toBe(2);
+    expect((three.bits[Col.PASS_BASE] as number) | 0).toBe(2);
+    expect((three.bits[Col.LAST_PASS] as number) | 0).toBe(2);
     expect(three.rows[Col.SPAN]).toBe(1000);
     const flags = three.bits[Col.FLAGS] as number;
     expect(flags & Flag.FINITE).toBe(Flag.FINITE);
@@ -124,7 +124,7 @@ describe('voice table', () => {
     const flags = t.bits[Col.FLAGS] as number;
     expect(flags & Flag.UNSTARTED).toBe(Flag.UNSTARTED);
     expect(t.rows[Col.CLOCK]).toBe(0);
-    expect(t.rows[Col.PASS_BASE]).toBe(0);
+    expect((t.bits[Col.PASS_BASE] as number) | 0).toBe(0);
   });
 
   it('marks a voice whose clock reads NaN, and sends no NaN', () => {
@@ -136,7 +136,7 @@ describe('voice table', () => {
     expect((t.bits[Col.FLAGS] as number) & Flag.NO_CLOCK).toBe(Flag.NO_CLOCK);
     expect(t.rows[Col.CLOCK]).toBe(0);
     expect(t.rows[Col.START]).toBe(-0);
-    expect(t.rows[Col.PASS_BASE]).toBe(0);
+    expect((t.bits[Col.PASS_BASE] as number) | 0).toBe(0);
   });
 
   it('keeps a beginless voice its pass and a clock inside it, hours back', () => {
@@ -147,7 +147,7 @@ describe('voice table', () => {
     const raw = t.voice.rawAt(hours, 0);
     expect(raw).toBe(-hours);
     expect(t.rows[Col.CLOCK]).toBe(750);
-    expect(t.rows[Col.PASS_BASE]).toBe(Math.floor(raw / 1000));
+    expect((t.bits[Col.PASS_BASE] as number) | 0).toBe(Math.floor(raw / 1000));
     expect(t.rows[Col.START]).toBe(-1000 * Math.floor(raw / 1000));
     expect((t.bits[Col.FLAGS] as number) & Flag.BEGINLESS).toBe(Flag.BEGINLESS);
   });
