@@ -1,16 +1,7 @@
 import type { Kit } from '@msb235/blits';
 import type { Flow, FlowEdge, FlowNode } from '@pg/widgets/FlowDiagram/types';
 import { parseExpressionAt } from 'acorn';
-import {
-  type Composition,
-  type Expr,
-  type Group,
-  isExpr,
-  type Level,
-  type PatchSource,
-  periodOf,
-  type Voice,
-} from './composition';
+import { type Composition, type Expr, isExpr, type Level, type PatchSource } from './composition';
 import {
   CHANNELS,
   type ChannelName,

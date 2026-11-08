@@ -65,6 +65,7 @@ export function useSettle(name: string, rest: boolean): number {
       settle.current = null;
     };
   }, [name]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `name` remakes the Settle this reads.
   useEffect(() => {
     const s = settle.current;
     if (s === null) return;

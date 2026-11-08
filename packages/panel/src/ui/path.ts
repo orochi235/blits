@@ -23,7 +23,10 @@ export function rangeOf(series: readonly Series[]): [number, number] {
 }
 
 /** The time span a plot shows: `span` where given, else the samples', at least a second wide. */
-export function timeSpan(times: readonly number[], span?: readonly [number, number]): [number, number] {
+export function timeSpan(
+  times: readonly number[],
+  span?: readonly [number, number],
+): [number, number] {
   const lo = span?.[0] ?? times[0] ?? 0;
   const hi = span?.[1] ?? times[times.length - 1] ?? lo;
   return [lo, hi - lo < 1 ? lo + 1000 : hi];
