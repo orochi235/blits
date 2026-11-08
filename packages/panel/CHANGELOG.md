@@ -6,6 +6,12 @@ This package follows [semver](https://semver.org) and shares the engine's versio
 everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Changed
+
+- Bundles weasel 1.18.0, where it bundled 1.17.1.
+
 ## 1.2.0
 
 ### Fixed
