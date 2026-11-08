@@ -19,10 +19,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 ## State
 
 - `main` at `git@github.com:orochi235/blits.git` — **public**; release 1.1.1 (2026-11-07), with blits-panel 1.1.1 taking it as an exact peer and bundling weasel, blits-rapier 0.7.1 as a `^1.1.0` peer, blits-quarks 0.17.1 and blits-tone 0.12.2 as a `^1.0.0` peer, and all four pinning 1.1.1 to build against. blits-panel releases in lockstep with the engine, at its version, from 1.1.0 on (owner's call, 2026-11-05); the release workflow holds it there. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
-  An engine release runs the whole check twice: release.yml's own lint, typecheck, and test
-  steps, then `npm publish`'s `prepublishOnly` (`npm run check`) again, so a flaky or slow test
-  gets two chances to sink it. 1.1.0 needed four tags (2026-11-05); dropping one of the two runs
-  is unbuilt.
+  An engine release runs the check once, as release.yml's lint, typecheck, and test steps: the
+  publish step sets `BLITS_CHECKED`, which `prepublishOnly` takes as the check already run (from
+  2026-11-08; 1.1.0, checked twice, needed four tags). A publish by hand still checks.
   `npm run release -- <version>` (scripts/release.mjs) releases the engine, then the panel at the
   same version and each companion on it, pushing one tag at a time and waiting on each run, since the
   `release` concurrency group cancels a middle pending run. A rerun resumes from the first missing tag.
@@ -264,14 +263,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
    each run's raw records beside it. The bugs they found are fixed (CHANGELOG, Unreleased), each
    pinned by a test in `test/stress-findings.test.ts`; what is below is still open.
-   - **A `from: 'current'` voice carries speed, and the first one a mix plays may not**
-     (decided 2026-11-08: carry speed, and a still channel runs as written, which shipped). A mix
-     keeps poses for a host sampling into its own object, or through `pull`, only once a
-     `from: 'current'` voice is cued (`wantsPose`, `src/cue.ts`), so a first such voice cued at
-     the moment it starts finds fewer than two poses and starts straight. Keeping poses from the
-     first sync closes it, but `wantsPose` also turns off `pull`'s whole-lane path
-     (`src/pull.ts`), so it wants a cheaper record there first, such as each column's last two
-     frames.
    - **`pull` on the heatmap is slower with lanes than without** (2026-11-03). 5,000 springs
      retargeted at 20–60 Hz, with three `ink` voices weighted per cell by `input` signals, read in
      5.40 ms a frame with lanes and 3.78 without (studio, solo, 7 rounds,

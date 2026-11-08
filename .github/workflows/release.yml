@@ -147,8 +147,12 @@ jobs:
         if: steps.pick.outputs.dir == '.'
         run: npm pkg delete workspaces
 
+      # The lint, typecheck, and test steps above are the check; `prepublishOnly` skips its own
+      # run of it here, so a flaky test gets one chance to sink a release, not two.
       - name: Publish the engine
         if: steps.pick.outputs.dir == '.'
+        env:
+          BLITS_CHECKED: '1'
         run: npm publish
 
       - name: Publish the driver
