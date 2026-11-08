@@ -361,9 +361,15 @@ export function baseFor<I, O>(
   return base;
 }
 
+/** Whether a value read in two frames stayed put, to within rounding. */
+const still = (a: number, b: number) =>
+  Math.abs(b - a) <= 1e-12 * Math.max(1, Math.abs(a), Math.abs(b));
+
 /**
  * How fast each numeric channel this voice writes was moving, from the subject's last two probed
- * poses, in units per ms. Undefined with fewer than two on record, which starts the voice at rest.
+ * poses, in units per ms. A channel or axis that stayed put has none, so its first segment runs
+ * as written rather than easing out of a standstill. Undefined where nothing was moving, or with
+ * fewer than two poses on record.
  */
 export function slopeFor<I, O>(
   this: Mixer<I, O>,
@@ -376,14 +382,28 @@ export function slopeFor<I, O>(
   const now = rec.pose as Record<string, unknown>;
   const before = rec.prev as Record<string, unknown>;
   const slope: Record<string, unknown> = {};
+  let moving = false;
   for (const key of voice.patch.writes as Key<O>[]) {
     const a = before[key];
     const b = now[key];
-    if (typeof a === 'number' && typeof b === 'number') slope[key] = (b - a) / dt;
-    else if (Array.isArray(a) && Array.isArray(b) && a.length === b.length)
-      slope[key] = b.map((v, i) => ((v as number) - (a[i] as number)) / dt);
+    if (typeof a === 'number' && typeof b === 'number') {
+      if (still(a, b)) continue;
+      slope[key] = (b - a) / dt;
+      moving = true;
+    } else if (Array.isArray(a) && Array.isArray(b) && a.length === b.length) {
+      let moved = false;
+      const axes = b.map((v, i) => {
+        const was = a[i];
+        if (typeof v !== 'number' || typeof was !== 'number' || still(was, v)) return undefined;
+        moved = true;
+        return (v - was) / dt;
+      });
+      if (!moved) continue;
+      slope[key] = axes;
+      moving = true;
+    }
   }
-  return slope;
+  return moving ? slope : undefined;
 }
 
 export function isRest<I, O>(this: Mixer<I, O>, delta: Record<string, unknown>): boolean {

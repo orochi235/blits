@@ -314,7 +314,7 @@ describe('retarget on interruption', () => {
     expect(m.probe(part).crawl).toBeLessThan(10);
   });
 
-  it("a from: 'current' voice cued on a still subject leaves at rest and eases into its segment", () => {
+  it("a from: 'current' voice cued on a still subject runs its segment as written", () => {
     const m = mix<Part, Pose>(PART);
     const held = m.cue({
       patch: patch<Part, Pose>(0, () => ({ crawl: 50 }), { writes: ['crawl'] }),
@@ -328,11 +328,35 @@ describe('retarget on interruption', () => {
     m.sync(17);
     const a = m.probe(part).crawl;
     m.sync(18);
-    // A linear segment from 50 to 0 moves 0.05 a ms; leaving a standstill, it starts near 0 instead.
-    expect(a - m.probe(part).crawl).toBeLessThan(0.001);
+    // A linear segment from 50 to 0 moves 0.05 a ms from its first frame, not easing out of rest.
+    expect(a - m.probe(part).crawl).toBeCloseTo(0.05, 6);
     m.sync(516);
-    // Half way: the linear 25 plus the bend, 50 · ½ · ¼.
-    expect(m.probe(part).crawl).toBeCloseTo(31.25, 6);
+    expect(m.probe(part).crawl).toBeCloseTo(25, 6);
+  });
+
+  it('carries the speed of each axis that was moving, and runs a still one as written', () => {
+    const m = mix<Part, Pose>(PART);
+    const moving = m.cue({
+      patch: patch<Part, Pose>(1000, (phase) => ({ position: [phase * 100, 50, 0] }), {
+        writes: ['position'],
+      }),
+    });
+    m.sync(0);
+    m.probe(part);
+    m.sync(400);
+    m.probe(part);
+    moving.weight = 0;
+    m.cue({
+      patch: keys<Part, Pose>(1000, [{ at: 1, delta: { position: [40, 0, 0] } }]),
+      from: 'current',
+    });
+    m.sync(401);
+    const a = m.probe(part).position;
+    m.sync(402);
+    const b = m.probe(part).position;
+    // x was moving at 0.1 a ms and leaves at it; y stood at 50 and runs straight to 0, 0.05 a ms.
+    expect((b[0] as number) - (a[0] as number)).toBeCloseTo(0.1, 2);
+    expect((a[1] as number) - (b[1] as number)).toBeCloseTo(0.05, 6);
   });
 });
 

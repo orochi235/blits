@@ -46,7 +46,7 @@ first.fade({ over: 0 });
 m.cue({ patch: back, loop: false, from: 'current' });
 ```
 
-It carries position, not speed. The second voice starts from standing, so a dot moving fast when it's interrupted stops dead and then sets off again: watch the trace flatten at the cut. Carrying velocity across a retarget is a known gap.
+It carries speed as well as position. The second voice leaves at the speed the dot had over the last two frames and bends toward its own stops, so a dot caught mid-flight curves round instead of stopping dead: the trace stays smooth through the cut. A channel that was standing still runs its first segment exactly as written.
 
 ## Blend between alternatives
 

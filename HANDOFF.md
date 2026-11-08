@@ -264,14 +264,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
    each run's raw records beside it. The bugs they found are fixed (CHANGELOG, Unreleased), each
    pinned by a test in `test/stress-findings.test.ts`; what is below is still open.
-   - **Mike's call: should a `from: 'current'` voice carry the subject's speed, or only where it
-     is?** The code carries speed (CHANGELOG 0.2.0; the bend in `src/patch.ts` `read`), and the
-     site says it does not: `site/src/pages/blending.mdx` says it "carries position, not speed" and
-     calls carrying velocity a known gap. What turns on it: carrying speed makes a still
-     fixture's linear fade ease in (cues demo, frame 440: 0.6501 against 0.6529 straight), and the
-     first such voice a mix plays runs straight anyway, since the mix keeps no poses to take a
-     speed from until one is cued. Either answer fixes one of the two: the docs, or the code and
-     that first voice.
+   - **A `from: 'current'` voice carries speed, and the first one a mix plays may not**
+     (decided 2026-11-08: carry speed, and a still channel runs as written, which shipped). A mix
+     keeps poses for a host sampling into its own object, or through `pull`, only once a
+     `from: 'current'` voice is cued (`wantsPose`, `src/cue.ts`), so a first such voice cued at
+     the moment it starts finds fewer than two poses and starts straight. Keeping poses from the
+     first sync closes it, but `wantsPose` also turns off `pull`'s whole-lane path
+     (`src/pull.ts`), so it wants a cheaper record there first, such as each column's last two
+     frames.
    - **`pull` on the heatmap is slower with lanes than without** (2026-11-03). 5,000 springs
      retargeted at 20–60 Hz, with three `ink` voices weighted per cell by `input` signals, read in
      5.40 ms a frame with lanes and 3.78 without (studio, solo, 7 rounds,
@@ -310,10 +310,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      fold (`gatherRole`, `gatherInto`, `meetRole`, `foldAt`, `foldRole`) are another 12%. A
      staggered keys voice reading its stops once a distinct time, not once a subject, is what
      would move it.
-   - **Mike's call: should a mix's `rate` go below 0?** It throws today, so the timeline demo
-     plays reverse as an owner turned back. What turns on it: whether reverse is the host's to
-     build from owners, or the mix's own, which would need an answer for every voice that keeps
-     state or moves (springs, tweens, kept patches) when its clock runs backward.
+   - **A mix's `rate` goes below 0** (Mike's call, 2026-11-08; unbuilt, no design yet). It
+     throws today, so the timeline demo plays reverse as an owner turned back. Each voice that
+     keeps state or moves (springs, tweens, kept patches, fades, loops) needs an answer for its
+     clock running backward before it is built.
    - **Mike's call: should a host's turn-back survive a span's fits on a seek forward?** A span
      held by a span, sought forward while turned back, takes its outer span's fits on the way;
      the latest write wins, so it ends running forward at the fit's rate (pinned by "a span held

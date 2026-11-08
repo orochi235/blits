@@ -23,17 +23,10 @@ interface Part {
 }
 
 /**
- * How a `from: 'current'` fade leaves where the stage was. `docs`: straight along its stops, as
- * blending.mdx says ("it carries position, not speed"). `carry`: as CHANGELOG 0.2.0 says, at the
- * speed the fixture had over the last two frames read, once two are on record.
- */
-export type Reading = 'docs' | 'carry';
-
-/**
  * The cue stack in plain arithmetic, replaying the operator's actions. It is the reference blits is
  * checked against, so it reads nothing of blits.
  */
-export function model(s: Show, reading: Reading) {
+export function model(s: Show) {
   const n = s.fixtures;
   const count = s.cues.length;
   const level = new Float64Array(n);
@@ -50,7 +43,7 @@ export function model(s: Show, reading: Reading) {
   function begin(p: Part, f: number): void {
     // `from: 'current'` starts from what the last frame showed, every other voice folded in (blending.mdx).
     p.from = { level: shown.level.slice(), hue: shown.hue.slice() };
-    if (reading !== 'carry' || f - 2 < kept) return;
+    if (f - 2 < kept) return;
     const dt = (f - 1) * FRAME_MS - (f - 2) * FRAME_MS;
     const d = (a: Float64Array, b: Float64Array) => a.map((v, i) => (v - (b[i] as number)) / dt);
     p.slope = { level: d(shown.level, before.level), hue: d(shown.hue, before.hue) };
@@ -85,11 +78,15 @@ export function model(s: Show, reading: Reading) {
     parts.push({ index: current, cue: s.cues[current] as Cue, start: at, back: true });
   }
 
-  /** A fade from `a` to `z` at `u`, leaving at `slope` per ms where it has one (src/patch.ts `read`). */
+  /**
+   * A fade from `a` to `z` at `u`, leaving at the speed the fixture had over the last two frames
+   * read (src/patch.ts `read`); one that stood still, or had no two frames on record, runs straight.
+   */
   const fade = (a: number, z: number, u: number, slope: number | undefined, ms: number) => {
     if (u >= 1) return z;
     const v = a + (z - a) * u;
-    return slope === undefined ? v : v + (slope * ms - (z - a)) * u * (1 - u) * (1 - u);
+    if (slope === undefined || slope === 0) return v;
+    return v + (slope * ms - (z - a)) * u * (1 - u) * (1 - u);
   };
 
   /** Plays frame `f`: the operator's actions, made at the last sync's time, then the frame. */

@@ -179,40 +179,22 @@ export const cues: Make = ({ seed, size, lanes }) => {
 
   const at = (k: number) => `fixture ${k % n} ${k < n ? 'level' : 'hue'}`;
 
-  /**
-   * Replays the sheet through the model under both readings of `from: 'current'`. Blits is held to
-   * the one it implements, `carry`; where it departs from the docs' reading, that is said once.
-   */
+  /** Replays the sheet through the model, and fails each value that strays from it, once. */
   function check(): Finding[] {
-    const docs = model(sheet, 'docs');
-    const carry = model(sheet, 'carry');
+    const reference = model(sheet);
     const found: Finding[] = [];
     const failed = new Set<number>();
-    let departed = false;
     const near = (v: number, want: number) =>
       Math.abs(v - want) <= TOLERANCE * Math.max(1, Math.abs(want));
     const value = (r: ReturnType<typeof model>, k: number) =>
       (k < n ? r.level[k] : r.hue[k - n]) as number;
     for (let f = 0; f < played; f++) {
-      docs.step(f);
-      carry.step(f);
+      reference.step(f);
       const got = recorded.get(f);
       if (!got) continue;
       for (let k = 0; k < n * 2; k++) {
         const v = got[k] as number;
-        const want = value(carry, k);
-        if (!departed && near(v, want) && !near(v, value(docs, k))) {
-          departed = true;
-          found.push({
-            kind: 'fail',
-            key: 'cues/from-current-speed',
-            at: f,
-            what:
-              `a from: 'current' fade leaves at the speed the fixture had (CHANGELOG 0.2.0), where blending.mdx says it carries position, not speed; ` +
-              `a still fixture's fade then eases in though the cue's keys say linear, which a desk would not do, and the first fade a mix plays runs straight since no poses are kept yet. ` +
-              `Frame ${f}, ${at(k)}: blits ${v}, straight ${value(docs, k)}; recent: ${recent(sheet, f).join('; ')}`,
-          });
-        }
+        const want = value(reference, k);
         if (failed.has(k) || near(v, want)) continue;
         failed.add(k);
         found.push({
