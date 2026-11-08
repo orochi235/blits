@@ -66,9 +66,10 @@ function bump(current, body) {
 async function watch(tag) {
   for (let i = 0; i < 30; i++) {
     const runs = JSON.parse(
-      run('gh', ['run', 'list', '-w', 'release.yml', '-L', '20', '--json', 'databaseId,headBranch']),
+      run('gh', ['run', 'list', '-w', 'release.yml', '-L', '20', '--json', 'databaseId,headBranch,headSha']),
     );
-    const found = runs.find((r) => r.headBranch === tag);
+    const sha = run('git', ['rev-list', '-n', '1', tag]);
+    const found = runs.find((r) => r.headBranch === tag && r.headSha === sha);
     if (found) {
       console.log(`${tag}: watching run ${found.databaseId}`);
       sh('gh', ['run', 'watch', String(found.databaseId), '--exit-status', '--interval', '30']);
@@ -79,11 +80,24 @@ async function watch(tag) {
   throw new Error(`no release run appeared for ${tag}`);
 }
 
+function published(name, v) {
+  try {
+    return run('npm', ['view', `${name}@${v}`, 'version']) === v;
+  } catch {
+    return false;
+  }
+}
+
+/** Pushes `tag` unless origin has it, then waits on its run, unless npm already serves `name@v`. */
+async function ship(tag, name, v) {
+  if (published(name, v)) return;
+  if (run('git', ['ls-remote', '--tags', 'origin', tag]) === '') sh('git', ['push', '-q', 'origin', tag]);
+  await watch(tag);
+}
+
 async function onNpm(name, v) {
   for (let i = 0; i < 30; i++) {
-    try {
-      if (run('npm', ['view', `${name}@${v}`, 'version']) === v) return;
-    } catch {}
+    if (published(name, v)) return;
     await sleep(10000);
   }
   throw new Error(`${name}@${v} never appeared on npm`);
@@ -122,11 +136,9 @@ if (!tagExists(engineTag) && readJson('package.json').version !== version) {
   sh('npm', ['install', '--package-lock-only', '--ignore-scripts']);
   sh('git', ['commit', '-qam', `release ${ENGINE} ${version}`]);
 }
-if (!tagExists(engineTag)) {
-  sh('git', ['tag', engineTag]);
-  sh('git', ['push', '-q', 'origin', 'main', engineTag]);
-  await watch(engineTag);
-}
+if (!tagExists(engineTag)) sh('git', ['tag', engineTag]);
+sh('git', ['push', '-q', 'origin', 'main']);
+await ship(engineTag, ENGINE, version);
 await onNpm(ENGINE, version);
 
 // The packages on it.
@@ -148,11 +160,5 @@ if (pending.length) {
   for (const p of pending) sh('git', ['tag', `${p.tag}${p.to}`]);
   sh('git', ['push', '-q', 'origin', 'main']);
 }
-for (const p of plan) {
-  const tag = `${p.tag}${p.to}`;
-  if (run('git', ['ls-remote', '--tags', 'origin', tag]) === '') {
-    sh('git', ['push', '-q', 'origin', tag]);
-    await watch(tag);
-  }
-}
+for (const p of plan) await ship(`${p.tag}${p.to}`, p.name, p.to);
 console.log(`released ${ENGINE} ${version} and ${plan.map((p) => `${p.name} ${p.to}`).join(', ')}`);
