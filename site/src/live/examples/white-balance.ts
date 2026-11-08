@@ -16,7 +16,7 @@ import {
 import { createHistory } from '@weasel-js/history';
 import { gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
-import { showPlay } from '../play';
+import { playPause } from '../play';
 
 interface Cell {
   x: number;
@@ -166,14 +166,7 @@ export default function run(root: HTMLElement): () => void {
     castWeight.input.addEventListener('input', weigh);
     fixWeight.input.addEventListener('input', weigh);
     weigh();
-    const showRate = () => {
-      showPlay(play, show.rate === 0);
-    };
-    play.addEventListener('click', () => {
-      show.rate = show.rate === 0 ? 1 : 0;
-      showRate();
-    });
-    showRate();
+    playPause(show, play);
 
     // The gray card's middle, for the readouts.
     const card = CELLS.reduce((a, c) =>

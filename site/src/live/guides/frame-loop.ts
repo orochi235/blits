@@ -1,5 +1,6 @@
 import { kit, mix, patch, sum, ticker } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
+import { HOLD } from '../loop';
 
 interface Bar {
   el: HTMLElement;
@@ -70,6 +71,8 @@ export default function run(root: HTMLElement): () => void {
   let state: 'awake' | 'asleep' | 'hidden' | 'paused' = 'awake';
   let hiding = 0;
   let away = !document.hasFocus();
+  // The page's Pause button.
+  let held = false;
   let rebase = true;
 
   const show = () => {
@@ -85,7 +88,7 @@ export default function run(root: HTMLElement): () => void {
     count++;
     m.probe(bar, pose);
     el.style.left = `calc(${pose.x} * (100% - 6rem))`;
-    state = away ? 'paused' : m.inert ? 'asleep' : 'awake';
+    state = away || held ? 'paused' : m.inert ? 'asleep' : 'awake';
     show();
   });
   const unwake = m.onWake(() => {
@@ -101,7 +104,7 @@ export default function run(root: HTMLElement): () => void {
     hiding = window.setTimeout(() => {
       hiding = 0;
       if (rebase) m.rebase();
-      if (!away) frames.wake();
+      if (!away && !held) frames.wake();
       show();
     }, AWAY);
     show();
@@ -115,21 +118,35 @@ export default function run(root: HTMLElement): () => void {
     show();
   });
 
-  // Out of focus it waits, as `loop.ts` does, and always takes the time away off the clock.
-  const blur = () => {
-    away = true;
+  // Out of focus or paused it waits, and always takes the time away off the clock.
+  const stopped = () => {
     frames.stop();
     if (hiding === 0) state = 'paused';
     show();
   };
-  const focus = () => {
-    if (!away) return;
-    away = false;
+  const going = () => {
+    if (away || held) return;
     m.rebase();
     if (hiding === 0) frames.wake();
   };
+  const blur = () => {
+    away = true;
+    stopped();
+  };
+  const focus = () => {
+    if (!away) return;
+    away = false;
+    going();
+  };
+  const hold = (e: Event) => {
+    const was = held;
+    held = (e as CustomEvent<boolean>).detail;
+    if (held && !was) stopped();
+    else if (!held && was) going();
+  };
   window.addEventListener('blur', blur);
   window.addEventListener('focus', focus);
+  root.addEventListener(HOLD, hold);
 
   if (away) state = 'paused';
   else m.cue({ patch: trip, subjects: [bar], name: 'trip' });
@@ -139,6 +156,7 @@ export default function run(root: HTMLElement): () => void {
     window.clearTimeout(hiding);
     window.removeEventListener('blur', blur);
     window.removeEventListener('focus', focus);
+    root.removeEventListener(HOLD, hold);
     unwake();
     unafter();
     remove();

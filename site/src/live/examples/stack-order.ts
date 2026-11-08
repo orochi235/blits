@@ -31,7 +31,7 @@ import {
 import { createHistory } from '@weasel-js/history';
 import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
-import { showPlay } from '../play';
+import { playPause, showPlay } from '../play';
 
 interface Cell {
   x: number;
@@ -334,10 +334,7 @@ export default function run(root: HTMLElement): () => void {
     };
     refresh = rebuild;
 
-    play.addEventListener('click', () => {
-      show.rate = show.rate === 0 ? 1 : 0;
-      showPlay(play, show.rate === 0);
-    });
+    playPause(show, play);
 
     const probe = (m: Mix<Cell, Tint> | undefined, v: View) => {
       CELLS.forEach((c, i) => {

@@ -20,7 +20,7 @@ import {
 import { createHistory } from '@weasel-js/history';
 import { type Grid, gpuDevice, gpuGrid, probed } from '../gpu-grid';
 import { loop } from '../loop';
-import { showPlay } from '../play';
+import { scrubbed } from '../play';
 
 interface Cell {
   x: number;
@@ -261,12 +261,8 @@ export default function run(root: HTMLElement): () => void {
     let one: Mix<Cell, Values> | undefined;
     let oneSweeps: Handle[] = [];
 
-    // Pausing stops the transport; dragging moves each disc's own voice to that point in its
-    // sweep. The slider shows the disc's place: the transport's time, shifted by the last drag.
-    let shift = 0;
-    // `now` is NaN until the first sync, and the first pick comes before it.
-    const place = () =>
-      Number.isNaN(show.now) ? 0 : (((show.now + shift) % PERIOD) + PERIOD) % PERIOD;
+    // Pausing stops the transport; dragging moves each disc's own voice to that point in its sweep.
+    const place = scrubbed(show, play, scrub, PERIOD, () => [...sweeps, ...oneSweeps]);
 
     let draw: () => void;
     let free = () => {};
@@ -339,34 +335,21 @@ export default function run(root: HTMLElement): () => void {
     };
     for (const t of thumbs) t.button.addEventListener('click', () => choose(t.name));
 
-    const showRate = () => {
-      showPlay(play, show.rate === 0);
-    };
-    play.addEventListener('click', () => {
-      show.rate = show.rate === 0 ? 1 : 0;
-      showRate();
-    });
-    scrub.addEventListener('input', () => {
-      if (show.rate !== 0) {
-        show.rate = 0;
-        showRate();
-      }
-      const to = Number(scrub.value);
-      for (const s of [...sweeps, ...oneSweeps]) s.seek(to);
-      shift = to - show.now;
-    });
-
     let drawn = '';
     choose(chosen);
-    showRate();
-    const stop = loop(show, root, (now) => {
-      show.sync(now);
-      scrub.value = String(place());
-      const key = `${show.seq} ${chosen}`;
-      if (key === drawn) return;
-      drawn = key;
-      draw();
-    });
+    const stop = loop(
+      show,
+      root,
+      (now) => {
+        show.sync(now);
+        scrub.value = String(place());
+        const key = `${show.seq} ${chosen}`;
+        if (key === drawn) return;
+        drawn = key;
+        draw();
+      },
+      { settle: () => (one ? [m, one] : [m]) },
+    );
 
     return () => {
       stop();

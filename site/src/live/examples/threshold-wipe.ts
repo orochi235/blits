@@ -17,7 +17,7 @@ import {
 import { createHistory } from '@weasel-js/history';
 import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
-import { showPlay } from '../play';
+import { scrubbed } from '../play';
 
 interface Cell {
   x: number;
@@ -178,14 +178,11 @@ export default function run(root: HTMLElement): () => void {
       });
     };
 
-    // Pausing stops the transport; dragging seeks the level's voice. The slider shows where the
-    // level is: the transport's time, shifted by the last drag.
+    // Pausing stops the transport; dragging seeks the level's voice.
     const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
-    let shift = 0;
-    const now = () => (Number.isFinite(show.now) ? show.now : 0);
-    const place = () => (((now() + shift) % PERIOD) + PERIOD) % PERIOD;
     let m: Mix<Cell, Wipe> | undefined;
     let sweep: Handle | undefined;
+    const place = scrubbed(show, play, scrub, PERIOD, () => [sweep]);
     const choose = () => {
       m?.close();
       m = mix<Cell, Wipe>(kit<Wipe>({ w: color(MODES[mode]()) }), {
@@ -203,26 +200,8 @@ export default function run(root: HTMLElement): () => void {
       drawn = -1;
     };
 
-    const showRate = () => {
-      showPlay(play, show.rate === 0);
-    };
-    play.addEventListener('click', () => {
-      show.rate = show.rate === 0 ? 1 : 0;
-      showRate();
-    });
-    scrub.addEventListener('input', () => {
-      if (show.rate !== 0) {
-        show.rate = 0;
-        showRate();
-      }
-      const to = Number(scrub.value);
-      sweep?.seek(to);
-      shift = to - now();
-    });
-
     let drawn = -1;
     choose();
-    showRate();
     let draw: () => void;
     if (device !== null) draw = () => grid?.draw();
     else {
@@ -238,13 +217,18 @@ export default function run(root: HTMLElement): () => void {
         ctx.putImageData(image, 0, 0);
       };
     }
-    const halt = loop(show, root, (t) => {
-      show.sync(t);
-      scrub.value = String(place());
-      if (show.seq === drawn) return;
-      drawn = show.seq;
-      draw();
-    });
+    const halt = loop(
+      show,
+      root,
+      (t) => {
+        show.sync(t);
+        scrub.value = String(place());
+        if (show.seq === drawn) return;
+        drawn = show.seq;
+        draw();
+      },
+      { settle: () => (m ? [m] : []) },
+    );
 
     return () => {
       halt();

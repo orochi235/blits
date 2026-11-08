@@ -19,7 +19,7 @@ import {
 import { createHistory } from '@weasel-js/history';
 import { gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
-import { showPlay } from '../play';
+import { playPause } from '../play';
 
 interface Cell {
   x: number;
@@ -243,14 +243,7 @@ export default function run(root: HTMLElement): () => void {
       running = true;
       take((current + 1) % LOOKS.length);
     });
-    const showRate = () => {
-      showPlay(play, show.rate === 0);
-    };
-    play.addEventListener('click', () => {
-      show.rate = show.rate === 0 ? 1 : 0;
-      showRate();
-    });
-    showRate();
+    playPause(show, play);
 
     let draw: () => void;
     let free = () => {};
