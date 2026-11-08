@@ -70,7 +70,8 @@
     "stress:dev": "npm run dev -w @blits/stress",
     "playground": "npm run dev -w @blits/playground",
     "playground:smoke": "npm run smoke -w @blits/playground",
-    "playground:check": "npm run typecheck -w @blits/playground && vitest run apps/playground/test && npm run playground:smoke"
+    "playground:check": "npm run typecheck -w @blits/playground && vitest run apps/playground/test && npm run playground:smoke",
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",

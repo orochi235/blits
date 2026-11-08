@@ -4,6 +4,11 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+No change to the engine. Released alongside blits-panel 1.1.1, which bundles weasel instead of
+depending on it and takes this engine as an exact peer.
+
 ## 1.1.0
 
 ### Added

@@ -23,8 +23,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   steps, then `npm publish`'s `prepublishOnly` (`npm run check`) again, so a flaky or slow test
   gets two chances to sink it. 1.1.0 needed four tags (2026-11-05); dropping one of the two runs
   is unbuilt.
-  Pushing driver tags at once leaves the middle run canceled (the `release` concurrency
-  group keeps one pending run), so rerun it once the last one starts.
+  `npm run release -- <version>` (scripts/release.mjs) releases the engine, then the panel at the
+  same version and each companion on it, pushing one tag at a time and waiting on each run, since the
+  `release` concurrency group cancels a middle pending run. A rerun resumes from the first missing tag.
   blits-tone 0.2.0 was its first release through trusted publishing.
 - **What shipped is in `CHANGELOG.md`; the calls made while building it are in the schema page's
   "Chosen while building"**, each the owner's to overturn, and the playground's and the DevTools
