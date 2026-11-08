@@ -1,6 +1,6 @@
 {
   "name": "@msb235/blits-rapier",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Pairs Rapier rigid-body physics with a blits mix: voices push bodies, and each body's simulated pose blends with authored motion",
   "keywords": [
     "physics",
@@ -45,7 +45,7 @@
   "devDependencies": {
     "@dimforge/rapier2d-compat": "0.21.0",
     "@dimforge/rapier3d-compat": "0.21.0",
-    "@msb235/blits": "1.1.0"
+    "@msb235/blits": "1.1.1"
   },
   "peerDependenciesMeta": {
     "@dimforge/rapier2d-compat": {

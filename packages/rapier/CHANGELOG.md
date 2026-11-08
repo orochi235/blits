@@ -4,6 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## 0.7.1
+
+### Changed
+
+- Built and tested against engine 1.1.1.
+
 ## 0.7.0
 
 ### Breaking
