@@ -13,7 +13,8 @@ interface Mark {
  * The voices the gpu side has folded, for the mix's `unheld`: where the GPU folds a voice the CPU
  * keeps no record of its subjects, so a change made to one is timed as a host probing every frame
  * would have it, by the delay the record would hold. Forgets what the CPU would: a voice parked by
- * a seek back before its cue, and a dropped subject, until a fold meets them again.
+ * a seek back before its cue, and a dropped subject, until a fold meets them again; and has the
+ * answers ask a voice's `target` afresh for a subject it let go of by a drop or a bringing back.
  */
 export class Met<I> {
   private readonly marks = new WeakMap<Voice<I, unknown>, Mark>();
@@ -22,6 +23,7 @@ export class Met<I> {
   private folds = 0;
   private readonly hook: NonNullable<Mixer<I, unknown>['unheld']>;
   private readonly drop: NonNullable<Mixer<I, unknown>['unmet']>;
+  private readonly forgot: NonNullable<Mixer<I, unknown>['forgot']>;
 
   constructor(
     private readonly mix: Mixer<I, unknown>,
@@ -42,8 +44,10 @@ export class Met<I> {
     this.drop = (subject) => {
       if (answers().index(subject) !== undefined) this.dropped.set(subject, this.folds);
     };
+    this.forgot = (voice, subject) => answers().forget(voice, subject);
     mix.unheld = this.hook;
     mix.unmet = this.drop;
+    mix.forgot = this.forgot;
   }
 
   /** This frame's folded voices: the CPU would hold a record of each subject they reach from now. */
@@ -60,6 +64,7 @@ export class Met<I> {
   close(): void {
     if (this.mix.unheld === this.hook) this.mix.unheld = null;
     if (this.mix.unmet === this.drop) this.mix.unmet = null;
+    if (this.mix.forgot === this.forgot) this.mix.forgot = null;
     this.dropped.clear();
   }
 }

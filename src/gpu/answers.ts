@@ -52,6 +52,14 @@ export class Answers<I> {
     this.made = new WeakMap();
   }
 
+  /** Forgets `voice`'s answer for `subject`, so its next `of` asks for it afresh. */
+  forget(voice: Voice<I, unknown>, subject: I): void {
+    const known = this.known.get(voice);
+    if (known === undefined || known.get(subject) === undefined) return;
+    known.delete(subject);
+    this.made.delete(voice);
+  }
+
   /** The voice's answers for the registered list, made once per voice per `register`. */
   of(voice: Voice<I, unknown>): Answer {
     const had = this.made.get(voice);

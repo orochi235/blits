@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { part, unpart } from '../src/fade.js';
 import { Answers } from '../src/gpu/answers.js';
 import { mixerOf } from '../src/gpu/engine.js';
+import { Met } from '../src/gpu/met.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { kit, mix, sum } from '../src/index.js';
 import type { Voice } from '../src/voice.js';
@@ -189,6 +190,46 @@ describe('Answers', () => {
     const reach = answers.of(voice).reach as Uint32Array;
     expect(calls).toBe(6);
     for (let i = 0; i < 6; i++) expect(bit(reach, i)).toBe(i % 3 === 0 ? 1 : 0);
+  });
+
+  it('asks target again for a subject dropped, as the CPU does, and for no other', () => {
+    const list = cells(3);
+    const s = list[1] as C;
+    let selected = false;
+    let calls = 0;
+    const { m, voice, answers } = setup({
+      target: (c: C) => {
+        calls++;
+        return c === s ? selected : true;
+      },
+    });
+    const met = new Met(mixerOf(m) as never, () => answers);
+    answers.register(list);
+    expect(bit(answers.of(voice).reach as Uint32Array, 1)).toBe(0);
+    selected = true;
+    expect(bit(answers.of(voice).reach as Uint32Array, 1)).toBe(0);
+    calls = 0;
+    m.drop(s);
+    expect(answers.of(voice).reach).toBeNull();
+    expect(calls).toBe(1);
+    met.close();
+  });
+
+  it('asks target again for a subject brought back into a voice it faded out of', () => {
+    const list = cells(2);
+    const s = list[0] as C;
+    let selected = true;
+    const { m, voice, answers } = setup({ target: (c: C) => c !== s || selected });
+    const mixer = mixerOf(m);
+    const met = new Met(mixer as never, () => answers);
+    m.probe(s);
+    answers.register(list);
+    expect(answers.of(voice).reach).toBeNull();
+    part(mixer, voice as Voice<C, P>, s, 0);
+    selected = false;
+    unpart(mixer, voice as Voice<C, P>, s);
+    expect(bit(answers.of(voice).reach as Uint32Array, 0)).toBe(0);
+    met.close();
   });
 
   it('leaves a mix with no gpu side as it was', () => {

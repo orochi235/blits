@@ -20,6 +20,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A shader patch's `pass_index` is an `i32`, exact to 2^31 passes, where as an `f32` it was exact
   only to 2^24, about 75 hours of a 16 ms loop. WGSL that does float math with it reads
   `f32(pass_index)`.
+- On the `gpu` engine, a voice asks its `target` again for a subject dropped or brought back into
+  it, as on the CPU, where it kept the first answer for good; a `target` reading state the host
+  changes, such as `(s) => s.selected`, no longer folds differently on the two.
+- On the `gpu` engine, a motion patch asks a subject's `from` and `velocity` once until it is let
+  go of, where registering, rebuilding, and meeting it each asked again: one that is not
+  deterministic, such as `() => Math.random()`, no longer starts the subject in one place and jumps.
 
 ## 1.1.1
 

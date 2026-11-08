@@ -197,6 +197,27 @@ describe('motion mirror', () => {
     expect(mirror.rows[mirror.stride + 3 + 2 * n]).toBe(1);
   });
 
+  it("starts an unmet subject from one ask of a `from` that isn't deterministic, rebuilt or met", () => {
+    const list = cells(2);
+    let asks = 0;
+    const s = spring<C, P>('x', { to: (c) => c.id, from: () => ++asks * 10 });
+    const m = mix<C, P>(K, { name: 'mirror' });
+    m.sync(0);
+    m.cue({ patch: s, subjects: list });
+    const motions = motionOf<C>(s) as Motions<C>;
+    const packed = motionPack(s, codesOf(mixerOf(m)));
+    if (packed === undefined || 'why' in packed) throw new Error('the spring did not pack');
+    const x0 = (mirror: Mirror<C>, row: number) => mirror.rows[row * mirror.stride + 3];
+    const first = new Mirror(motions, list, packed.values);
+    first.prepare(0, Number.POSITIVE_INFINITY);
+    const was = [x0(first, 0), x0(first, 1)];
+    const again = new Mirror(motions, list, packed.values);
+    again.prepare(0, Number.POSITIVE_INFINITY);
+    expect([x0(again, 0), x0(again, 1)]).toEqual(was);
+    expect(m.probe(list[1] as C).x).toBe(was[1]);
+    expect(asks).toBe(2);
+  });
+
   it('reads a subject retargeted after registration from its number from then on', () => {
     const list = cells(3);
     const { s, m, motions, mirror } = setup(list);

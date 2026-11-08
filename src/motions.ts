@@ -150,12 +150,19 @@ export class Motions<I> {
   slot(subject: I): number {
     const known = this.known(subject);
     if (known !== undefined) return known;
-    const seg = this.fresh(subject);
+    const first = this.firsts?.get(subject);
+    const seg = first?.stretches[0] ?? this.fresh(subject);
     const s = this.take(subject);
-    this.runs[this.base(s) + 1] = this.freshFlags;
+    this.runs[this.base(s) + 1] = first?.flags ?? this.freshFlags;
     this.write(s, seg);
     return s;
   }
+
+  /**
+   * The runs `freshRun` started for subjects the gpu side registered before the patch met them,
+   * kept until a release, so a `from` or `velocity` that is not deterministic is asked once.
+   */
+  firsts: Store<I, Run> | null = null;
 
   /** The flags of the run `fresh` last started. */
   private freshFlags = 0;
@@ -178,10 +185,15 @@ export class Motions<I> {
     return { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to };
   }
 
-  /** The run `fresh` starts, as plain data. */
+  /** The run a subject the patch has not met starts with, as plain data, made once until a release. */
   freshRun(subject: I): Run {
+    const had = this.firsts?.get(subject);
+    if (had !== undefined) return had;
     const seg = this.fresh(subject);
-    return { flags: this.freshFlags, stretches: [seg], pending: undefined };
+    const run = { flags: this.freshFlags, stretches: [seg], pending: undefined };
+    this.firsts ??= new Store();
+    this.firsts.set(subject, run);
+    return run;
   }
 
   /** Sets the axes every subject moves on, at the first. */
@@ -510,7 +522,7 @@ export class Motions<I> {
    */
   ahead(subject: I, t: number): Segment | undefined {
     const s = this.known(subject);
-    if (s === undefined) return this.fresh(subject);
+    if (s === undefined) return this.firsts?.get(subject)?.stretches[0] ?? this.fresh(subject);
     const b = this.base(s);
     if (((this.runs[b + 1] as number) & OLDER) !== 0 && t < (this.runs[b] as number))
       return undefined;

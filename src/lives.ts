@@ -38,6 +38,7 @@ export function release<I>(
   seq = Number.NaN,
   early = false,
 ): void {
+  this.firsts?.delete(subject);
   const s = this.known(subject);
   if (s === undefined) return;
   if (at !== undefined) {

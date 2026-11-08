@@ -61,6 +61,7 @@ export function forgetIn<I, O>(
 ): void {
   leaveVoice(this, voice, subject);
   voice.subjects.delete(subject);
+  if (!this.projecting) this.forgot?.(voice, subject);
   if (voice.motion !== undefined) this.releaseIn(voice.motion, subject, kept);
   voice.parts?.delete(subject);
   voice.parted?.delete(subject);

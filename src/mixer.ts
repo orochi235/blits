@@ -189,6 +189,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** The gpu side's: told of each subject `drop` lets go of. Null with no gpu engine attached. */
   unmet: ((subject: I) => void) | null = null;
   /**
+   * The gpu side's: told where a voice lets go of a subject by a drop or a bringing back, after
+   * which the CPU asks its `target` and `stagger` afresh. Null with no gpu engine attached.
+   */
+  forgot: ((voice: Voice<I, O>, subject: I) => void) | null = null;
+  /**
    * The host read `inert` as true since the last sync, so its frame loop may be asleep until a
    * change wakes it; a host that never asks keeps no loop asleep on it.
    */

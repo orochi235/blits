@@ -807,18 +807,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       knowing each subject's last probe, which the GPU path keeps no record of.
     - The timing-block span test compares against records made at the end; probing each frame
       would test records that moved.
-    - Needing Mike's call:
-      - **Answers never forgets a subject.** After a drop, or a part and unpart, a CPU-only mix asks
-        `target` again, while one with a gpu side answers from what it kept; they differ only for a
-        `target` that is not deterministic. Forgetting means asking every voice's `target` again
-        for the registered list at the next fold after any drop, an O(subjects × voices) frame
-        under churn: worth it for non-deterministic targets, or documented as a rule?
-      - **A motion whose `from` or `velocity` is not deterministic** can jump on the GPU when a
-        subject is met and whenever its mirror is rebuilt: say so in the docs, or cache the first
-        segment?
-      - **The kernel's pass index is `pass_base + q` in f32**, exact only to 2^24 passes (a 16 ms
-        loop played for about 75 hours). A shader patch's WGSL reads `pass_index: f32`, so exact
-        counts past that mean changing that public type (to `u32`, or a pair).
     - `Answer.reach` shows a faded-out named subject as reached. Harmless while parting voices stay
       on the CPU; lifting "it is parting from subjects" has to fix it first.
 
