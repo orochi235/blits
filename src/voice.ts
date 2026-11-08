@@ -825,6 +825,8 @@ export class Voice<I, O> {
     v.met = null;
     v.metRead = null;
     v.leaps = null;
+    // A span's fit writes its own, which a read ahead's must not write through to the live span.
+    if (this.fitting !== null) v.fitting = { ...this.fitting };
     if (controls) v.take(controls);
     if (v.clocks === this.clocks && v.clocks !== null) v.clocks = v.clocks.slice();
     v.quiet = true;

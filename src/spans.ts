@@ -184,7 +184,7 @@ function leftOf<I, O>(child: Voice<I, O>, local: number, by: number): number {
  */
 export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now): void {
   const fitting = span.fitting as Fitting;
-  if (mix.projecting || span.state === 'done') return;
+  if (span.state === 'done') return;
   const local = clockOf(span, from);
   if (ranBackOver(span, local)) return;
   const by = from < mix.now ? local : Number.NEGATIVE_INFINITY;

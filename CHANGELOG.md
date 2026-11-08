@@ -26,6 +26,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - On the `gpu` engine, a motion patch asks a subject's `from` and `velocity` once until it is let
   go of, where registering, rebuilding, and meeting it each asked again: one that is not
   deterministic, such as `() => Math.random()`, no longer starts the subject in one place and jumps.
+- A read ahead over a span sought forward while turned back fits the span's children as the next
+  frame does, on a copy of its own, where it skipped the fit and ended children the frame keeps.
 
 ## 1.1.1
 
