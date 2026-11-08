@@ -830,7 +830,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   slowing to a stop or playing to a boundary, 2026-11-05). The explainer kit keeps its own clock
   (`site/src/explainers/kit/Explainer.tsx`, `useFocused`) and still stops at once. Its player
   replays a scene from its timeline, so the settle has to be part of what it replays, not a host
-  fade on the main mix.
+  fade on the main mix. Open for Mike (2026-11-08): whether the 400 ms fade moves explainer time,
+  so a scrub back shows it as part of the run, or runs on a clock of its own over a held frame,
+  leaving the run as it was (recommended).
 
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**
   (2026-10-23; narrowed 2026-10-29). A voice cued with `subjects` asks `stagger` for each at cue
