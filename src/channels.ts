@@ -6,7 +6,6 @@ export const STOCK_BAND = { on: Number.MIN_VALUE, off: 0 } as const;
 
 /** The stock numeric channels' `lerp`, which `vec` applies per axis and lanes call directly. */
 export const lerpNumber = (a: number, b: number, u: number) => a + (b - a) * u;
-const mix = lerpNumber;
 
 /**
  * Writes `lerp(a, b, u)` into `out` and returns it, or returns a new array where `out` is absent or
@@ -48,7 +47,7 @@ export interface Numeric {
 
 /** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */
 const add = (a: number, b: number): number => a + b;
-const times = (v: number, w: number): number => v * w;
+export const times = (v: number, w: number): number => v * w;
 const product = (a: number, b: number): number => a * b;
 const toward = (v: number, w: number): number => 1 + (v - 1) * w;
 const larger = (a: number, b: number): number => (a > b ? a : b);
@@ -132,6 +131,25 @@ export interface NumberOptions {
 export const kindOf = (name: string, bounds?: readonly [number, number]) =>
   bounds === undefined ? name : `${name}[${bounds[0]}, ${bounds[1]}]`;
 
+function numberChannel(
+  op: 'sum' | 'mul' | 'max',
+  rest: number,
+  merge: (a: number, b: number) => number,
+  scale: (v: number, w: number) => number,
+  opts: NumberOptions | undefined,
+): Channel<number> {
+  const channel: Channel<number> = {
+    kind: kindOf(op, opts?.bounds),
+    bounds: opts?.bounds,
+    rest,
+    merge,
+    scale,
+    lerp: lerpNumber,
+  };
+  numerics.set(channel, { op, axes: 1 });
+  return channel;
+}
+
 /**
  * A number whose contributions add, resting at 0.
  *
@@ -141,16 +159,7 @@ export const kindOf = (name: string, bounds?: readonly [number, number]) =>
  * @category channel
  */
 export function sum(opts?: NumberOptions): Channel<number> {
-  const channel: Channel<number> = {
-    kind: kindOf('sum', opts?.bounds),
-    bounds: opts?.bounds,
-    rest: 0,
-    merge: add,
-    scale: times,
-    lerp: mix,
-  };
-  numerics.set(channel, { op: 'sum', axes: 1 });
-  return channel;
+  return numberChannel('sum', 0, add, times, opts);
 }
 
 /**
@@ -162,16 +171,7 @@ export function sum(opts?: NumberOptions): Channel<number> {
  * @category channel
  */
 export function mul(opts?: NumberOptions): Channel<number> {
-  const channel: Channel<number> = {
-    kind: kindOf('mul', opts?.bounds),
-    bounds: opts?.bounds,
-    rest: 1,
-    merge: product,
-    scale: toward,
-    lerp: mix,
-  };
-  numerics.set(channel, { op: 'mul', axes: 1 });
-  return channel;
+  return numberChannel('mul', 1, product, toward, opts);
 }
 
 /**
@@ -184,16 +184,7 @@ where the strongest should show and two should not add.
  * @category channel
  */
 export function max(opts?: NumberOptions): Channel<number> {
-  const channel: Channel<number> = {
-    kind: kindOf('max', opts?.bounds),
-    bounds: opts?.bounds,
-    rest: 0,
-    merge: larger,
-    scale: times,
-    lerp: mix,
-  };
-  numerics.set(channel, { op: 'max', axes: 1 });
-  return channel;
+  return numberChannel('max', 0, larger, times, opts);
 }
 
 /**

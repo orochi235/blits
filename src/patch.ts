@@ -74,10 +74,8 @@ export interface KeysOptions<O> {
   kit?: Partial<Kit<O>>;
 }
 
-const linear = (a: number, b: number, u: number) => a + (b - a) * u;
-
 function interpolate(a: unknown, b: unknown, u: number): unknown {
-  if (typeof a === 'number' && typeof b === 'number') return linear(a, b, u);
+  if (typeof a === 'number' && typeof b === 'number') return lerpNumber(a, b, u);
   if (Array.isArray(a) && Array.isArray(b)) {
     const out = new Array<unknown>(a.length);
     for (let i = 0; i < a.length; i++) out[i] = interpolate(a[i], b[i], u);

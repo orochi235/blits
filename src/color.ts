@@ -5,8 +5,6 @@ import { fromLab, LAB, lab } from './oklab.js';
 import type { Channel } from './types.js';
 import { warnOnce } from './warn.js';
 
-const mix = lerpNumber;
-
 /**
  * Colors already turned into OKLCH, direct-mapped on a byte of their hash: a mix reads the same
  * few keyframe colors every frame, and the table stays 256 colors however many it meets.
@@ -53,7 +51,7 @@ export function mixHex(a: number, b: number, u: number): number {
   const sb = oklch(b);
   const bc = slotC[sb] as number;
   const h = hueAt(ah, ac, slotH[sb] as number, bc, u);
-  return fromOklch(mix(al, slotL[sb] as number, u), mix(ac, bc, u), h);
+  return fromOklch(lerpNumber(al, slotL[sb] as number, u), lerpNumber(ac, bc, u), h);
 }
 
 /** The hue `u` of the way from `ah` to `bh` the short way round, a gray end taking the other's. */
@@ -81,10 +79,15 @@ const PAIR = new Float64Array(8);
 function lerpLch(x: number[], y: number[], u: number): number[] {
   const p = PAIR;
   lchPair(x, 0, y, 0, p);
-  const w = mix(p[3] as number, p[7] as number, u);
-  const C = mix(p[1] as number, p[5] as number, u);
+  const w = lerpNumber(p[3] as number, p[7] as number, u);
+  const C = lerpNumber(p[1] as number, p[5] as number, u);
   const h = (p[2] as number) + (HUES[1] as number) * u;
-  return [mix(p[0] as number, p[4] as number, u) * w, C * Math.cos(h) * w, C * Math.sin(h) * w, w];
+  return [
+    lerpNumber(p[0] as number, p[4] as number, u) * w,
+    C * Math.cos(h) * w,
+    C * Math.sin(h) * w,
+    w,
+  ];
 }
 
 /** A color value as ink's five numbers, `[w·L, w·a, w·b, w·C, w]` times `k`, into `out`. */
@@ -106,10 +109,16 @@ function lerpInk(x: number[], y: number[], u: number): number[] {
   if (u === 1) return inked(y, 1, doubles(5, 0));
   const p = PAIR;
   lchPair(x, 0, y, 0, p, x.length > 4 ? 5 : 4, y.length > 4 ? 5 : 4);
-  const w = mix(p[3] as number, p[7] as number, u);
-  const Cw = mix(p[1] as number, p[5] as number, u) * w;
+  const w = lerpNumber(p[3] as number, p[7] as number, u);
+  const Cw = lerpNumber(p[1] as number, p[5] as number, u) * w;
   const h = (p[2] as number) + (HUES[1] as number) * u;
-  return [mix(p[0] as number, p[4] as number, u) * w, Math.cos(h) * Cw, Math.sin(h) * Cw, Cw, w];
+  return [
+    lerpNumber(p[0] as number, p[4] as number, u) * w,
+    Math.cos(h) * Cw,
+    Math.sin(h) * Cw,
+    Cw,
+    w,
+  ];
 }
 
 /**
@@ -300,9 +309,9 @@ export function toHex(pose: ArrayLike<number>, under = 0x000000): number {
   if (w >= 1) return fromLab(L, A, B);
   lab(under);
   return fromLab(
-    mix(LAB[0] as number, L, w),
-    mix(LAB[1] as number, A, w),
-    mix(LAB[2] as number, B, w),
+    lerpNumber(LAB[0] as number, L, w),
+    lerpNumber(LAB[1] as number, A, w),
+    lerpNumber(LAB[2] as number, B, w),
   );
 }
 
