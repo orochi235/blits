@@ -822,6 +822,31 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - `Answer.reach` shows a faded-out named subject as reached. Harmless while parting voices stay
       on the CPU; lifting "it is parting from subjects" has to fix it first.
 
+19. **What the 2026-11-09 audit left open.** The audit folded duplication across the engine, value
+    code, gpu path, and companions, and filled the public API's gaps without breaking it. Left:
+    - **Public renames, the owner's call (asked 2026-11-09):** `timestamp` on mix-clock fields
+      (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a Promise);
+      glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the
+      motions' `settle`; `SpanSpec.share` beside the `share` signal; `SpanSpec.priority` meaning two
+      things on a nested span; `blendMode()` returning CSS names; `Ticker.now()` a method where every
+      other `now` is a property; `Ticker.hold()` returning a function where `Watched.hold()` returns
+      a `Hold`; the teardown verbs (tone's `cancel`, the panel's `dispose`, quarks' driver with none);
+      rapier's `Body.drop` and `Body.drive` meaning other things than quarks' and tone's; the
+      panel's `Source` and `wire` colliding with quarks'.
+    - `mute` takes only `{ over }`: honoring `at` and `deadline` means routing each voice through
+      `hosts.ts`'s fade dispatch, which throws for `at: 'rest'` on an owner.
+    - `blend` copies only `name`, `tags`, and `hits` off a member (`mixer.ts`), so `BlendMember`
+      takes no `marks` or `track`.
+    - `handle.weight` stays inert under a weight signal (it now warns): multiplying it in means
+      changing the gpu's `baseOf` (`src/gpu/weight.ts`) and about eight CPU readers together.
+    - `submit.ts` writes each changed values range separately; `spanned()` (`gpu/mirrors.ts`) may
+      apply there too. Unmeasured.
+    - `mirror.at` ignores `beginless`, so a beginless voice with delays may read NaN on the gpu
+      where the CPU shows its time. Inferred, untested.
+    - The `record` in history.ts and the one in tape.ts still share a name.
+    - quarks, tone, and rapier each wrap `mix.cue` to cue on their own subject, with three error
+      messages; one engine helper would serve all three.
+
 ## Loose ends
 
 - **Parked: channel nodes shaped by their fold rule** (unbuilt; parked 2026-11-05 to work on the
