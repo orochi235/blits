@@ -33,6 +33,39 @@ export interface Fold<I> {
   readonly list: readonly I[];
 }
 
+/** A buffer of `bytes` the GPU copies into and the CPU maps to read. */
+export function staging(device: GpuDevice, bytes: number, label: string): GpuBuffer {
+  return device.createBuffer({ size: bytes, usage: Usage.MAP_READ | Usage.COPY_DST, label });
+}
+
+/** One copy from a GPU buffer into a staging buffer, in bytes. */
+export interface Copy {
+  readonly from: GpuBuffer;
+  readonly offset: number;
+  readonly at: number;
+  readonly bytes: number;
+}
+
+/**
+ * Submits `copies` into `into` and maps it to read: then `mapped(true)` once it is, or
+ * `mapped(false)` where the map is refused, as on a device lost before it settles. Unmapping or
+ * destroying `into` after is the caller's.
+ */
+export function mapCopy(
+  device: GpuDevice,
+  into: GpuBuffer,
+  copies: readonly Copy[],
+  mapped: (ok: boolean) => void,
+): void {
+  const enc = device.createCommandEncoder();
+  for (const c of copies) enc.copyBufferToBuffer(c.from, c.offset, into, c.at, c.bytes);
+  device.queue.submit([enc.finish()]);
+  into.mapAsync(MAP_READ).then(
+    () => mapped(true),
+    () => mapped(false),
+  );
+}
+
 /** The most staging buffers the ring holds. */
 export const SLOTS = 3;
 
@@ -180,20 +213,13 @@ export class Readback<I> {
   }
 
   private make(bytes: number): GpuBuffer {
-    return this.device.createBuffer({
-      size: bytes,
-      usage: Usage.MAP_READ | Usage.COPY_DST,
-      label: 'blits gpu readback',
-    });
+    return staging(this.device, bytes, 'blits gpu readback');
   }
 
   /** Copies `parts` of `f` into `slot`, or into a buffer of their own where it is null, and maps it. */
   private copy(f: Fold<I>, parts: readonly Part[], slot: Slot | null): void {
     const buffer = slot?.buffer ?? this.make(size(parts));
     if (slot === null) this.loose.add(buffer);
-    const enc = this.device.createCommandEncoder();
-    for (const p of parts) enc.copyBufferToBuffer(f.out, p.offset, buffer, p.at, p.bytes);
-    this.device.queue.submit([enc.finish()]);
     let resolve: (reads: Map<string, GpuRead<I>> | null) => void = () => {};
     const done = new Promise<Map<string, GpuRead<I>> | null>((r) => {
       resolve = r;
@@ -227,9 +253,11 @@ export class Readback<I> {
         resolve(reads);
       }
     };
-    buffer.mapAsync(MAP_READ).then(
-      () => end(true),
-      () => end(false),
+    mapCopy(
+      this.device,
+      buffer,
+      parts.map((p) => ({ from: f.out, offset: p.offset, at: p.at, bytes: p.bytes })),
+      end,
     );
     for (const p of parts) {
       this.copied.add(p.name);
