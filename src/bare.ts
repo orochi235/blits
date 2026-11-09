@@ -151,7 +151,7 @@ export function unbareLane<I, O>(lane: Lane<I, O>, p: number): void {
   const elapsed = lane.bareElapsed - (data[o + Row.DELAY] as number);
   const share = left(
     run.ease as Curve,
-    progress(elapsed, runs[b] as number, runs[b + RunField.MS] as number),
+    progress(elapsed, runs[b + RunField.AT] as number, runs[b + RunField.MS] as number),
   );
   const x = b + RunField.X0;
   const g = x + 2 * n;

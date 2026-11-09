@@ -43,12 +43,12 @@ export const enum Law {
 const HEAD = Law.HEAD;
 
 /**
- * Where each field of a subject's run sits from the run's start, which holds its release time:
- * its flags, a tween's ms, then `x0`, with `v0` and `to` after it `n` and `2n` along. No `AT = 0`:
- * `b + 0` on a double index is an add V8 keeps, 2-5% on the bare tween rows (bench/frame.mjs).
+ * Where each field of a subject's run sits from the run's start: its release time, its flags, a
+ * tween's ms, then `x0`, with `v0` and `to` after it `n` and `2n` along.
  */
 // biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
 export const enum RunField {
+  AT = 0,
   FLAGS = 1,
   MS = 2,
   X0 = 3,
@@ -300,7 +300,7 @@ export class Motions<I> {
     const runs = this.runs;
     const b = this.base(s);
     if (((runs[b + RunField.FLAGS] as number) & (PENDING | OLDER)) !== 0) return false;
-    out[o] = runs[b] as number;
+    out[o] = runs[b + RunField.AT] as number;
     out[o + 1] = runs[b + RunField.MS] as number;
     const n3 = 3 * this.n;
     for (let i = 0; i < n3; i++) out[o + 2 + i] = runs[b + RunField.X0 + i] as number;
@@ -336,7 +336,7 @@ export class Motions<I> {
       this.advance(s, t);
       const runs = this.runs;
       const b = this.base(s);
-      const at = runs[b] as number;
+      const at = runs[b + RunField.AT] as number;
       if (t < at && (runs[b + RunField.FLAGS] as number) & OLDER)
         this.evaluateSegment(this.playing(s, t), t, xo, vo);
       else {
@@ -379,7 +379,7 @@ export class Motions<I> {
     const x = b + RunField.X0;
     const n = this.n;
     this.evaluate(
-      runs[b] as number,
+      runs[b + RunField.AT] as number,
       runs[b + RunField.MS] as number,
       runs,
       x,
@@ -408,7 +408,7 @@ export class Motions<I> {
       const subject = this.numbers.subject(s);
       if (subject === absent) continue;
       if (flags & PENDING) return false;
-      const at = runs[b] as number;
+      const at = runs[b + RunField.AT] as number;
       const t = this.frame(subject);
       if (!(t >= at)) return false;
       const x = b + RunField.X0;
@@ -436,7 +436,7 @@ export class Motions<I> {
     }
     if (flags & OLDER) {
       const list = (this.older as Segment[][])[s] as Segment[];
-      const next = list.length > 1 ? (list[1] as Segment).at : (runs[b] as number);
+      const next = list.length > 1 ? (list[1] as Segment).at : (runs[b + RunField.AT] as number);
       if (next <= reading.horizon) return false;
     }
     return true;
@@ -503,7 +503,7 @@ export class Motions<I> {
       this.causes ??= [];
       this.causes[s] = seg.change;
     }
-    this.runs[b] = seg.at;
+    this.runs[b + RunField.AT] = seg.at;
     this.runs[b + RunField.FLAGS] = (this.runs[b + RunField.FLAGS] as number) & ~LANDED;
     this.runs[b + RunField.MS] = seg.ms;
     for (let i = 0; i < n; i++) {
@@ -518,7 +518,7 @@ export class Motions<I> {
     const n = this.n;
     const x = this.base(s) + RunField.X0;
     return {
-      at: this.runs[this.base(s)] as number,
+      at: this.runs[this.base(s) + RunField.AT] as number,
       ms: this.runs[this.base(s) + RunField.MS] as number,
       x0: numbers(this.runs, x, n),
       v0: numbers(this.runs, x + n, n),
@@ -536,7 +536,10 @@ export class Motions<I> {
     const s = this.known(subject);
     if (s === undefined) return this.firsts?.get(subject)?.stretches[0] ?? this.fresh(subject);
     const b = this.base(s);
-    if (((this.runs[b + RunField.FLAGS] as number) & OLDER) !== 0 && t < (this.runs[b] as number))
+    if (
+      ((this.runs[b + RunField.FLAGS] as number) & OLDER) !== 0 &&
+      t < (this.runs[b + RunField.AT] as number)
+    )
       return undefined;
     let seg = this.latest(s);
     for (const change of this.dueTo(s) ?? []) {

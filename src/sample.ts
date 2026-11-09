@@ -162,7 +162,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
           values[base + a] = foldNumber(op, values[base + a] as number, runs[g + a] as number, w);
         continue;
       }
-      const u = progress(elapsed, runs[b] as number, runs[b + RunField.MS] as number);
+      const u = progress(elapsed, runs[b + RunField.AT] as number, runs[b + RunField.MS] as number);
       const share = left(ease, u);
       if (u >= 1) landed[p] = elapsed;
       for (let a = 0; a < n; a++)
@@ -178,7 +178,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       // A tween's closed form, read straight from its run: release time, length, `x0`, `to`.
       const share = left(
         ease,
-        progress(elapsed, runs[b] as number, runs[b + RunField.MS] as number),
+        progress(elapsed, runs[b + RunField.AT] as number, runs[b + RunField.MS] as number),
       );
       const x = b + RunField.X0;
       const g = x + 2 * n;
