@@ -96,8 +96,12 @@ export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): 
  * Keeps, under history, the record a subject leaves a voice with as it is let go of: for one faded
  * out before the voice met it, a record saying it is not reached.
  */
-export function leaveVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
-  const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+export function leaveVoice<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held = voice.subjects.get(subject) as Subject<unknown> | undefined,
+): void {
   if (held !== undefined || voice.parted?.has(subject) !== true) leave(mix, voice, subject, held);
   else leave(mix, voice, subject, voice.unreached ?? mix.unreachedOf(voice, mix.now));
 }

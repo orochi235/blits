@@ -62,9 +62,11 @@ export function dropIn<I, O>(
   subject: I,
   kept: ReturnType<typeof releasing>,
 ): void {
-  leaveVoice(this, voice, subject);
+  // Asked once: a copy's or a sought voice's store makes the record it is asked for.
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-  if (held !== undefined) unrecord(voice, subject, held);
+  leaveVoice(this, voice, subject, held);
+  if (held === undefined) voice.subjects.delete(subject);
+  else unrecord(voice, subject, held);
   if (!this.projecting) this.forgot?.(voice, subject);
   if (voice.motion !== undefined) this.releaseIn(voice.motion, subject, kept);
   voice.parts?.delete(subject);

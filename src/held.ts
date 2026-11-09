@@ -117,6 +117,7 @@ export function held<I, O>(
     voice.met ??= [];
     voice.met.push(subject);
   }
+  voice.made++;
   // A subject a voice saw while it shared one record was counted then.
   if (voice.sighted !== null && this.share?.sighted(voice, slot))
     this.share.inherit(voice, held, slot);

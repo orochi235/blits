@@ -172,12 +172,12 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
         mix,
         voice: v,
         up: links.get(v),
-        seen: 0,
+        made: 0,
         shared: false,
         filled: false,
       } as unknown as Link;
       const copy: Voice<I, O> = v.copy((subject) => carry(link, subject, c, copy), undefined, true);
-      link.seen = copy.seen;
+      link.made = copy.made;
       link.shared = copy.sharing;
       links.set(copy, link);
       return copy;
@@ -247,8 +247,8 @@ interface Link {
   voice: Voice<unknown, unknown>;
   /** The link of `voice`, where it is itself a copy at the stop before. */
   up: Link | undefined;
-  /** The copy's `seen` and `sharing` as it was made. */
-  seen: number;
+  /** The copy's `made` and `sharing` as it was made. */
+  made: number;
   shared: boolean;
   /** Whether the copy has taken a record from `voice`. */
   filled: boolean;
@@ -263,7 +263,7 @@ const links = new WeakMap<object, Link>();
  */
 function empty(voice: Voice<unknown, unknown>, link: Link): boolean {
   return (
-    voice.seen === link.seen &&
+    voice.made === link.made &&
     !link.filled &&
     !link.shared &&
     voice.unreached === null &&
