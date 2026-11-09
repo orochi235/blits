@@ -4,7 +4,7 @@ import { clampWeight, passAt, same, weighed } from './clock.js';
 import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { owableAlone } from './meet.js';
-import { Law, type Motions } from './motions.js';
+import { Law, type Motions, RunField } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { RunFlag } from './stretch.js';
@@ -127,7 +127,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     let scalar = false;
     if (ms >= 0) {
       b = Law.HEAD + ms * run.stride;
-      const f = run.runs[b + 1] as number;
+      const f = run.runs[b + RunField.FLAGS] as number;
       if ((f & (RunFlag.PENDING | RunFlag.OLDER)) !== 0) b = -1;
       scalar = (f & RunFlag.SCALAR) !== 0;
     }
@@ -153,7 +153,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       if (w <= 0) continue;
       const values = ch.values;
       const base = slot * n;
-      const x = b + 3;
+      const x = b + RunField.X0;
       const g = x + 2 * n;
       // A bare position's stretch tells the lane before it changes, and a sample's progress rounds
       // monotonically in voice time, so one seen landed folds its `to` as it is at any later time.
@@ -162,7 +162,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
           values[base + a] = foldNumber(op, values[base + a] as number, runs[g + a] as number, w);
         continue;
       }
-      const u = progress(elapsed, runs[b] as number, runs[b + 2] as number);
+      const u = progress(elapsed, runs[b + RunField.AT] as number, runs[b + RunField.MS] as number);
       const share = left(ease, u);
       if (u >= 1) landed[p] = elapsed;
       for (let a = 0; a < n; a++)
@@ -176,8 +176,11 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     }
     if (ease !== undefined) {
       // A tween's closed form, read straight from its run: release time, length, `x0`, `to`.
-      const share = left(ease, progress(elapsed, runs[b] as number, runs[b + 2] as number));
-      const x = b + 3;
+      const share = left(
+        ease,
+        progress(elapsed, runs[b + RunField.AT] as number, runs[b + RunField.MS] as number),
+      );
+      const x = b + RunField.X0;
       const g = x + 2 * n;
       for (let a = 0; a < n; a++)
         xs[a] = between(runs[x + a] as number, runs[g + a] as number, share);
