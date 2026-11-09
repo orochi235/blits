@@ -1,15 +1,11 @@
 /** sRGB bytes, linear sRGB and OKLab, one to another. */
 
-const LINEAR = Array.from({ length: 256 }, (_, c) => {
-  const v = c / 255;
-  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-});
+const decode = (v: number): number => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+
+const LINEAR = Array.from({ length: 256 }, (_, c) => decode(c / 255));
 
 /** The linear value halfway between byte c - 1 and c: at or above it, a value rounds to c. */
-const ROUNDS_UP = LINEAR.map((_, c) => {
-  const v = (c - 0.5) / 255;
-  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-});
+const ROUNDS_UP = LINEAR.map((_, c) => decode((c - 0.5) / 255));
 
 /** The byte each 1/4096 of linear light starts at; a bin holds at most one rounding point. */
 const BINS = 4096;
@@ -67,6 +63,19 @@ export function linearOf(L: number, A: number, B: number): number[] {
   RGB[1] = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
   RGB[2] = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
   return RGB;
+}
+
+/**
+ * A premultiplied OKLab contribution `[c·L, c·a, c·b]` at coverage `cov` > 0 into `RGB` as linear
+ * sRGB, each axis clipped to [0, 1].
+ */
+export function clippedOf(v: ArrayLike<number>, cov: number): number[] {
+  const s = 1 / cov;
+  const rgb = linearOf((v[0] ?? 0) * s, (v[1] ?? 0) * s, (v[2] ?? 0) * s);
+  rgb[0] = clip(rgb[0] as number);
+  rgb[1] = clip(rgb[1] as number);
+  rgb[2] = clip(rgb[2] as number);
+  return rgb;
 }
 
 /** 0xrrggbb to linear sRGB, one channel: `LINEAR[byte]`. */

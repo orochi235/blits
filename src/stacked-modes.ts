@@ -1,6 +1,6 @@
 import type { BlendRule } from './blend-modes.js';
 import { foldsInto, vouch } from './channels.js';
-import { clip, fromLinear, labOf, linearByte, linearOf } from './oklab.js';
+import { clippedOf, fromLinear, labOf, linearByte } from './oklab.js';
 import { shared } from './shared.js';
 import { BY_TAG, type OrderedMode, STACKED, type Stacked } from './stack-blends.js';
 import type { Channel } from './types.js';
@@ -25,7 +25,8 @@ export interface StackOptions {
 
 const LAYERS = 4;
 
-const blends = shared<object, BlendRule>('blend-rule@1');
+/** Every blend-mode color channel's rule; `blendRuleOf` reads it. */
+export const blends = shared<object, BlendRule>('blend-rule@1');
 
 /** Each rule's layer count, where it was given one. */
 const capacities = new WeakMap<object, number>();
@@ -83,12 +84,8 @@ function layOn(into: number[], v: ArrayLike<number>, w: number, full: object): n
   }
   const cov = v[3] ?? 0;
   if (!(cov > 0)) return into;
-  const s = 1 / cov;
-  const rgb = linearOf((v[0] ?? 0) * s, (v[1] ?? 0) * s, (v[2] ?? 0) * s);
-  const r = clip(rgb[0] as number);
-  const g = clip(rgb[1] as number);
-  const b = clip(rgb[2] as number);
-  push(into, r, g, b, w * (cov < 1 ? cov : 1), full);
+  const rgb = clippedOf(v, cov);
+  push(into, rgb[0] as number, rgb[1] as number, rgb[2] as number, w * (cov < 1 ? cov : 1), full);
   return into;
 }
 

@@ -1,8 +1,8 @@
 import { doubles, foldsInto, lerpNumber, max, mul, sum, vouch } from './channels.js';
 import { extremes, min } from './extremes.js';
-import { clip, fromLinear, labOf, linearByte, linearOf } from './oklab.js';
-import { shared } from './shared.js';
+import { clippedOf, fromLinear, labOf, linearByte } from './oklab.js';
 import {
+  blends,
   type OrderedMode,
   ordered,
   stackCss,
@@ -142,12 +142,11 @@ function foldInto(m: Mode, into: number[], v: ArrayLike<number>, w: number): num
       into[3] = m.tag;
       return into;
     }
-    const s = 1 / cov;
-    const rgb = linearOf((v[0] ?? 0) * s, (v[1] ?? 0) * s, (v[2] ?? 0) * s);
+    const rgb = clippedOf(v, cov);
     const a = w * (cov < 1 ? cov : 1);
-    const r = clip(rgb[0] as number);
-    const g = clip(rgb[1] as number);
-    const b = clip(rgb[2] as number);
+    const r = rgb[0] as number;
+    const g = rgb[1] as number;
+    const b = rgb[2] as number;
     x0 = a * (m.invert ? 1 - r : r);
     x1 = a * (m.invert ? 1 - g : g);
     x2 = a * (m.invert ? 1 - b : b);
@@ -225,8 +224,6 @@ export type BlendRule = (
     }
   | { readonly kind: 'stack'; readonly tag: number; readonly layers: number }
 ) & { readonly round?: boolean };
-
-const blends = shared<object, BlendRule>('blend-rule@1');
 
 /** The fold of a color channel `color(mode())` made; undefined for any other channel. */
 export function blendRuleOf(channel: Channel<unknown>): BlendRule | undefined {
