@@ -61,8 +61,10 @@ function copied(v: unknown, depth: number): unknown {
 /** A copy a fold may write into: arrays, typed arrays and plain objects copied, the rest as is. */
 export function copy(v: unknown): unknown {
   if (typeof v !== 'object' || v === null) return v;
-  const c = arrayCopy(v);
-  return c !== v ? c : plainObject(v) ? clone(v) : v;
+  // Written out rather than through `arrayCopy`: `pull` calls this per key per subject per frame.
+  if (Array.isArray(v)) return [...v];
+  if (ArrayBuffer.isView(v)) return (v as unknown as { slice(): unknown }).slice();
+  return plainObject(v) ? clone(v) : v;
 }
 
 /** `v` with an array or a typed array copied, one level deep; anything else as is. */
