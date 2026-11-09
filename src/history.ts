@@ -168,6 +168,8 @@ export function copyHeld<I, O>(
     next: h.next,
     version: h.version,
     roles: h.roles,
+    probeRow: -1,
+    probeEpoch: -1,
     slot: h.slot,
     run: h.run,
     freed: h.freed,

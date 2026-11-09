@@ -48,6 +48,8 @@ export function record(voice: object | null, reaches: boolean, state: unknown): 
     next: null,
     version: Number.NaN,
     roles: null,
+    probeRow: -1,
+    probeEpoch: -1,
     slot: -1,
     run: -1,
     freed: -1,

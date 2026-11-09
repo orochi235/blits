@@ -44,6 +44,9 @@ export function relink<I, O>(
   if (was !== undefined && was !== head) {
     if (!sought) head.roles = was.roles;
     was.roles = null;
+    head.probeRow = was.probeRow;
+    head.probeEpoch = was.probeEpoch;
+    was.probeRow = -1;
     was.slot = -1;
   }
   head.slot = slot;

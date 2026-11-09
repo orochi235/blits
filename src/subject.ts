@@ -131,6 +131,9 @@ export interface Subject<S> {
    */
   version: number;
   roles: Map<string, Uint8Array> | null;
+  /** On the first record: its row in the mix's `Probes`, -1 without one, and the epoch it was given at. */
+  probeRow: number;
+  probeEpoch: number;
   /** On the first record: the number lanes index this subject by, -1 without one. */
   slot: number;
   /** A motion voice's number for this subject in its patch, good while `freed` is the patch's own. */

@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 1.1.1 (2026-11-07), with blits-panel 1.1.1 taking it as an exact peer and bundling weasel, blits-rapier 0.7.1 as a `^1.1.0` peer, blits-quarks 0.17.1 and blits-tone 0.12.2 as a `^1.0.0` peer, and all four pinning 1.1.1 to build against. blits-panel releases in lockstep with the engine, at its version, from 1.1.0 on (owner's call, 2026-11-05); the release workflow holds it there. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 1.2.0 (2026-11-08), with blits-panel 1.2.0 taking it as an exact peer and bundling weasel, blits-rapier 0.7.2 as a `^1.1.0` peer, blits-quarks 0.17.2 and blits-tone 0.12.3 as a `^1.0.0` peer, and all four pinning 1.2.0 to build against. blits-panel releases in lockstep with the engine, at its version, from 1.1.0 on (owner's call, 2026-11-05); the release workflow holds it there. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
   An engine release runs the check once, as release.yml's lint, typecheck, and test steps: the
   publish step sets `BLITS_CHECKED`, which `prepublishOnly` takes as the check already run (from
   2026-11-08; 1.1.0, checked twice, needed four tags). A publish by hand still checks.
@@ -265,10 +265,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    pinned by a test in `test/stress-findings.test.ts`; what is below is still open.
    - **The first `from: 'current'` voice on a host probing into its own object starts from this
      frame's fold** (2026-11-08): no speed, and from rest where the voice before it was cut off in
-     the same frame. `pull` closed this with a copy of its columns (`src/trail.ts`); a probe has no
-     columns, and keeping a pose a subject on every probe measured 1.20 → 2.2 ms on `keys`
-     10,000 × 3 and 0.72 → 1.5 on `tweens` (`bench/runs/2026-11-08-keep-ab.txt`). What would close
-     it cheaply is a record that needs no per-subject lookup, such as one on the subject's chain.
+     the same frame. `pull` closed this with a copy of its columns (`src/trail.ts`). For a probe,
+     branch `probe-trail` (unmerged, waiting on Mike's call) keeps each subject's last two poses in
+     one mix-wide buffer, its row number on the chain head (`Probes` in `src/trail.ts`), and its
+     tests pass. It costs a 10,000-subject probe frame 35–70%: `keys` 1.05 → 1.46 ms and `tweens`
+     0.72 → 1.09 on msb-uai (`bench/runs/2026-11-08-probes-ab.txt` is the last run, on a loaded
+     node). With `note` stubbed out the rows match the parent, so the copy itself is the cost. A
+     profile of `tweens` puts `note` at 19% of the frame and `keep` at 11%, spread over the copy's
+     lines, with no hot spot. Typed arrays on each head and a keyed object cost more, and the mix's
+     pose store doubles the frame. Not yet tried: `Probes` in place of that store for hosts already
+     retargeting, which should make them faster.
      The trail itself costs `pull` about 0.01 ms a frame on `tweens^` 10,000 (0.186 → 0.200,
      `bench/runs/2026-11-08-trail-ab.txt`), copying the subject list and columns each frame; a
      list unchanged since the last frame need not be copied again.

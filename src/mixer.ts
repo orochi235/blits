@@ -58,7 +58,7 @@ import type { Subject } from './subject.js';
 import { record } from './tape.js';
 import { touch } from './touch.js';
 import { traceMix } from './trace.js';
-import type { Trail } from './trail.js';
+import type { Probes, Trail } from './trail.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
   ArcHandle,
@@ -176,6 +176,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   pullColumns: Map<string, Column> | null = null;
   /** What `pull` wrote in its last two frames before a retarget was cued; see `Trail`. */
   pullTrail: Trail<I> | null = null;
+  /** The poses a host probing into its own object leaves, before a retarget asks for them; see `Probes`. */
+  probes: Probes | null = null;
+  /** The mix whose kept frames a retarget reads: this one, or the live mix a projection reads ahead of. */
+  poseHost: Mixer<I, O> = this;
   /** Counts chains made stale one subject at a time, which `version` does not. */
   relinks = 0;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
@@ -519,8 +523,12 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   probe(subject: I, out?: O): O {
     this.looked = true;
-    const pose = this.fold(subject, out);
-    this.keep(subject, pose, out);
+    const head = this.linked(subject);
+    const folded = this.foldWith(subject, out ?? this.pose(), head, this.linkedLaned, false);
+    const pose = (
+      this.bounded.length === 0 ? folded : this.clamp(folded as Record<string, unknown>)
+    ) as O;
+    this.keep(subject, pose, out, head);
     // Where the lanes answer `atRest` from their own values, there is nothing to keep.
     if (this.restStamps !== null && !(this.linkedLaned && this.restsLaned()))
       this.restStamps.set(subject, 2 * this.restsKey() + (this.rests(pose) ? 1 : 0));

@@ -1,4 +1,8 @@
+import { axesOf } from './channels.js';
+import { copy } from './clone.js';
 import type { Column } from './pull.js';
+import type { Subject } from './subject.js';
+import type { Channel } from './types.js';
 
 /** One `pull`'s subjects and the numbers it wrote for them, column by column. */
 interface Pulled<I> {
@@ -108,4 +112,150 @@ function poseIn<I>(f: Frame<I>, subject: I): Record<string, unknown> | undefined
     }
   }
   return pose;
+}
+
+/** One frame's pose of a subject, and whether it holds every channel or only those pulled. */
+export interface Sample {
+  at: number;
+  pose: Record<string, unknown>;
+  whole: boolean;
+}
+
+/**
+ * Every probed subject's last two poses, where a host probes into its own object and the mix keeps
+ * no poses: one row a subject in one buffer, its number on the subject's chain head, so a probe
+ * makes no lookup and allocates nothing for it. Typed arrays a head, or a plain object written by
+ * key, cost a 10,000-subject probe frame 30–60% (2026-11-08). A row holds its two frames' times and
+ * which half is the latest, then both halves; a value that is not numbers goes in `other`.
+ */
+export class Probes {
+  private readonly names: readonly string[];
+  /** Where each channel's numbers start in a half; the last entry is the half's width. */
+  private readonly layout: Int32Array;
+  private readonly width: number;
+  private readonly stride: number;
+  private rows = new Float64Array(0);
+  private other: unknown[] = [];
+  private count = 0;
+  private free: number[] = [];
+  /** Moved on by a seek: a head noted before then holds a row no longer its own. */
+  epoch = 0;
+
+  constructor(names: readonly string[], channels: readonly Channel<unknown>[]) {
+    this.names = names;
+    const at = new Int32Array(channels.length + 1);
+    for (let i = 0; i < channels.length; i++)
+      at[i + 1] = (at[i] as number) + axesOf(channels[i] as Channel<unknown>);
+    this.layout = at;
+    this.width = at[channels.length] as number;
+    this.stride = 3 + 2 * this.width;
+  }
+
+  /** Copies a probe's pose into the head's row, over the older half once the frame moves on. */
+  note(
+    head: Subject<unknown>,
+    pose: Record<string, unknown>,
+    clock: { readonly now: number },
+  ): void {
+    // Read here, not passed: a double handed to a call V8 does not inline is boxed, 16 B a probe.
+    const now = clock.now;
+    const rows = this.rowOf(head);
+    const base = head.probeRow * this.stride;
+    if (rows[base] !== now) {
+      rows[base + 1] = rows[base] as number;
+      rows[base] = now;
+      rows[base + 2] = 1 - (rows[base + 2] as number);
+    }
+    const half = rows[base + 2] as number;
+    const into = base + 3 + half * this.width;
+    const others = (head.probeRow * 2 + half) * this.names.length;
+    const names = this.names;
+    const layout = this.layout;
+    const other = this.other;
+    for (let i = 0; i < names.length; i++) {
+      const v = pose[names[i] as string];
+      const from = into + (layout[i] as number);
+      const axes = (layout[i + 1] as number) - (layout[i] as number);
+      if (typeof v === 'number' && axes === 1) {
+        rows[from] = v;
+        if (other[others + i] !== undefined) other[others + i] = undefined;
+      } else if (Array.isArray(v) && v.length === axes && typeof v[0] === 'number') {
+        for (let a = 0; a < axes; a++) rows[from + a] = v[a] as number;
+        if (other[others + i] !== undefined) other[others + i] = undefined;
+      } else {
+        rows[from] = Number.NaN;
+        other[others + i] = copy(v);
+      }
+    }
+  }
+
+  /** The head's row, given one first where it has none since the last seek. */
+  private rowOf(head: Subject<unknown>): Float64Array {
+    if (head.probeEpoch === this.epoch && head.probeRow >= 0) return this.rows;
+    const row = this.free.length > 0 ? (this.free.pop() as number) : this.count++;
+    if ((row + 1) * this.stride > this.rows.length) {
+      const grown = new Float64Array(Math.max(64, row + 1) * 2 * this.stride);
+      grown.set(this.rows);
+      this.rows = grown;
+      const want = (grown.length / this.stride) * 2 * this.names.length;
+      for (let i = this.other.length; i < want; i++) this.other.push(undefined);
+    }
+    head.probeRow = row;
+    head.probeEpoch = this.epoch;
+    const base = row * this.stride;
+    // A time no frame has, so the note that follows takes the row's first half as its latest.
+    this.rows[base] = Number.NaN;
+    this.rows[base + 1] = Number.NaN;
+    this.rows[base + 2] = 1;
+    const o = row * 2 * this.names.length;
+    this.other.fill(undefined, o, o + 2 * this.names.length);
+    return this.rows;
+  }
+
+  /** Gives a dropped subject's row back. */
+  release(head: Subject<unknown>): void {
+    if (head.probeEpoch === this.epoch && head.probeRow >= 0) this.free.push(head.probeRow);
+    head.probeRow = -1;
+  }
+
+  /** Forgets every row, as a seek makes them stale. */
+  clear(): void {
+    this.epoch++;
+    this.count = 0;
+    this.free = [];
+  }
+
+  /** The poses noted on a head, latest first, pushed onto `out`; none from before a seek. */
+  samples(head: Subject<unknown> | undefined, out: Sample[]): void {
+    if (head === undefined || head.probeEpoch !== this.epoch || head.probeRow < 0) return;
+    const base = head.probeRow * this.stride;
+    const half = this.rows[base + 2] as number;
+    const at = this.rows[base] as number;
+    const prevAt = this.rows[base + 1] as number;
+    out.push({ at, pose: this.poseOf(head.probeRow, half), whole: true });
+    if (!Number.isNaN(prevAt))
+      out.push({ at: prevAt, pose: this.poseOf(head.probeRow, 1 - half), whole: true });
+  }
+
+  /** One half of a row as a pose: a channel with no number and no other value is left out. */
+  private poseOf(row: number, half: number): Record<string, unknown> {
+    const pose: Record<string, unknown> = {};
+    const from0 = row * this.stride + 3 + half * this.width;
+    const others = (row * 2 + half) * this.names.length;
+    for (let i = 0; i < this.names.length; i++) {
+      const key = this.names[i] as string;
+      const from = from0 + (this.layout[i] as number);
+      const axes = (this.layout[i + 1] as number) - (this.layout[i] as number);
+      const kept = this.other[others + i];
+      if (kept !== undefined) pose[key] = kept;
+      else if (axes === 1) {
+        const v = this.rows[from] as number;
+        if (!Number.isNaN(v)) pose[key] = v;
+      } else {
+        const v = Array.from(this.rows.subarray(from, from + axes));
+        if (!v.some(Number.isNaN)) pose[key] = v;
+      }
+    }
+    return pose;
+  }
 }

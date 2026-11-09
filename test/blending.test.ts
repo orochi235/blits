@@ -320,6 +320,10 @@ describe('retarget on interruption', () => {
       m.pull([part], { crawl });
       return crawl[0] as number;
     },
+    'a probe into its own object': (m: ReturnType<typeof mix<Part, Pose>>) => {
+      const own = m.pose();
+      return m.probe(part, own).crawl;
+    },
   };
   for (const [how, read] of Object.entries(readers))
     for (const lanes of [true, false])

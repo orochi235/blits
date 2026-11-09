@@ -4,6 +4,15 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- The first `from: 'current'` voice a mix plays, on a host probing into its own object, starts
+  where the subject was in the last frame probed and leaves at its speed, where it started from
+  standing, and from rest where the voice before it was cut off that frame. A probe keeps its last
+  two poses on the subject's chain record until a retarget asks the mix to keep poses.
+
 ## 1.2.0
 
 ### Added

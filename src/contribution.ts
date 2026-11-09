@@ -11,6 +11,7 @@ import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { isRested } from './record.js';
 import type { Subject } from './subject.js';
+import type { Sample } from './trail.js';
 import type { Channel, Patch, Signal } from './types.js';
 import { checkWrites, type Voice } from './voice.js';
 import { Primed } from './weigh.js';
@@ -332,8 +333,8 @@ export function tick<I, O>(
 }
 
 /**
- * Stop 0 for a retargeting voice: the subject's pose in the frame before this voice contributes,
- * as its probes kept it, else as the last `pull` wrote it. A channel with neither — a voice cued
+ * Stop 0 for a retargeting voice: the subject's pose in the latest frame before this voice
+ * contributes, as its probes kept it or a `pull` wrote it. A channel with none — a voice cued
  * before the subject was ever read, or one a `pull` was not handed — takes this frame's pose with
  * every other voice folded in.
  */
@@ -342,8 +343,7 @@ export function baseFor<I, O>(
   voice: Voice<I, O>,
   subject: I,
 ): Record<string, unknown> {
-  const kept = this.lastPoses.get(subject)?.pose as Record<string, unknown> | undefined;
-  const pulled = kept === undefined ? this.pullTrail?.frames(subject)[0]?.pose : undefined;
+  const latest = samplesOf(this, subject)[0];
   let folded: Record<string, unknown> | undefined;
   const fold = () => {
     if (folded !== undefined || this.folding.has(voice.id)) return folded;
@@ -358,7 +358,12 @@ export function baseFor<I, O>(
   const base: Record<string, unknown> = {};
   for (const key of voice.patch.writes as Key<O>[]) {
     const channel = this.kit[key] as Channel<unknown>;
-    const value = kept !== undefined ? kept[key] : (pulled?.[key] ?? fold()?.[key]);
+    const value =
+      latest === undefined
+        ? fold()?.[key]
+        : latest.whole
+          ? latest.pose[key]
+          : (latest.pose[key] ?? fold()?.[key]);
     const fallback = channel.rest;
     if (value !== undefined) base[key] = copy(value);
     else if (fallback !== undefined) base[key] = copy(fallback);
@@ -366,25 +371,31 @@ export function baseFor<I, O>(
   return base;
 }
 
-type Sample = { at: number; pose: Record<string, unknown> };
-
 /**
- * The subject's last two poses on record, latest first: those its probes kept, else the frames a
- * `pull` wrote it in. Undefined with fewer than two.
+ * Every frame of the subject on record, latest first, one a frame: those the mix kept, else those
+ * its probes noted on its chain head, else those a `pull` wrote it in.
  */
-function lastTwo<I, O>(mix: Mixer<I, O>, subject: I): [Sample, Sample] | undefined {
+function samplesOf<I, O>(mix: Mixer<I, O>, subject: I): Sample[] {
+  const host = mix.poseHost;
+  const all: Sample[] = [];
   const rec = mix.lastPoses.get(subject);
-  if (rec?.prev !== undefined && rec.at > rec.prevAt)
-    return [
-      { at: rec.at, pose: rec.pose as Record<string, unknown> },
-      { at: rec.prevAt, pose: rec.prev as Record<string, unknown> },
-    ];
-  const all: Sample[] = mix.pullTrail?.frames(subject) ?? [];
-  if (rec !== undefined && !all.some((s) => s.at === rec.at))
-    all.push({ at: rec.at, pose: rec.pose as Record<string, unknown> });
-  all.sort((a, b) => b.at - a.at);
-  const [latest, earlier] = all;
-  if (latest === undefined || earlier === undefined || !(latest.at > earlier.at)) return undefined;
+  if (rec !== undefined) {
+    all.push({ at: rec.at, pose: rec.pose as Record<string, unknown>, whole: true });
+    if (rec.prev !== undefined)
+      all.push({ at: rec.prevAt, pose: rec.prev as Record<string, unknown>, whole: true });
+  }
+  host.probes?.samples(host.chains.get(subject), all);
+  if (host.pullTrail !== null)
+    for (const f of host.pullTrail.frames(subject)) all.push({ ...f, whole: false });
+  const one: Sample[] = [];
+  for (const s of all) if (!one.some((o) => o.at === s.at)) one.push(s);
+  return one.sort((a, b) => b.at - a.at);
+}
+
+/** The subject's last two frames on record, latest first; undefined with fewer than two. */
+function lastTwo<I, O>(mix: Mixer<I, O>, subject: I): [Sample, Sample] | undefined {
+  const [latest, earlier] = samplesOf(mix, subject);
+  if (latest === undefined || earlier === undefined) return undefined;
   return [latest, earlier];
 }
 
