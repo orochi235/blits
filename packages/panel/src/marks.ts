@@ -4,23 +4,34 @@ import { AHEAD_CAP_MS } from './store.js';
 
 /**
  * A mix's marks from `backMs` behind now, within its history, to `AHEAD_CAP_MS` ahead. `marks`
- * speaks the host's clock and the plots the mix's: a mark's lead on the last sync, at the mix's
- * rate, is its lead on now.
+ * speaks the host's clock and the plots the mix's; `mix.time` converts. A mark ahead pinned to a
+ * moment the mix clock stands still at, such as one announced ahead of a paused mix, is left out.
  */
 export function marksOf(e: Watched, backMs: number): MarkInfo[] {
-  const { now, timestamp } = e.mix;
+  const { mix } = e;
+  const { now, timestamp } = mix;
   if (!Number.isFinite(now) || !Number.isFinite(timestamp)) return [];
-  const rate = e.mix.rate > 0 ? e.mix.rate : 1;
-  const back = now - Math.max(e.reach, now - backMs);
+  const lo = Math.max(e.reach, now - backMs);
+  const hi = now + AHEAD_CAP_MS;
+  const ahead = mix.when(hi);
+  const from = Math.min(timestamp, mix.when(lo));
+  const to = Number.isFinite(ahead) ? ahead : timestamp + AHEAD_CAP_MS;
   try {
-    return e.mix.marks(timestamp - back / rate, timestamp + AHEAD_CAP_MS / rate).map((k) => ({
-      at: now + (k.timestamp - timestamp) * rate,
-      mark: k.mark ?? null,
-      voice: k.voice ?? null,
-      name: k.name ?? null,
-      tags: [...k.tags],
-      track: k.track ?? null,
-    }));
+    const out: MarkInfo[] = [];
+    for (const k of mix.marks(from, to)) {
+      const at = mix.time(k.timestamp);
+      if (at < lo || at > hi) continue;
+      if (k.timestamp > timestamp && k.timestamp - mix.when(at) > 1e-3) continue;
+      out.push({
+        at,
+        mark: k.mark ?? null,
+        voice: k.voice ?? null,
+        name: k.name ?? null,
+        tags: [...k.tags],
+        track: k.track ?? null,
+      });
+    }
+    return out;
   } catch {
     return [];
   }

@@ -24,6 +24,23 @@ export function overBinding(
   return null;
 }
 
+/**
+ * Why a voice taking `values` and `persub` f32s cannot join voices already taking `before`'s, in
+ * the values and per-subject buffers within `limit` bytes each; null where it fits.
+ */
+export function overRoom(
+  before: { readonly values: number; readonly persub: number },
+  values: number,
+  persub: number,
+  limit: number,
+): string | null {
+  if ((before.values + values) * 4 > limit)
+    return 'its numbers would take the values buffer past the largest the device binds';
+  if ((before.persub + persub) * 4 > limit)
+    return "its subjects' runs would take the per-subject buffer past the largest the device binds";
+  return null;
+}
+
 /** Why a frame's table of `bytes` cannot bind within `limit`; null where it fits. */
 export function overTable(bytes: number, limit: number): string | null {
   return bytes > limit

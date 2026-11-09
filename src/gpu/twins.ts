@@ -1,8 +1,9 @@
 import type { Mixer } from '../mixer.js';
 import { errorOnce, production, warnOnce } from '../warn.js';
 import type { Kernel } from './kernel.js';
+import { mapCopy, staging } from './readback.js';
 import type { Runner } from './runner.js';
-import { type GpuBuffer, type GpuDevice, MAP_READ, Usage } from './webgpu.js';
+import type { GpuBuffer, GpuDevice } from './webgpu.js';
 
 /** Twin check tolerances: what f32 math and the order of its operations leave apart from f64. */
 const RELATIVE = 1e-4;
@@ -38,14 +39,7 @@ function sample<I>(mix: Mixer<I, unknown>, list: readonly I[], fresh: readonly R
 /** Compares `s` with the fold `k` wrote to `out`, warning where they disagree. */
 function compare(device: GpuDevice, k: Kernel, out: GpuBuffer, s: Sample): void {
   const about = s.fresh[0] as Runner;
-  const read = device.createBuffer({
-    size: k.size * 4,
-    usage: Usage.MAP_READ | Usage.COPY_DST,
-    label: 'blits gpu twins',
-  });
-  const enc = device.createCommandEncoder();
-  enc.copyBufferToBuffer(out, 0, read, 0, k.size * 4);
-  device.queue.submit([enc.finish()]);
+  const read = staging(device, k.size * 4, 'blits gpu twins');
   const check = () => {
     const got = new Float32Array(read.getMappedRange().slice(0));
     for (const o of k.outputs)
@@ -65,18 +59,15 @@ function compare(device: GpuDevice, k: Kernel, out: GpuBuffer, s: Sample): void 
       });
   };
   // A device lost before the map settles refuses it; the check is dropped.
-  read.mapAsync(MAP_READ).then(
-    () => {
-      try {
-        check();
-      } catch (err) {
-        errorOnce(about, `a gpu twin check could not read its values back: ${err}`);
-      } finally {
-        read.destroy();
-      }
-    },
-    () => read.destroy(),
-  );
+  mapCopy(device, read, [{ from: out, offset: 0, at: 0, bytes: k.size * 4 }], (mapped) => {
+    try {
+      if (mapped) check();
+    } catch (err) {
+      errorOnce(about, `a gpu twin check could not read its values back: ${err}`);
+    } finally {
+      read.destroy();
+    }
+  });
 }
 
 /** Checks, in development, the first fold of each runner against the CPU. */

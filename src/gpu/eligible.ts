@@ -3,6 +3,7 @@ import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
+import { overRoom } from './bounds.js';
 import { type ChannelLookup, packOf } from './runner.js';
 import { weightWhy } from './weight.js';
 import { type ChannelCode, codeFor } from './wgsl/channels.js';
@@ -190,20 +191,14 @@ export function within<I, O>(
   room: (voice: Voice<I, O>) => Room,
   limit: number,
 ): void {
-  let values = 0;
-  let persub = 0;
+  const taken = { values: 0, persub: 0 };
   const out = new Set<Voice<I, O>>();
   for (const voice of e.voices) {
     const r = room(voice);
-    let why: string | null = null;
-    if ((values + r.values) * 4 > limit)
-      why = 'its numbers would take the values buffer past the largest the device binds';
-    else if ((persub + r.persub) * 4 > limit)
-      why =
-        "its subjects' runs would take the per-subject buffer past the largest the device binds";
+    const why = overRoom(taken, r.values, r.persub, limit);
     if (why === null) {
-      values += r.values;
-      persub += r.persub;
+      taken.values += r.values;
+      taken.persub += r.persub;
       continue;
     }
     out.add(voice);

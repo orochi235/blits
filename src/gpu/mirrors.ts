@@ -1,4 +1,5 @@
 import { warnOnce } from '../warn.js';
+import { type Laid, lay, moved } from './lay.js';
 import { Mirror, SHARED } from './mirror.js';
 import type { PerSubject } from './runner.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
@@ -23,7 +24,7 @@ export class Mirrors {
   private readonly by = new Map<object, Mirror<unknown>>();
   private list: readonly unknown[] = [];
   /** This frame's mirrors in voice order, and where each starts in `persub`, in f32s. */
-  private placed: { mirror: Mirror<unknown>; offset: number }[] = [];
+  private placed: Laid<Mirror<unknown>>[] = [];
   /** Set where `placed` moved since the last upload, so all of it is written next. */
   private moved = true;
   /** The voices asked for a mirror since the last `place`. */
@@ -77,30 +78,17 @@ export class Mirrors {
         m.detach();
         this.by.delete(voice);
       }
-    const placed: { mirror: Mirror<unknown>; offset: number }[] = [];
-    let at = 0;
-    const offsets = mirrors.map((m) => {
-      if (m === undefined) return 0;
-      const offset = at;
-      placed.push({ mirror: m, offset });
-      at += m.rows.length;
-      return offset;
-    });
-    const was = this.placed;
-    if (
-      placed.length !== was.length ||
-      placed.some((p, k) => p.mirror !== was[k]?.mirror || p.offset !== was[k]?.offset)
-    )
-      this.moved = true;
+    const { placed, offsets, end } = lay(mirrors, 0, (m) => m.rows.length);
+    if (moved(this.placed, placed)) this.moved = true;
     this.placed = placed;
-    this.length = at;
-    return offsets;
+    this.length = end;
+    return offsets.map((o) => o ?? 0);
   }
 
   /** Writes the rows that changed to `buffer`, or every row where `full` or the layout moved. */
   upload(device: GpuDevice, buffer: GpuBuffer, full: boolean): void {
     const all = full || this.moved;
-    for (const { mirror, offset } of this.placed) {
+    for (const { item: mirror, offset } of this.placed) {
       const ranges = mirror.take();
       if (all) {
         if (mirror.rows.length > 0) device.queue.writeBuffer(buffer, offset * 4, mirror.rows);

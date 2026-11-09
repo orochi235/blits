@@ -1,20 +1,21 @@
 import { EASED } from '../../closed.js';
 import { curveData } from '../../easing.js';
 import { motionOf } from '../../motion.js';
-import type { ChannelLookup, Packed, Runner } from '../runner.js';
+import {
+  type ChannelLookup,
+  cachedRunner,
+  EASING_FUNCTION,
+  type Packed,
+  type Runner,
+} from '../runner.js';
 import { closedWgsl, FORMS } from '../wgsl/closed.js';
 import { widthOf } from './keys.js';
 
-const runners = new Map<string, Runner>();
-
 /** One runner per law form, axis count and channel written, since the kernel names its output. */
 function motionRunner(form: number, axes: number, writes: string): Runner {
-  const key = `motion:${form}:${axes}:${writes}`;
-  let r = runners.get(key);
-  if (r === undefined) {
+  return cachedRunner(`motion:${form}:${axes}:${writes}`, () => {
     const c = closedWgsl(form, axes);
-    r = {
-      key,
+    return {
       helpers: c.helpers,
       wgsl: [
         'let k = base;',
@@ -28,9 +29,7 @@ function motionRunner(form: number, axes: number, writes: string): Runner {
       fields: [],
       stride: 3 + 3 * axes,
     };
-    runners.set(key, r);
-  }
-  return r;
+  });
 }
 
 /**
@@ -54,7 +53,7 @@ export function motionPack(patch: object, channels: ChannelLookup): Packed | und
   let curve: readonly number[] = [];
   if (form === EASED) {
     const data = curveData(motions.ease);
-    if (data === undefined) return { why: 'its easing is a function, which the GPU cannot run' };
+    if (data === undefined) return { why: EASING_FUNCTION };
     curve = data;
   }
   return {

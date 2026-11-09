@@ -88,13 +88,20 @@ export class Regions {
   }
 }
 
+/**
+ * Adds `[from, to)` to `out`, sorted ranges whose last starts at or before `from`: joined to the
+ * last where they touch or overlap.
+ */
+export function join(out: [number, number][], from: number, to: number): void {
+  const last = out[out.length - 1];
+  if (last !== undefined && last[1] >= from) last[1] = Math.max(last[1], to);
+  else out.push([from, to]);
+}
+
 /** Ranges in f32s as sorted byte ranges, the empty ones dropped and touching ones joined. */
 function merged(ranges: [number, number][]): [number, number][] {
   const out: [number, number][] = [];
-  for (const [a, b] of ranges.filter(([a, b]) => b > a).sort((x, y) => x[0] - y[0])) {
-    const last = out[out.length - 1];
-    if (last !== undefined && last[1] >= a * 4) last[1] = Math.max(last[1], b * 4);
-    else out.push([a * 4, b * 4]);
-  }
+  for (const [a, b] of ranges.filter(([a, b]) => b > a).sort((x, y) => x[0] - y[0]))
+    join(out, a * 4, b * 4);
   return out;
 }

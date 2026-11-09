@@ -1,7 +1,7 @@
 import { curveData } from '../../easing.js';
 import { builtOf } from '../../patch.js';
 import type { Patch } from '../../types.js';
-import type { ChannelLookup, Packed } from '../runner.js';
+import { type ChannelLookup, EASING_FUNCTION, type Packed } from '../runner.js';
 import type { ChannelCode } from '../wgsl/channels.js';
 import { keysRunner, widthOf } from './keys.js';
 
@@ -37,7 +37,7 @@ export function keysPack(patch: object, channels: ChannelLookup): Packed | undef
     for (const [k, pt] of track.all.entries()) {
       // The first stop's easing shapes no segment, so the GPU never reads it.
       const curve = curveData(k === 0 ? undefined : pt.ease);
-      if (curve === undefined) return { why: 'its easing is a function' };
+      if (curve === undefined) return { why: EASING_FUNCTION };
       const v = numbersOf(pt.value, width);
       if (v === undefined) return { why: 'a stop holds a value the GPU cannot read' };
       values.push(pt.at, ...curve, ...Array.from(v));

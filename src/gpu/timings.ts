@@ -2,6 +2,7 @@ import { curveData, straight } from '../easing.js';
 import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import { type Answer, type Answers, varies } from './answers.js';
+import { type Laid, lay, moved } from './lay.js';
 import type { Entry } from './region.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
 import { NONE } from './wgsl/timing.js';
@@ -158,7 +159,7 @@ class Block {
  */
 export class Timings {
   private readonly by = new Map<Voice<unknown, unknown>, Block>();
-  private placed: { block: Block; offset: number }[] = [];
+  private placed: Laid<Block>[] = [];
   /** Set where `placed` moved since the last upload, so all of it is written next. */
   private moved = true;
   /** The mix whose clock changes this hears, and the `reorigined` hook it set there. */
@@ -224,27 +225,17 @@ export class Timings {
     from: number,
   ): (TimingSlot | undefined)[] {
     const live = new Set<Voice<unknown, unknown>>();
-    const placed: { block: Block; offset: number }[] = [];
-    let at = from;
-    const slots = voices.map((voice) => {
+    const blocks = voices.map((voice) => {
       const b = this.blockOf(mix, voice, answers);
-      if (b === undefined) return undefined;
-      live.add(voice as Voice<unknown, unknown>);
-      placed.push({ block: b, offset: at });
-      const slot = b.slotAt(at);
-      at += b.data.length;
-      return slot;
+      if (b !== undefined) live.add(voice as Voice<unknown, unknown>);
+      return b;
     });
     for (const v of this.by.keys()) if (!live.has(v)) this.by.delete(v);
-    const was = this.placed;
-    if (
-      placed.length !== was.length ||
-      placed.some((p, k) => p.block !== was[k]?.block || p.offset !== was[k]?.offset)
-    )
-      this.moved = true;
+    const { placed, offsets, end } = lay(blocks, from, (b) => b.data.length);
+    if (moved(this.placed, placed)) this.moved = true;
     this.placed = placed;
-    this.length = at - from;
-    return slots;
+    this.length = end - from;
+    return blocks.map((b, k) => b?.slotAt(offsets[k] as number));
   }
 
   /** The fade curve of `voice`'s block as a values entry the block owns, where it has one. */
@@ -256,7 +247,7 @@ export class Timings {
   /** Writes blocks that changed since the last upload, or all where `full`. */
   upload(device: GpuDevice, buffer: GpuBuffer, full: boolean): void {
     const all = full || this.moved;
-    for (const { block, offset } of this.placed) {
+    for (const { item: block, offset } of this.placed) {
       if (all || block.dirty === Dirty.ALL) {
         if (block.data.length > 0) device.queue.writeBuffer(buffer, offset * 4, block.data);
       } else if (block.dirty === Dirty.SHOWN) {

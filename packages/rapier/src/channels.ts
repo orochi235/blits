@@ -1,4 +1,4 @@
-import { angle, type Channel, last, quat, sum, type Vec, vec } from '@msb235/blits';
+import { angle, type Kit, last, quat, sum, type Vec, vec } from '@msb235/blits';
 
 /** The channels a 2D world reads and writes: a body's pose, and the push on its controls. */
 export interface Pose2 {
@@ -17,7 +17,7 @@ export interface Pose3 {
 }
 
 /** A 2D world's channels, to spread into a kit. */
-export const channels2: { [K in keyof Pose2]: Channel<Pose2[K]> } = {
+export const channels2: Kit<Pose2> = {
   position: vec(2, sum()),
   rotation: angle({ turn: 2 * Math.PI }),
   force: vec(2, sum()),
@@ -25,7 +25,7 @@ export const channels2: { [K in keyof Pose2]: Channel<Pose2[K]> } = {
 };
 
 /** A 3D world's channels, to spread into a kit. */
-export const channels3: { [K in keyof Pose3]: Channel<Pose3[K]> } = {
+export const channels3: Kit<Pose3> = {
   position: vec(3, sum()),
   rotation: quat(),
   force: vec(3, sum()),
@@ -48,16 +48,14 @@ export interface Kinematic3 {
   facing?: Vec<4>;
 }
 
-const along = (a: number, b: number, u: number) => a + (b - a) * u;
-
 /** A kinematic 2D body's channels, to spread into a kit beside `channels2`. */
-export const kinematic2: { [K in keyof Kinematic2]-?: Channel<NonNullable<Kinematic2[K]>> } = {
-  goal: vec(2, last({ lerp: along })),
+export const kinematic2: Kit<Kinematic2> = {
+  goal: vec(2, last({ lerp: sum().lerp })),
   facing: last({ lerp: angle({ turn: 2 * Math.PI }).lerp }),
 };
 
 /** A kinematic 3D body's channels, to spread into a kit beside `channels3`. */
-export const kinematic3: { [K in keyof Kinematic3]-?: Channel<NonNullable<Kinematic3[K]>> } = {
-  goal: vec(3, last({ lerp: along })),
+export const kinematic3: Kit<Kinematic3> = {
+  goal: vec(3, last({ lerp: sum().lerp })),
   facing: last({ lerp: quat().lerp }),
 };

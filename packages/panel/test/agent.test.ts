@@ -143,6 +143,28 @@ describe('the agent', () => {
     expect(marks.map((k) => k.at)).toEqual([...marks.map((k) => k.at)].sort((x, y) => x - y));
   });
 
+  it('places marks behind a paused mix at the mix time they fell on', () => {
+    const m = mix<unknown, Pose>(K, { name: 'agent-paused', history: { ms: 5000 } });
+    m.sync(0);
+    m.rate = 2;
+    const once = patch<unknown, Pose>(200, () => ({ x: 1 }), { writes: ['x'] });
+    const v = m.cue({ patch: once, start: 400, subjects: ['s'], name: 'once' });
+    m.sync(500);
+    m.rate = 0;
+    m.sync(800);
+    m.announce('later', { at: 900 });
+    const { a, last } = setup();
+    a.send({
+      kind: 'mix',
+      id: last('mixes')?.mixes.find((x) => x.name === 'agent-paused')?.id as number,
+    });
+    const marks = last('marks')?.marks ?? [];
+    const of = marks.filter((k) => k.voice === v.id);
+    expect(of.find((k) => k.mark === 'start')?.at).toBe(800);
+    expect(of.find((k) => k.mark === 'end')?.at).toBe(1000);
+    expect(marks.find((k) => k.name === 'later')).toBeUndefined();
+  });
+
   it('says a clock is held elsewhere', () => {
     const m = mix<unknown, Pose>(K, { name: 'agent-e' });
     m.sync(0);

@@ -1,4 +1,4 @@
-import type { Bend, BookedHit, Kit, Marked, Mix, NumberChannel } from '@msb235/blits';
+import type { Bend, BookedHit, Kit, Marked, Mix, NumberChannel, Taken } from '@msb235/blits';
 import { immediate, Noise, Oscillator, PolySynth, Synth, type ToneAudioNode } from 'tone';
 import { hold as holdAt, ramp, set } from './held.js';
 import { lines } from './lines.js';
@@ -35,14 +35,11 @@ export interface DriveOptions<E = unknown, I = unknown, O = unknown> {
   clock?: () => number;
   /**
    * Called once for each mark and hit within `ahead`, as `BookOptions.take` is, with `time` in
-   * seconds on the audio clock. Return a `cancel` to hear that the item moved or went away; it is
-   * then played again at its new time. Without `take` no mark or hit is played.
+   * seconds on the audio clock and `lateBy` in ms, as the booker gives it. Return a `cancel` to
+   * hear that the item moved or went away; it is then played again at its new time. Without
+   * `take` no mark or hit is played.
    */
-  take?: (
-    item: Marked | BookedHit<E, I>,
-    time: number,
-    lateBy: number,
-  ) => { cancel(): void } | undefined;
+  take?: (item: Marked | BookedHit<E, I>, time: number, lateBy: number) => Taken | undefined;
   /** Play only the voices, and announced marks, carrying this tag. */
   tag?: string;
   /** Play only this score's voices and marks. */

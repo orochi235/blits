@@ -59,7 +59,7 @@ describe('packing a keys patch', () => {
       { at: 0, delta: { v: 0 } },
       { at: 1, delta: { v: 1 }, ease: (u: number) => u * u },
     ]);
-    expect(pack(k)).toEqual({ why: 'its easing is a function' });
+    expect(pack(k)).toEqual({ why: 'its easing is a function, which the GPU cannot run' });
   });
   it('packs a first stop eased by a function, since no segment reads its easing', () => {
     const k = keys<unknown, O>(1000, [
