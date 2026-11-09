@@ -18,10 +18,20 @@ export function shortWay(ah: number, ac: number, bh: number, bc: number): void {
   HUES[1] = turn;
 }
 
+/** Below this, an ink pose's summed `(a, b)` has canceled out and shows no hue. */
+export const CANCEL = 1e-9;
+
+/** The chroma of a color whose `(a, b)` is `(A, B)`: ink's five numbers hold their own at `k`. */
+function chroma(A: number, B: number, v: ArrayLike<number>, k: number, s: number, n: number) {
+  const r = Math.sqrt(A * A + B * B);
+  return n === 4 ? r : r < CANCEL ? 0 : (v[k] ?? 0) * s;
+}
+
 /**
- * Two premultiplied OKLab colors, `[w·L, w·a, w·b, w]` read from `x` at `i` and `y` at `j`, into
- * `out` as `[L, C, h, w]` each, `y`'s hue the short way round from `x`'s. A color with no coverage
- * has none of its own to keep, so it takes the other end's.
+ * Two premultiplied colors, `n` numbers each read from `x` at `i` and `y` at `j`, into `out` as
+ * `[L, C, h, w]` each, `y`'s hue the short way round from `x`'s. Four numbers are OKLab's
+ * `[w·L, w·a, w·b, w]`; five are ink's `[w·L, w·a, w·b, w·C, w]`, whose chroma is their own. A
+ * color with no coverage has none of its own to keep, so it takes the other end's.
  */
 export function lchPair(
   x: ArrayLike<number>,
@@ -29,9 +39,11 @@ export function lchPair(
   y: ArrayLike<number>,
   j: number,
   out: Float64Array,
+  xn = 4,
+  yn = 4,
 ): void {
-  const xw = x[i + 3] ?? 0;
-  const yw = y[j + 3] ?? 0;
+  const xw = x[i + xn - 1] ?? 0;
+  const yw = y[j + yn - 1] ?? 0;
   const ys = yw > 0 ? 1 / yw : 0;
   const yL = (y[j] ?? 0) * ys;
   const yA = (y[j + 1] ?? 0) * ys;
@@ -40,18 +52,19 @@ export function lchPair(
   const xL = xw > 0 ? (x[i] ?? 0) * xs : yL;
   const xA = xw > 0 ? (x[i + 1] ?? 0) * xs : yA;
   const xB = xw > 0 ? (x[i + 2] ?? 0) * xs : yB;
+  const yc = chroma(yA, yB, y, j + 3, ys, yn);
+  const xc = xw > 0 ? chroma(xA, xB, x, i + 3, xs, xn) : yc;
   const toL = yw > 0 ? yL : xL;
   const toA = yw > 0 ? yA : xA;
   const toB = yw > 0 ? yB : xB;
-  const xc = Math.sqrt(xA * xA + xB * xB);
-  const yc = Math.sqrt(toA * toA + toB * toB);
-  shortWay(Math.atan2(xB, xA), xc, Math.atan2(toB, toA), yc);
+  const toC = yw > 0 ? yc : xc;
+  shortWay(Math.atan2(xB, xA), xc, Math.atan2(toB, toA), toC);
   out[0] = xL;
   out[1] = xc;
   out[2] = HUES[0] as number;
   out[3] = xw;
   out[4] = toL;
-  out[5] = yc;
+  out[5] = toC;
   out[6] = (HUES[0] as number) + (HUES[1] as number);
   out[7] = yw;
 }

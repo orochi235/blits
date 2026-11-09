@@ -1,6 +1,6 @@
 import { blendCss, blendHex, blending, modeOf } from './blend-modes.js';
 import { doubles, lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
-import { HUES, lchPair, shortWay } from './lch.js';
+import { CANCEL, HUES, lchPair, shortWay } from './lch.js';
 import { fromLab, LAB, lab } from './oklab.js';
 import type { Channel } from './types.js';
 import { warnOnce } from './warn.js';
@@ -87,26 +87,6 @@ function lerpLch(x: number[], y: number[], u: number): number[] {
   return [mix(p[0] as number, p[4] as number, u) * w, C * Math.cos(h) * w, C * Math.sin(h) * w, w];
 }
 
-/** Below this, an ink pose's summed `(a, b)` has canceled out and shows no hue. */
-const CANCEL = 1e-9;
-
-/**
- * A color value, `oklab()`'s four numbers or ink's five, into `out` at `o` as `[L, C, h, w]`, its
- * coverage divided out. Five numbers show their own chroma, the fourth, at the hue of their `(a, b)`.
- */
-function lchOf(v: ArrayLike<number>, out: Float64Array, o: number): void {
-  const five = v.length > 4;
-  const w = (five ? v[4] : v[3]) ?? 0;
-  const s = w > 0 ? 1 / w : 0;
-  const a = (v[1] ?? 0) * s;
-  const b = (v[2] ?? 0) * s;
-  const r = Math.sqrt(a * a + b * b);
-  out[o] = (v[0] ?? 0) * s;
-  out[o + 1] = !five ? r : r < CANCEL ? 0 : (v[3] ?? 0) * s;
-  out[o + 2] = Math.atan2(b, a);
-  out[o + 3] = w;
-}
-
 /** A color value as ink's five numbers, `[w·L, w·a, w·b, w·C, w]` times `k`, into `out`. */
 function inked(v: ArrayLike<number>, k: number, out: number[]): number[] {
   const a = v[1] ?? 0;
@@ -125,24 +105,11 @@ function lerpInk(x: number[], y: number[], u: number): number[] {
   if (u === 0) return inked(x, 1, doubles(5, 0));
   if (u === 1) return inked(y, 1, doubles(5, 0));
   const p = PAIR;
-  lchOf(x, p, 0);
-  lchOf(y, p, 4);
-  // A color with no coverage has none of its own to keep, so it takes the other end's.
-  const from = (p[3] as number) > 0 ? 0 : 4;
-  const to = (p[7] as number) > 0 ? 4 : 0;
-  const xc = p[from + 1] as number;
-  const yc = p[to + 1] as number;
-  shortWay(p[from + 2] as number, xc, p[to + 2] as number, yc);
+  lchPair(x, 0, y, 0, p, x.length > 4 ? 5 : 4, y.length > 4 ? 5 : 4);
   const w = mix(p[3] as number, p[7] as number, u);
-  const Cw = mix(xc, yc, u) * w;
-  const h = (HUES[0] as number) + (HUES[1] as number) * u;
-  return [
-    mix(p[from] as number, p[to] as number, u) * w,
-    Math.cos(h) * Cw,
-    Math.sin(h) * Cw,
-    Cw,
-    w,
-  ];
+  const Cw = mix(p[1] as number, p[5] as number, u) * w;
+  const h = (p[2] as number) + (HUES[1] as number) * u;
+  return [mix(p[0] as number, p[4] as number, u) * w, Math.cos(h) * Cw, Math.sin(h) * Cw, Cw, w];
 }
 
 /**
