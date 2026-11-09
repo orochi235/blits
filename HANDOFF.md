@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 1.1.1 (2026-11-07), with blits-panel 1.1.1 taking it as an exact peer and bundling weasel, blits-rapier 0.7.1 as a `^1.1.0` peer, blits-quarks 0.17.1 and blits-tone 0.12.2 as a `^1.0.0` peer, and all four pinning 1.1.1 to build against. blits-panel releases in lockstep with the engine, at its version, from 1.1.0 on (owner's call, 2026-11-05); the release workflow holds it there. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 1.2.0 (2026-11-08), with blits-panel 1.2.0 taking it as an exact peer and bundling weasel, blits-rapier 0.7.2 as a `^1.1.0` peer, blits-quarks 0.17.2 and blits-tone 0.12.3 as a `^1.0.0` peer, and all four pinning 1.2.0 to build against. blits-panel releases in lockstep with the engine, at its version, from 1.1.0 on (owner's call, 2026-11-05); the release workflow holds it there. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
   An engine release runs the check once, as release.yml's lint, typecheck, and test steps: the
   publish step sets `BLITS_CHECKED`, which `prepublishOnly` takes as the check already run (from
   2026-11-08; 1.1.0, checked twice, needed four tags). A publish by hand still checks.
