@@ -1,3 +1,4 @@
+import { clone } from './clone.js';
 import type { Mixer } from './mixer.js';
 import { seek } from './seek.js';
 import { release } from './shared.js';
@@ -374,7 +375,7 @@ function flush(mix: Any): void {
 
 function copy<T>(pose: T): T {
   try {
-    return (globalThis as unknown as { structuredClone: <V>(v: V) => V }).structuredClone(pose);
+    return clone(pose);
   } catch {
     return { ...pose };
   }

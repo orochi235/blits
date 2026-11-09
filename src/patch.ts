@@ -1,4 +1,5 @@
 import { type LerpInto, lerpInto, lerpNumber } from './channels.js';
+import { arrayCopy } from './clone.js';
 import { type Curve, curve, startSlope } from './easing.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
@@ -132,11 +133,7 @@ function build<O>(
       all.push({
         at: stop.at,
         // A copy, so every reader sees the stop as it was built: a lane may hold its numbers.
-        value: Array.isArray(value)
-          ? [...value]
-          : ArrayBuffer.isView(value)
-            ? (value as unknown as { slice(): unknown }).slice()
-            : value,
+        value: arrayCopy(value),
         ease: stop.ease === undefined ? trackEase : curve(stop.ease),
       });
     }
