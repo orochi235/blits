@@ -4,6 +4,7 @@ import { type Cut, within } from './cut.js';
 import { schedule } from './due.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
+import { nowSoFar } from './now.js';
 import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import type { WholeRecord } from './record.js';
@@ -70,11 +71,7 @@ export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   schedule(mix, voice);
   const log = voice.log;
   if (log === null) return;
-  voice.note(
-    Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
-    mix.transport.seq,
-    mix.moving || !mix.looked,
-  );
+  voice.note(nowSoFar(mix), mix.transport.seq, mix.moving || !mix.looked);
   const reach = mix.now - (mix.opts.history as { ms: number }).ms;
   const drop = past(log, reach);
   if (drop > 0) pageOut(mix, 'controls', voice.id, undefined, log.splice(0, drop), copied, reach);
@@ -368,7 +365,7 @@ export function leave<I, O>(
   );
   left.push({
     subject,
-    at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
+    at: nowSoFar(mix),
     seq: mix.transport.seq,
     sync: mix.syncing || !mix.looked,
     held,

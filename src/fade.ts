@@ -5,9 +5,9 @@ import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
+import { nowFor, nowSoFar } from './now.js';
 import { startedAt } from './origin.js';
 import { type Holding, orphan, ownerReading, plays } from './owner.js';
-import { startOf } from './place.js';
 import { isRested } from './record.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
@@ -26,7 +26,7 @@ export function fadeSubject<I, O>(
   mix.share?.unshare(mix, voice);
   mix.stir();
   const ms = mix.reduced ? 0 : (over ?? voice.fade.out ?? 0);
-  const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  const at = nowFor(mix, voice);
   if (ms === 0) {
     part(mix, voice, subject, at);
     return;
@@ -202,7 +202,7 @@ export function beginFade<I, O>(
   voice.state = 'fading';
   voice.out = {
     from: 1,
-    at: at ?? (Number.isNaN(mix.now) ? startOf(voice) : mix.now),
+    at: at ?? nowFor(mix, voice),
     over,
     rest: opts.at === 'rest',
     deadline: opts.deadline,
@@ -230,7 +230,7 @@ export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): vo
   mix.lanes?.refill();
   const owner = voice.owner as Voice<I, O>;
   if (owner.state === 'done') return;
-  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  const now = nowSoFar(mix);
   if (plays(owner, now) || lingers(owner, at)) {
     if (owner.fitting !== null && !voice.skipped) refit(mix, owner, at);
   } else release(mix, owner, at);
@@ -266,7 +266,7 @@ export function beginRise<I, O>(
     return;
   }
   if (voice.state !== 'fading' || out === null) return;
-  const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  const at = nowFor(mix, voice);
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
   const left = out.rest || out.over === 0 ? 1 : 1 - (at - out.at) / out.over;
   const from = clampWeight(left);
@@ -298,7 +298,7 @@ export function fadeAt<I, O>(
   over: number | undefined,
 ): void {
   if (voice.state === 'done' || voice.state === 'fading') return;
-  const now = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  const now = nowFor(mix, voice);
   if (at <= now) {
     beginFade(mix, voice, { over }, Math.max(startedAt(voice), at));
     mix.stir();
@@ -347,7 +347,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   // The record its setting last wrote to, which a retired voice no longer calls for.
   voice.keepOn = null;
   mix.retired.push(voice);
-  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  const now = nowSoFar(mix);
   voice.doneAt = at ?? now;
   voice.decidedAt = now;
   voice.doneSeq = mix.transport.seq;
