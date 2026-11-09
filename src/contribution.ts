@@ -1,7 +1,7 @@
 import { inBound } from './bound.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
-import { type Key, near } from './fold.js';
+import { type Key, restsAt } from './fold.js';
 import { originate, patchKeeps, voiceKeeps, waits } from './held.js';
 import { apart, copyState, record, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
@@ -445,10 +445,8 @@ export function slopeFor<I, O>(
 
 export function isRest<I, O>(this: Mixer<I, O>, delta: Record<string, unknown>): boolean {
   for (const key of Object.keys(delta) as Key<O>[]) {
-    if (delta[key] === undefined) continue;
-    const channel = this.kit[key] as Channel<unknown>;
-    if (channel.rest === undefined) return false;
-    if (!near(delta[key], channel.rest)) return false;
+    const value = delta[key];
+    if (value !== undefined && !restsAt(this.kit[key] as Channel<unknown>, value)) return false;
   }
   return true;
 }

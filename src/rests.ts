@@ -1,4 +1,4 @@
-import { near } from './fold.js';
+import { restsAt } from './fold.js';
 import { unread } from './held.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
@@ -31,10 +31,7 @@ export function atRest<I, O>(this: Mixer<I, O>, subject: I): boolean {
 export function rests<I, O>(this: Mixer<I, O>, pose: O): boolean {
   for (let i = 0; i < this.names.length; i++) {
     const channel = this.channels[i] as Channel<unknown>;
-    const value = (pose as Record<string, unknown>)[this.names[i] as string];
-    if (channel.rest === undefined) {
-      if (value !== undefined) return false;
-    } else if (!near(value, channel.rest)) return false;
+    if (!restsAt(channel, (pose as Record<string, unknown>)[this.names[i] as string])) return false;
   }
   return true;
 }
