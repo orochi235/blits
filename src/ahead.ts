@@ -6,7 +6,7 @@ import { copyHeld, unread } from './history.js';
 import { markOf, voiceMarks } from './marks.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
-import { relink } from './owner.js';
+import { rewire } from './owner.js';
 import { pin, place } from './place.js';
 import { recount } from './roster.js';
 import type { Subject } from './subject.js';
@@ -208,7 +208,7 @@ export function copyVoices<I, O>(
     return copy;
   });
   ownBlends(c.cued);
-  if (mix.owners !== null) relink(c.cued, seq);
+  if (mix.owners !== null) rewire(c.cued, seq);
 }
 
 /** Gives a projection's copy what it reads of the live mix as it is, before its voices are copied. */

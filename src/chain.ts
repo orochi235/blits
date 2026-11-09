@@ -2,14 +2,14 @@ import type { Share } from './everyone.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { file, type Named, unfile } from './named.js';
-import { record } from './record.js';
+import { wholeRecord } from './record.js';
 import { insertById } from './sorted.js';
 import type { Subject } from './subject.js';
 import type { Voice } from './voice.js';
 
 /** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
 function stub(): Subject<unknown> {
-  return record(null, false, undefined);
+  return wholeRecord(null, false, undefined);
 }
 
 /**

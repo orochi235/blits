@@ -5,7 +5,7 @@ import { schedule } from './due.js';
 import type { Share } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf, startedAt } from './origin.js';
-import { record } from './record.js';
+import { wholeRecord } from './record.js';
 import type { Subject } from './subject.js';
 import { unreach, unreached } from './unreached.js';
 import type { Voice } from './voice.js';
@@ -24,7 +24,7 @@ export function unreachedOf<I, O>(
 
 /** A record of `subject` built afresh for `voice`, with its patch's state where the voice reaches it. */
 export function freshOf<I, O>(voice: Voice<I, O>, subject: I, reaches: boolean): Subject<unknown> {
-  const held = record(
+  const held = wholeRecord(
     voice,
     reaches,
     reaches && voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
@@ -40,7 +40,7 @@ export function blankOf<I, O>(
   reaches: boolean,
   since: number,
 ): Subject<unknown> {
-  const held = record(voice, reaches, undefined);
+  const held = wholeRecord(voice, reaches, undefined);
   held.rebuilt = voice.rebuilds;
   startFrom(mix, voice, held, since);
   return held;
@@ -197,14 +197,14 @@ export function shownFrom<I, O>(voice: Voice<I, O>, since: number): number {
 }
 
 /** Whether a subject's record has gone unread since its origin. */
-export const unread = (held: Subject<unknown>): boolean => !(held.probed >= held.since);
+export const isUnread = (held: Subject<unknown>): boolean => !(held.probed >= held.since);
 
 /**
  * Whether a listed record stays listed at `now`: its origin is ahead, or it is a motion voice's,
  * unread since its origin, which `still` asks after since the motion has no run for it yet.
  */
 function stillEarly<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): boolean {
-  return !(held.since <= now) || (voice.motion !== undefined && unread(held));
+  return !(held.since <= now) || (voice.motion !== undefined && isUnread(held));
 }
 
 /** Lists a record whose origin is still ahead of `now`, for a later change to the clock to move. */

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
-import { record } from '../src/record.js';
+import { wholeRecord } from '../src/record.js';
 import { Restored } from '../src/restored.js';
 import { Store } from '../src/store.js';
 import type { MixOptions } from '../src/types.js';
@@ -177,8 +177,8 @@ describe("a chain's record found again", () => {
 
   it('is the one the store holds, not one it let go of or replaced', () => {
     const r = store();
-    const x = record(null, true, undefined);
-    const y = record(null, true, undefined);
+    const x = wholeRecord(null, true, undefined);
+    const y = wholeRecord(null, true, undefined);
     r.set(a, x);
     expect(r.find(a, x)).toBe(x);
     r.set(a, y);
@@ -189,7 +189,7 @@ describe("a chain's record found again", () => {
 
   it('is looked up once a record let go of is set again, under any key', () => {
     const r = store();
-    const x = record(null, true, undefined);
+    const x = wholeRecord(null, true, undefined);
     r.set(a, x);
     r.delete(a);
     r.set(b, x);
@@ -200,7 +200,7 @@ describe("a chain's record found again", () => {
   it('is looked up for a record another store stamped', () => {
     const r = store();
     const other = store();
-    const x = record(null, true, undefined);
+    const x = wholeRecord(null, true, undefined);
     other.set(a, x);
     expect(r.find(a, x)).toBeUndefined();
   });

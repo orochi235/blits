@@ -168,7 +168,7 @@ export function ownersWeight<I, O>(
  * Points a projection's copies at each other's owners, each owner holding only copies; for a read
  * back to frame `seq`, as its children that had left by then left it.
  */
-export function relink<I, O>(copies: readonly Voice<I, O>[], seq?: number): void {
+export function rewire<I, O>(copies: readonly Voice<I, O>[], seq?: number): void {
   const byId = new Map<number, Voice<I, O>>();
   for (const v of copies) {
     byId.set(v.id, v);

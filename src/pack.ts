@@ -1,5 +1,5 @@
 import { clone } from './clone.js';
-import { isRested, record } from './record.js';
+import { isRested, wholeRecord } from './record.js';
 import type { Subject } from './subject.js';
 import type { Voice } from './voice.js';
 
@@ -61,7 +61,7 @@ export function packHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): PackedR
 export function unpackHeld<I, O>(voice: Voice<I, O>, p: PackedRecord): Subject<unknown> {
   const patch = voice.patch;
   const bands = p.bands === null ? null : Uint8Array.from(p.bands);
-  const h = record(
+  const h = wholeRecord(
     voice,
     p.reaches,
     p.state === undefined ? undefined : patch.unpack ? patch.unpack(p.state) : p.state,

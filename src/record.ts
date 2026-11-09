@@ -16,7 +16,11 @@ type Field = keyof Subject<unknown>;
  * field the slow way. The caller sets what it knows; nothing here takes a number, which a call V8
  * does not inline would box.
  */
-export function record(voice: object | null, reaches: boolean, state: unknown): Subject<unknown> {
+export function wholeRecord(
+  voice: object | null,
+  reaches: boolean,
+  state: unknown,
+): Subject<unknown> {
   return {
     reaches,
     delay: 0,
