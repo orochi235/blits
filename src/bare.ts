@@ -3,7 +3,7 @@ import { bare, type Crowd, Flag, Hot } from './crowd.js';
 import type { Curve } from './easing.js';
 import { keepProbed, type Lane, type Laned, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
-import type { Motions } from './motions.js';
+import { type Motions, RunField } from './motions.js';
 import { between, left, progress } from './tweened.js';
 
 /**
@@ -151,9 +151,9 @@ export function unbareLane<I, O>(lane: Lane<I, O>, p: number): void {
   const elapsed = lane.bareElapsed - (data[o + Row.DELAY] as number);
   const share = left(
     run.ease as Curve,
-    progress(elapsed, runs[b] as number, runs[b + 2] as number),
+    progress(elapsed, runs[b + RunField.AT] as number, runs[b + RunField.MS] as number),
   );
-  const x = b + 3;
+  const x = b + RunField.X0;
   const g = x + 2 * n;
   for (let a = 0; a < n; a++)
     lane.samples[p * n + a] = between(runs[x + a] as number, runs[g + a] as number, share);

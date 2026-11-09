@@ -32,7 +32,8 @@ export type {
   Value,
 } from './types/motion.js';
 
-const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);
+/** A value's axes as a new array: a number is one axis. */
+export const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);
 /** Zero on every axis `x` has: a motion's velocity where its options give none. */
 const still = (x: readonly number[]): number[] => new Array<number>(x.length).fill(0);
 const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
@@ -139,24 +140,16 @@ export function motionOf<I>(p: object): Motions<I> | undefined {
  * the caller's object is not kept: a closure per question cost a function and its context per
  * patch, and a mix may hold a patch per voice.
  */
-class SpringShape<I, V extends Value> implements Shape<I> {
-  readonly ease = undefined;
-  readonly ms = undefined;
-  private readonly goal: PerSubject<I, V>;
-  private readonly start: PerSubject<I, V>;
-  private readonly speed: PerSubject<I, V> | undefined;
+abstract class StockShape<I, V extends Value> {
+  /**
+   * `goal` is where a stretch heads with nothing aimed before, and its type says whether a subject
+   * is a number; a glide, which aims by its own law, passes its start.
+   */
   constructor(
-    readonly law: readonly number[],
-    private readonly motion: MotionSpec,
-    opts: { to: PerSubject<I, V>; from?: PerSubject<I, V>; velocity?: PerSubject<I, V> },
-  ) {
-    this.goal = opts.to;
-    this.start = opts.from ?? opts.to;
-    this.speed = opts.velocity;
-  }
-  spec(): MotionSpec {
-    return this.motion;
-  }
+    protected readonly start: PerSubject<I, V>,
+    private readonly speed: PerSubject<I, V> | undefined,
+    private readonly goal: PerSubject<I, V>,
+  ) {}
   from(s: I): number[] {
     return axes(per(this.start, s));
   }
@@ -164,7 +157,7 @@ class SpringShape<I, V extends Value> implements Shape<I> {
     const v = this.speed;
     return v === undefined ? still(x) : axes(per(v, s));
   }
-  aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
+  aim(_x: number[], _v: number[], was: number[] | null, s: I, _put: boolean): number[] {
     return was ?? axes(per(this.goal, s));
   }
   scalar(s: I): boolean {
@@ -175,11 +168,24 @@ class SpringShape<I, V extends Value> implements Shape<I> {
   }
 }
 
-class GlideShape<I, V extends Value> implements Shape<I> {
+class SpringShape<I, V extends Value> extends StockShape<I, V> implements Shape<I> {
   readonly ease = undefined;
   readonly ms = undefined;
-  private readonly start: PerSubject<I, V>;
-  private readonly speed: PerSubject<I, V> | undefined;
+  constructor(
+    readonly law: readonly number[],
+    private readonly motion: MotionSpec,
+    opts: { to: PerSubject<I, V>; from?: PerSubject<I, V>; velocity?: PerSubject<I, V> },
+  ) {
+    super(opts.from ?? opts.to, opts.velocity, opts.to);
+  }
+  spec(): MotionSpec {
+    return this.motion;
+  }
+}
+
+class GlideShape<I, V extends Value> extends StockShape<I, V> implements Shape<I> {
+  readonly ease = undefined;
+  readonly ms = undefined;
   private readonly edges: PerSubject<I, readonly [min: V, max: V]> | undefined;
   constructor(
     readonly law: readonly number[],
@@ -191,21 +197,13 @@ class GlideShape<I, V extends Value> implements Shape<I> {
     },
     private readonly tau: number,
   ) {
-    this.start = opts.from;
-    this.speed = opts.velocity;
+    super(opts.from, opts.velocity, opts.from);
     this.edges = opts.bounds;
   }
   spec(): MotionSpec {
     return this.motion;
   }
-  from(s: I): number[] {
-    return axes(per(this.start, s));
-  }
-  velocity(s: I, x: number[]): number[] {
-    const v = this.speed;
-    return v === undefined ? still(x) : axes(per(v, s));
-  }
-  aim(x: number[], v: number[], _was: number[] | null, s: I, put: boolean): number[] {
+  override aim(x: number[], v: number[], _was: number[] | null, s: I, put: boolean): number[] {
     const rest = x.map((xi, i) => xi + (v[i] as number) * this.tau);
     if (this.edges === undefined) return rest;
     const [lo, hi] = per(this.edges, s);
@@ -222,22 +220,14 @@ class GlideShape<I, V extends Value> implements Shape<I> {
       return r < a ? a : r > b ? b : r;
     });
   }
-  scalar(s: I): boolean {
-    return typeof per(this.start, s) === 'number';
-  }
-  scalarEvery(): boolean | undefined {
-    return scalarOf(this.start);
-  }
 }
 
 const EASED_LAW: readonly number[] = [EASED, 0, 0, 0, 0];
 
-class TweenShape<I, V extends Value> implements Shape<I> {
+class TweenShape<I, V extends Value> extends StockShape<I, V> implements Shape<I> {
   readonly law = EASED_LAW;
   readonly ease: Curve;
   private readonly easing: Easing;
-  private readonly start: PerSubject<I, V>;
-  private readonly goal: PerSubject<I, V>;
   private readonly length: PerSubject<I, number>;
   constructor(opts: {
     from: PerSubject<I, V>;
@@ -245,30 +235,14 @@ class TweenShape<I, V extends Value> implements Shape<I> {
     ms: PerSubject<I, number>;
     ease?: Easing;
   }) {
+    super(opts.from, undefined, opts.to);
     this.easing = opts.ease ?? 'ease';
     this.ease = curve(this.easing);
-    this.start = opts.from;
-    this.goal = opts.to;
     this.length = opts.ms;
   }
   spec(): MotionSpec {
     const ms = this.length;
     return { kind: 'tween', ms: typeof ms === 'number' ? ms : undefined, ease: this.easing };
-  }
-  from(s: I): number[] {
-    return axes(per(this.start, s));
-  }
-  velocity(_s: I, x: number[]): number[] {
-    return still(x);
-  }
-  aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
-    return was ?? axes(per(this.goal, s));
-  }
-  scalar(s: I): boolean {
-    return typeof per(this.goal, s) === 'number';
-  }
-  scalarEvery(): boolean | undefined {
-    return scalarOf(this.goal);
   }
   ms(s: I): number {
     const length = per(this.length, s);

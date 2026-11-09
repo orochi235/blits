@@ -1,4 +1,4 @@
-import type { Motions } from './motions.js';
+import { type Motions, RunField } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { type Change, numbers, RunFlag, type Segment } from './stretch.js';
@@ -42,13 +42,25 @@ export function change<I>(this: Motions<I>, subject: I, c: Change): void {
 
 /** Files a change with a time after every one due by then, ahead of those still waiting for one. */
 export function queue<I>(this: Motions<I>, list: Change[], c: Change, at: number): void {
+  insertByAt(list, c, at);
+}
+
+/**
+ * Puts `item` into `list`, which is in `at` order, after every item at `at` or before; one with no
+ * time stays after it.
+ */
+export function insertByAt<T extends { readonly at?: number | undefined }>(
+  list: T[],
+  item: T,
+  at: number,
+): void {
   let i = list.length;
   while (i > 0) {
-    const before = (list[i - 1] as Change).at;
+    const before = (list[i - 1] as T).at;
     if (before !== undefined && before <= at) break;
     i--;
   }
-  list.splice(i, 0, c);
+  list.splice(i, 0, item);
 }
 
 /** Every change due by `t` applied to a copy of the stretch playing then, committing nothing. */
@@ -183,12 +195,10 @@ export function insert<I>(this: Motions<I>, s: number, seg: Segment): void {
     this.older[s] = list;
     this.flag(s, OLDER, true);
   }
-  if (seg.at >= (this.runs[this.base(s)] as number)) {
+  if (seg.at >= (this.runs[this.base(s) + RunField.AT] as number)) {
     list.push(this.latest(s));
     this.write(s, seg);
     return;
   }
-  let i = list.length;
-  while (i > 0 && (list[i - 1] as Segment).at > seg.at) i--;
-  list.splice(i, 0, seg);
+  insertByAt(list, seg, seg.at);
 }

@@ -42,6 +42,18 @@ export const enum Law {
 }
 const HEAD = Law.HEAD;
 
+/**
+ * Where each field of a subject's run sits from the run's start: its release time, its flags, a
+ * tween's ms, then `x0`, with `v0` and `to` after it `n` and `2n` along.
+ */
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
+export const enum RunField {
+  AT = 0,
+  FLAGS = 1,
+  MS = 2,
+  X0 = 3,
+}
+
 /** Where every patch's `sample` leaves a value on its way to the mix; none outlives its call. */
 let shared = { xs: new Float64Array(4), vs: new Float64Array(4) };
 /** What a patch's `xs` and `vs` are before its first subject sets its axes. */
@@ -132,7 +144,7 @@ export class Motions<I> {
     for (let s = 0; s < this.numbers.size; s++)
       if (
         this.numbers.subject(s) !== absent &&
-        (((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0) !== holdsNumber
+        (((this.runs[this.base(s) + RunField.FLAGS] as number) & SCALAR) !== 0) !== holdsNumber
       )
         throw wrongKind(channel, holdsNumber);
     this.holdsNumber = holdsNumber;
@@ -153,7 +165,7 @@ export class Motions<I> {
     const first = this.firsts?.get(subject);
     const seg = first?.stretches[0] ?? this.fresh(subject);
     const s = this.take(subject);
-    this.runs[this.base(s) + 1] = first?.flags ?? this.freshFlags;
+    this.runs[this.base(s) + RunField.FLAGS] = first?.flags ?? this.freshFlags;
     this.write(s, seg);
     return s;
   }
@@ -200,7 +212,7 @@ export class Motions<I> {
   size(n: number): void {
     if (this.round && n !== 4) throw notOklab(this.channel);
     this.n = n;
-    this.stride = 3 + 3 * n;
+    this.stride = RunField.X0 + 3 * n;
     if (shared.xs.length < n) shared = { xs: new Float64Array(n), vs: new Float64Array(n) };
     this.xs = shared.xs;
     this.vs = shared.vs;
@@ -287,22 +299,22 @@ export class Motions<I> {
   stretchInto(s: number, out: Float64Array, o: number): boolean {
     const runs = this.runs;
     const b = this.base(s);
-    if (((runs[b + 1] as number) & (PENDING | OLDER)) !== 0) return false;
-    out[o] = runs[b] as number;
-    out[o + 1] = runs[b + 2] as number;
+    if (((runs[b + RunField.FLAGS] as number) & (PENDING | OLDER)) !== 0) return false;
+    out[o] = runs[b + RunField.AT] as number;
+    out[o + 1] = runs[b + RunField.MS] as number;
     const n3 = 3 * this.n;
-    for (let i = 0; i < n3; i++) out[o + 2 + i] = runs[b + 3 + i] as number;
+    for (let i = 0; i < n3; i++) out[o + 2 + i] = runs[b + RunField.X0 + i] as number;
     return true;
   }
 
   /** Whether subject `s`'s value is a number rather than an array. */
   scalar(s: number): boolean {
-    return ((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0;
+    return ((this.runs[this.base(s) + RunField.FLAGS] as number) & SCALAR) !== 0;
   }
 
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
-    return this.valueOf(this.runs[this.base(s) + 1] as number, xs);
+    return this.valueOf(this.runs[this.base(s) + RunField.FLAGS] as number, xs);
   }
 
   /** The value `at` hands the mix for a run with `flags`. */
@@ -324,12 +336,12 @@ export class Motions<I> {
       this.advance(s, t);
       const runs = this.runs;
       const b = this.base(s);
-      const at = runs[b] as number;
-      if (t < at && (runs[b + 1] as number) & OLDER)
+      const at = runs[b + RunField.AT] as number;
+      if (t < at && (runs[b + RunField.FLAGS] as number) & OLDER)
         this.evaluateSegment(this.playing(s, t), t, xo, vo);
       else {
-        const x = b + 3;
-        const ms = runs[b + 2] as number;
+        const x = b + RunField.X0;
+        const ms = runs[b + RunField.MS] as number;
         this.evaluate(at, ms, runs, x, runs, x + this.n, runs, x + 2 * this.n, t, xo, vo);
       }
       return;
@@ -342,7 +354,7 @@ export class Motions<I> {
    * lets go of stretches older than `reading.horizon`.
    */
   advance(s: number, t: number): void {
-    const i = this.base(s) + 1;
+    const i = this.base(s) + RunField.FLAGS;
     if ((this.runs[i] as number) & PENDING) this.commit(s, t);
     if ((this.runs[i] as number) & OLDER) this.prune(s);
   }
@@ -353,7 +365,7 @@ export class Motions<I> {
    */
   bareAt(s: number): number {
     const b = this.base(s);
-    return ((this.runs[b + 1] as number) & (PENDING | OLDER)) !== 0 ? -1 : b;
+    return ((this.runs[b + RunField.FLAGS] as number) & (PENDING | OLDER)) !== 0 ? -1 : b;
   }
 
   /**
@@ -364,11 +376,11 @@ export class Motions<I> {
     const runs = this.runs;
     const b = this.bareAt(s);
     if (b < 0) return false;
-    const x = b + 3;
+    const x = b + RunField.X0;
     const n = this.n;
     this.evaluate(
-      runs[b] as number,
-      runs[b + 2] as number,
+      runs[b + RunField.AT] as number,
+      runs[b + RunField.MS] as number,
       runs,
       x,
       runs,
@@ -391,19 +403,19 @@ export class Motions<I> {
     const n = this.n;
     for (let s = 0; s < this.numbers.size; s++) {
       const b = this.base(s);
-      const flags = runs[b + 1] as number;
+      const flags = runs[b + RunField.FLAGS] as number;
       if ((flags & (LANDED | PENDING)) === LANDED) continue;
       const subject = this.numbers.subject(s);
       if (subject === absent) continue;
       if (flags & PENDING) return false;
-      const at = runs[b] as number;
+      const at = runs[b + RunField.AT] as number;
       const t = this.frame(subject);
       if (!(t >= at)) return false;
-      const x = b + 3;
-      const ms = runs[b + 2] as number;
+      const x = b + RunField.X0;
+      const ms = runs[b + RunField.MS] as number;
       if (!this.evaluate(at, ms, runs, x, runs, x + n, runs, x + 2 * n, t, this.xs, this.vs))
         return false;
-      runs[b + 1] = flags | LANDED;
+      runs[b + RunField.FLAGS] = flags | LANDED;
     }
     return true;
   }
@@ -415,7 +427,7 @@ export class Motions<I> {
   quiet(s: number, t: number): boolean {
     const runs = this.runs;
     const b = this.base(s);
-    const flags = runs[b + 1] as number;
+    const flags = runs[b + RunField.FLAGS] as number;
     if (flags & PENDING) {
       const list = (this.pending as Change[][])[s] as Change[];
       const first = (list[0] as Change).at;
@@ -424,7 +436,7 @@ export class Motions<I> {
     }
     if (flags & OLDER) {
       const list = (this.older as Segment[][])[s] as Segment[];
-      const next = list.length > 1 ? (list[1] as Segment).at : (runs[b] as number);
+      const next = list.length > 1 ? (list[1] as Segment).at : (runs[b + RunField.AT] as number);
       if (next <= reading.horizon) return false;
     }
     return true;
@@ -455,7 +467,7 @@ export class Motions<I> {
   flag(s: number, bit: number, on: boolean): void {
     this.watcher?.stretchChanged(this.watchId, s);
     this.listener?.(s);
-    const i = this.base(s) + 1;
+    const i = this.base(s) + RunField.FLAGS;
     const flags = this.runs[i] as number;
     this.runs[i] = on ? flags | bit : flags & ~bit;
   }
@@ -491,23 +503,23 @@ export class Motions<I> {
       this.causes ??= [];
       this.causes[s] = seg.change;
     }
-    this.runs[b] = seg.at;
-    this.runs[b + 1] = (this.runs[b + 1] as number) & ~LANDED;
-    this.runs[b + 2] = seg.ms;
+    this.runs[b + RunField.AT] = seg.at;
+    this.runs[b + RunField.FLAGS] = (this.runs[b + RunField.FLAGS] as number) & ~LANDED;
+    this.runs[b + RunField.MS] = seg.ms;
     for (let i = 0; i < n; i++) {
-      this.runs[b + 3 + i] = seg.x0[i] as number;
-      this.runs[b + 3 + n + i] = seg.v0[i] as number;
-      this.runs[b + 3 + 2 * n + i] = seg.to[i] as number;
+      this.runs[b + RunField.X0 + i] = seg.x0[i] as number;
+      this.runs[b + RunField.X0 + n + i] = seg.v0[i] as number;
+      this.runs[b + RunField.X0 + 2 * n + i] = seg.to[i] as number;
     }
   }
 
   /** The stretch subject `s` is playing now, as an object. */
   latest(s: number): Segment {
     const n = this.n;
-    const x = this.base(s) + 3;
+    const x = this.base(s) + RunField.X0;
     return {
-      at: this.runs[this.base(s)] as number,
-      ms: this.runs[this.base(s) + 2] as number,
+      at: this.runs[this.base(s) + RunField.AT] as number,
+      ms: this.runs[this.base(s) + RunField.MS] as number,
       x0: numbers(this.runs, x, n),
       v0: numbers(this.runs, x + n, n),
       to: numbers(this.runs, x + 2 * n, n),
@@ -524,7 +536,10 @@ export class Motions<I> {
     const s = this.known(subject);
     if (s === undefined) return this.firsts?.get(subject)?.stretches[0] ?? this.fresh(subject);
     const b = this.base(s);
-    if (((this.runs[b + 1] as number) & OLDER) !== 0 && t < (this.runs[b] as number))
+    if (
+      ((this.runs[b + RunField.FLAGS] as number) & OLDER) !== 0 &&
+      t < (this.runs[b + RunField.AT] as number)
+    )
       return undefined;
     let seg = this.latest(s);
     for (const change of this.dueTo(s) ?? []) {

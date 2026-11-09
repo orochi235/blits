@@ -1,3 +1,4 @@
+import { insertByAt } from './changes.js';
 import { delayOf } from './delay.js';
 import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
@@ -131,11 +132,7 @@ function changeAhead<I, O>(
   const list = bySubject.get(subject) as Change[] | undefined;
   const c: Change = { at, to: change.to, x: change.x, v: change.v };
   if (list === undefined) bySubject.set(subject, [c]);
-  else {
-    let i = list.length;
-    while (i > 0 && ((list[i - 1] as Change).at as number) > stamped) i--;
-    list.splice(i, 0, c);
-  }
+  else insertByAt(list, c, stamped);
 }
 
 /** The voice in the list with this id, which is in id order. */

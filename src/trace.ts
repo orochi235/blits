@@ -1,4 +1,5 @@
 import type { Mixer } from './mixer.js';
+import { nearly } from './nearly.js';
 import { type Bent, bowsOver, fitBent } from './trace-fit.js';
 import { type Plan, planOf } from './trace-plan.js';
 import type { Bend, NumberChannel, Projection, Run, Trace, TraceOptions } from './types.js';
@@ -10,8 +11,7 @@ import type { Bend, NumberChannel, Projection, Run, Trace, TraceOptions } from '
 const NUDGE = 1e-6;
 
 /** Two values at one time this close are one point, not a jump. */
-const close = (a: number, b: number): boolean =>
-  Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+const close = (a: number, b: number): boolean => nearly(a, b, 1e-6);
 
 /** The most bends one stretch may fit, each a read, before it is read on the grid instead. */
 const MOST_BENDS = 8;

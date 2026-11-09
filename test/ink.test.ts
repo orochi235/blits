@@ -202,3 +202,61 @@ describe('toHex and css on five numbers', () => {
     expect(css([0, 0, 0, 0, 0])).toBe('oklab(0 0 0 / 0)');
   });
 });
+
+describe("ink()'s lerp", () => {
+  // The lerp as it stood before it shared `lchPair`, kept to hold the shared one to it bit for bit.
+  const before = (x: number[], y: number[], u: number): number[] => {
+    const lch = (v: number[]) => {
+      const five = v.length > 4;
+      const w = (five ? v[4] : v[3]) ?? 0;
+      const s = w > 0 ? 1 / w : 0;
+      const a = (v[1] ?? 0) * s;
+      const b = (v[2] ?? 0) * s;
+      const r = Math.sqrt(a * a + b * b);
+      return [(v[0] ?? 0) * s, !five ? r : r < 1e-9 ? 0 : (v[3] ?? 0) * s, Math.atan2(b, a), w];
+    };
+    const px = lch(x);
+    const py = lch(y);
+    const f = (px[3] as number) > 0 ? px : py;
+    const t = (py[3] as number) > 0 ? py : px;
+    const fromC = f[1] as number;
+    const toC = t[1] as number;
+    const from = fromC < 1e-4 ? (t[2] as number) : (f[2] as number);
+    let turn = (toC < 1e-4 ? (f[2] as number) : (t[2] as number)) - from;
+    if (turn > Math.PI) turn -= 2 * Math.PI;
+    else if (turn < -Math.PI) turn += 2 * Math.PI;
+    const m = (a: number, b: number) => a + (b - a) * u;
+    const w = m(px[3] as number, py[3] as number);
+    const Cw = m(fromC, toC) * w;
+    const h = from + turn * u;
+    return [m(f[0] as number, t[0] as number) * w, Math.cos(h) * Cw, Math.sin(h) * Cw, Cw, w];
+  };
+  const lerp = ink().lerp as (a: number[], b: number[], u: number) => number[];
+  const premul = (v: number[], w: number) => v.map((n) => n * w);
+  const ends: number[][] = [];
+  for (const rgb of [0xff0000, 0x0000ff, 0x00ff00, 0x808080, 0xffffff, 0x000000, 0x3377aa]) {
+    const [L, a, b] = oklab(rgb) as [number, number, number, number];
+    for (const w of [1, 0.25, 0]) {
+      ends.push(premul([L, a, b, 1], w));
+      ends.push(premul([L, a, b, Math.sqrt(a * a + b * b), 1], w));
+    }
+  }
+  ends.push([0.2, -0.1, 0.05, 0.3, 0.5], [0.5, 0, 0, 0, 1], [0.4, 1e-12, 0, 0.2, 1]);
+
+  it('gives what it gave before sharing lchPair, bit for bit where either end has coverage', () => {
+    for (const x of ends)
+      for (const y of ends) {
+        const empty =
+          !(((x.length > 4 ? x[4] : x[3]) as number) > 0) &&
+          !(((y.length > 4 ? y[4] : y[3]) as number) > 0);
+        for (const u of [0.1, 0.5, 0.9]) {
+          const got = lerp(x, y, u);
+          const want = before(x, y, u);
+          for (let i = 0; i < 5; i++) {
+            if (empty) expect(got[i] === want[i]).toBe(true);
+            else expect(Object.is(got[i], want[i])).toBe(true);
+          }
+        }
+      }
+  });
+});

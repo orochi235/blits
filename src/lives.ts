@@ -1,5 +1,5 @@
 import { type Cut, within } from './cut.js';
-import type { Motions } from './motions.js';
+import { type Motions, RunField } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { type Change, type Paging, type Run, RunFlag, type Segment } from './stretch.js';
@@ -74,7 +74,7 @@ export function runAt<I>(this: Motions<I>, s: number): Run {
   const older = this.older?.[s];
   const pending = this.pending?.[s];
   return {
-    flags: this.runs[this.base(s) + 1] as number,
+    flags: this.runs[this.base(s) + RunField.FLAGS] as number,
     stretches: older === undefined ? [this.latest(s)] : [...older, this.latest(s)],
     pending: pending === undefined ? undefined : [...pending],
   };
@@ -95,7 +95,7 @@ export function unpack<I>(this: Motions<I>, subject: I, run: Run): void {
   }
   if (this.n < 0) this.size((run.stretches[0] as Segment).x0.length);
   const s = this.take(subject);
-  this.runs[this.base(s) + 1] = run.flags & ~(OLDER | PENDING);
+  this.runs[this.base(s) + RunField.FLAGS] = run.flags & ~(OLDER | PENDING);
   const latest = run.stretches[run.stretches.length - 1] as Segment;
   this.write(s, latest);
   if (run.stretches.length > 1) {
@@ -183,8 +183,9 @@ export function prune<I>(this: Motions<I>, s: number): void {
   let n = 0;
   while (
     n < list.length &&
-    (n + 1 < list.length ? (list[n + 1] as Segment).at : (this.runs[this.base(s)] as number)) <=
-      reading.horizon
+    (n + 1 < list.length
+      ? (list[n + 1] as Segment).at
+      : (this.runs[this.base(s) + RunField.AT] as number)) <= reading.horizon
   )
     n++;
   if (n === 0) return;

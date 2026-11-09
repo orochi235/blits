@@ -1,4 +1,4 @@
-import { kindOf, lerpNumber, type NumberOptions } from './channels.js';
+import { kindOf, lerpNumber, type NumberOptions, times } from './channels.js';
 import { shared } from './shared.js';
 import type { Channel } from './types.js';
 
@@ -76,7 +76,7 @@ export function norm(opts?: NormOptions): Channel<number> {
     bounds: opts?.bounds,
     rest: 0,
     merge: (a, b) => (a === 0 ? b : b === 0 ? a : down(up(a) + up(b))),
-    scale: (v, w) => v * w,
+    scale: times,
     lerp: lerpNumber,
   };
   extremes.set(channel, { op: 'norm', power: p });
