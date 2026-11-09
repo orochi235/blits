@@ -1,9 +1,10 @@
 import { createHistory as tape } from '@weasel-js/history';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { kit, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { patch } from '../src/patch.js';
+import { level } from '../src/signals.js';
 import type { Handle } from '../src/types.js';
 
 interface Pose {
@@ -129,5 +130,31 @@ describe('a handle reaches its voice’s motion patch', () => {
       expect(x).toBeCloseTo(first[i] as number, 9);
     });
     expect(again[5]).toBe(-5);
+  });
+
+  it('a weight write on a signal-weighted voice changes nothing and warns once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const m = mix<Part, Pose>(K);
+      const weight = level<Part>(0.5);
+      const h = m.cue({
+        name: 'weighted',
+        patch: patch<Part, Pose>(Infinity, () => ({ x: 10 }), { writes: ['x'] }),
+        weight,
+      });
+      m.sync(0);
+      expect(m.probe(a).x).toBeCloseTo(5, 9);
+      h.weight = 0;
+      h.weight = 0.25;
+      m.sync(16);
+      expect(m.probe(a).x).toBeCloseTo(5, 9);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toMatch(/weighted is weighted by a signal/);
+      weight.set(1);
+      m.sync(32);
+      expect(m.probe(a).x).toBeCloseTo(10, 9);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

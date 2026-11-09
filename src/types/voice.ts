@@ -433,6 +433,9 @@ export interface Handle<I = unknown> {
   readonly owner: Handle<I> | undefined;
   /**
    * The voice's weight now, which can be written while it plays. A write shows at the next probe.
+   * On a voice whose {@link VoiceSpec.weight | `weight`} is a signal, the signal alone weighs it:
+   * this reads 1 until written, and a write is kept here but changes nothing on screen (outside
+   * production it warns once). To steer such a voice, set the signal's input, such as a `level`.
    */
   weight: number;
   /**
