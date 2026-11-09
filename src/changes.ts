@@ -1,4 +1,4 @@
-import { type Motions, RunField } from './motions.js';
+import type { Motions } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { type Change, numbers, RunFlag, type Segment } from './stretch.js';
@@ -195,7 +195,7 @@ export function insert<I>(this: Motions<I>, s: number, seg: Segment): void {
     this.older[s] = list;
     this.flag(s, OLDER, true);
   }
-  if (seg.at >= (this.runs[this.base(s) + RunField.AT] as number)) {
+  if (seg.at >= (this.runs[this.base(s)] as number)) {
     list.push(this.latest(s));
     this.write(s, seg);
     return;

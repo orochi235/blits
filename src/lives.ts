@@ -183,9 +183,8 @@ export function prune<I>(this: Motions<I>, s: number): void {
   let n = 0;
   while (
     n < list.length &&
-    (n + 1 < list.length
-      ? (list[n + 1] as Segment).at
-      : (this.runs[this.base(s) + RunField.AT] as number)) <= reading.horizon
+    (n + 1 < list.length ? (list[n + 1] as Segment).at : (this.runs[this.base(s)] as number)) <=
+      reading.horizon
   )
     n++;
   if (n === 0) return;
