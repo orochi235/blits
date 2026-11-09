@@ -163,10 +163,11 @@ function restage(c: Transport): Transport {
  * or from the copy at the known event before.
  */
 export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
-  mirror(mix, c);
-  c.cued = mix.cued
-    .filter((v) => v.state !== 'done')
-    .map((v) => {
+  copyVoices(
+    mix,
+    c,
+    mix.cued.filter((v) => v.state !== 'done'),
+    (v) => {
       const link = {
         mix,
         voice: v,
@@ -179,14 +180,35 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
       link.seen = copy.seen;
       link.shared = copy.sharing;
       links.set(copy, link);
-      const at = mix.pins?.get(v);
-      if (at !== undefined) pin(c, copy, at);
       return copy;
-    });
+    },
+    true,
+  );
   c.waking = mix.waking;
-  ownBlends(c.cued);
-  if (mix.owners !== null) relink(c.cued);
   recount(c);
+}
+
+/**
+ * Fills a projection's copy with a copy of each of `voices` that `each` makes, given the starts
+ * pinned to host time where `pins` says, and links the copies' blends and owners among themselves.
+ */
+export function copyVoices<I, O>(
+  mix: Mixer<I, O>,
+  c: Mixer<I, O>,
+  voices: readonly Voice<I, O>[],
+  each: (v: Voice<I, O>) => Voice<I, O>,
+  pins: boolean,
+  seq?: number,
+): void {
+  mirror(mix, c);
+  c.cued = voices.map((v) => {
+    const copy = each(v);
+    const at = pins ? mix.pins?.get(v) : undefined;
+    if (at !== undefined) pin(c, copy, at);
+    return copy;
+  });
+  ownBlends(c.cued);
+  if (mix.owners !== null) relink(c.cued, seq);
 }
 
 /** Gives a projection's copy what it reads of the live mix as it is, before its voices are copied. */

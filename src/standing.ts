@@ -1,10 +1,7 @@
-import { mirror } from './ahead.js';
-import { ownBlends } from './blend.js';
+import { copyVoices } from './ahead.js';
 import type { Cut } from './cut.js';
 import { patchKeeps } from './held.js';
 import type { Mixer } from './mixer.js';
-import { relink } from './owner.js';
-import { pin } from './place.js';
 import { recall, stateAt } from './project.js';
 import { recount } from './roster.js';
 import type { Transport } from './transport.js';
@@ -58,20 +55,19 @@ export function stands(transport: Transport, t: number): void {
 
 /** A mix's copy for a read back to `t` with no history: its voices as they stand, each at `t`. */
 export function copyStanding<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): void {
-  mirror(mix, c);
   c.backward = true;
-  c.cued = mix.cued
-    .filter((v) => v.state !== 'done')
-    .map((v) => {
+  copyVoices(
+    mix,
+    c,
+    mix.cued.filter((v) => v.state !== 'done'),
+    (v) => {
       const copy: Voice<I, O> = v.copy((subject) => recall(mix, v, subject, t, cut));
       // A fade its own end began after `t` had not begun then.
       if (copy.out !== null && copy.out.at > t) copy.out = null;
-      const at = mix.pins?.get(v);
-      if (at !== undefined) pin(c, copy, at);
       return copy;
-    });
-  ownBlends(c.cued);
-  if (mix.owners !== null) relink(c.cued);
+    },
+    true,
+  );
   stateAt(c, t);
   recount(c);
 }

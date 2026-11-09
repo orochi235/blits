@@ -1,5 +1,4 @@
-import { copyAhead, mirror, playAhead, recordOf, type Stages } from './ahead.js';
-import { ownBlends } from './blend.js';
+import { copyAhead, copyVoices, playAhead, recordOf, type Stages } from './ahead.js';
 import { heldAt } from './chain.js';
 import { stepOf } from './clock.js';
 import { type Cut, within } from './cut.js';
@@ -7,7 +6,7 @@ import { fadesAt } from './fade.js';
 import { freshOf, meet, origin, originate } from './held.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
-import { heldByInput, relink } from './owner.js';
+import { heldByInput } from './owner.js';
 import { reading } from './reading.js';
 import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
@@ -144,7 +143,6 @@ export function projectAll(
 
 /** A mix's copy for a read back to `t`, cut at `cut`: its voices then, from the controls and copies kept. */
 function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): void {
-  mirror(mix, c);
   c.backward = true;
   // Copied as the frame's first probe began, so its own frame shows it.
   const was = lastWithin(mix.hostLog, { seq: cut.seq, strict: false });
@@ -154,10 +152,15 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
       ? Object.assign(Object.create(host) as object, was.fields)
       : undefined;
   if (was) c.hostThen = was;
-  c.cued = [...mix.cued, ...mix.gone]
+  const voices = [...mix.cued, ...mix.gone]
     .filter((v) => v.cuedSeq <= cut.seq && !within(cut, v.doneSeq, true))
-    .sort((a, b) => a.id - b.id)
-    .map((v) => {
+    .sort((a, b) => a.id - b.id);
+  // Not pinned again: the controls kept give each start where the mix's rate had moved it.
+  copyVoices(
+    mix,
+    c,
+    voices,
+    (v) => {
       const log = v.log as Controls[];
       const copy: Voice<I, O> = v.copy(
         (subject) => recall(mix, v, subject, t, cut, c, copy),
@@ -176,9 +179,10 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
           copy.parts.set(subject, p.ramp);
         }
       return copy;
-    });
-  ownBlends(c.cued);
-  if (mix.owners !== null) relink(c.cued, cut.seq);
+    },
+    false,
+    cut.seq,
+  );
   stateAt(c, t, cut);
   recount(c);
 }
