@@ -1,6 +1,7 @@
 import { clearBit, hasBit, setBit } from './bits.js';
 import { slotOf } from './chain.js';
 import { numericOf } from './channels.js';
+import { grown } from './grow.js';
 import { blankOf, patchKeeps } from './held.js';
 import type { Mixer } from './mixer.js';
 import { detour } from './roster.js';
@@ -114,10 +115,8 @@ export function weighAt<I, O>(voice: Voice<I, O>, slot: number, w: number, cap: 
   let weights = voice.weights;
   if (weights === null || slot >= weights.length) {
     if (w === 0) return;
-    const grown = new Float64Array(Math.max(slot + 1, cap));
-    if (weights !== null) grown.set(weights);
-    voice.weights = grown;
-    weights = grown;
+    weights = grown(weights, Math.max(slot + 1, cap));
+    voice.weights = weights;
   }
   weights[slot] = w;
 }
@@ -169,10 +168,8 @@ export function shut<I, O>(
   const o = slot * Stamp.SIZE;
   if (stamps === null || o >= stamps.length) {
     if (Number.isNaN(rec.probed)) return;
-    const grown = new Float64Array(Math.max(slot + 1, cap) * Stamp.SIZE).fill(Number.NaN);
-    if (stamps !== null) grown.set(stamps);
-    voice.stamps = grown;
-    stamps = grown;
+    stamps = grown(stamps, Math.max(slot + 1, cap) * Stamp.SIZE, Number.NaN);
+    voice.stamps = stamps;
     voice.deltas ??= [];
   }
   stamps[o + Stamp.PROBED] = rec.probed;
@@ -206,10 +203,8 @@ export function resight<I, O>(voice: Voice<I, O>, from: number, to: number, cap:
   if (stamps !== null && o < stamps.length) {
     const t = to * Stamp.SIZE;
     if (t >= stamps.length) {
-      const grown = new Float64Array(Math.max(to + 1, cap) * Stamp.SIZE).fill(Number.NaN);
-      grown.set(stamps);
-      voice.stamps = grown;
-      stamps = grown;
+      stamps = grown(stamps, Math.max(to + 1, cap) * Stamp.SIZE, Number.NaN);
+      voice.stamps = stamps;
     }
     stamps[t + Stamp.PROBED] = stamps[o + Stamp.PROBED] as number;
     stamps[t + Stamp.SEEKS] = stamps[o + Stamp.SEEKS] as number;

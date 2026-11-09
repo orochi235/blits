@@ -1,5 +1,6 @@
 import { inside, leave, meetBound } from './bound.js';
 import { foldNumber, lerpNumber } from './channels.js';
+import { grown } from './grow.js';
 import { Arg, type Lane, type Laned, type Role, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Subject } from './subject.js';
@@ -7,10 +8,7 @@ import { foldTurn, gatherTurn, shortWay, turnFrom, turnInto, turnToward } from '
 
 /** `xs`, or a copy at least `n` long where it is shorter. */
 function sized(xs: Float64Array, n: number): Float64Array {
-  if (xs.length >= n) return xs;
-  const grown = new Float64Array(n);
-  grown.set(xs);
-  return grown;
+  return xs.length >= n ? xs : grown(xs, n);
 }
 
 /**

@@ -1,5 +1,6 @@
 import { unbareLane } from './bare.js';
 import type { Numeric } from './channels.js';
+import { grown, grownInts } from './grow.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
@@ -284,9 +285,7 @@ export class Lane<I, O> implements Positions<I, O> {
 
   numbered(p: number, ms: number): void {
     if (ms >= this.byMotion.length) {
-      const at = new Int32Array(Math.max(ms + 1, this.byMotion.length * 2, 64));
-      at.set(this.byMotion);
-      this.byMotion = at;
+      this.byMotion = grownInts(this.byMotion, Math.max(ms + 1, this.byMotion.length * 2, 64));
     }
     this.byMotion[ms] = p + 1;
   }
@@ -295,16 +294,18 @@ export class Lane<I, O> implements Positions<I, O> {
     return ms < this.byMotion.length ? (this.byMotion[ms] as number) - 1 : -1;
   }
 
-  keep(p: number, xs: Float64Array, n: number): void {
+  /** Room in `samples` for `count` positions of `n` numbers each, kept from before where `n` is. */
+  room(count: number, n: number): void {
     if (this.axes !== n) {
       this.axes = n;
       this.samples = new Float64Array(0);
     }
-    if ((p + 1) * n > this.samples.length) {
-      const grown = new Float64Array(Math.max(p + 1, (this.samples.length / n) * 2, 4) * n);
-      grown.set(this.samples);
-      this.samples = grown;
-    }
+    if (count * n > this.samples.length)
+      this.samples = grown(this.samples, Math.max(count, (this.samples.length / n) * 2, 4) * n);
+  }
+
+  keep(p: number, xs: Float64Array, n: number): void {
+    this.room(p + 1, n);
     for (let a = 0; a < n; a++) this.samples[p * n + a] = xs[a] as number;
   }
 
@@ -332,35 +333,23 @@ export class Lane<I, O> implements Positions<I, O> {
    */
   reserve(n: number, cap: number): void {
     if (n * Row.STRIDE > this.data.length) {
-      const data = new Float64Array(n * Row.STRIDE);
-      data.set(this.data);
-      this.data = data;
-      this.landed = grownTo(this.landed, n);
+      this.data = grown(this.data, n * Row.STRIDE);
+      this.landed = grown(this.landed, n);
     }
-    if (cap > this.at.length) {
-      const at = new Int32Array(cap);
-      at.set(this.at);
-      this.at = at;
-    }
+    if (cap > this.at.length) this.at = grownInts(this.at, cap);
   }
 
   /** Gives a subject the voice reaches a position, from what its record fixed on first sight. */
   add(slot: number, held: Subject<unknown>): void {
     const p = this.list.length;
     this.list.push(slot);
-    if (slot >= this.at.length) {
-      const at = new Int32Array(Math.max(slot + 1, this.at.length * 2, 64));
-      at.set(this.at);
-      this.at = at;
-    }
+    if (slot >= this.at.length)
+      this.at = grownInts(this.at, Math.max(slot + 1, this.at.length * 2, 64));
     this.at[slot] = p + 1;
     if ((p + 1) * Row.STRIDE > this.data.length) {
-      const data = new Float64Array(
-        Math.max(p + 1, (this.data.length / Row.STRIDE) * 2, 4) * Row.STRIDE,
-      );
-      data.set(this.data);
-      this.data = data;
-      this.landed = grownTo(this.landed, data.length / Row.STRIDE);
+      const rows = Math.max(p + 1, (this.data.length / Row.STRIDE) * 2, 4);
+      this.data = grown(this.data, rows * Row.STRIDE);
+      this.landed = grown(this.landed, rows);
     }
     const o = p * Row.STRIDE;
     this.data[o + Row.DELAY] = held.delay;
@@ -378,11 +367,8 @@ export class Lane<I, O> implements Positions<I, O> {
   renumber(from: number, to: number): void {
     const p = this.positionOf(from);
     if (p < 0) return;
-    if (to >= this.at.length) {
-      const at = new Int32Array(Math.max(to + 1, this.at.length * 2, 64));
-      at.set(this.at);
-      this.at = at;
-    }
+    if (to >= this.at.length)
+      this.at = grownInts(this.at, Math.max(to + 1, this.at.length * 2, 64));
     this.list[p] = to;
     this.at[to] = p + 1;
     this.at[from] = 0;
@@ -413,10 +399,4 @@ export class Lane<I, O> implements Positions<I, O> {
     this.records[last] = undefined;
     this.deltas[last] = null;
   }
-}
-
-function grownTo(a: Float64Array, size: number): Float64Array<ArrayBuffer> {
-  const b = new Float64Array(size);
-  b.set(a);
-  return b;
 }

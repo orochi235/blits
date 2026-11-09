@@ -1,5 +1,3 @@
-/** Searches and inserts over lists kept in order. */
-
 /** The last entry taken before `t`, or at it where `inclusive` says so. */
 export function last<T extends { at: number }>(
   list: readonly T[],

@@ -17,6 +17,7 @@ import {
   subjectAt,
 } from './fill.js';
 import { fold, foldDelta, foldInto, foldRun, gate, gather, unplain } from './gather.js';
+import { grown } from './grow.js';
 import { Arg, Begin, type Lane, type Laned, Per, type Role, Row } from './lane.js';
 import { meet, reach } from './meet.js';
 import { absent, Numbers } from './numbers.js';
@@ -537,19 +538,11 @@ export class Lanes<I, O> implements Watcher {
   grow(size: number): void {
     if (size <= this.cap) return;
     const cap = Math.max(size, this.cap * 2, 64);
-    const per = new Float64Array(cap * Per.SLOT);
-    per.set(this.per);
-    this.per = per;
+    this.per = grown(this.per, cap * Per.SLOT);
     this.owed.grow(cap);
     this.placed.grow(cap);
-    const unlinked = new Float64Array(cap);
-    unlinked.set(this.unlinked);
-    this.unlinked = unlinked;
-    for (const ch of this.laned) {
-      const values = new Float64Array(cap * ch.axes);
-      values.set(ch.values);
-      ch.values = values;
-    }
+    this.unlinked = grown(this.unlinked, cap);
+    for (const ch of this.laned) ch.values = grown(ch.values, cap * ch.axes);
     this.cap = cap;
   }
 

@@ -1,3 +1,4 @@
+import { grownInts } from './grow.js';
 /**
  * By subject number, the laned voices whose first meeting with the subject its probes fold on the
  * general path this fill, after the lanes' values. Subjects meeting the same voices share one list.
@@ -18,12 +19,8 @@ export class Owed {
 
   /** Makes room for subject numbers below `cap`. */
   grow(cap: number): void {
-    const fill = new Int32Array(cap);
-    fill.set(this.fill);
-    this.fill = fill;
-    const at = new Int32Array(cap);
-    at.set(this.at);
-    this.at = at;
+    this.fill = grownInts(this.fill, cap);
+    this.at = grownInts(this.at, cap);
   }
 
   /** Whether any subject owes a laned voice this fill. */

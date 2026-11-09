@@ -2,6 +2,7 @@ import { bareRows, clock, Sampled, unbare } from './bare.js';
 import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
 import { closed } from './closed.js';
 import type { Curve } from './easing.js';
+import { grown } from './grow.js';
 import { KeyRows } from './keyrows.js';
 import { Arg, keepProbed, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -195,15 +196,9 @@ export class Crowd<I, O> implements Positions<I, O> {
   reserve(rows: number): void {
     if (rows * Row.STRIDE <= this.data.length) return;
     const cap = Math.max(rows, (this.data.length / Row.STRIDE) * 2, 16);
-    const data = new Float64Array(cap * Row.STRIDE);
-    data.set(this.data);
-    this.data = data;
-    const hot = new Float64Array(cap * this.stride);
-    hot.set(this.hot);
-    this.hot = hot;
-    const samples = new Float64Array(cap * this.axes);
-    samples.set(this.samples);
-    this.samples = samples;
+    this.data = grown(this.data, cap * Row.STRIDE);
+    this.hot = grown(this.hot, cap * this.stride);
+    this.samples = grown(this.samples, cap * this.axes);
   }
 }
 
