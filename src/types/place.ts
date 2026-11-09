@@ -77,7 +77,7 @@ export interface Placement {
  * @category score
  */
 export interface Marked {
-  /** On the host's clock. */
+  /** Host time: when it falls on the host's clock. */
   timestamp: number;
   /**
    * Which of a voice's marks this is. It is one of its five or one it placed inside itself;
@@ -116,7 +116,7 @@ export interface Hit<E = unknown> {
  * @category score
  */
 export interface BookedHit<E = unknown, I = unknown> {
-  /** On the host's clock. */
+  /** Host time: when it falls on the host's clock. */
   timestamp: number;
   voice: number;
   /** Which of the voice's {@link VoiceSpec.hits | `hits`}, by index. */

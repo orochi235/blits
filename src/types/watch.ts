@@ -123,7 +123,7 @@ export interface WatchedFrame<I, O> {
   seq: number;
   /** The mix clock the frame stood at. */
   now: number;
-  /** The host's timestamp at the frame's sync. */
+  /** Host time: the host's timestamp at the frame's sync. */
   timestamp: number;
   /** Each probe, in order, with a copy of the pose it returned. */
   probed: Probed<I, O>[];

@@ -389,7 +389,7 @@ export interface VoiceFade {
   /** The ramp, ms. Defaults to the voice's own `fade.out`. */
   over?: number;
   /**
-   * When the fade begins, as a mix time or `'rest'`. A mix time: ahead, the voice plays untouched until then and begins
+   * Mix time the fade begins at, or `'rest'`. A mix time: ahead, the voice plays untouched until then and begins
    * its fade exactly there, its `out` mark fixed from now, and {@link Handle.rise | `rise`} before then takes it
    * back with nothing changed; at or behind now, the fade began then and is partway. `'rest'`:
    * leave per subject at the first frame that subject's contribution is at rest. Default now.

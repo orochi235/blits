@@ -8,7 +8,10 @@ import type { Channel } from './types.js';
  * @category channel
  */
 export interface AngleOptions {
-  /** One full turn in the channel's unit. Default 360, for degrees; `2 * Math.PI` for radians. */
+  /**
+   * One full turn in the channel's unit. Default 360, for degrees, where `matrix` takes radians;
+   * `2 * Math.PI` for radians.
+   */
   turn?: number;
 }
 

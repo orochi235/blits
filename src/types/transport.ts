@@ -18,6 +18,7 @@ export interface TransportOptions {
  * @category mix
  */
 export interface TransportProjection {
+  /** Mix time: the time every mix is read at, not a host timestamp. */
   readonly timestamp: number;
   of<I, O, H>(mix: Mix<I, O, H>): Projection<I, O>;
 }
@@ -62,7 +63,7 @@ export interface Transport {
   when(time: number): number;
   /** The mix time at the last sync or seek; NaN before the first. */
   readonly now: number;
-  /** The host's timestamp at the last sync; NaN before the first. */
+  /** Host time: the host's timestamp at the last sync; NaN before the first. */
   readonly timestamp: number;
   /** As `Mix.seq`, the number of the frame being played. It is the same for every mix on it. */
   readonly seq: number;

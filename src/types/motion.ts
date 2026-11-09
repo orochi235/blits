@@ -32,7 +32,7 @@ export interface Motion<V extends Value = number> {
  */
 export interface Moving<I, O, V extends Value> extends Patch<I, O, void> {
   /**
-   * Where `subject` is and how fast it moves at voice time `at`. `at` defaults to the mix's latest
+   * Where `subject` is and how fast it moves at voice ms `at`, on its voice's clock. `at` defaults to the mix's latest
    * frame, counting every change due by then. With no time given, undefined until a frame of its
    * voice has met the subject, while the subject is still inside its stagger, and once that voice
    * is gone. At any time, undefined for a subject the patch has never met or changed, or that the
@@ -96,7 +96,10 @@ export interface SpringOptions<I, V extends Value> extends MotionOptions<I, V> {
 export interface GlideOptions<I, V extends Value> extends MotionOptions<I, V> {
   /** Where each subject starts. */
   from: PerSubject<I, V>;
-  /** The friction's time constant, ms. Default 325, a touch scroll's. */
+  /**
+   * The friction's time constant, ms, not a duration as a tween's `ms` is: each `ms` that passes
+   * takes the speed down to 37% of what it was. Default 325, a touch scroll's.
+   */
   ms?: number;
   /** The least and greatest value a coast comes to rest at, per axis. Default none. */
   bounds?: PerSubject<I, readonly [min: V, max: V]>;
@@ -114,7 +117,10 @@ export interface TweenOptions<I, V extends Value> {
   from: PerSubject<I, V>;
   /** Where each subject ends. */
   to: PerSubject<I, V>;
-  /** How long a stretch takes, ms. Asked per subject each time one of its stretches starts. */
+  /**
+   * How long a stretch takes, ms: a duration, unlike a glide's time constant. Asked per subject
+   * each time one of its stretches starts.
+   */
   ms: PerSubject<I, number>;
   /** The curve from `from` to `to`. Default `'ease'`, as CSS's. */
   ease?: Easing;
