@@ -133,6 +133,29 @@ export function unrecord<I, O>(voice: Voice<I, O>, subject: I, held: Subject<unk
   if (voice.holder === held) voice.holder = null;
 }
 
+/**
+ * Puts a voice's own fades back as they stood at the end of frame `seq`: those begun after it are
+ * taken out, a ramp then still running is put back where its subject has left since, and so are
+ * the fades of the subjects in `left`, as `fadesAt` puts them.
+ */
+export function fadesThen<I, O>(voice: Voice<I, O>, left: readonly Left<I>[], seq: number): void {
+  if (voice.parts !== null) {
+    for (const [subject, r] of voice.parts) if (r.seq > seq) voice.parts.delete(subject);
+    if (voice.parts.size === 0) voice.parts = null;
+  }
+  if (voice.parted !== null) {
+    for (const [subject, p] of voice.parted) {
+      if (p.seq <= seq) continue;
+      voice.parted.delete(subject);
+      if (p.ramp === undefined || p.ramp.seq > seq) continue;
+      voice.parts ??= new Map();
+      voice.parts.set(subject, p.ramp);
+    }
+    if (voice.parted.size === 0) voice.parted = null;
+  }
+  fadesAt(voice, left, seq);
+}
+
 /** Drops a voice's record of a subject and relinks the subject's chain without it. */
 function letGo<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   const head = headOf(mix, subject);
