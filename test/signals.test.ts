@@ -78,6 +78,14 @@ describe('band quiet', () => {
 });
 
 describe('slew', () => {
+  it('takes no options and follows at once', () => {
+    const input = level<Part>(0);
+    const followed = slew<Part>(input);
+    expect(followed(part, frame(0, 0))).toBe(0);
+    input.set(1);
+    expect(followed(part, frame(16, 16))).toBe(1);
+  });
+
   it('follows its input no faster than the rate limit, and snaps on an infinite dt', () => {
     const input = level<Part>(0);
     const followed = slew<Part>(input, { riseMs: 100, fallMs: 200 });
@@ -194,6 +202,14 @@ describe('input', () => {
 });
 
 describe('lag', () => {
+  it('takes no options and follows at once', () => {
+    const input = level<Part>(0);
+    const followed = lag<Part>(input);
+    expect(followed(part, frame(0, 0))).toBe(0);
+    input.set(1);
+    expect(followed(part, frame(16, 16))).toBe(1);
+  });
+
   it('closes 1 − exp(−gap / ms) of the distance, rising and falling on their own constants', () => {
     const input = level<Part>(0);
     const followed = lag<Part>(input, { riseMs: 100, fallMs: 200 });
