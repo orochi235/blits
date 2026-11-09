@@ -1,3 +1,5 @@
+import { clampWeight } from './clock.js';
+
 /** sRGB bytes, linear sRGB and OKLab, one to another. */
 
 const decode = (v: number): number => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
@@ -23,7 +25,7 @@ export const toByte = (v: number): number => {
 };
 
 /** `v` held to [0, 1], as a linear RGB axis is before it becomes a byte. */
-export const clip = (v: number): number => (v <= 0 ? 0 : v >= 1 ? 1 : v);
+export const clip = clampWeight;
 
 /** The last `lab` conversion's result, so the hot path allocates nothing. */
 export const LAB = [0, 0, 0];

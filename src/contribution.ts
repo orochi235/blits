@@ -7,6 +7,7 @@ import { apart, copyState, record, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
+import { nearly } from './nearly.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { isRested } from './record.js';
@@ -397,8 +398,7 @@ function lastTwo<I, O>(mix: Mixer<I, O>, subject: I): [Sample, Sample] | undefin
 }
 
 /** Whether a value read in two frames stayed put, to within rounding. */
-const still = (a: number, b: number) =>
-  Math.abs(b - a) <= 1e-12 * Math.max(1, Math.abs(a), Math.abs(b));
+const still = (a: number, b: number) => nearly(a, b, 1e-12);
 
 /**
  * How fast each numeric channel this voice writes was moving, from the subject's last two probed
