@@ -14,6 +14,13 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   rest where the voice before it was cut off that frame. It is off by default, since it costs a
   10,000-subject probe frame 35–70%.
 
+### Fixed
+
+- A mix that has cued a `from: 'current'` voice keeps each subject's last two poses in one buffer
+  for the whole mix, by the subject's chain, not a copy of the pose per subject per probe. A
+  10,000-subject frame reads 20–24% faster and allocates about 1.25 MB less, through `probe` and
+  `pull` alike.
+
 ## 1.2.0
 
 ### Added

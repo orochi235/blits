@@ -269,8 +269,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      10,000-subject probe frame 35–70%: `keys` 1.05 → 1.46 ms, `tweens` 0.72 → 1.09
      (`bench/runs/2026-11-08-probes-ab.txt`, a loaded node). Off, every row matches 1.2.0
      (`bench/runs/2026-11-08-retargets-off-ab.txt`). A profile of `tweens` put the copy at about 30%
-     of the frame, spread over its lines with no hot spot. Not yet tried: `Probes` in place of
-     `lastPoses` for a host already retargeting, whose copy doubles a 10,000-subject frame.
+     of the frame, spread over its lines with no hot spot. A mix that has cued a retarget keeps its
+     poses in `Probes` too, wherever a probe has the chain head, which read 20–24% faster than the
+     pose store it replaced (`RETARGET=1 bench/frame.mjs`,
+     `bench/runs/2026-11-08-probes-store-ab.txt`); `lastPoses` is left for a projection's probes.
      The trail itself costs `pull` about 0.01 ms a frame on `tweens^` 10,000 (0.186 → 0.200,
      `bench/runs/2026-11-08-trail-ab.txt`), copying the subject list and columns each frame; a
      list unchanged since the last frame need not be copied again.

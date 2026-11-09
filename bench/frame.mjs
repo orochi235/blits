@@ -668,6 +668,14 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       loop: true,
     });
   }
+  // RETARGET=1 cues a `from: 'current'` voice that reaches no subject, so the mix keeps poses as a
+  // host that retargets has it do.
+  if (process.env.RETARGET === '1')
+    m.cue({
+      patch: blits.keys(1000, [{ at: 1, delta: { gain: 1 } }]),
+      from: 'current',
+      target: () => false,
+    });
   let probed =
     kind === 'sparse'
       ? subjects.filter((_, j) => j % 20 === 0)

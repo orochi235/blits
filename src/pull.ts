@@ -54,36 +54,36 @@ export function keep<I, O>(
   out: O | undefined,
   head: Subject<unknown> | null = null,
 ): void {
-  // A pose handed back without `out` is the host's to edit, so it is copied too. A host sampling
-  // into its own object keeps a copy in `probes` under `retargets`, until a retarget asks for poses.
-  let kept: O | undefined;
-  if (out !== undefined && !this.wantsPose) {
-    if (!this.retargets || head === null || this.projecting) return;
+  // A pose handed back without `out` is the host's to edit, so it is kept too. A host sampling
+  // into its own object keeps one under `retargets`, or once a retarget asks for poses.
+  const asked = out === undefined || this.wantsPose;
+  if (!asked && !this.retargets) return;
+  // Kept in `probes` by the chain head; the pose store, a copy a lookup, only without one.
+  if (head !== null && !this.projecting) {
     this.probes ??= new Probes(this.names, this.channels);
     this.probes.note(head, pose as Record<string, unknown>, this);
-  } else {
-    kept = {} as O;
-    for (const key of this.names) {
-      const v = (pose as Record<string, unknown>)[key];
-      if (v !== undefined) (kept as Record<string, unknown>)[key] = copy(v);
-    }
+    return;
   }
-  if (kept !== undefined) {
-    const rec = this.lastPoses.get(subject);
-    if (rec === undefined)
-      this.lastPoses.set(subject, {
-        pose: kept,
-        at: this.now,
-        prev: undefined,
-        prevAt: Number.NaN,
-      });
-    else if (rec.at === this.now) rec.pose = kept;
-    else {
-      rec.prev = rec.pose;
-      rec.prevAt = rec.at;
-      rec.pose = kept;
-      rec.at = this.now;
-    }
+  if (!asked) return;
+  const kept = {} as O;
+  for (const key of this.names) {
+    const v = (pose as Record<string, unknown>)[key];
+    if (v !== undefined) (kept as Record<string, unknown>)[key] = copy(v);
+  }
+  const rec = this.lastPoses.get(subject);
+  if (rec === undefined)
+    this.lastPoses.set(subject, {
+      pose: kept,
+      at: this.now,
+      prev: undefined,
+      prevAt: Number.NaN,
+    });
+  else if (rec.at === this.now) rec.pose = kept;
+  else {
+    rec.prev = rec.pose;
+    rec.prevAt = rec.at;
+    rec.pose = kept;
+    rec.at = this.now;
   }
 }
 
@@ -228,7 +228,7 @@ function readAll<I, O>(
     const head = live ? (heads[n] as Subject<unknown>) : null;
     const folded = mix.foldWith(subject, scratch, head, laned, false);
     const pose = (mix.bounded.length === 0 ? folded : mix.clamp(folded as Values)) as Values;
-    mix.keep(subject, pose as O, scratch);
+    mix.keep(subject, pose as O, scratch, head);
     for (const c of columns) writeValue(c, pose[c.key], n);
   }
 }
