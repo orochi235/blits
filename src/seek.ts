@@ -15,7 +15,7 @@ import { unpull } from './pull.js';
 import { isRested } from './record.js';
 import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
-import { lastIndex } from './sorted.js';
+import { byId, lastIndex } from './sorted.js';
 import { Store } from './store.js';
 import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, replay } from './tape.js';
@@ -288,7 +288,7 @@ export function seek(transport: Transport, to: number | { readonly frame: number
  * there; `on` past that frame's own time, where it moves on to `t`.
  */
 function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void {
-  const all = [...mix.cued, ...mix.gone].sort((a, b) => a.id - b.id);
+  const all = byId([...mix.cued, ...mix.gone]);
   const kept: Voice<I, O>[] = [];
   const gone: Voice<I, O>[] = [];
   // Every motion patch takes back the changes made after `t`, which the tape makes again.

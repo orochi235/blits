@@ -3,6 +3,7 @@ import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { file, type Named, unfile } from './named.js';
 import { record } from './record.js';
+import { insertById } from './sorted.js';
 import type { Subject } from './subject.js';
 import type { Voice } from './voice.js';
 
@@ -208,12 +209,7 @@ export function index<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.holding !== null) return;
   if (voice.named === null) {
     mix.general.push(voice);
-    if (voice.sharing) {
-      const sharers = mix.sharers;
-      let i = sharers.length;
-      while (i > 0 && (sharers[i - 1] as Voice<I, O>).id > voice.id) i--;
-      sharers.splice(i, 0, voice);
-    }
+    if (voice.sharing) insertById(mix.sharers, voice);
     return;
   }
   mix.naming++;

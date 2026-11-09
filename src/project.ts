@@ -9,7 +9,7 @@ import { Mixer } from './mixer.js';
 import { heldByInput } from './owner.js';
 import { reading } from './reading.js';
 import { recount } from './roster.js';
-import { last } from './sorted.js';
+import { byId, last } from './sorted.js';
 import { copyStanding, stands } from './standing.js';
 import type { Subject } from './subject.js';
 import { hostAhead, hostAt } from './tape.js';
@@ -153,9 +153,9 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
       ? Object.assign(Object.create(host) as object, was.fields)
       : undefined;
   if (was) c.hostThen = was;
-  const voices = [...mix.cued, ...mix.gone]
-    .filter((v) => v.cuedSeq <= cut.seq && !within(cut, v.doneSeq, true))
-    .sort((a, b) => a.id - b.id);
+  const voices = byId(
+    [...mix.cued, ...mix.gone].filter((v) => v.cuedSeq <= cut.seq && !within(cut, v.doneSeq, true)),
+  );
   // Not pinned again: the controls kept give each start where the mix's rate had moved it.
   copyVoices(
     mix,

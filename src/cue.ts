@@ -15,6 +15,7 @@ import { adopt, Holding, ownerPatch, ownerReading } from './owner.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
 import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
+import { insertById } from './sorted.js';
 import { checkChild, refit } from './spans.js';
 import { cuedById, motionOwner } from './strays.js';
 import { record, taping, unplayable } from './tape.js';
@@ -281,10 +282,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     motion.ownerId = voice.id;
   }
   // In id order, which a voice cued again after later ones keeps by going in at its place.
-  const cued = mix.cued;
-  let i = cued.length;
-  while (i > 0 && (cued[i - 1] as Voice<I, O>).id > voice.id) i--;
-  cued.splice(i, 0, voice);
+  insertById(mix.cued, voice);
   scoredAdd(mix, voice);
   voice.sharing = mix.share?.shares(mix, voice) === true;
   enlist(mix, voice);
