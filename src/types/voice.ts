@@ -401,6 +401,16 @@ export interface VoiceFade {
 }
 
 /**
+ * What {@link Handle.rise | `rise`} takes.
+ *
+ * @category blending
+ */
+export interface RiseOptions {
+  /** Ms for the whole curve back up. Defaults to the voice's own `fade.in`, else its `fade.out`. */
+  over?: number;
+}
+
+/**
  * A fade of one subject out of a voice, as `FadeOptions` takes it.
  *
  * @category blending
@@ -479,7 +489,7 @@ export interface Handle<I = unknown> {
    * is left as it is. A voice whose own end began the fade starts it again at its next frame. A
    * voice faded before its start goes back to `pending` and starts on time.
    */
-  rise(opts?: { over?: number }): void;
+  rise(opts?: RiseOptions): void;
   /**
    * The weight this voice gave `subject` the last frame that subject was probed. That is after its
    * fades and its weight signal, before a role folds it with its alternatives. 0 for a subject it does
