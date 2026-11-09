@@ -20,6 +20,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice fading at rest leaves once its remaining subjects rest, even after `drop` took a subject
+  it had reached and that never rested. It waited for its deadline, or forever without one.
+- A weight or fade share that came out as −0 comes out as 0.
 - `slew()` and `lag()` take no options: `slew(signal)` follows its input at once, where it threw.
 - Writing `handle.weight` on a voice weighted by a signal warns once outside production. The write
   never changed anything, and `Handle.weight` now says so.
