@@ -65,6 +65,11 @@ export function headOf<I, O>(mix: Mixer<I, O>, subject: I): Subject<unknown> | u
     : head;
 }
 
+/** The number lanes give a subject by its chain as last linked, or -1 where it has none. */
+export function slotOf<I, O>(mix: Mixer<I, O>, subject: I): number {
+  return headOf(mix, subject)?.slot ?? -1;
+}
+
 /**
  * A subject's chain linked afresh through every voice that reaches it, in voice order; `was` is its
  * chain as last linked, whose records each voice's store is asked whether it still holds.

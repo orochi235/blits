@@ -1,6 +1,6 @@
 import { release } from './arcs.js';
 import { Book, type BookHost } from './book.js';
-import { headOf } from './chain.js';
+import { slotOf } from './chain.js';
 import { numericOf } from './channels.js';
 import { stepOf } from './clock.js';
 import { schedule } from './due.js';
@@ -76,7 +76,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     },
     passes: (was, w) => mix.passes(was, w),
     naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
-    slotOf: (subject) => headOf(mix, subject)?.slot ?? -1,
+    slotOf: (subject) => slotOf(mix, subject),
     envelope: (voice, since) =>
       voice.owner === null
         ? mix.envelope(voice, mix.now, since)
@@ -251,7 +251,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       if (voice.state === 'done') return 0;
       if (voice.holding !== null)
         return ownWeight(voice, mix.now, mix.reducedNow, (o) => mix.ownerBase(o, subject));
-      const slot = mix.lanes === null ? -1 : (headOf(mix, subject)?.slot ?? -1);
+      const slot = mix.lanes === null ? -1 : slotOf(mix, subject);
       if (voice.laned && mix.lanes !== null) {
         const w = mix.lanes.weightOf(voice.id, slot);
         if (w !== undefined) return w;

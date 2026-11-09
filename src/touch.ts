@@ -18,9 +18,10 @@ export function touch<I, O>(mix: Mixer<I, O>, subject?: I): void {
       }
   } else {
     // No voice's `seeks` is below 0, so no record stamped with it reads as current.
-    let held: Subject<unknown> | null = headOf(mix, subject) ?? null;
-    for (; held !== null; held = held.next) held.seeks = -1;
-    const slot = headOf(mix, subject)?.slot ?? -1;
+    const head = headOf(mix, subject);
+    for (let held: Subject<unknown> | null = head ?? null; held !== null; held = held.next)
+      held.seeks = -1;
+    const slot = head?.slot ?? -1;
     for (const voice of mix.sharers) mix.share?.restamp(voice, slot);
   }
   mix.lanes?.refill();

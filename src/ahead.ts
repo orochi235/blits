@@ -1,5 +1,5 @@
 import { ownBlends } from './blend.js';
-import { headOf } from './chain.js';
+import { slotOf } from './chain.js';
 import type { Share } from './everyone.js';
 import { originate } from './held.js';
 import { copyHeld, unread } from './history.js';
@@ -206,7 +206,7 @@ export function recordOf<I, O>(
   // A voice sharing one record has that for every subject a chain has asked it about, pointed at
   // the subject for the caller to copy from.
   if (voice.sharing) {
-    const slot = headOf(mix, subject)?.slot ?? -1;
+    const slot = slotOf(mix, subject);
     const share = mix.share as Share;
     if (!share.sighted(voice, slot)) return undefined;
     const all = voice.everyone as Subject<unknown>;
@@ -216,9 +216,7 @@ export function recordOf<I, O>(
   }
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined || voice.unreachedBits === null) return held;
-  return unreached(voice, headOf(mix, subject)?.slot ?? -1)
-    ? (voice.unreached as Subject<unknown>)
-    : undefined;
+  return unreached(voice, slotOf(mix, subject)) ? (voice.unreached as Subject<unknown>) : undefined;
 }
 
 /** Where a read ahead's copy of a voice came from, and how it stood when it was made. */

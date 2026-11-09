@@ -1,4 +1,4 @@
-import { changed, headOf, unlink } from './chain.js';
+import { changed, headOf, slotOf, unlink } from './chain.js';
 import { envelope, fadeInAt } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
@@ -88,7 +88,7 @@ export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): 
   voice.parted.delete(subject);
   if (voice.parted.size === 0) voice.parted = null;
   if (!mix.projecting) mix.forgot?.(voice, subject);
-  const slot = headOf(mix, subject)?.slot ?? -1;
+  const slot = slotOf(mix, subject);
   if (slot >= 0) mix.lanes?.rejoin(slot);
 }
 
