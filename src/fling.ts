@@ -1,4 +1,4 @@
-import type { Moving, Value } from './motion.js';
+import { axes, type Moving, type Value } from './motion.js';
 
 /**
  * A pointer's recent path, for the velocity it is let go at.
@@ -42,7 +42,7 @@ export function track<V extends Value = number>(
     add(t, x) {
       scalar = typeof x === 'number';
       ts.push(t);
-      xs.push(typeof x === 'number' ? [x] : [...(x as readonly number[])]);
+      xs.push(axes(x));
       let drop = 0;
       while (t - (ts[drop] as number) > span) drop++;
       if (drop > 0) {
@@ -52,8 +52,8 @@ export function track<V extends Value = number>(
     },
     velocity(at) {
       const n = ts.length;
-      const axes = n === 0 ? 1 : (xs[0] as number[]).length;
-      const out = new Array<number>(axes).fill(0);
+      const width = n === 0 ? 1 : (xs[0] as number[]).length;
+      const out = new Array<number>(width).fill(0);
       const last = ts[n - 1] as number;
       if (n >= 2 && !((at ?? last) - last > stop)) {
         let mt = 0;
@@ -62,7 +62,7 @@ export function track<V extends Value = number>(
         let tt = 0;
         for (const t of ts) tt += (t - mt) ** 2;
         if (tt > 0)
-          for (let k = 0; k < axes; k++) {
+          for (let k = 0; k < width; k++) {
             let mx = 0;
             for (const x of xs) mx += x[k] as number;
             mx /= n;
