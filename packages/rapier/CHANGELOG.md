@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## Unreleased
+
+### Changed
+
+- `channels2`, `channels3`, `kinematic2`, and `kinematic3` are typed as the engine's `Kit`, so their
+  properties are `readonly`. They behave as before.
+
 ## 0.7.2
 
 ### Fixed

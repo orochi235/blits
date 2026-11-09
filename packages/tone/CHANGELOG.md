@@ -4,6 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## Unreleased
+
+### Changed
+
+- `take` returns the engine's `Taken`, the same shape as before, and its doc gives `lateBy` in ms.
+
 ## 0.12.3
 
 ### Changed

@@ -8,6 +8,12 @@ section here.
 
 ## Unreleased
 
+### Fixed
+
+- Marks plot at their mix time by the mix's own clock, so one behind a rate change, a ramp, or a
+  pause lands where it plays. Marks announced ahead of a paused mix are left out, where they all
+  showed at one moment.
+
 ### Changed
 
 - Bundles weasel 1.18.0, where it bundled 1.17.1.

@@ -13,9 +13,21 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   starts where the subject was and leaves at its speed, where it started from standing, and from
   rest where the voice before it was cut off that frame. It is off by default, since it costs a
   10,000-subject probe frame 35–70%.
+- `Transport` reads its clock as a mix does: `time(timestamp)`, `when(time)`, and `timestamp`.
+- `Hold.seek` takes `{ frame }`, as `Mix.seek` and `Transport.seek` do.
+- An owner takes `track`, carried onto its marks and booked hits as a voice's is.
+- `RiseOptions`, the named options `Handle.rise` takes.
 
 ### Fixed
 
+- `slew()` and `lag()` take no options: `slew(signal)` follows its input at once, where it threw.
+- Writing `handle.weight` on a voice weighted by a signal warns once outside production. The write
+  never changed anything, and `Handle.weight` now says so.
+- Every `at` and `timestamp` field says first which clock it is on: phase, voice ms, mix time, or
+  host time. `angle()`'s `turn` is in degrees by default where `matrix()` takes radians, and a
+  glide's `ms` is a time constant, not a duration as a tween's is; both now say so.
+- A keys patch whose easing is a function gives its GPU reason in full: "its easing is a function,
+  which the GPU cannot run".
 - A mix that has cued a `from: 'current'` voice keeps each subject's last two poses in one buffer
   for the whole mix, by the subject's chain, not a copy of the pose per subject per probe. A
   10,000-subject frame reads 20–24% faster and allocates about 1.25 MB less, through `probe` and
