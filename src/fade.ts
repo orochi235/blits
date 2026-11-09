@@ -73,7 +73,7 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
   voice.parted ??= new Map();
   voice.parted.set(subject, { at, seq: mix.transport.seq, ramp });
   mix.parters.add(voice);
-  forgetIn(mix, voice, subject);
+  letGo(mix, voice, subject);
   const motion = voice.motion;
   if (motion !== undefined && asks(mix, motion, voice)) motion.release(subject, ...releasing(mix));
 }
@@ -81,10 +81,10 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
 /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
 export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   if (voice.parted?.has(subject) !== true) return;
-  // `forgetIn` keeps the subject's own record for a read back; without one, keep the voice's.
+  // `letGo` keeps the subject's own record for a read back; without one, keep the voice's.
   if (voice.subjects.get(subject) === undefined) leaveVoice(mix, voice, subject);
   // Left with its parting still on, which a seek back to before this puts back.
-  forgetIn(mix, voice, subject);
+  letGo(mix, voice, subject);
   voice.parted.delete(subject);
   if (voice.parted.size === 0) voice.parted = null;
   if (!mix.projecting) mix.forgot?.(voice, subject);
@@ -125,8 +125,16 @@ export function fadesAt<I>(
   }
 }
 
+/** Deletes a voice's record of a subject, and takes it out of the voice's counts of records. */
+export function unrecord<I, O>(voice: Voice<I, O>, subject: I, held: Subject<unknown>): void {
+  voice.subjects.delete(subject);
+  if (held.reaches) voice.seen--;
+  if (isRested(held)) voice.restedCount--;
+  if (voice.holder === held) voice.holder = null;
+}
+
 /** Drops a voice's record of a subject and relinks the subject's chain without it. */
-function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
+function letGo<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   const head = headOf(mix, subject);
   if (head !== undefined && head.slot >= 0) {
     unreach(voice, head.slot, false);
@@ -136,10 +144,7 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined) {
     leave(mix, voice, subject, held);
-    voice.subjects.delete(subject);
-    if (held.reaches) voice.seen--;
-    if (isRested(held)) voice.restedCount--;
-    if (voice.holder === held) voice.holder = null;
+    unrecord(voice, subject, held);
   }
   if (head === undefined) return;
   unlink(mix, head);

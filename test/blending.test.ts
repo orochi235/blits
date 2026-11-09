@@ -268,6 +268,30 @@ describe('handover at rest', () => {
     expect(m.live).toBe(false);
   });
 
+  for (const lanes of [true, false])
+    it(`leaves once its subjects rest, though one it reached and never rested was dropped${lanes ? '' : ', without lanes'}`, () => {
+      const restless = { id: 'b' };
+      const settling = patch<Part, Pose>(
+        0,
+        (_phase, p, setting) => ({ crawl: p.id === 'b' || setting.timestamp < 100 ? 10 : 0 }),
+        { writes: ['crawl'] },
+      );
+      const m = mix<Part, Pose>(PART, { lanes });
+      const h = m.cue({ patch: settling });
+      m.sync(0);
+      m.probe(part);
+      m.probe(restless);
+      h.fade({ at: 'rest' });
+      m.sync(50);
+      m.probe(part);
+      m.probe(restless);
+      m.drop(restless);
+      m.sync(100);
+      m.probe(part);
+      m.sync(116);
+      expect(m.live).toBe(false);
+    });
+
   it('leaves at the deadline for a patch that never rests', async () => {
     const m = mix<Part, Pose>(PART);
     const h = m.cue({ patch: holds('crawl', 10) });
