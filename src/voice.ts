@@ -770,6 +770,11 @@ export class Voice<I, O> {
     return frozenTime(raw, this.holdsFirst, this.freezesAfter, this.span);
   }
 
+  /** The time a subject at voice time `raw` shows, `early` as `before` says; NaN where it shows nothing. */
+  shownTime(raw: number, early: boolean): number {
+    return early && !this.holdsFirst ? Number.NaN : this.shownAt(raw);
+  }
+
   /** Records this voice's controls as they stand, from mix time `at` in frame `seq`. */
   note(at: number, seq: number, sync = false): void {
     this.log?.push({

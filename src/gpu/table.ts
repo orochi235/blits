@@ -36,7 +36,7 @@ export interface Table {
  */
 export function elapsedOf<I, O>(voice: Voice<I, O>, now: number, delay = 0): number {
   const raw = voice.rawAt(now, delay);
-  return voice.before(raw, now) && !voice.holdsFirst ? Number.NaN : voice.shownAt(raw);
+  return voice.shownTime(raw, voice.before(raw, now));
 }
 
 /**
