@@ -78,7 +78,7 @@ What runs where:
 | `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `vec` of those, `angle`, `color()`, and all 25 color blend modes on `color` or `ink`, roles included | `last`, `quat`, `ink()` and `ink(last())`, `affine` |
 | | `probe`, `pull`, `project`, `seek`, history, and the debug panel. A motion voice read back through history or by a projection stays on the CPU that frame |
 
-A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `its weight signal keeps state for each subject, which only the CPU's records hold` or `its easing is a function`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
+A voice that can't run on the GPU keeps every channel it writes on the CPU, and the engine warns once in development with the reason, such as `its weight signal keeps state for each subject, which only the CPU's records hold` or `its easing is a function, which the GPU cannot run`. `gpuOf(m).channel(name)` returns null for a frame the GPU isn't folding that channel, or while a new kernel compiles; a host then probes on the CPU, as the site's examples do.
 
 The GPU computes in 32-bit floats, and agrees with the CPU to that precision. Where a value jumps — a square wave flipping, a `steps` easing, a keyframe, a loop wrapping — a subject whose time rounds to the other side shows the value from one float step away, a tiny fraction of a millisecond early or late. The GPU's agreement tests allow that one step there and nothing more; a bounded `glide`, whose path depends on which side of an edge it stops, decides that on the CPU in 64 bits.
 

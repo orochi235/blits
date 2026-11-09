@@ -155,7 +155,7 @@ tone.write();
   - `ahead`, default 150, and `grid`, default 5: how far ahead a curve is written and how far
     apart its points are where the mix's shape is not known, in ms on the audio clock.
   - `take(item, time, lateBy)`: called for each mark and hit within `ahead`, with `time` in
-    seconds on the audio clock, to hand to Tone as it is. `item` is what `mix.book` gives its
+    seconds on the audio clock, to hand to Tone as it is. `lateBy` is how many ms past the item was when first seen. `item` is what `mix.book` gives its
     `take`: a hit carries `hit` and its `event`, and a mark has neither. Return a `cancel` to be
     told the item moved or went away; it is then played again at its new time. Without `take`
     no mark or hit is played.
