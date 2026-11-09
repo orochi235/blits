@@ -49,7 +49,7 @@ export function queue<I>(this: Motions<I>, list: Change[], c: Change, at: number
  * Puts `item` into `list`, which is in `at` order, after every item at `at` or before; one with no
  * time stays after it.
  */
-export function insertByAt<T extends { at: number | undefined }>(
+export function insertByAt<T extends { readonly at?: number | undefined }>(
   list: T[],
   item: T,
   at: number,
