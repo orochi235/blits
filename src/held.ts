@@ -163,13 +163,20 @@ export function meet<I, O>(
   return held.stepped > since;
 }
 
+/** Whether a patch keeps state of its own between reads, through `state` or `step`. */
+export const patchKeeps = (patch: { state?: unknown; step?: unknown }): boolean =>
+  patch.state !== undefined || patch.step !== undefined;
+
+/** Whether a voice keeps state between reads: its patch does, or it took to through `setting.keep`. */
+export const voiceKeeps = <I, O>(voice: Voice<I, O>): boolean =>
+  patchKeeps(voice.patch) || voice.keeping;
+
 /**
  * The mix time the voice clock first read `delay`, or will by its controls now. A stateful voice
  * counts from its last seek that rebuilt state, as its records do.
  */
 export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: number): number {
-  const p = voice.patch;
-  return originOf(voice, delay, p.state !== undefined || p.step !== undefined || voice.keeping);
+  return originOf(voice, delay, voiceKeeps(voice));
 }
 
 /**

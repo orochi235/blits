@@ -6,7 +6,7 @@ import { copyable } from './clone.js';
 import { roundsHue } from './color.js';
 import { schedule } from './due.js';
 import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
-import { begin } from './held.js';
+import { begin, patchKeeps } from './held.js';
 import { handle } from './hosts.js';
 import { checkMarks } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -197,7 +197,7 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   }
   if (
     mix.transport.pager !== null &&
-    (patch.state !== undefined || patch.step !== undefined) &&
+    patchKeeps(patch) &&
     (patch.pack === undefined || patch.unpack === undefined)
   )
     throw new Error(

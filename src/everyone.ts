@@ -1,6 +1,6 @@
 import { headOf } from './chain.js';
 import { numericOf } from './channels.js';
-import { blankOf } from './held.js';
+import { blankOf, patchKeeps } from './held.js';
 import type { Mixer } from './mixer.js';
 import { detour } from './roster.js';
 import type { Subject } from './subject.js';
@@ -33,8 +33,7 @@ export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
     spec.anchor === undefined &&
     spec.from !== 'current' &&
     typeof spec.weight !== 'function' &&
-    patch.state === undefined &&
-    patch.step === undefined &&
+    !patchKeeps(patch) &&
     voice.motion === undefined &&
     voice.owner === null &&
     voice.holding === null &&

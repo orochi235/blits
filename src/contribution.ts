@@ -2,7 +2,7 @@ import { inBound } from './bound.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, near } from './fold.js';
-import { originate, waits } from './held.js';
+import { originate, patchKeeps, voiceKeeps, waits } from './held.js';
 import { apart, copyState, record, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
@@ -32,7 +32,7 @@ function rebuild<I, O>(
 ): void {
   held.rebuilt = voice.rebuilds;
   const patch = voice.patch;
-  if (patch.state === undefined && patch.step === undefined && held.kept === null) return;
+  if (!patchKeeps(patch) && held.kept === null) return;
   held.state = patch.state ? (patch.state(subject) as unknown) : undefined;
   held.kept = null;
   held.unkept = undefined;
@@ -44,8 +44,7 @@ function rebuild<I, O>(
 
 /** Whether a seek since its last read moved a stateful record's origin, as one back before it does. */
 function sentBack<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): boolean {
-  const p = voice.patch;
-  if (p.state === undefined && p.step === undefined && !voice.keeping) return false;
+  if (!voiceKeeps(voice)) return false;
   return mix.sinceOf(voice, held.delay) !== held.since;
 }
 

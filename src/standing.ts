@@ -1,6 +1,7 @@
 import { mirror } from './ahead.js';
 import { ownBlends } from './blend.js';
 import type { Cut } from './cut.js';
+import { patchKeeps } from './held.js';
 import type { Mixer } from './mixer.js';
 import { relink } from './owner.js';
 import { pin } from './place.js';
@@ -16,7 +17,7 @@ import type { Voice } from './voice.js';
 function unfit<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): string | undefined {
   const patch = voice.patch;
   const spec = voice.spec;
-  if (patch.state !== undefined || patch.step !== undefined) return 'its patch keeps state';
+  if (patchKeeps(patch)) return 'its patch keeps state';
   if (voice.motion !== undefined) return 'it plays a motion';
   if (voice.keeping) return 'its patch or its weight keeps state';
   if (spec.from === 'current') return 'it starts from the pose its subjects had';
