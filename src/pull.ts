@@ -4,7 +4,7 @@ import type { Values } from './fold.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Subject } from './subject.js';
-import { Trail } from './trail.js';
+import { Probes, Trail } from './trail.js';
 import type { Channel, Columns } from './types.js';
 
 /** What `pull` remembers at a position it has read no subject at. */
@@ -47,11 +47,21 @@ function writeValue(c: Column, v: unknown, n: number): void {
 }
 
 /** After a probe, keeps the pose a retarget from `'current'` reads as the subject's last. */
-export function keep<I, O>(this: Mixer<I, O>, subject: I, pose: O, out: O | undefined): void {
+export function keep<I, O>(
+  this: Mixer<I, O>,
+  subject: I,
+  pose: O,
+  out: O | undefined,
+  head: Subject<unknown> | null = null,
+): void {
   // A pose handed back without `out` is the host's to edit, so it is copied too. A host sampling
-  // into its own object only pays for the copy once something has asked to retarget from it.
+  // into its own object keeps a copy in `probes` under `retargets`, until a retarget asks for poses.
   let kept: O | undefined;
-  if (out === undefined || this.wantsPose) {
+  if (out !== undefined && !this.wantsPose) {
+    if (!this.retargets || head === null || this.projecting) return;
+    this.probes ??= new Probes(this.names, this.channels);
+    this.probes.note(head, pose as Record<string, unknown>, this);
+  } else {
     kept = {} as O;
     for (const key of this.names) {
       const v = (pose as Record<string, unknown>)[key];
@@ -260,6 +270,7 @@ function columnsOf<I, O>(mix: Mixer<I, O>, into: Columns<O>): Column[] {
 /** Forgets the array `pull` last read, whose heads a seek has made stale. */
 export function unpull<I, O>(mix: Mixer<I, O>): void {
   mix.pullTrail?.clear();
+  mix.probes?.clear();
   mix.pulled = [];
   mix.pulledHeads = [];
   mix.pulledSlots = new Int32Array(0);

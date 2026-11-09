@@ -14,6 +14,8 @@ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
   const head = headOf(this, subject);
   // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
   if (head !== undefined) unlink(this, head);
+  const chained = this.chains.get(subject);
+  if (chained !== undefined && !this.projecting) this.probes?.release(chained);
   // A number a seek carried over is released even where its chain is not linked since.
   const slot = this.chains.get(subject)?.slot ?? -1;
   if (slot >= 0 && this.lanes !== null) this.lanes.release(slot);

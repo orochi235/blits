@@ -263,12 +263,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
    each run's raw records beside it. The bugs they found are fixed (CHANGELOG, Unreleased), each
    pinned by a test in `test/stress-findings.test.ts`; what is below is still open.
-   - **The first `from: 'current'` voice on a host probing into its own object starts from this
-     frame's fold** (2026-11-08): no speed, and from rest where the voice before it was cut off in
-     the same frame. `pull` closed this with a copy of its columns (`src/trail.ts`); a probe has no
-     columns, and keeping a pose a subject on every probe measured 1.20 → 2.2 ms on `keys`
-     10,000 × 3 and 0.72 → 1.5 on `tweens` (`bench/runs/2026-11-08-keep-ab.txt`). What would close
-     it cheaply is a record that needs no per-subject lookup, such as one on the subject's chain.
+   - **A host probing into its own object gets the first `from: 'current'` voice right only under
+     `retargets: true`** (Mike's call, 2026-11-08). Its probes then keep each subject's last two
+     poses in one buffer for the whole mix (`Probes` in `src/trail.ts`), which costs a
+     10,000-subject probe frame 35–70%: `keys` 1.05 → 1.46 ms, `tweens` 0.72 → 1.09
+     (`bench/runs/2026-11-08-probes-ab.txt`, a loaded node). Off, every row matches 1.2.0
+     (`bench/runs/2026-11-08-retargets-off-ab.txt`). A profile of `tweens` put the copy at about 30%
+     of the frame, spread over its lines with no hot spot. Not yet tried: `Probes` in place of
+     `lastPoses` for a host already retargeting, whose copy doubles a 10,000-subject frame.
      The trail itself costs `pull` about 0.01 ms a frame on `tweens^` 10,000 (0.186 → 0.200,
      `bench/runs/2026-11-08-trail-ab.txt`), copying the subject list and columns each frame; a
      list unchanged since the last frame need not be copied again.

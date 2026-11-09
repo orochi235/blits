@@ -320,11 +320,15 @@ describe('retarget on interruption', () => {
       m.pull([part], { crawl });
       return crawl[0] as number;
     },
+    'a probe into its own object': (m: ReturnType<typeof mix<Part, Pose>>) => {
+      const own = m.pose();
+      return m.probe(part, own).crawl;
+    },
   };
   for (const [how, read] of Object.entries(readers))
     for (const lanes of [true, false])
       it(`the first from: 'current' voice a mix plays leaves at the subject's speed, read by ${how}${lanes ? '' : ', without lanes'}`, () => {
-        const m = mix<Part, Pose>(PART, { lanes });
+        const m = mix<Part, Pose>(PART, { lanes, retargets: how !== 'pull' });
         const moving = m.cue({
           patch: keys<Part, Pose>(1000, [
             { at: 0, delta: { crawl: 0 } },

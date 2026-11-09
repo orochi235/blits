@@ -192,6 +192,7 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
 export function mirror<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
   c.lastPoses = mix.lastPoses;
   c.wantsPose = mix.wantsPose;
+  c.poseHost = mix;
   c.reducedNow = mix.reducedNow;
 }
 

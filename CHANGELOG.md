@@ -4,6 +4,16 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- A mix takes `retargets: true` from a host that probes into its own object and will cue a voice
+  `from: 'current'`. Its probes then keep each subject's last two poses, so the first such voice
+  starts where the subject was and leaves at its speed, where it started from standing, and from
+  rest where the voice before it was cut off that frame. It is off by default, since it costs a
+  10,000-subject probe frame 35–70%.
+
 ## 1.2.0
 
 ### Added

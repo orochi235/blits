@@ -86,6 +86,16 @@ export interface MixOptions<H = unknown> {
    */
   lanes?: boolean;
   /**
+   * Whether a host that probes into its own object ({@link Mix.probe | `probe(subject, out)`}) will
+   * cue a voice `from: 'current'`. With it, each such probe keeps the subject's last two poses, so the
+   * first of those voices starts where the subject was and leaves at its speed. Without it, the mix
+   * keeps nothing until one is cued, and that first voice starts from this frame's pose, standing,
+   * and from rest where the voice before it was cut off in the same frame; every later one reads the
+   * poses kept since. Off by default, as it costs a 10,000-subject probe frame 35–70%. A host reading
+   * through `pull`, or a probe with no `out`, needs no option.
+   */
+  retargets?: boolean;
+  /**
    * The transport this mix plays on, shared with other mixes. They then keep one clock, and a query
    * naming a score looks in all of them. The transport's {@link Transport.sync | `sync`}, {@link Transport.rebase | `rebase`}, {@link Transport.rate | `rate`}, {@link Transport.ramp | `ramp`} and
    * {@link Transport.seek | `seek`} move it, and the mix's own throw. Its history is the transport's, so the mix takes no
