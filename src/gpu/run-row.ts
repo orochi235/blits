@@ -1,6 +1,7 @@
 import { BOUND } from '../closed.js';
 import type { Motions } from '../motions.js';
 import type { Segment } from '../stretch.js';
+import { join } from './region.js';
 import { BRANCH_SHIFT, Branch } from './wgsl/closed.js';
 
 /**
@@ -43,10 +44,6 @@ export function putRun<I>(
 /** Rows `dirty`, `bytes` apiece, as sorted `[start, end)` byte ranges, touching ones joined. */
 export function rangesOf(dirty: Iterable<number>, bytes: number): [number, number][] {
   const out: [number, number][] = [];
-  for (const row of [...dirty].sort((a, b) => a - b)) {
-    const last = out[out.length - 1];
-    if (last !== undefined && last[1] === row * bytes) last[1] += bytes;
-    else out.push([row * bytes, (row + 1) * bytes]);
-  }
+  for (const row of [...dirty].sort((a, b) => a - b)) join(out, row * bytes, (row + 1) * bytes);
   return out;
 }
