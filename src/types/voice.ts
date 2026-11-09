@@ -299,6 +299,8 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   tags?: readonly string[];
   /** What other voices call it by, among its siblings. */
   name?: string;
+  /** The track it plays on, as a voice's {@link VoiceSpec.track | `track`}. A label blits never reads. */
+  track?: string;
   /** The plan it belongs to, as a voice's. */
   score?: string;
   /**
