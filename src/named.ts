@@ -1,3 +1,5 @@
+import type { Store } from './store.js';
+
 /** Past this many, `has` looks in a set rather than down the list. */
 const FEW = 8;
 
@@ -80,4 +82,24 @@ function distinct<I>(subjects: readonly I[]): boolean {
     }
   }
   return true;
+}
+
+/** Files `voice` under each subject in `subjects`, in an index of the voices naming each. */
+export function file<I, V>(index: Store<I, V[]>, subjects: readonly I[], voice: V): void {
+  for (const subject of subjects) {
+    const list = index.get(subject);
+    if (list === undefined) index.set(subject, [voice]);
+    else list.push(voice);
+  }
+}
+
+/** Takes `voice` out from under each subject in `subjects`, as `file` put it there. */
+export function unfile<I, V>(index: Store<I, V[]>, subjects: readonly I[], voice: V): void {
+  for (const subject of subjects) {
+    const list = index.get(subject);
+    if (list === undefined) continue;
+    const i = list.indexOf(voice);
+    if (i >= 0) list.splice(i, 1);
+    if (list.length === 0) index.delete(subject);
+  }
 }

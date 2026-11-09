@@ -1,7 +1,7 @@
 import type { Share } from './everyone.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
-import type { Named } from './named.js';
+import { file, type Named, unfile } from './named.js';
 import { record } from './record.js';
 import type { Subject } from './subject.js';
 import type { Voice } from './voice.js';
@@ -212,20 +212,10 @@ export function index<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     return;
   }
   mix.naming++;
-  for (const subject of voice.named.list) {
-    const list = mix.named.get(subject);
-    if (list === undefined) mix.named.set(subject, [voice]);
-    else list.push(voice);
-  }
+  file(mix.named, voice.named.list, voice);
 }
 
 export function unindex<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   mix.naming--;
-  for (const subject of (voice.named as Named<I>).list) {
-    const list = mix.named.get(subject);
-    if (list === undefined) continue;
-    const i = list.indexOf(voice);
-    if (i >= 0) list.splice(i, 1);
-    if (list.length === 0) mix.named.delete(subject);
-  }
+  unfile(mix.named, (voice.named as Named<I>).list, voice);
 }

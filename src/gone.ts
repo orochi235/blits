@@ -1,4 +1,5 @@
 import type { Mixer } from './mixer.js';
+import { file, unfile } from './named.js';
 import { scoredCut } from './scored.js';
 import { Store } from './store.js';
 import type { Voice } from './voice.js';
@@ -28,11 +29,7 @@ function add<I, O>(ix: GoneIndex<I, O>, voice: Voice<I, O>): void {
     ix.general.push(voice);
     return;
   }
-  for (const subject of voice.named.list) {
-    const list = ix.named.get(subject);
-    if (list === undefined) ix.named.set(subject, [voice]);
-    else list.push(voice);
-  }
+  file(ix.named, voice.named.list, voice);
 }
 
 function remove<I, O>(ix: GoneIndex<I, O>, out: readonly Voice<I, O>[]): void {
@@ -42,13 +39,7 @@ function remove<I, O>(ix: GoneIndex<I, O>, out: readonly Voice<I, O>[]): void {
       general = true;
       continue;
     }
-    for (const subject of v.named.list) {
-      const named = ix.named.get(subject);
-      if (named === undefined) continue;
-      const at = named.indexOf(v);
-      if (at >= 0) named.splice(at, 1);
-      if (named.length === 0) ix.named.delete(subject);
-    }
+    unfile(ix.named, v.named.list, v);
   }
   if (general) {
     const leaving = new Set(out);
