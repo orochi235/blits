@@ -3,6 +3,7 @@ import type { Mixer } from '../mixer.js';
 import type { Signal } from '../types.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
+import { type Laid, lay } from './lay.js';
 import { elapsedOf } from './table.js';
 import { reaches } from './unread.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
@@ -48,7 +49,7 @@ export class Reads<I> {
   /** f32s the reads take in `persub`. */
   length = 0;
   private by = new Map<Voice<I, unknown>, Held>();
-  private placed: { values: Float32Array; offset: number }[] = [];
+  private placed: Laid<Float32Array>[] = [];
   /** The signal being read, which `keep` and `send` refuse. */
   private reading: object | null = null;
   private refusedNow = false;
@@ -154,24 +155,16 @@ export class Reads<I> {
 
   /** Where each voice's reads start in `persub`, in voice order, laid from `from`. */
   place(voices: readonly Voice<I, unknown>[], from: number): (number | undefined)[] {
-    const placed: { values: Float32Array; offset: number }[] = [];
-    let at = from;
-    const offsets = voices.map((voice) => {
-      const values = this.by.get(voice)?.values;
-      if (values === undefined) return undefined;
-      placed.push({ values, offset: at });
-      const offset = at;
-      at += values.length;
-      return offset;
-    });
+    const all = voices.map((voice) => this.by.get(voice)?.values);
+    const { placed, offsets, end } = lay(all, from, (values) => values.length);
     this.placed = placed;
-    this.length = at - from;
+    this.length = end - from;
     return offsets;
   }
 
   /** Writes every placed voice's reads to `buffer`. */
   upload(device: GpuDevice, buffer: GpuBuffer): void {
-    for (const { values, offset } of this.placed)
+    for (const { item: values, offset } of this.placed)
       if (values.length > 0) device.queue.writeBuffer(buffer, offset * 4, values);
   }
 }
