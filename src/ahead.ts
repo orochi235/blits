@@ -1,6 +1,7 @@
 import { ownBlends } from './blend.js';
 import { headOf } from './chain.js';
 import type { Share } from './everyone.js';
+import { originate } from './held.js';
 import { copyHeld, unread } from './history.js';
 import { markOf, voiceMarks } from './marks.js';
 import { Mixer } from './mixer.js';
@@ -286,10 +287,7 @@ function carry<I, O>(
   const live = recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
   const h = handable(mix, voice, live) ? handOn(live) : copyHeld(voice, live);
-  if (h.reaches && !(h.since <= mix.now)) {
-    h.since = c.sinceOf(copy, h.delay);
-    h.shown = c.shownOf(copy, h.since);
-  }
+  if (h.reaches && !(h.since <= mix.now)) originate(c, copy, h);
   h.from = h.stepped;
   link.filled = true;
   return h;

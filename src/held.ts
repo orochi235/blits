@@ -16,14 +16,54 @@ export function unreachedOf<I, O>(
   voice: Voice<I, O>,
   now: number,
 ): Subject<unknown> {
-  const since = this.sinceOf(voice, 0);
-  const none = record(voice, false, undefined);
-  none.since = since;
-  none.shown = this.shownOf(voice, since);
+  const none = blankOf(this, voice, false, this.sinceOf(voice, 0));
   none.stepped = now;
-  none.rebuilt = voice.rebuilds;
   voice.unreached = none;
   return none;
+}
+
+/** A record of `subject` built afresh for `voice`, with its patch's state where the voice reaches it. */
+export function freshOf<I, O>(voice: Voice<I, O>, subject: I, reaches: boolean): Subject<unknown> {
+  const held = record(
+    voice,
+    reaches,
+    reaches && voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
+  );
+  held.rebuilt = voice.rebuilds;
+  return held;
+}
+
+/** A record standing for many subjects at once, with no state, counting from `since`. */
+export function blankOf<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  reaches: boolean,
+  since: number,
+): Subject<unknown> {
+  const held = record(voice, reaches, undefined);
+  held.rebuilt = voice.rebuilds;
+  startFrom(mix, voice, held, since);
+  return held;
+}
+
+/** Sets where a record's clock counts from, and so where its fade in does. */
+export function startFrom<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+  since: number,
+): void {
+  held.since = since;
+  held.shown = mix.shownOf(voice, since);
+}
+
+/** Counts a record from where the voice's clock now first reads its delay. */
+export function originate<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+): void {
+  startFrom(mix, voice, held, mix.sinceOf(voice, held.delay));
 }
 
 /**
@@ -63,25 +103,17 @@ export function held<I, O>(
     voice.keyed.add(this.keys.key(subject));
   }
   const delay = delayOf(voice, subject);
-  const since = this.sinceOf(voice, delay);
-  const shown = this.shownOf(voice, since);
-  held = record(
-    voice,
-    true,
-    voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
-  );
+  held = freshOf(voice, subject, true);
   held.delay = delay;
-  held.since = since;
-  held.shown = shown;
+  originate(this, voice, held);
   const fresh = meet(this, voice, held, now);
-  held.rebuilt = voice.rebuilds;
   if (this.projecting) {
     held.from = held.stepped;
     held.unknown = (this.backward && voice.spec.from === 'current') || fresh;
   }
   voice.subjects.set(subject, held);
   waits(voice, held, now);
-  if (voice.motion !== undefined && !(since <= now)) {
+  if (voice.motion !== undefined && !(held.since <= now)) {
     voice.met ??= [];
     voice.met.push(subject);
   }
@@ -197,10 +229,9 @@ export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
 /** Counts a record whose `since` was still ahead from where its voice's clock now puts it. */
 export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
   const was = held.since;
-  held.since = mix.sinceOf(voice, held.delay);
+  originate(mix, voice, held);
   // Sent back before a start it had passed: its next read starts it afresh.
   if (held.since !== was && (held.ticks > 0 || held.stepped > was)) held.rebuilt = -1;
-  held.shown = mix.shownOf(voice, held.since);
   if (held.ticks === 0 && held.stepped > held.since) held.stepped = held.since;
 }
 

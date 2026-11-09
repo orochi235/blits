@@ -4,12 +4,11 @@ import { heldAt } from './chain.js';
 import { stepOf } from './clock.js';
 import { type Cut, within } from './cut.js';
 import { fadesAt } from './fade.js';
-import { meet, origin } from './held.js';
+import { freshOf, meet, origin, originate } from './held.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { heldByInput, relink } from './owner.js';
 import { reading } from './reading.js';
-import { record } from './record.js';
 import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
 import type { Subject } from './subject.js';
@@ -220,19 +219,13 @@ export function recall<I, O>(
   }
   // Its origin by the controls the voice had then: a seek or an anchor has moved a waiting
   // voice's since.
-  const since = c === undefined || copy === undefined ? live.since : c.sinceOf(copy, live.delay);
-  const h = record(
-    voice,
-    live.reaches,
-    live.reaches && voice.patch.state
-      ? (voice.patch.state(subject) as unknown)
-      : (undefined as unknown),
-  );
+  const h = freshOf(voice, subject, live.reaches);
   h.delay = live.delay;
-  h.since = since;
-  h.shown = c === undefined || copy === undefined ? live.shown : c.shownOf(copy, since);
+  if (c === undefined || copy === undefined) {
+    h.since = live.since;
+    h.shown = live.shown;
+  } else originate(c, copy, h);
   const fresh = meet(mix, voice, h, t);
-  h.rebuilt = voice.rebuilds;
   h.from = h.stepped;
   h.unknown = voice.spec.from === 'current' || fresh;
   h.replay = live.inputs;

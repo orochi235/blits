@@ -2,7 +2,7 @@ import { inBound } from './bound.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, near } from './fold.js';
-import { waits } from './held.js';
+import { originate, waits } from './held.js';
 import { apart, copyState, record, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
@@ -36,8 +36,7 @@ function rebuild<I, O>(
   held.state = patch.state ? (patch.state(subject) as unknown) : undefined;
   held.kept = null;
   held.unkept = undefined;
-  held.since = mix.sinceOf(voice, held.delay);
-  held.shown = mix.shownOf(voice, held.since);
+  originate(mix, voice, held);
   held.ticks = 0;
   held.stepped = held.since < now ? held.since : now;
   held.probed = Number.NaN;

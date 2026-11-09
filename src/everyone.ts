@@ -1,7 +1,7 @@
 import { headOf } from './chain.js';
 import { numericOf } from './channels.js';
+import { blankOf } from './held.js';
 import type { Mixer } from './mixer.js';
-import { record } from './record.js';
 import { detour } from './roster.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
@@ -84,11 +84,8 @@ export function everyoneOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Subject<
     unshare(mix, voice);
     return null;
   }
-  const all = record(voice, true, undefined);
-  all.since = since;
-  all.shown = mix.shownOf(voice, since);
+  const all = blankOf(mix, voice, true, since);
   all.stepped = since;
-  all.rebuilt = voice.rebuilds;
   voice.everyone = all;
   return all;
 }
