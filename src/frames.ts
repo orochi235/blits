@@ -1,3 +1,4 @@
+import { lastIndex } from './sorted.js';
 import type { Frame } from './transport.js';
 
 /** Past this many frames let go of at the front, the list is closed up, once they are half of it. */
@@ -39,19 +40,7 @@ export class Frames {
    * since rate 0 can hold the clock at `t` for many.
    */
   at(t: number): Frame | undefined {
-    const list = this.list;
-    let lo = this.head;
-    let hi = list.length - 1;
-    let found: Frame | undefined;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const f = list[mid] as Frame;
-      if (f.at <= t) {
-        found = f;
-        lo = mid + 1;
-      } else hi = mid - 1;
-    }
-    return found;
+    return this.list[lastIndex(this.list, t, true, this.head)];
   }
 
   /** The frame numbered `seq`, if it is still held. */

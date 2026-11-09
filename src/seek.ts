@@ -2,7 +2,7 @@ import { heldAt } from './chain.js';
 import { schedule } from './due.js';
 import { fadesThen } from './fade.js';
 import { origin } from './held.js';
-import { apart, copyHeld, copyHeldInto, lastIndex, lastWithin, unread } from './history.js';
+import { apart, controlsAt, copyHeld, copyHeldInto, unread } from './history.js';
 import { laneHost } from './hosts.js';
 import { leapBack } from './leaps.js';
 import { Leavings } from './leavings.js';
@@ -15,6 +15,7 @@ import { unpull } from './pull.js';
 import { isRested } from './record.js';
 import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
+import { lastIndex } from './sorted.js';
 import { Store } from './store.js';
 import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, replay } from './tape.js';
@@ -149,7 +150,7 @@ function park<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
 function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq: number): void {
   const cut = { seq, strict: false };
   const log = voice.log as Controls[];
-  const c = lastWithin(log, cut) ?? (log[0] as Controls);
+  const c = controlsAt(log, cut);
   log.length = log.indexOf(c) + 1;
   voice.take(c);
   if (voice.reopen(seq) && voice.owner?.holding) voice.owner.holding.played--;

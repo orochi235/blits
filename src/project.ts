@@ -4,11 +4,12 @@ import { stepOf } from './clock.js';
 import { type Cut, within } from './cut.js';
 import { fadesAt } from './fade.js';
 import { freshOf, meet, origin, originate } from './held.js';
-import { copyHeld, last, lastWithin } from './history.js';
+import { controlsAt, copyHeld, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { heldByInput } from './owner.js';
 import { reading } from './reading.js';
 import { recount } from './roster.js';
+import { last } from './sorted.js';
 import { copyStanding, stands } from './standing.js';
 import type { Subject } from './subject.js';
 import { hostAhead, hostAt } from './tape.js';
@@ -164,7 +165,7 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
       const log = v.log as Controls[];
       const copy: Voice<I, O> = v.copy(
         (subject) => recall(mix, v, subject, t, cut, c, copy),
-        lastWithin(log, cut) ?? (log[0] as Controls),
+        controlsAt(log, cut),
       );
       if (then !== undefined) copy.setting.host = then;
       // Its own, which a fade the copy plays out writes to.

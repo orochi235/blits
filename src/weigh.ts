@@ -1,10 +1,11 @@
 import { envelope, weighed } from './clock.js';
-import { elapsedThen, last, record } from './history.js';
+import { elapsedThen, record } from './history.js';
 import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
 import { ownersWeight } from './owner.js';
 import { reading } from './reading.js';
 import type { VoiceSetting } from './setting.js';
+import { last } from './sorted.js';
 import type { Subject } from './subject.js';
 import type { Setting } from './types.js';
 import type { Voice } from './voice.js';
