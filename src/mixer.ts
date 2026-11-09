@@ -152,6 +152,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
   pins: Map<Voice<I, O>, number> | null = null;
   wantsPose = false;
+  /** `opts.retargets`, read once: a probe into the host's object keeps its pose in `probes`. */
+  readonly retargets: boolean;
   /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
   scratch: O | undefined;
   /** Live voices by the earliest mix time `moveTo` would change each, a binary heap. */
@@ -346,6 +348,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     readonly lanesOf: typeof Lanes | null,
   ) {
     this.keepsInputs = opts.history?.inputs === true;
+    this.retargets = opts.retargets === true;
     this.names = Object.keys(kit as object) as Key<O>[];
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
     this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));

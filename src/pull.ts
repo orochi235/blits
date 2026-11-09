@@ -55,10 +55,10 @@ export function keep<I, O>(
   head: Subject<unknown> | null = null,
 ): void {
   // A pose handed back without `out` is the host's to edit, so it is copied too. A host sampling
-  // into its own object keeps a copy on its chain head until something asks to retarget from it.
+  // into its own object keeps a copy in `probes` under `retargets`, until a retarget asks for poses.
   let kept: O | undefined;
   if (out !== undefined && !this.wantsPose) {
-    if (head === null || this.projecting) return;
+    if (!this.retargets || head === null || this.projecting) return;
     this.probes ??= new Probes(this.names, this.channels);
     this.probes.note(head, pose as Record<string, unknown>, this);
   } else {

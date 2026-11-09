@@ -6,12 +6,13 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ## Unreleased
 
-### Fixed
+### Added
 
-- The first `from: 'current'` voice a mix plays, on a host probing into its own object, starts
-  where the subject was in the last frame probed and leaves at its speed, where it started from
-  standing, and from rest where the voice before it was cut off that frame. A probe keeps its last
-  two poses on the subject's chain record until a retarget asks the mix to keep poses.
+- A mix takes `retargets: true` from a host that probes into its own object and will cue a voice
+  `from: 'current'`. Its probes then keep each subject's last two poses, so the first such voice
+  starts where the subject was and leaves at its speed, where it started from standing, and from
+  rest where the voice before it was cut off that frame. It is off by default, since it costs a
+  10,000-subject probe frame 35–70%.
 
 ## 1.2.0
 
