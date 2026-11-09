@@ -59,12 +59,38 @@ export function ownedOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): number {
 export interface Weighs {
   readonly base: number;
   readonly owned: number;
+  /**
+   * Its fade at `mix.now` times `owned`, as one shared by every subject: for a voice that does not
+   * fade each subject in from its own origin. Worked out on first read.
+   */
+  readonly faded: number;
 }
 
-export const weighsOf = <I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Weighs => ({
-  base: baseOf(voice),
-  owned: ownedOf(mix, voice),
-});
+class Weighed<I, O> implements Weighs {
+  readonly base: number;
+  readonly owned: number;
+  private fade: number | undefined;
+
+  constructor(
+    private readonly mix: Mixer<I, O>,
+    private readonly voice: Voice<I, O>,
+  ) {
+    this.base = baseOf(voice);
+    this.owned = ownedOf(mix, voice);
+  }
+
+  get faded(): number {
+    if (this.fade === undefined) {
+      const { mix, voice } = this;
+      const shown = mix.shownOf(voice, mix.sinceOf(voice, 0));
+      this.fade = mix.envelope(voice, mix.now, shown) * this.owned;
+    }
+    return this.fade;
+  }
+}
+
+export const weighsOf = <I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Weighs =>
+  new Weighed(mix, voice);
 
 /** A voice's weight signal, or null where its weight is a number. */
 const signalOf = <I, O>(voice: Voice<I, O>): Signal<unknown> | null =>

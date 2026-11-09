@@ -29,16 +29,11 @@ export function unreadOf<I>(
   // Staggered and fading in, each subject fades in from its own origin, which its timing block keeps.
   const own = (answer?.delays ?? null) !== null && (voice.fade.in ?? 0) > 0;
   const origins = own ? timings.originsOf(mix, voice, answers) : null;
-  let shared: number | undefined;
   return (row) => {
     if (!reaches(reach, row)) return true;
-    let shown: number;
-    if (own) shown = origins?.[row] ?? Number.NaN;
-    else {
-      shared ??= mix.shownOf(voice, mix.sinceOf(voice, 0));
-      shown = shared;
-    }
-    const base = reads?.[row] ?? weigh.base;
-    return silent(voice, weighed(base, mix.envelope(voice, now, shown) * weigh.owned, 1));
+    const owned = own
+      ? mix.envelope(voice, now, origins?.[row] ?? Number.NaN) * weigh.owned
+      : weigh.faded;
+    return silent(voice, weighed(reads?.[row] ?? weigh.base, owned, 1));
   };
 }

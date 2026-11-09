@@ -87,15 +87,13 @@ export function voiceTable<I, O>(
     const elapsed = elapsedOf(voice, now);
     if (Number.isNaN(elapsed)) return;
     bits[o + Col.FLAGS] = Flag.SHOWS;
-    const since = mix.sinceOf(voice, 0);
-    const fade = mix.envelope(voice, now, mix.shownOf(voice, since));
     rows[o + Col.PHASE] =
       elapsed < 0
         ? phaseBefore(elapsed, voice.duration)
         : phaseAt(elapsed, voice.duration, voice.passes);
     bits[o + Col.PASS] = passBits(passAt(elapsed, voice.duration, voice.passes));
     // Where the kernel multiplies each subject's read in, it clamps after.
-    const owned = fade * weigh.owned;
+    const owned = weigh.faded;
     rows[o + Col.WEIGHT] = slot.weights === undefined ? weighed(weigh.base, owned, 1) : owned;
   });
   return { rows, count: voices.length, roles: roles.size };
