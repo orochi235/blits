@@ -1,5 +1,5 @@
 import { CURVE_WIDTH } from '../../easing.js';
-import type { Runner } from '../runner.js';
+import { cachedRunner, type Runner } from '../runner.js';
 import { type ChannelCode, helpersOf, lerpWgsl } from '../wgsl/channels.js';
 import { EASING_WGSL } from '../wgsl/easing.js';
 
@@ -57,7 +57,6 @@ function track(name: string, code: ChannelCode): string {
   ].join(' ');
 }
 
-const runners = new Map<string, Runner>();
 /** Each distinct channel WGSL a track can take, by a short id for the runner key. */
 const kinds = new Map<string, number>();
 
@@ -74,20 +73,14 @@ function kindOf(code: ChannelCode): number {
 /** The runner for keys writing `writes`, their channels' WGSL `codes`: one per set of tracks. */
 export function keysRunner(writes: readonly string[], codes: readonly ChannelCode[]): Runner {
   const key = `keys:${writes.map((n, k) => `${n}=${kindOf(codes[k] as ChannelCode)}`).join(',')}`;
-  let r = runners.get(key);
-  if (r === undefined) {
-    r = {
-      key,
-      helpers: [EASING_WGSL, KEYS_WGSL, ...codes.flatMap((c) => helpersOf(c.helpers))],
-      wgsl: [
-        'let dur = values[base];',
-        'var t = base + 1u;',
-        ...writes.map((n, k) => track(n, codes[k] as ChannelCode)),
-      ].join(' '),
-      writes,
-      fields: [],
-    };
-    runners.set(key, r);
-  }
-  return r;
+  return cachedRunner(key, () => ({
+    helpers: [EASING_WGSL, KEYS_WGSL, ...codes.flatMap((c) => helpersOf(c.helpers))],
+    wgsl: [
+      'let dur = values[base];',
+      'var t = base + 1u;',
+      ...writes.map((n, k) => track(n, codes[k] as ChannelCode)),
+    ].join(' '),
+    writes,
+    fields: [],
+  }));
 }

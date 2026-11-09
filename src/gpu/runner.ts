@@ -24,6 +24,21 @@ export interface Runner {
   readonly stride?: number;
 }
 
+const built = new Map<string, Runner>();
+
+/** The runner `key` names, made by `make` the first time it is asked for. */
+export function cachedRunner(key: string, make: () => Omit<Runner, 'key'>): Runner {
+  let r = built.get(key);
+  if (r === undefined) {
+    r = { key, ...make() };
+    built.set(key, r);
+  }
+  return r;
+}
+
+/** Why a patch stays on the CPU whose easing is a function. */
+export const EASING_FUNCTION = 'its easing is a function, which the GPU cannot run';
+
 /** What a voice reads per subject from the `persub` buffer: each subject's motion run. */
 export interface PerSubject {
   readonly motions: Motions<unknown>;

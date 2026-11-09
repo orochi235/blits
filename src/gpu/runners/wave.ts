@@ -1,5 +1,5 @@
 import { wavePlanOf } from '../../wave.js';
-import type { Packed, Runner } from '../runner.js';
+import { cachedRunner, type Packed, type Runner } from '../runner.js';
 
 const SHAPES = { sine: 0, triangle: 1, saw: 2, square: 3 };
 
@@ -12,29 +12,19 @@ const HELPERS = `fn blits_wave_at(shape: f32, x: f32) -> f32 {
   return select(-1.0, 1.0, u < 0.5);
 }`;
 
-const runners = new Map<string, Runner>();
-
 /** One runner per set of channels written, since the kernel needs each output's name. */
 function runnerFor(writes: readonly string[]): Runner {
-  const key = `wave:${writes.join(',')}`;
-  let r = runners.get(key);
-  if (r === undefined) {
-    r = {
-      key,
-      helpers: HELPERS,
-      wgsl: [
-        'let unit = blits_wave_at(values[base], phase * values[base + 1u] + values[base + 2u]);',
-        ...writes.map(
-          (n, k) =>
-            `out.${n} = values[base + ${4 + 2 * k}u] + values[base + ${3 + 2 * k}u] * unit;`,
-        ),
-      ].join(' '),
-      writes,
-      fields: [],
-    };
-    runners.set(key, r);
-  }
-  return r;
+  return cachedRunner(`wave:${writes.join(',')}`, () => ({
+    helpers: HELPERS,
+    wgsl: [
+      'let unit = blits_wave_at(values[base], phase * values[base + 1u] + values[base + 2u]);',
+      ...writes.map(
+        (n, k) => `out.${n} = values[base + ${4 + 2 * k}u] + values[base + ${3 + 2 * k}u] * unit;`,
+      ),
+    ].join(' '),
+    writes,
+    fields: [],
+  }));
 }
 
 /** A `wave` patch's runner and numbers: shape, cycles, start, then each channel's depth and rest. */
