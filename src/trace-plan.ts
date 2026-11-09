@@ -1,4 +1,4 @@
-import { envelope } from './clock.js';
+import { clampWeight, envelope } from './clock.js';
 import { delayOf } from './delay.js';
 import { type Curve, stepsOf, straight } from './easing.js';
 import type { Mixer } from './mixer.js';
@@ -102,7 +102,7 @@ function shapeOf<I, O>(
   const easeOver = (r0: number, r1: number, ease: Curve): Bent => [
     time(r0),
     time(r1),
-    (t) => ease(Math.min(1, Math.max(0, (own(t) - r0) / (r1 - r0)))),
+    (t) => ease(clampWeight((own(t) - r0) / (r1 - r0))),
   ];
 
   if (ramp !== null) {
@@ -159,7 +159,7 @@ function shapeOf<I, O>(
         if (wait > 0) at(time(base + wait));
         let before = Number.NaN;
         for (const pt of track.all) {
-          const raw = base + wait + Math.min(1, Math.max(0, pt.at)) * (duration - wait);
+          const raw = base + wait + clampWeight(pt.at) * (duration - wait);
           at(time(raw));
           const ease = pt.ease;
           const steps = ease === undefined ? undefined : stepsOf(ease);
@@ -188,8 +188,7 @@ function shapeOf<I, O>(
       at(time(base));
       at(time(base + duration));
       if (shape === 'sine') {
-        const x = (t: number): number =>
-          cycles * Math.min(1, Math.max(0, (own(t) - base) / duration)) + start;
+        const x = (t: number): number => cycles * clampWeight((own(t) - base) / duration) + start;
         bent.push([time(base), time(base + duration), (t) => waveAt('sine', x(t))]);
         continue;
       }

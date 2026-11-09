@@ -186,6 +186,11 @@ export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: numb
  * read it, as `since` is, not where they would by their controls now.
  */
 export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: number): number {
+  return shownFrom(voice, since);
+}
+
+/** As `shownOf`, for a caller with no mix at hand. */
+export function shownFrom<I, O>(voice: Voice<I, O>, since: number): number {
   const start = startedAt(voice);
   const from = since < start ? start : since;
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;

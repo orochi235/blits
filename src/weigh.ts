@@ -1,4 +1,4 @@
-import { envelope, weighed } from './clock.js';
+import { voiceEnvelope, weighed } from './clock.js';
 import { elapsedThen, record } from './history.js';
 import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
@@ -98,16 +98,7 @@ export function fadeOf<I, O>(
   now: number,
   since: number,
 ): number {
-  return envelope(
-    voice.fade.in ?? 0,
-    voice.out,
-    voice.ease,
-    this.reducedNow,
-    now,
-    since,
-    voice.back,
-    voice.stalls,
-  );
+  return voiceEnvelope(voice, this.reducedNow, now, since);
 }
 
 /** What every owner above a voice multiplies into its weight for a subject this frame. */

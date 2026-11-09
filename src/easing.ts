@@ -1,3 +1,4 @@
+import { clampWeight } from './clock.js';
 import type { Easing } from './types.js';
 
 /**
@@ -142,7 +143,7 @@ export function curve(easing: Easing): Curve {
     const start = easing.jump === 'start';
     made = pack(
       (u) => {
-        const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
+        const c = clampWeight(u);
         // CSS: jump-start has already taken its first step at 0, and neither form passes n.
         return (start ? Math.min(n, Math.floor(c * n) + 1) : Math.floor(c * n)) / n;
       },

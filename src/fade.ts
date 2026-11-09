@@ -1,5 +1,5 @@
 import { changed, headOf, slotOf, unlink } from './chain.js';
-import { envelope, fadeInAt } from './clock.js';
+import { clampWeight, envelope, fadeInAt } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
@@ -269,7 +269,7 @@ export function beginRise<I, O>(
   const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
   const left = out.rest || out.over === 0 ? 1 : 1 - (at - out.at) / out.over;
-  const from = left < 0 ? 0 : left > 1 ? 1 : left;
+  const from = clampWeight(left);
   // A voice faded before its start waits for it again, as a seek back finds it.
   const waiting =
     Number.isNaN(mix.now) ||
