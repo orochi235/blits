@@ -1,3 +1,4 @@
+import { clearBit, hasBit, setBit } from './bits.js';
 import { slotOf } from './chain.js';
 import { numericOf } from './channels.js';
 import { blankOf, patchKeeps } from './held.js';
@@ -91,29 +92,14 @@ export function everyoneOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Subject<
 
 /** Whether a chain has asked a sharing voice about the subject numbered `slot`. */
 export function sighted<I, O>(voice: Voice<I, O>, slot: number): boolean {
-  const bits = voice.sighted;
-  const word = slot >>> 5;
-  return (
-    bits !== null &&
-    slot >= 0 &&
-    word < bits.length &&
-    ((bits[word] as number) & (1 << (slot & 31))) !== 0
-  );
+  return hasBit(voice.sighted, slot);
 }
 
 /** A chain asks a sharing voice about a subject: counted once, as a record of its own would be. */
 export function sight<I, O>(voice: Voice<I, O>, slot: number, cap: number): void {
-  let bits = voice.sighted;
-  const word = slot >>> 5;
-  if (bits === null || word >= bits.length) {
-    const grown = new Uint32Array(Math.max(word + 1, (cap >>> 5) + 1));
-    if (bits !== null) grown.set(bits);
-    voice.sighted = grown;
-    bits = grown;
-  }
-  const bit = 1 << (slot & 31);
-  if (((bits[word] as number) & bit) !== 0) return;
-  bits[word] = (bits[word] as number) | bit;
+  const bits = voice.sighted;
+  if (hasBit(bits, slot)) return;
+  voice.sighted = setBit(bits, slot, (cap >>> 5) + 1);
   voice.seen++;
 }
 
@@ -235,10 +221,7 @@ export function resight<I, O>(voice: Voice<I, O>, from: number, to: number, cap:
 
 /** A subject's number was let go of: the next subject to take it is one the voice has not seen. */
 export function unsight<I, O>(voice: Voice<I, O>, slot: number): void {
-  const bits = voice.sighted;
-  const word = slot >>> 5;
-  if (bits !== null && word < bits.length)
-    bits[word] = (bits[word] as number) & ~(1 << (slot & 31));
+  clearBit(voice.sighted, slot);
   const weights = voice.weights;
   if (weights !== null && slot < weights.length) weights[slot] = 0;
   const stamps = voice.stamps;
