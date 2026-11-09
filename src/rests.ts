@@ -1,5 +1,5 @@
-import { near } from './fold.js';
-import { unread } from './held.js';
+import { restsAt } from './fold.js';
+import { isUnread } from './held.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { Store } from './store.js';
@@ -31,10 +31,7 @@ export function atRest<I, O>(this: Mixer<I, O>, subject: I): boolean {
 export function rests<I, O>(this: Mixer<I, O>, pose: O): boolean {
   for (let i = 0; i < this.names.length; i++) {
     const channel = this.channels[i] as Channel<unknown>;
-    const value = (pose as Record<string, unknown>)[this.names[i] as string];
-    if (channel.rest === undefined) {
-      if (value !== undefined) return false;
-    } else if (!near(value, channel.rest)) return false;
+    if (!restsAt(channel, (pose as Record<string, unknown>)[this.names[i] as string])) return false;
   }
   return true;
 }
@@ -65,7 +62,7 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
   if (motion === undefined || !(voice.elapsedAt(now) >= voice.latest)) return false;
   // A subject met inside its stagger and not read since has no run yet, and moves once it is.
   const early = voice.early;
-  if (early !== null) for (const h of early) if (h.since <= now && unread(h)) return false;
+  if (early !== null) for (const h of early) if (h.since <= now && isUnread(h)) return false;
   // A seek back drops `early` and forgets reads, so these are asked after by subject.
   const met = voice.met;
   if (met !== null) {
@@ -76,7 +73,7 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
     for (const subject of met) {
       const h = waiting ? undefined : voice.subjects.get(subject);
       if (h?.reaches && h.since <= now) {
-        if (!unread(h)) {
+        if (!isUnread(h)) {
           if (history) {
             voice.metRead ??= [];
             voice.metRead.push({ subject, seq });

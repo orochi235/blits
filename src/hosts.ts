@@ -1,13 +1,13 @@
 import { release } from './arcs.js';
 import { Book, type BookHost } from './book.js';
-import { headOf } from './chain.js';
+import { slotOf } from './chain.js';
 import { numericOf } from './channels.js';
 import { stepOf } from './clock.js';
 import { schedule } from './due.js';
 import { beginFade, beginRise, fadeAt, fadeSubject } from './fade.js';
 import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
-import { reorigin } from './held.js';
+import { patchKeeps, reorigin, voiceKeeps } from './held.js';
 import { noted, remember } from './history.js';
 import { Arg } from './lane.js';
 import type { LaneHost, Lanes } from './lanes.js';
@@ -76,7 +76,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     },
     passes: (was, w) => mix.passes(was, w),
     naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
-    slotOf: (subject) => headOf(mix, subject)?.slot ?? -1,
+    slotOf: (subject) => slotOf(mix, subject),
     envelope: (voice, since) =>
       voice.owner === null
         ? mix.envelope(voice, mix.now, since)
@@ -162,7 +162,7 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   )
     return false;
   if (voice.out?.rest) return false;
-  if (patch.state !== undefined || patch.step !== undefined) return false;
+  if (patchKeeps(patch)) return false;
   const built = voice.built;
   return (
     built === null ||
@@ -175,7 +175,7 @@ const RANK = { exact: 0, stepped: 1, held: 2 } as const;
 /** How sure a seek leaves a voice's state: kept is held; rebuilt is exact only on a fixed step. */
 function seekDoubt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, rebuild: boolean): Doubt {
   const patch = voice.patch;
-  if (patch.state === undefined && patch.step === undefined && !voice.keeping) return 'exact';
+  if (!voiceKeeps(voice)) return 'exact';
   if (!rebuild) return 'held';
   const weight = voice.spec.weight;
   if (
@@ -251,7 +251,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       if (voice.state === 'done') return 0;
       if (voice.holding !== null)
         return ownWeight(voice, mix.now, mix.reducedNow, (o) => mix.ownerBase(o, subject));
-      const slot = mix.lanes === null ? -1 : (headOf(mix, subject)?.slot ?? -1);
+      const slot = mix.lanes === null ? -1 : slotOf(mix, subject);
       if (voice.laned && mix.lanes !== null) {
         const w = mix.lanes.weightOf(voice.id, slot);
         if (w !== undefined) return w;

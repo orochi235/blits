@@ -1,8 +1,8 @@
 import { inBound } from './bound.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
-import { type Key, near } from './fold.js';
-import { waits } from './held.js';
+import { type Key, restsAt } from './fold.js';
+import { originate, patchKeeps, voiceKeeps, waits } from './held.js';
 import { apart, copyState, record, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
@@ -32,12 +32,11 @@ function rebuild<I, O>(
 ): void {
   held.rebuilt = voice.rebuilds;
   const patch = voice.patch;
-  if (patch.state === undefined && patch.step === undefined && held.kept === null) return;
+  if (!patchKeeps(patch) && held.kept === null) return;
   held.state = patch.state ? (patch.state(subject) as unknown) : undefined;
   held.kept = null;
   held.unkept = undefined;
-  held.since = mix.sinceOf(voice, held.delay);
-  held.shown = mix.shownOf(voice, held.since);
+  originate(mix, voice, held);
   held.ticks = 0;
   held.stepped = held.since < now ? held.since : now;
   held.probed = Number.NaN;
@@ -45,8 +44,7 @@ function rebuild<I, O>(
 
 /** Whether a seek since its last read moved a stateful record's origin, as one back before it does. */
 function sentBack<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): boolean {
-  const p = voice.patch;
-  if (p.state === undefined && p.step === undefined && !voice.keeping) return false;
+  if (!voiceKeeps(voice)) return false;
   return mix.sinceOf(voice, held.delay) !== held.since;
 }
 
@@ -89,8 +87,7 @@ export function contribution<I, O>(
 
   const raw = voice.rawAt(now, held.delay);
   const early = voice.before(raw, now);
-  if (early && !voice.holdsFirst) return null;
-  const elapsed = voice.shownAt(raw);
+  const elapsed = voice.shownTime(raw, early);
   if (Number.isNaN(elapsed)) return null;
   // A frozen subject's clock stands still at the edge it freezes at: -1 before, 1 after, 0 playing.
   const still = early ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
@@ -447,10 +444,8 @@ export function slopeFor<I, O>(
 
 export function isRest<I, O>(this: Mixer<I, O>, delta: Record<string, unknown>): boolean {
   for (const key of Object.keys(delta) as Key<O>[]) {
-    if (delta[key] === undefined) continue;
-    const channel = this.kit[key] as Channel<unknown>;
-    if (channel.rest === undefined) return false;
-    if (!near(delta[key], channel.rest)) return false;
+    const value = delta[key];
+    if (value !== undefined && !restsAt(this.kit[key] as Channel<unknown>, value)) return false;
   }
   return true;
 }

@@ -1,11 +1,12 @@
 import { headOf, unlink } from './chain.js';
-import { leaveVoice } from './fade.js';
+import { leaveVoice, unrecord } from './fade.js';
 import { goneIndex } from './gone.js';
 import { releasing } from './history.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { nextFrame } from './move.js';
 import { Masked } from './store.js';
+import type { Subject } from './subject.js';
 import { record, taping, unplayable } from './tape.js';
 import type { Voice } from './voice.js';
 
@@ -33,16 +34,16 @@ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
   // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
   // of a voice that does not name it is in `parters`, and a patch's own state in `motions`.
   const kept = releasing(this);
-  for (const voice of this.general) this.forgetIn(voice, subject, kept);
+  for (const voice of this.general) this.dropIn(voice, subject, kept);
   const named = this.named.get(subject);
-  if (named !== undefined) for (const voice of [...named]) this.forgetIn(voice, subject, kept);
+  if (named !== undefined) for (const voice of [...named]) this.dropIn(voice, subject, kept);
   const gone = goneIndex(this);
-  for (const voice of gone.general) this.forgetIn(voice, subject, kept);
+  for (const voice of gone.general) this.dropIn(voice, subject, kept);
   const goneNaming = gone.named.get(subject);
-  if (goneNaming !== undefined) for (const voice of goneNaming) this.forgetIn(voice, subject, kept);
-  if (this.owners !== null) for (const voice of this.owners) this.forgetIn(voice, subject, kept);
+  if (goneNaming !== undefined) for (const voice of goneNaming) this.dropIn(voice, subject, kept);
+  if (this.owners !== null) for (const voice of this.owners) this.dropIn(voice, subject, kept);
   for (const voice of this.parters) {
-    this.forgetIn(voice, subject, kept);
+    this.dropIn(voice, subject, kept);
     if (voice.parts?.size === 0) voice.parts = null;
     if (voice.parted?.size === 0) voice.parted = null;
     if (voice.parts === null && voice.parted === null) this.parters.delete(voice);
@@ -55,14 +56,17 @@ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
 }
 
 /** Lets `voice` go of a dropped subject. Methods rather than closures, so a drop makes neither. */
-export function forgetIn<I, O>(
+export function dropIn<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
   kept: ReturnType<typeof releasing>,
 ): void {
-  leaveVoice(this, voice, subject);
-  voice.subjects.delete(subject);
+  // Asked once: a copy's or a sought voice's store makes the record it is asked for.
+  const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+  leaveVoice(this, voice, subject, held);
+  if (held === undefined) voice.subjects.delete(subject);
+  else unrecord(voice, subject, held);
   if (!this.projecting) this.forgot?.(voice, subject);
   if (voice.motion !== undefined) this.releaseIn(voice.motion, subject, kept);
   voice.parts?.delete(subject);

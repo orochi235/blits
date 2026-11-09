@@ -1,10 +1,11 @@
-import { envelope, weighed } from './clock.js';
-import { elapsedThen, last, record } from './history.js';
+import { voiceEnvelope, weighed } from './clock.js';
+import { elapsedThen, record } from './history.js';
 import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
 import { ownersWeight } from './owner.js';
 import { reading } from './reading.js';
 import type { VoiceSetting } from './setting.js';
+import { last } from './sorted.js';
 import type { Subject } from './subject.js';
 import type { Setting } from './types.js';
 import type { Voice } from './voice.js';
@@ -97,16 +98,7 @@ export function fadeOf<I, O>(
   now: number,
   since: number,
 ): number {
-  return envelope(
-    voice.fade.in ?? 0,
-    voice.out,
-    voice.ease,
-    this.reducedNow,
-    now,
-    since,
-    voice.back,
-    voice.stalls,
-  );
+  return voiceEnvelope(voice, this.reducedNow, now, since);
 }
 
 /** What every owner above a voice multiplies into its weight for a subject this frame. */

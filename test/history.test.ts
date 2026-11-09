@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { copyHeld, copyHeldInto } from '../src/history.js';
-import { record } from '../src/record.js';
+import { wholeRecord } from '../src/record.js';
 import type { Subject } from '../src/subject.js';
 
 /** A record with every field holding a value of its own, none the one `record` starts it at. */
 function full(): Subject<unknown> {
-  const h = record({ id: 1 }, true, { x: 1 });
+  const h = wholeRecord({ id: 1 }, true, { x: 1 });
   let n = 1;
   for (const key of Object.keys(h) as (keyof Subject<unknown>)[]) {
     const v = h[key];
@@ -24,7 +24,7 @@ function full(): Subject<unknown> {
   h.unknown = true;
   h.inputs = [];
   h.replay = [];
-  h.next = record(null, true, undefined);
+  h.next = wholeRecord(null, true, undefined);
   h.roles = new Map();
   return h;
 }
@@ -35,7 +35,7 @@ describe('copyHeldInto', () => {
       const h = full();
       const voice = { patch: {} } as never;
       const copy = copyHeld(voice, h, shared);
-      const into = record(null, true, undefined);
+      const into = wholeRecord(null, true, undefined);
       const out = copyHeldInto(voice, h, into, shared);
       expect(out).toBe(into);
       expect(Object.keys(out)).toEqual(Object.keys(copy));

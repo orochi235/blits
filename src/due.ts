@@ -1,4 +1,5 @@
 import type { Mixer } from './mixer.js';
+import { byId } from './sorted.js';
 import type { Voice } from './voice.js';
 
 /**
@@ -270,19 +271,4 @@ function merged<V extends { readonly id: number }>(list: V[], n: number): V[] {
   while (i < n) out.push(list[i++] as V);
   while (k < rest.length) out.push(rest[k++] as V);
   return out;
-}
-
-/** Past this many voices the built-in sort, which makes working arrays however few it is given. */
-const SHORT = 8;
-
-/** Puts voices in id order in place, those of one id left in the order they had; returns `list`. */
-export function byId<V extends { readonly id: number }>(list: V[]): V[] {
-  if (list.length > SHORT) return list.sort((a, b) => a.id - b.id);
-  for (let i = 1; i < list.length; i++) {
-    const v = list[i] as V;
-    let k = i;
-    for (; k > 0 && (list[k - 1] as V).id > v.id; k--) list[k] = list[k - 1] as V;
-    list[k] = v;
-  }
-  return list;
 }

@@ -5,7 +5,7 @@ import { schedule } from './due.js';
 import type { Share } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf, startedAt } from './origin.js';
-import { record } from './record.js';
+import { wholeRecord } from './record.js';
 import type { Subject } from './subject.js';
 import { unreach, unreached } from './unreached.js';
 import type { Voice } from './voice.js';
@@ -16,14 +16,54 @@ export function unreachedOf<I, O>(
   voice: Voice<I, O>,
   now: number,
 ): Subject<unknown> {
-  const since = this.sinceOf(voice, 0);
-  const none = record(voice, false, undefined);
-  none.since = since;
-  none.shown = this.shownOf(voice, since);
+  const none = blankOf(this, voice, false, this.sinceOf(voice, 0));
   none.stepped = now;
-  none.rebuilt = voice.rebuilds;
   voice.unreached = none;
   return none;
+}
+
+/** A record of `subject` built afresh for `voice`, with its patch's state where the voice reaches it. */
+export function freshOf<I, O>(voice: Voice<I, O>, subject: I, reaches: boolean): Subject<unknown> {
+  const held = wholeRecord(
+    voice,
+    reaches,
+    reaches && voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
+  );
+  held.rebuilt = voice.rebuilds;
+  return held;
+}
+
+/** A record standing for many subjects at once, with no state, counting from `since`. */
+export function blankOf<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  reaches: boolean,
+  since: number,
+): Subject<unknown> {
+  const held = wholeRecord(voice, reaches, undefined);
+  held.rebuilt = voice.rebuilds;
+  startFrom(mix, voice, held, since);
+  return held;
+}
+
+/** Sets where a record's clock counts from, and so where its fade in does. */
+export function startFrom<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+  since: number,
+): void {
+  held.since = since;
+  held.shown = mix.shownOf(voice, since);
+}
+
+/** Counts a record from where the voice's clock now first reads its delay. */
+export function originate<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+): void {
+  startFrom(mix, voice, held, mix.sinceOf(voice, held.delay));
 }
 
 /**
@@ -63,28 +103,21 @@ export function held<I, O>(
     voice.keyed.add(this.keys.key(subject));
   }
   const delay = delayOf(voice, subject);
-  const since = this.sinceOf(voice, delay);
-  const shown = this.shownOf(voice, since);
-  held = record(
-    voice,
-    true,
-    voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
-  );
+  held = freshOf(voice, subject, true);
   held.delay = delay;
-  held.since = since;
-  held.shown = shown;
+  originate(this, voice, held);
   const fresh = meet(this, voice, held, now);
-  held.rebuilt = voice.rebuilds;
   if (this.projecting) {
     held.from = held.stepped;
     held.unknown = (this.backward && voice.spec.from === 'current') || fresh;
   }
   voice.subjects.set(subject, held);
   waits(voice, held, now);
-  if (voice.motion !== undefined && !(since <= now)) {
+  if (voice.motion !== undefined && !(held.since <= now)) {
     voice.met ??= [];
     voice.met.push(subject);
   }
+  voice.made++;
   // A subject a voice saw while it shared one record was counted then.
   if (voice.sighted !== null && this.share?.sighted(voice, slot))
     this.share.inherit(voice, held, slot);
@@ -131,13 +164,20 @@ export function meet<I, O>(
   return held.stepped > since;
 }
 
+/** Whether a patch keeps state of its own between reads, through `state` or `step`. */
+export const patchKeeps = (patch: { state?: unknown; step?: unknown }): boolean =>
+  patch.state !== undefined || patch.step !== undefined;
+
+/** Whether a voice keeps state between reads: its patch does, or it took to through `setting.keep`. */
+export const voiceKeeps = <I, O>(voice: Voice<I, O>): boolean =>
+  patchKeeps(voice.patch) || voice.keeping;
+
 /**
  * The mix time the voice clock first read `delay`, or will by its controls now. A stateful voice
  * counts from its last seek that rebuilt state, as its records do.
  */
 export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: number): number {
-  const p = voice.patch;
-  return originOf(voice, delay, p.state !== undefined || p.step !== undefined || voice.keeping);
+  return originOf(voice, delay, voiceKeeps(voice));
 }
 
 /**
@@ -147,20 +187,25 @@ export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: numb
  * read it, as `since` is, not where they would by their controls now.
  */
 export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: number): number {
+  return shownFrom(voice, since);
+}
+
+/** As `shownOf`, for a caller with no mix at hand. */
+export function shownFrom<I, O>(voice: Voice<I, O>, since: number): number {
   const start = startedAt(voice);
   const from = since < start ? start : since;
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;
 }
 
 /** Whether a subject's record has gone unread since its origin. */
-export const unread = (held: Subject<unknown>): boolean => !(held.probed >= held.since);
+export const isUnread = (held: Subject<unknown>): boolean => !(held.probed >= held.since);
 
 /**
  * Whether a listed record stays listed at `now`: its origin is ahead, or it is a motion voice's,
  * unread since its origin, which `still` asks after since the motion has no run for it yet.
  */
 function stillEarly<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): boolean {
-  return !(held.since <= now) || (voice.motion !== undefined && unread(held));
+  return !(held.since <= now) || (voice.motion !== undefined && isUnread(held));
 }
 
 /** Lists a record whose origin is still ahead of `now`, for a later change to the clock to move. */
@@ -197,10 +242,9 @@ export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
 /** Counts a record whose `since` was still ahead from where its voice's clock now puts it. */
 export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
   const was = held.since;
-  held.since = mix.sinceOf(voice, held.delay);
+  originate(mix, voice, held);
   // Sent back before a start it had passed: its next read starts it afresh.
   if (held.since !== was && (held.ticks > 0 || held.stepped > was)) held.rebuilt = -1;
-  held.shown = mix.shownOf(voice, held.since);
   if (held.ticks === 0 && held.stepped > held.since) held.stepped = held.since;
 }
 

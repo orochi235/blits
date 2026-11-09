@@ -28,6 +28,11 @@ export function near(a: unknown, b: unknown): boolean {
   return a === b;
 }
 
+/** Whether `value` is the channel's rest: near it, or for a channel with none, nothing at all. */
+export function restsAt(channel: Channel<unknown>, value: unknown): boolean {
+  return channel.rest === undefined ? value === undefined : near(value, channel.rest);
+}
+
 /**
  * `merge(acc, b)`, where a result that is `b` itself, as `last()` gives, is copied into `acc` or a
  * new array: `b` belongs to a patch or the mix's scratch, and a host may edit the pose. `acc` is a

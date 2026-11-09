@@ -1,5 +1,6 @@
 import { type Cut, within } from './cut.js';
 import type { Motions } from './motions.js';
+import { lastIndex } from './sorted.js';
 import type { Change, Segment } from './stretch.js';
 
 /** Whether `c` was made by frame `cut`; one made with no mix playing its patch was. */
@@ -11,14 +12,7 @@ function playingIn(list: readonly Segment[], t: number): Segment {
   const last = list[list.length - 1] as Segment;
   if (t >= last.at || list.length === 1) return last;
   if ((list[0] as Segment).at > t) return list[0] as Segment;
-  let lo = 0;
-  let hi = list.length - 2;
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1;
-    if ((list[mid] as Segment).at <= t) lo = mid;
-    else hi = mid - 1;
-  }
-  return list[lo] as Segment;
+  return list[lastIndex(list, t, true)] as Segment;
 }
 
 /**

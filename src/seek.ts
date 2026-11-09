@@ -1,8 +1,8 @@
 import { heldAt } from './chain.js';
 import { schedule } from './due.js';
-import { fadesAt } from './fade.js';
+import { fadesThen } from './fade.js';
 import { origin } from './held.js';
-import { apart, copyHeld, copyHeldInto, lastIndex, lastWithin, unread } from './history.js';
+import { apart, controlsAt, copyHeld, copyHeldInto, unread } from './history.js';
 import { laneHost } from './hosts.js';
 import { leapBack } from './leaps.js';
 import { Leavings } from './leavings.js';
@@ -15,6 +15,7 @@ import { unpull } from './pull.js';
 import { isRested } from './record.js';
 import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
+import { byId, lastIndex } from './sorted.js';
 import { Store } from './store.js';
 import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, replay } from './tape.js';
@@ -149,26 +150,12 @@ function park<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
 function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq: number): void {
   const cut = { seq, strict: false };
   const log = voice.log as Controls[];
-  const c = lastWithin(log, cut) ?? (log[0] as Controls);
+  const c = controlsAt(log, cut);
   log.length = log.indexOf(c) + 1;
   voice.take(c);
   if (voice.reopen(seq) && voice.owner?.holding) voice.owner.holding.played--;
   voice.doneAt = Number.POSITIVE_INFINITY;
   voice.doneSeq = Number.POSITIVE_INFINITY;
-  if (voice.parts !== null) {
-    for (const [subject, r] of voice.parts) if (r.seq > seq) voice.parts.delete(subject);
-    if (voice.parts.size === 0) voice.parts = null;
-  }
-  if (voice.parted !== null) {
-    for (const [subject, p] of voice.parted) {
-      if (p.seq <= seq) continue;
-      voice.parted.delete(subject);
-      if (p.ramp === undefined || p.ramp.seq > seq) continue;
-      voice.parts ??= new Map();
-      voice.parts.set(subject, p.ramp);
-    }
-    if (voice.parted.size === 0) voice.parted = null;
-  }
   voice.seen = 0;
   voice.restedCount = 0;
   voice.early = null;
@@ -186,7 +173,7 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   voice.seeks++;
   voice.spares = null;
   const left = voice.left?.all() ?? [];
-  if (voice.left !== null) fadesAt(voice, voice.left.after(cut), seq);
+  fadesThen(voice, voice.left?.after(cut) ?? [], seq);
   voice.left = Leavings.from(left.filter((e) => e.seq <= seq));
   const future = Leavings.from(left.filter((e) => e.seq > seq));
   let records = voice.subjects;
@@ -301,7 +288,7 @@ export function seek(transport: Transport, to: number | { readonly frame: number
  * there; `on` past that frame's own time, where it moves on to `t`.
  */
 function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void {
-  const all = [...mix.cued, ...mix.gone].sort((a, b) => a.id - b.id);
+  const all = byId([...mix.cued, ...mix.gone]);
   const kept: Voice<I, O>[] = [];
   const gone: Voice<I, O>[] = [];
   // Every motion patch takes back the changes made after `t`, which the tape makes again.

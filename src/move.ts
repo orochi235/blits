@@ -1,7 +1,7 @@
 import { settleArcs } from './arcs.js';
 import { changed } from './chain.js';
 import { type Clock, elapsedWith } from './clock.js';
-import { byId, popDue, schedule } from './due.js';
+import { popDue, schedule } from './due.js';
 import { beginFade, part, release, retire, rouse, stay } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
 import { begin, reorigin } from './held.js';
@@ -13,6 +13,7 @@ import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
+import { byId } from './sorted.js';
 import { type Fitting, lapse, lapses, unfit } from './spans.js';
 import { unplay } from './strays.js';
 import type { Controls, Earlier, Voice } from './voice.js';

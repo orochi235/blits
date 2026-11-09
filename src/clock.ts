@@ -49,9 +49,8 @@ export function fadeInAt(
       const b = Math.min(stalls[i + 1] as number, end);
       if (b > a) climbed -= b - a;
     }
-  const u = climbed / fadeIn;
-  if (u >= 1) return 1;
-  return ease ? ease(Math.max(0, u)) : Math.max(0, u);
+  const u = clampWeight(climbed / fadeIn);
+  return u === 1 ? 1 : ease ? ease(u) : u;
 }
 
 /**
@@ -71,16 +70,40 @@ export function envelope(
   let w = 1;
   if (fadeIn > 0 && !reduced) w *= fadeInAt(fadeIn, out, ease, now, since, stalls);
   if (back && !reduced) {
-    const u = back.from + (now - back.at) / back.over;
-    if (u < 1) w *= ease ? ease(Math.max(0, u)) : Math.max(0, u);
+    const u = clampWeight(back.from + (now - back.at) / back.over);
+    if (u < 1) w *= ease ? ease(u) : u;
   }
   if (out && !out.rest) {
     if (reduced || out.over === 0) return 0;
-    const u = 1 - (now - out.at) / out.over;
-    const clamped = u < 0 ? 0 : u > 1 ? 1 : u;
-    w *= ease ? ease(clamped) : clamped;
+    const u = clampWeight(1 - (now - out.at) / out.over);
+    w *= ease ? ease(u) : u;
   }
   return w;
+}
+
+/** A voice's own fade at mix time `now`, its fade in counting from `since`. */
+export function voiceEnvelope(
+  voice: {
+    readonly fade: { readonly in?: number };
+    readonly out: { at: number; over: number; rest: boolean } | null;
+    readonly ease: Curve | undefined;
+    readonly back: { from: number; at: number; over: number } | null;
+    readonly stalls: readonly number[] | null;
+  },
+  reduced: boolean,
+  now: number,
+  since: number,
+): number {
+  return envelope(
+    voice.fade.in ?? 0,
+    voice.out,
+    voice.ease,
+    reduced,
+    now,
+    since,
+    voice.back,
+    voice.stalls,
+  );
 }
 
 /**
@@ -102,9 +125,9 @@ export function same(a: number, b: number): boolean {
   return a === b ? a !== 0 || 1 / a === 1 / b : Number.isNaN(a) && Number.isNaN(b);
 }
 
-/** A weight held to 0..1. */
+/** A weight, or any other share, held to 0..1; -0 is held to 0, and NaN stays NaN. */
 export function clampWeight(raw: number): number {
-  return raw < 0 ? 0 : raw > 1 ? 1 : raw;
+  return raw <= 0 ? 0 : raw >= 1 ? 1 : raw;
 }
 
 /**

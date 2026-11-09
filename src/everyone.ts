@@ -1,7 +1,9 @@
-import { headOf } from './chain.js';
+import { clearBit, hasBit, setBit } from './bits.js';
+import { slotOf } from './chain.js';
 import { numericOf } from './channels.js';
+import { grown } from './grow.js';
+import { blankOf, patchKeeps } from './held.js';
 import type { Mixer } from './mixer.js';
-import { record } from './record.js';
 import { detour } from './roster.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
@@ -33,8 +35,7 @@ export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
     spec.anchor === undefined &&
     spec.from !== 'current' &&
     typeof spec.weight !== 'function' &&
-    patch.state === undefined &&
-    patch.step === undefined &&
+    !patchKeeps(patch) &&
     voice.motion === undefined &&
     voice.owner === null &&
     voice.holding === null &&
@@ -84,40 +85,22 @@ export function everyoneOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Subject<
     unshare(mix, voice);
     return null;
   }
-  const all = record(voice, true, undefined);
-  all.since = since;
-  all.shown = mix.shownOf(voice, since);
+  const all = blankOf(mix, voice, true, since);
   all.stepped = since;
-  all.rebuilt = voice.rebuilds;
   voice.everyone = all;
   return all;
 }
 
 /** Whether a chain has asked a sharing voice about the subject numbered `slot`. */
 export function sighted<I, O>(voice: Voice<I, O>, slot: number): boolean {
-  const bits = voice.sighted;
-  const word = slot >>> 5;
-  return (
-    bits !== null &&
-    slot >= 0 &&
-    word < bits.length &&
-    ((bits[word] as number) & (1 << (slot & 31))) !== 0
-  );
+  return hasBit(voice.sighted, slot);
 }
 
 /** A chain asks a sharing voice about a subject: counted once, as a record of its own would be. */
 export function sight<I, O>(voice: Voice<I, O>, slot: number, cap: number): void {
-  let bits = voice.sighted;
-  const word = slot >>> 5;
-  if (bits === null || word >= bits.length) {
-    const grown = new Uint32Array(Math.max(word + 1, (cap >>> 5) + 1));
-    if (bits !== null) grown.set(bits);
-    voice.sighted = grown;
-    bits = grown;
-  }
-  const bit = 1 << (slot & 31);
-  if (((bits[word] as number) & bit) !== 0) return;
-  bits[word] = (bits[word] as number) | bit;
+  const bits = voice.sighted;
+  if (hasBit(bits, slot)) return;
+  voice.sighted = setBit(bits, slot, (cap >>> 5) + 1);
   voice.seen++;
 }
 
@@ -132,10 +115,8 @@ export function weighAt<I, O>(voice: Voice<I, O>, slot: number, w: number, cap: 
   let weights = voice.weights;
   if (weights === null || slot >= weights.length) {
     if (w === 0) return;
-    const grown = new Float64Array(Math.max(slot + 1, cap));
-    if (weights !== null) grown.set(weights);
-    voice.weights = grown;
-    weights = grown;
+    weights = grown(weights, Math.max(slot + 1, cap));
+    voice.weights = weights;
   }
   weights[slot] = w;
 }
@@ -187,10 +168,8 @@ export function shut<I, O>(
   const o = slot * Stamp.SIZE;
   if (stamps === null || o >= stamps.length) {
     if (Number.isNaN(rec.probed)) return;
-    const grown = new Float64Array(Math.max(slot + 1, cap) * Stamp.SIZE).fill(Number.NaN);
-    if (stamps !== null) grown.set(stamps);
-    voice.stamps = grown;
-    stamps = grown;
+    stamps = grown(stamps, Math.max(slot + 1, cap) * Stamp.SIZE, Number.NaN);
+    voice.stamps = stamps;
     voice.deltas ??= [];
   }
   stamps[o + Stamp.PROBED] = rec.probed;
@@ -224,10 +203,8 @@ export function resight<I, O>(voice: Voice<I, O>, from: number, to: number, cap:
   if (stamps !== null && o < stamps.length) {
     const t = to * Stamp.SIZE;
     if (t >= stamps.length) {
-      const grown = new Float64Array(Math.max(to + 1, cap) * Stamp.SIZE).fill(Number.NaN);
-      grown.set(stamps);
-      voice.stamps = grown;
-      stamps = grown;
+      stamps = grown(stamps, Math.max(to + 1, cap) * Stamp.SIZE, Number.NaN);
+      voice.stamps = stamps;
     }
     stamps[t + Stamp.PROBED] = stamps[o + Stamp.PROBED] as number;
     stamps[t + Stamp.SEEKS] = stamps[o + Stamp.SEEKS] as number;
@@ -239,10 +216,7 @@ export function resight<I, O>(voice: Voice<I, O>, from: number, to: number, cap:
 
 /** A subject's number was let go of: the next subject to take it is one the voice has not seen. */
 export function unsight<I, O>(voice: Voice<I, O>, slot: number): void {
-  const bits = voice.sighted;
-  const word = slot >>> 5;
-  if (bits !== null && word < bits.length)
-    bits[word] = (bits[word] as number) & ~(1 << (slot & 31));
+  clearBit(voice.sighted, slot);
   const weights = voice.weights;
   if (weights !== null && slot < weights.length) weights[slot] = 0;
   const stamps = voice.stamps;
@@ -271,7 +245,7 @@ export function unshare<I, O>(
   voice.everyone = null;
   const at = mix.sharers.indexOf(voice);
   if (at >= 0) mix.sharers.splice(at, 1);
-  const slot = kept ? (headOf(mix, keeper as I)?.slot ?? -1) : -1;
+  const slot = kept ? slotOf(mix, keeper as I) : -1;
   // A projection numbers no subject, so its copy's record is the keeper's without being asked.
   if (all !== null && kept && (mix.projecting || sighted(voice, slot))) {
     if (slot >= 0) unsight(voice, slot);

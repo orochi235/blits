@@ -1,14 +1,15 @@
 import type { Share } from './everyone.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
-import type { Named } from './named.js';
-import { record } from './record.js';
+import { file, type Named, unfile } from './named.js';
+import { wholeRecord } from './record.js';
+import { insertById } from './sorted.js';
 import type { Subject } from './subject.js';
 import type { Voice } from './voice.js';
 
 /** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
 function stub(): Subject<unknown> {
-  return record(null, false, undefined);
+  return wholeRecord(null, false, undefined);
 }
 
 /**
@@ -63,6 +64,11 @@ export function headOf<I, O>(mix: Mixer<I, O>, subject: I): Subject<unknown> | u
   return head !== undefined && head.slot >= 0 && mix.lanes?.sought(head.slot) === true
     ? undefined
     : head;
+}
+
+/** The number lanes give a subject by its chain as last linked, or -1 where it has none. */
+export function slotOf<I, O>(mix: Mixer<I, O>, subject: I): number {
+  return headOf(mix, subject)?.slot ?? -1;
 }
 
 /**
@@ -203,29 +209,14 @@ export function index<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.holding !== null) return;
   if (voice.named === null) {
     mix.general.push(voice);
-    if (voice.sharing) {
-      const sharers = mix.sharers;
-      let i = sharers.length;
-      while (i > 0 && (sharers[i - 1] as Voice<I, O>).id > voice.id) i--;
-      sharers.splice(i, 0, voice);
-    }
+    if (voice.sharing) insertById(mix.sharers, voice);
     return;
   }
   mix.naming++;
-  for (const subject of voice.named.list) {
-    const list = mix.named.get(subject);
-    if (list === undefined) mix.named.set(subject, [voice]);
-    else list.push(voice);
-  }
+  file(mix.named, voice.named.list, voice);
 }
 
 export function unindex<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   mix.naming--;
-  for (const subject of (voice.named as Named<I>).list) {
-    const list = mix.named.get(subject);
-    if (list === undefined) continue;
-    const i = list.indexOf(voice);
-    if (i >= 0) list.splice(i, 1);
-    if (list.length === 0) mix.named.delete(subject);
-  }
+  unfile(mix.named, (voice.named as Named<I>).list, voice);
 }

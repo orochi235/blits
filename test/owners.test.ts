@@ -21,6 +21,8 @@ const owners: Record<string, string[]> = {
 
 /** Methods that change an array, a `Map` or a `Set` in place. */
 const mutators = 'push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin|set|add|delete|clear';
+/** Functions that change the index passed them first, from named.ts. */
+const changers = 'file|unfile';
 
 const src = new URL('../src/', import.meta.url);
 
@@ -38,7 +40,8 @@ function assigned(): string[] {
         'g',
       );
       const call = new RegExp(`${field}\\??\\.(?:${mutators})\\(`, 'g');
-      for (const m of [...text.matchAll(assign), ...text.matchAll(call)])
+      const passed = new RegExp(`\\b(?:${changers})\\(${name}\\.(\\w+)`, 'g');
+      for (const m of [...text.matchAll(assign), ...text.matchAll(call), ...text.matchAll(passed)])
         out.add(`${m[1]}: ${file}`);
     }
   }

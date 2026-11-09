@@ -4,6 +4,7 @@ import { reorigin } from './held.js';
 import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
+import { nowSoFar } from './now.js';
 import { mixTime, ownerReading } from './owner.js';
 import { holders, scored, scoredGone, scoreVersion, unhold } from './scored.js';
 import { refloor } from './spans.js';
@@ -391,7 +392,7 @@ function timeOf<I, O>(
   const score = q.score ?? self.spec.score;
   const anywhere = q.score !== undefined;
   const resolver = q.resolver ?? 'last';
-  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  const now = nowSoFar(mix);
   const picked = new Pick(resolver, now);
   const matches = (v: Voice<I, O>) =>
     v !== self &&

@@ -1,13 +1,13 @@
-import { changed, headOf, unlink } from './chain.js';
-import { envelope, fadeInAt } from './clock.js';
+import { changed, headOf, slotOf, unlink } from './chain.js';
+import { clampWeight, envelope, fadeInAt } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
+import { nowFor, nowSoFar } from './now.js';
 import { startedAt } from './origin.js';
 import { type Holding, orphan, ownerReading, plays } from './owner.js';
-import { startOf } from './place.js';
 import { isRested } from './record.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
@@ -26,7 +26,7 @@ export function fadeSubject<I, O>(
   mix.share?.unshare(mix, voice);
   mix.stir();
   const ms = mix.reduced ? 0 : (over ?? voice.fade.out ?? 0);
-  const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  const at = nowFor(mix, voice);
   if (ms === 0) {
     part(mix, voice, subject, at);
     return;
@@ -73,7 +73,7 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
   voice.parted ??= new Map();
   voice.parted.set(subject, { at, seq: mix.transport.seq, ramp });
   mix.parters.add(voice);
-  forgetIn(mix, voice, subject);
+  letGo(mix, voice, subject);
   const motion = voice.motion;
   if (motion !== undefined && asks(mix, motion, voice)) motion.release(subject, ...releasing(mix));
 }
@@ -81,14 +81,14 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
 /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
 export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   if (voice.parted?.has(subject) !== true) return;
-  // `forgetIn` keeps the subject's own record for a read back; without one, keep the voice's.
+  // `letGo` keeps the subject's own record for a read back; without one, keep the voice's.
   if (voice.subjects.get(subject) === undefined) leaveVoice(mix, voice, subject);
   // Left with its parting still on, which a seek back to before this puts back.
-  forgetIn(mix, voice, subject);
+  letGo(mix, voice, subject);
   voice.parted.delete(subject);
   if (voice.parted.size === 0) voice.parted = null;
   if (!mix.projecting) mix.forgot?.(voice, subject);
-  const slot = headOf(mix, subject)?.slot ?? -1;
+  const slot = slotOf(mix, subject);
   if (slot >= 0) mix.lanes?.rejoin(slot);
 }
 
@@ -96,8 +96,12 @@ export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): 
  * Keeps, under history, the record a subject leaves a voice with as it is let go of: for one faded
  * out before the voice met it, a record saying it is not reached.
  */
-export function leaveVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
-  const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+export function leaveVoice<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held = voice.subjects.get(subject) as Subject<unknown> | undefined,
+): void {
   if (held !== undefined || voice.parted?.has(subject) !== true) leave(mix, voice, subject, held);
   else leave(mix, voice, subject, voice.unreached ?? mix.unreachedOf(voice, mix.now));
 }
@@ -125,8 +129,39 @@ export function fadesAt<I>(
   }
 }
 
+/** Deletes a voice's record of a subject, and takes it out of the voice's counts of records. */
+export function unrecord<I, O>(voice: Voice<I, O>, subject: I, held: Subject<unknown>): void {
+  voice.subjects.delete(subject);
+  if (held.reaches) voice.seen--;
+  if (isRested(held)) voice.restedCount--;
+  if (voice.holder === held) voice.holder = null;
+}
+
+/**
+ * Puts a voice's own fades back as they stood at the end of frame `seq`: those begun after it are
+ * taken out, a ramp then still running is put back where its subject has left since, and so are
+ * the fades of the subjects in `left`, as `fadesAt` puts them.
+ */
+export function fadesThen<I, O>(voice: Voice<I, O>, left: readonly Left<I>[], seq: number): void {
+  if (voice.parts !== null) {
+    for (const [subject, r] of voice.parts) if (r.seq > seq) voice.parts.delete(subject);
+    if (voice.parts.size === 0) voice.parts = null;
+  }
+  if (voice.parted !== null) {
+    for (const [subject, p] of voice.parted) {
+      if (p.seq <= seq) continue;
+      voice.parted.delete(subject);
+      if (p.ramp === undefined || p.ramp.seq > seq) continue;
+      voice.parts ??= new Map();
+      voice.parts.set(subject, p.ramp);
+    }
+    if (voice.parted.size === 0) voice.parted = null;
+  }
+  fadesAt(voice, left, seq);
+}
+
 /** Drops a voice's record of a subject and relinks the subject's chain without it. */
-function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
+function letGo<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   const head = headOf(mix, subject);
   if (head !== undefined && head.slot >= 0) {
     unreach(voice, head.slot, false);
@@ -136,10 +171,7 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined) {
     leave(mix, voice, subject, held);
-    voice.subjects.delete(subject);
-    if (held.reaches) voice.seen--;
-    if (isRested(held)) voice.restedCount--;
-    if (voice.holder === held) voice.holder = null;
+    unrecord(voice, subject, held);
   }
   if (head === undefined) return;
   unlink(mix, head);
@@ -174,7 +206,7 @@ export function beginFade<I, O>(
   voice.state = 'fading';
   voice.out = {
     from: 1,
-    at: at ?? (Number.isNaN(mix.now) ? startOf(voice) : mix.now),
+    at: at ?? nowFor(mix, voice),
     over,
     rest: opts.at === 'rest',
     deadline: opts.deadline,
@@ -202,7 +234,7 @@ export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): vo
   mix.lanes?.refill();
   const owner = voice.owner as Voice<I, O>;
   if (owner.state === 'done') return;
-  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  const now = nowSoFar(mix);
   if (plays(owner, now) || lingers(owner, at)) {
     if (owner.fitting !== null && !voice.skipped) refit(mix, owner, at);
   } else release(mix, owner, at);
@@ -238,10 +270,10 @@ export function beginRise<I, O>(
     return;
   }
   if (voice.state !== 'fading' || out === null) return;
-  const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  const at = nowFor(mix, voice);
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
   const left = out.rest || out.over === 0 ? 1 : 1 - (at - out.at) / out.over;
-  const from = left < 0 ? 0 : left > 1 ? 1 : left;
+  const from = clampWeight(left);
   // A voice faded before its start waits for it again, as a seek back finds it.
   const waiting =
     Number.isNaN(mix.now) ||
@@ -270,7 +302,7 @@ export function fadeAt<I, O>(
   over: number | undefined,
 ): void {
   if (voice.state === 'done' || voice.state === 'fading') return;
-  const now = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  const now = nowFor(mix, voice);
   if (at <= now) {
     beginFade(mix, voice, { over }, Math.max(startedAt(voice), at));
     mix.stir();
@@ -319,7 +351,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   // The record its setting last wrote to, which a retired voice no longer calls for.
   voice.keepOn = null;
   mix.retired.push(voice);
-  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  const now = nowSoFar(mix);
   voice.doneAt = at ?? now;
   voice.decidedAt = now;
   voice.doneSeq = mix.transport.seq;

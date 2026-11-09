@@ -36,17 +36,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   const arg = lanes.arg;
   const n = run.n;
   const op = ch.op;
-  if (n > 0) {
-    if (lane.axes !== n) {
-      lane.axes = n;
-      lane.samples = new Float64Array(0);
-    }
-    if (list.length * n > lane.samples.length) {
-      const grown = new Float64Array(Math.max(list.length, (lane.samples.length / n) * 2, 4) * n);
-      grown.set(lane.samples);
-      lane.samples = grown;
-    }
-  }
+  if (n > 0) lane.room(list.length, n);
   const samples = lane.samples;
   const landed = lane.landed;
   const xs = run.xs;

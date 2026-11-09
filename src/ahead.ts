@@ -1,11 +1,12 @@
 import { ownBlends } from './blend.js';
-import { headOf } from './chain.js';
+import { slotOf } from './chain.js';
 import type { Share } from './everyone.js';
+import { originate } from './held.js';
 import { copyHeld, unread } from './history.js';
 import { markOf, voiceMarks } from './marks.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
-import { relink } from './owner.js';
+import { rewire } from './owner.js';
 import { pin, place } from './place.js';
 import { recount } from './roster.js';
 import type { Subject } from './subject.js';
@@ -162,30 +163,52 @@ function restage(c: Transport): Transport {
  * or from the copy at the known event before.
  */
 export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
-  mirror(mix, c);
-  c.cued = mix.cued
-    .filter((v) => v.state !== 'done')
-    .map((v) => {
+  copyVoices(
+    mix,
+    c,
+    mix.cued.filter((v) => v.state !== 'done'),
+    (v) => {
       const link = {
         mix,
         voice: v,
         up: links.get(v),
-        seen: 0,
+        made: 0,
         shared: false,
         filled: false,
       } as unknown as Link;
       const copy: Voice<I, O> = v.copy((subject) => carry(link, subject, c, copy), undefined, true);
-      link.seen = copy.seen;
+      link.made = copy.made;
       link.shared = copy.sharing;
       links.set(copy, link);
-      const at = mix.pins?.get(v);
-      if (at !== undefined) pin(c, copy, at);
       return copy;
-    });
+    },
+    true,
+  );
   c.waking = mix.waking;
-  ownBlends(c.cued);
-  if (mix.owners !== null) relink(c.cued);
   recount(c);
+}
+
+/**
+ * Fills a projection's copy with a copy of each of `voices` that `each` makes, given the starts
+ * pinned to host time where `pins` says, and links the copies' blends and owners among themselves.
+ */
+export function copyVoices<I, O>(
+  mix: Mixer<I, O>,
+  c: Mixer<I, O>,
+  voices: readonly Voice<I, O>[],
+  each: (v: Voice<I, O>) => Voice<I, O>,
+  pins: boolean,
+  seq?: number,
+): void {
+  mirror(mix, c);
+  c.cued = voices.map((v) => {
+    const copy = each(v);
+    const at = pins ? mix.pins?.get(v) : undefined;
+    if (at !== undefined) pin(c, copy, at);
+    return copy;
+  });
+  ownBlends(c.cued);
+  if (mix.owners !== null) rewire(c.cued, seq);
 }
 
 /** Gives a projection's copy what it reads of the live mix as it is, before its voices are copied. */
@@ -205,7 +228,7 @@ export function recordOf<I, O>(
   // A voice sharing one record has that for every subject a chain has asked it about, pointed at
   // the subject for the caller to copy from.
   if (voice.sharing) {
-    const slot = headOf(mix, subject)?.slot ?? -1;
+    const slot = slotOf(mix, subject);
     const share = mix.share as Share;
     if (!share.sighted(voice, slot)) return undefined;
     const all = voice.everyone as Subject<unknown>;
@@ -215,9 +238,7 @@ export function recordOf<I, O>(
   }
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined || voice.unreachedBits === null) return held;
-  return unreached(voice, headOf(mix, subject)?.slot ?? -1)
-    ? (voice.unreached as Subject<unknown>)
-    : undefined;
+  return unreached(voice, slotOf(mix, subject)) ? (voice.unreached as Subject<unknown>) : undefined;
 }
 
 /** Where a read ahead's copy of a voice came from, and how it stood when it was made. */
@@ -226,8 +247,8 @@ interface Link {
   voice: Voice<unknown, unknown>;
   /** The link of `voice`, where it is itself a copy at the stop before. */
   up: Link | undefined;
-  /** The copy's `seen` and `sharing` as it was made. */
-  seen: number;
+  /** The copy's `made` and `sharing` as it was made. */
+  made: number;
   shared: boolean;
   /** Whether the copy has taken a record from `voice`. */
   filled: boolean;
@@ -242,7 +263,7 @@ const links = new WeakMap<object, Link>();
  */
 function empty(voice: Voice<unknown, unknown>, link: Link): boolean {
   return (
-    voice.seen === link.seen &&
+    voice.made === link.made &&
     !link.filled &&
     !link.shared &&
     voice.unreached === null &&
@@ -286,10 +307,7 @@ function carry<I, O>(
   const live = recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
   const h = handable(mix, voice, live) ? handOn(live) : copyHeld(voice, live);
-  if (h.reaches && !(h.since <= mix.now)) {
-    h.since = c.sinceOf(copy, h.delay);
-    h.shown = c.shownOf(copy, h.since);
-  }
+  if (h.reaches && !(h.since <= mix.now)) originate(c, copy, h);
   h.from = h.stepped;
   link.filled = true;
   return h;

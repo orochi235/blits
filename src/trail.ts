@@ -101,14 +101,8 @@ function poseIn<I>(f: Frame<I>, subject: I): Record<string, unknown> | undefined
       if (key in pose) continue;
       const axes = p.axes[c] as number;
       const data = p.data[c] as Float64Array;
-      const at = i * axes;
-      if (axes === 1) {
-        const v = data[at] as number;
-        if (!Number.isNaN(v)) pose[key] = v;
-      } else {
-        const v = Array.from(data.subarray(at, at + axes));
-        if (!v.some(Number.isNaN)) pose[key] = v;
-      }
+      const v = valueAt(data, i * axes, axes);
+      if (v !== undefined) pose[key] = v;
     }
   }
   return pose;
@@ -248,14 +242,21 @@ export class Probes {
       const axes = (this.layout[i + 1] as number) - (this.layout[i] as number);
       const kept = this.other[others + i];
       if (kept !== undefined) pose[key] = kept;
-      else if (axes === 1) {
-        const v = this.rows[from] as number;
-        if (!Number.isNaN(v)) pose[key] = v;
-      } else {
-        const v = Array.from(this.rows.subarray(from, from + axes));
-        if (!v.some(Number.isNaN)) pose[key] = v;
+      else {
+        const v = valueAt(this.rows, from, axes);
+        if (v !== undefined) pose[key] = v;
       }
     }
     return pose;
   }
+}
+
+/** The value `axes` numbers from `at` hold, or undefined where one is NaN, standing for none. */
+function valueAt(data: Float64Array, at: number, axes: number): number | number[] | undefined {
+  if (axes === 1) {
+    const v = data[at] as number;
+    return Number.isNaN(v) ? undefined : v;
+  }
+  const v = Array.from(data.subarray(at, at + axes));
+  return v.some(Number.isNaN) ? undefined : v;
 }

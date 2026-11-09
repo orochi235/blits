@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Leavings } from '../src/leavings.js';
-import { record } from '../src/record.js';
+import { wholeRecord } from '../src/record.js';
 import type { Left } from '../src/subject.js';
 
 const a = { id: 'a' };
@@ -10,7 +10,7 @@ const left = (subject: unknown, at: number, seq: number, sync = false): Left<unk
   at,
   seq,
   sync,
-  held: record(null, true, undefined),
+  held: wholeRecord(null, true, undefined),
   ramp: null,
   parted: null,
 });

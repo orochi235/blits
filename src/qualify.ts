@@ -1,6 +1,5 @@
 import { type Numeric, numericOf } from './channels.js';
 import { flush } from './columns.js';
-import { byId } from './due.js';
 import { weighAt } from './everyone.js';
 import { wake } from './fill.js';
 import { crowdable } from './hosts.js';
@@ -10,6 +9,7 @@ import { reach } from './meet.js';
 import { bury, compactSparse, join, regroup, retouchRow, sameCrowds } from './rows.js';
 import { settle } from './sample.js';
 import { seated, seatOf } from './seat.js';
+import { byId } from './sorted.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
 import type { Voice } from './voice.js';

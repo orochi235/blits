@@ -283,6 +283,8 @@ export class Voice<I, O> {
   readonly setting: VoiceSetting<I, O>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
   seen = 0;
+  /** How many records it has made, which unlike `seen` no record let go of takes back. */
+  made = 0;
   /** The longest stagger of any subject seen, so a finite loop waits for the last of them. */
   latest = 0;
   /** The least stagger of any subject seen, 0 or below, which a voice running back ends at. */
@@ -530,6 +532,7 @@ export class Voice<I, O> {
     this.metRead = null;
     this.leaps = null;
     this.seen = 0;
+    this.made = 0;
     this.latest = this.named?.latest ?? 0;
     this.soonest = this.named?.soonest ?? 0;
     this.restedCount = 0;
@@ -768,6 +771,11 @@ export class Voice<I, O> {
     if (this.beginless) return raw;
     if (raw > this.span && this.hidesPast) return Number.NaN;
     return frozenTime(raw, this.holdsFirst, this.freezesAfter, this.span);
+  }
+
+  /** The time a subject at voice time `raw` shows, `early` as `before` says; NaN where it shows nothing. */
+  shownTime(raw: number, early: boolean): number {
+    return early && !this.holdsFirst ? Number.NaN : this.shownAt(raw);
   }
 
   /** Records this voice's controls as they stand, from mix time `at` in frame `seq`. */

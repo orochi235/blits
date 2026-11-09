@@ -17,6 +17,7 @@ import {
 } from './lives.js';
 import { absent, Numbers } from './numbers.js';
 import { reading } from './reading.js';
+import { lastIndex } from './sorted.js';
 import { Store } from './store.js';
 import {
   type Change,
@@ -556,14 +557,7 @@ export class Motions<I> {
     const list = this.older?.[s];
     if (list === undefined || t >= (this.runs[this.base(s)] as number)) return this.latest(s);
     if ((list[0] as Segment).at > t) return list[0] as Segment;
-    let lo = 0;
-    let hi = list.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if ((list[mid] as Segment).at <= t) lo = mid;
-      else hi = mid - 1;
-    }
-    return list[lo] as Segment;
+    return list[lastIndex(list, t, true)] as Segment;
   }
 
   evaluateSegment(seg: Segment, t: number, xo: Float64Array, vo: Float64Array): void {

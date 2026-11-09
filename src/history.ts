@@ -4,41 +4,14 @@ import { type Cut, within } from './cut.js';
 import { schedule } from './due.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
+import { nowSoFar } from './now.js';
 import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import type { WholeRecord } from './record.js';
 import { scoreTouched } from './scored.js';
+import { last } from './sorted.js';
 import type { Snap, Subject } from './subject.js';
 import { type Controls, none, type Voice } from './voice.js';
-
-/** The last entry taken before `t`, or at it where `inclusive` says so. */
-export function last<T extends { at: number }>(
-  list: readonly T[],
-  t: number,
-  inclusive: boolean | ((e: T) => boolean),
-): T | undefined {
-  return list[lastIndex(list, t, inclusive)];
-}
-
-/** Where `last` finds its entry in the list, -1 where it finds none. */
-export function lastIndex<T extends { at: number }>(
-  list: readonly T[],
-  t: number,
-  inclusive: boolean | ((e: T) => boolean),
-): number {
-  let lo = 0;
-  let hi = list.length - 1;
-  let found = -1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const e = list[mid] as T;
-    if (e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive))) {
-      found = mid;
-      lo = mid + 1;
-    } else hi = mid - 1;
-  }
-  return found;
-}
 
 /**
  * The last entry of a list kept in the order it was made that falls inside `cut`, an entry made
@@ -60,6 +33,11 @@ export function lastWithin<T extends { seq: number; sync?: boolean }>(
     } else hi = mid - 1;
   }
   return found;
+}
+
+/** A voice's controls as they stood by frame `cut`: the first it had where none is that early. */
+export function controlsAt(log: readonly Controls[], cut: Cut): Controls {
+  return lastWithin(log, cut) ?? (log[0] as Controls);
 }
 
 /** Deep equality over plain data, for telling whether a host field changed. */
@@ -93,14 +71,9 @@ export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   schedule(mix, voice);
   const log = voice.log;
   if (log === null) return;
-  voice.note(
-    Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
-    mix.transport.seq,
-    mix.moving || !mix.looked,
-  );
+  voice.note(nowSoFar(mix), mix.transport.seq, mix.moving || !mix.looked);
   const reach = mix.now - (mix.opts.history as { ms: number }).ms;
-  let drop = 0;
-  while (drop + 1 < log.length && (log[drop + 1] as Controls).at <= reach) drop++;
+  const drop = past(log, reach);
   if (drop > 0) pageOut(mix, 'controls', voice.id, undefined, log.splice(0, drop), copied, reach);
 }
 
@@ -392,7 +365,7 @@ export function leave<I, O>(
   );
   left.push({
     subject,
-    at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
+    at: nowSoFar(mix),
     seq: mix.transport.seq,
     sync: mix.syncing || !mix.looked,
     held,

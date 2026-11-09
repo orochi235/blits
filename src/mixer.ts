@@ -9,7 +9,7 @@ import { type LerpInto, lerpInto, reusesHeld, STOCK_BAND, scalarOp } from './cha
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
 import { cue, roleTags } from './cue.js';
 import { DepartedIndex } from './departed.js';
-import { drop, forgetIn, recordDrop, releaseIn } from './drop.js';
+import { drop, dropIn, recordDrop, releaseIn } from './drop.js';
 import { DueQueue } from './due.js';
 import type { Share } from './everyone.js';
 import { beginFade, parting } from './fade.js';
@@ -729,7 +729,7 @@ const methods = {
   put,
   around,
   drop,
-  forgetIn,
+  dropIn,
   releaseIn,
   recordDrop,
   onSeek,
