@@ -123,7 +123,7 @@ export type Doubt = 'exact' | 'stepped' | 'held';
  * @category mix
  */
 export interface Projection<I, O> {
-  /** The mix time it reads at. */
+  /** Mix time: the time it reads at, not a host timestamp. */
   readonly timestamp: number;
   /** The merged pose for one subject at this projection's timestamp. */
   probe(subject: I, out?: O): O;
@@ -350,7 +350,7 @@ export interface Mix<I, O, H = unknown> {
    * the first sync. Host time at the mix's rate, less what `rebase` took out and `seek` moved.
    */
   readonly now: number;
-  /** The host's timestamp at the last sync; NaN before the first. */
+  /** Host time: the host's timestamp at the last sync; NaN before the first. */
   readonly timestamp: number;
   /**
    * Mix time played by syncs since the mix began, each sync counting what it moved the clock on,
@@ -514,7 +514,7 @@ export interface Mix<I, O, H = unknown> {
  * @category mix
  */
 export interface Sought {
-  /** The mix time it landed on. */
+  /** Mix time: where it landed. */
   readonly at: number;
   /**
    * The last frame it kept. A seek back lets go of every frame after it, so what a driver logged
@@ -532,7 +532,7 @@ export interface Sought {
  * @category mix
  */
 export interface AnnounceOptions {
-  /** A timestamp on the host's clock, which may lie ahead. Default now. */
+  /** Host time: a timestamp on the host's clock, which may lie ahead. Default now. */
   at?: number;
   /** The score the mark goes on. Default: the mix's one unnamed score. */
   score?: string;

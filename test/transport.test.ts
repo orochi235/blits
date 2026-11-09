@@ -58,6 +58,25 @@ describe('transport', () => {
     expect(runs.probe('r').chars).toBe(5);
   });
 
+  it('answers time, when, and timestamp as every mix on it does', () => {
+    const { t, orbs } = stage();
+    expect(t.timestamp).toBeNaN();
+    t.sync(1000);
+    t.rebase();
+    t.sync(1500);
+    t.ramp(0.5, 200);
+    t.sync(1600);
+    expect(t.timestamp).toBe(1600);
+    expect(t.timestamp).toBe(orbs.timestamp);
+    for (const ts of [1600, 1650, 1800, 2400]) {
+      expect(t.time(ts)).toBe(orbs.time(ts));
+      expect(t.when(t.time(ts))).toBeCloseTo(ts, 9);
+    }
+    expect(t.time(1600)).toBe(t.now);
+    t.rate = 0;
+    expect(t.when(t.now + 1)).toBe(Number.POSITIVE_INFINITY);
+  });
+
   it('throws when a mix on it is moved by itself', () => {
     const { orbs } = stage();
     expect(() => orbs.sync(0)).toThrow(/transport/);

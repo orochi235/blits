@@ -1,5 +1,5 @@
 import { Frames } from './frames.js';
-import { listedAll } from './marks.js';
+import { hostOf, listedAll, readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { move, nextFrame, waits } from './move.js';
 import { listen } from './onseek.js';
@@ -335,6 +335,18 @@ export class Transport implements TransportApi {
     const history = this.history;
     if (history === undefined) return Number.POSITIVE_INFINITY;
     return this.pager === null ? this.now - history.ms : Number.NEGATIVE_INFINITY;
+  }
+
+  get timestamp(): number {
+    return this.last;
+  }
+
+  time(timestamp: number): number {
+    return readingAt(this, timestamp - this.offset);
+  }
+
+  when(time: number): number {
+    return hostOf(this, time);
   }
 
   get rate(): number {

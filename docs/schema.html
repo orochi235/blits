@@ -163,7 +163,7 @@
   <h1>An effects schema, and the API around it</h1>
   <p class="lede">A small runtime package for concurrent effects. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per subject per frame by rules that belong to the channel, not the effect.</p>
   <p class="meta"><b>For:</b> whoever builds <code>blits</code>, and whoever ports klieg, wod, sherpa or magicsmoke onto it. <b>Answers:</b> what the vocabulary is, what an author writes, what a host calls, and where a second engine would plug in. The package implements this page; where the two differ, the code in <code>src/</code> is the one that runs.</p>
-  <span class="status">Built · v0.14.0 · design 2026-09-15, package 2026-09-28</span>
+  <span class="status">Built · v1.2.0 · design 2026-09-15, package 2026-09-28</span>
 </header>
 
 <h2 id="picture">In one picture</h2>
@@ -484,6 +484,9 @@ interface VoiceSpec&lt;I, O, H = unknown&gt; extends SpanHints {
   from?: 'current';
   <span class="cm">/** Words a source attaches to its voices, so their events and handles can be taken as a set. */</span>
   tags?: readonly string[];
+  <span class="cm">/** The track it plays on: the row a tool drawing the score puts it on, carried onto its marks and hits. A
+     label blits never reads; without one, a voice is a track of its own. */</span>
+  track?: string;
   <span class="cm">// score</span>
   <span class="cm">/** What other voices call this one by. A label blits never reads. */</span>
   name?: string;
@@ -514,7 +517,8 @@ interface Handle&lt;I = unknown&gt; {
   readonly state: 'pending' | 'live' | 'frozen' | 'fading' | 'done';
   <span class="cm">/** The owner's handle, for a voice an owner holds. */</span>
   readonly owner: Handle&lt;I&gt; | undefined;
-  <span class="cm">/** Live. A write shows at the next probe. */</span>
+  <span class="cm">/** Live. A write shows at the next probe. On a voice weighted by a signal the signal alone weighs it, and a
+     write changes nothing (outside production it warns once). */</span>
   weight: number;
   <span class="cm">/** Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. Below 0 plays backward. On a
      voice still pending, a rate or a ramp applies from the voice's start. */</span>
@@ -524,6 +528,9 @@ interface Handle&lt;I = unknown&gt; {
      where it was. Answers how sure that leaves it, as `assess` does. Mix time is not addressable this way,
      and nothing outside this voice moves. A voice still pending starts on time, already at `elapsed`. */</span>
   seek(elapsed: number, opts?: { state?: 'rebuild' | 'keep' }): 'exact' | 'stepped' | 'held';
+  <span class="cm">/** Where the voice's clock is now, in voice ms: what `seek` moves, counting every pass of a loop. A voice still
+     pending reads where it will start; NaN once done, and while a history store holds it. */</span>
+  readonly elapsed: number;
   <span class="cm">/** Moves the rate to `rate` linearly over `over` mix ms. The voice clock integrates it, so speed eases too. */</span>
   ramp(rate: number, over: number): void;
   <span class="cm">/** Ramps out over `fade.out` unless given a fade here; `at: 'rest'` waits per subject for a resting pose first.
@@ -533,7 +540,7 @@ interface Handle&lt;I = unknown&gt; {
      ms for the whole curve (default its `fade.in`, else its `fade.out`), and plays on as if never faded. A fade
      waiting for rest is taken back at once; a voice not fading is left as it is. A voice faded before its start
      goes back to `pending` and starts on time. */</span>
-  rise(opts?: { over?: number }): void;
+  rise(opts?: RiseOptions): void;              <span class="cm">// RiseOptions: { over?: number }</span>
   <span class="cm">/** The weight this voice gave `subject` the last frame it was probed: after fades and its signal, before a
      role folds it. 0 where it gave none. One number on a record the mix keeps anyway, so free unasked. */</span>
   weightOf(subject: I): number;
@@ -582,6 +589,8 @@ interface MixOptions&lt;H = unknown&gt; {
   host?: H;
   <span class="cm">/** The band a rest-less channel's contribution switches across. Default on above 0 and off at 0: no band. */</span>
   band?: { on: number; off: number };
+  <span class="cm">/** Tags that act as roles: a voice carrying one folds with the others carrying it, as if its `role` named it. */</span>
+  roles?: readonly string[];
   <span class="cm">/** The most `dt` a step or signal is handed, however long the gap. Off by default. */</span>
   maxDt?: number;
   <span class="cm">/** Run every `step` once per interval of this many ms instead of once by the frame's gap. Off by default. */</span>
@@ -591,6 +600,8 @@ interface MixOptions&lt;H = unknown&gt; {
              revive?(d: Described): VoiceSpec };
   <span class="cm">/** A subject's key for a history `store`, where subjects are objects. */</span>
   keyOf?(subject: never): string | number;
+  <span class="cm">/** What a debugger calls a subject (see `watched`); where it gives nothing, the subject's own `name` or `id`. */</span>
+  labelOf?(subject: never): string | undefined;
   <span class="cm">/** Whether a channel may run as a lane. On by default; the pose is the same either way, apart from
      a stateless patch's `send` from `at` and a patch that starts keeping state partway through. */</span>
   lanes?: boolean;
@@ -611,12 +622,14 @@ interface Mix&lt;I, O, H = unknown&gt; {
      alternatives. Two patches crossfade; more make stops. The signal is read once per subject per
      frame, and every member takes its share of that reading. One spec cues them all; a member given as
      `{ patch, name?, tags?, hits? }` carries those labels in place of the spec's. */</span>
-  blend(members: readonly (Patch&lt;I, O, any, H&gt; | BlendMember&lt;I, O, H&gt;)[], by: Signal&lt;I, H&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O, H&gt;, 'patch' | 'weight' | 'role'&gt;): Handle&lt;I&gt;[];
+  blend(members: readonly (Patch&lt;I, O, any, H&gt; | BlendMember&lt;I, O, H&gt;)[], by: Signal&lt;I, H&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O, H&gt;, 'patch' | 'weight' | 'role' | 'locus' | 'within'&gt;): Handle&lt;I&gt;[];
   <span class="cm">/** An owner: a voice with no patch that plays the voices cued with `owner: handle` on its own clock. See Score. */</span>
   owns(spec: OwnerSpec&lt;I, H&gt;): Handle&lt;I&gt;;
   <span class="cm">/** A span: an owner that lays out the voices it holds in `order` and fits them into its `duration`. Its handle
      also carries `result`, how the last fit came out. See Score. */</span>
   span(spec: SpanSpec&lt;I, H&gt;): SpanHandle&lt;I&gt;;
+  <span class="cm">/** An arc: an owner holding `enter`, then `active` for the `hold`, then `exit`, handing over on its clock. See Score. */</span>
+  arc(spec: ArcSpec&lt;I, O, H&gt;): ArcHandle&lt;I&gt;;
 
   <span class="cm">/** The host reports the clock, once a frame. Nothing advances at the call: it publishes the reading, and
      each subject catches up by the whole gap the first time it is probed afterward. The same timestamp twice
@@ -628,6 +641,10 @@ interface Mix&lt;I, O, H = unknown&gt; {
   rate: number;
   <span class="cm">/** Moves the mix's rate to `rate` linearly over `over` ms of the host's clock. */</span>
   ramp(rate: number, over: number): void;
+  <span class="cm">/** The mix time the clock will read at host `timestamp`, by the rate and any ramp in force at the last sync. */</span>
+  time(timestamp: number): number;
+  <span class="cm">/** The host timestamp at which the clock reads mix time `time`, the inverse of `time`; Infinity where it stops short. */</span>
+  when(time: number): number;
   <span class="cm">/** The merged pose for one subject at the synced frame, written into `out` when given; without it each call
      makes a new object. An array `out` already holds for a channel is written in place where it is the channel's
      length: for a `vec` channel, a `quat` on a lane, and a `color` that averages in OKLab or is on a lane. A host
@@ -645,13 +662,17 @@ interface Mix&lt;I, O, H = unknown&gt; {
   atRest(subject: I): boolean;
   <span class="cm">/** The mix clock at the last sync or seek, which `seek` and `project` take; NaN before the first sync. */</span>
   readonly now: number;
-  <span class="cm">/** The host's timestamp at the last sync; NaN before the first. */</span>
+  <span class="cm">/** Host time: the host's timestamp at the last sync; NaN before the first. */</span>
   readonly timestamp: number;
+  <span class="cm">/** Mix time played by syncs since the mix began, never going back: a seek or `rebase` adds nothing. */</span>
+  readonly played: number;
   <span class="cm">/** The number of the frame being played, higher with each sync and seek, which `{ frame }` takes. */</span>
   readonly seq: number;
   <span class="cm">/** The mix read at another mix time, or at a frame by its number, without moving it: ahead plays what is cued
      forward, behind needs `history` unless every voice still plays as it was cued. */</span>
   project(at: number | { frame: number }): Projection&lt;I, O&gt;;
+  <span class="cm">/** The mix read from mix time `from` to `to` without moving it, each numeric channel as a run of lines. See Time. */</span>
+  trace(from: number, to: number, opts?: { grid?: number; bends?: boolean }): Trace&lt;I, O&gt;;
   <span class="cm">/** Moves the mix to a mix time, or to a frame by its number, under `history` with a `tape`, and plays on from
      there, making the host's recorded calls again as it passes them. See Score. */</span>
   seek(to: number | { frame: number }): void;
@@ -684,6 +705,8 @@ interface Mix&lt;I, O, H = unknown&gt; {
   <span class="cm">/** A driver's own call: makes `fn` now and keeps it on the tape, so the mix makes it again wherever it
      plays the host's calls again. A host call like any other, branching the tape; a read ahead skips it. */</span>
   call(label: string, fn: () =&gt; void): void;
+  <span class="cm">/** Takes the mix off the list debuggers read (see `watched`). It still plays if synced. */</span>
+  close(): void;
   <span class="cm">/** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */</span>
   mute(opts?: { over?: number }): void;
   <span class="cm">/** Forgets per-subject state, a motion patch's included, and the subject's plotted position. Call when a subject is retired, or let the WeakMap do it. */</span>
@@ -838,7 +861,7 @@ t.to(node, 40);              <span class="cm">// from wherever it is, over a ful
   <li><b>A spring or a glide settles.</b> Within <code>settle</code> (1e-4) of where it heads, and that slow, it lands there exactly, so <code>atRest</code> sees it. <code>settle: 0</code> keeps the curve exact. A tween needs none: it lands on its target exactly at <code>ms</code>.</li>
   <li><b>The state is the patch's own</b>, per subject, rather than the mix's, because the host retargets through the patch, or through <code>handle.to</code>, <code>push</code>, and <code>read</code>, which reach it. Cue each one on one voice. A patch moves every subject on the same number of axes, and throws on a subject, a <code>to</code> or a <code>push</code> with another, leaving the subject as it was. Its values are the kind its channel holds, a number for a number and an array for an array: one every subject shares is refused at <code>cue</code>, one given per subject on that subject's first sample.</li>
   <li><b>The constants are data.</b> <code>patch.motion</code>, a <code>MotionSpec</code>, is <code>{ kind: 'spring', stiffness, damping, mass, settle }</code> or <code>{ kind: 'glide', ms, settle }</code> or <code>{ kind: 'tween', ms, ease }</code>, with <code>ms</code> undefined where it varies by subject, so an engine can run one without calling <code>at</code>. Where each subject starts and heads stays on the patch, since either may be a function of the subject.</li>
-  <li id="motion-oklch"><b>On an <code>ink</code> a motion goes round the hue.</b> Its stretch is solved in lightness, chroma and hue with coverage alongside, the color divided out of its coverage first, a color with none taking the other end&rsquo;s and a gray one the other end&rsquo;s hue, as the channel&rsquo;s <code>lerp</code> does. A tween reads as that <code>lerp</code> along its easing. A spring heads round the hue the short way from where its stretch starts, so a retarget bends the path rather than starting it over; a glide coasts round the hue, at the chroma it had, rather than off along a tangent. What the patch keeps, takes and reports, <code>from</code>, <code>to</code>, <code>velocity</code>, <code>push</code>, <code>set</code> and <code>read</code>, stays premultiplied OKLab. A glide with <code>bounds</code> is refused at <code>cue</code> there, since its bounds are a box on the OKLab axes. A motion on an <code>ink</code> moves <code>oklab()</code>On the default OKLab channel a motion moves straight across each axis, as before.</li>rsquo;s four numbers, which the channel widens as any contribution, and is refused values of any other length. On a <code>color</code> a motion moves straight across each axis.</li>
+  <li id="motion-oklch"><b>On an <code>ink</code> a motion goes round the hue.</b> Its stretch is solved in lightness, chroma and hue with coverage alongside, the color divided out of its coverage first, a color with none taking the other end&rsquo;s and a gray one the other end&rsquo;s hue, as the channel&rsquo;s <code>lerp</code> does. A tween reads as that <code>lerp</code> along its easing. A spring heads round the hue the short way from where its stretch starts, so a retarget bends the path rather than starting it over; a glide coasts round the hue, at the chroma it had, rather than off along a tangent. What the patch keeps, takes and reports, <code>from</code>, <code>to</code>, <code>velocity</code>, <code>push</code>, <code>set</code> and <code>read</code>, stays premultiplied OKLab. A glide with <code>bounds</code> is refused at <code>cue</code> there, since its bounds are a box on the OKLab axes. A motion on an <code>ink</code> moves <code>oklab()</code>&rsquo;s four numbers, which the channel widens as any contribution, and is refused values of any other length. On a <code>color</code> a motion moves straight across each axis.</li>
   <li><b>Handing motion between patches</b> is <code>read</code> on the old one and <code>from</code> plus <code>velocity</code> on the new: a fling that ends in a spring starts the spring at the glide's velocity.</li>
   <li><b>Another copy's motion is a motion.</b> Where two copies of the package are loaded together, as a library pinning its own brings, a motion patch either made plays on the other's mix as its own: on lanes, retargeted through the handle. They know one by a mark named for the release, so copies of two releases, whose motion state may differ in shape, keep apart, and a motion from the other plays through <code>at</code> off the lanes, as an <code>fn</code> patch does, reading the same; its handle's <code>to</code>, <code>push</code> and <code>read</code> refuse it, and the patch's own still work.</li>
 </ul>
@@ -991,7 +1014,7 @@ rail.cue({ patch: next, anchor: { start: { all: [
 ] } } });
 t.sync(now); <span class="cm">// once a frame, after the frame's cues</span></code></pre>
 <ul>
-  <li><b>One clock.</b> <code>t.sync</code>, <code>rebase</code>, <code>rate</code>, <code>ramp</code> and <code>seek</code> move every mix on it; a mix on a shared transport throws for its own, naming the transport. Probing, cueing and handles stay per mix.</li>
+  <li><b>One clock.</b> <code>t.sync</code>, <code>rebase</code>, <code>rate</code>, <code>ramp</code> and <code>seek</code> move every mix on it; a mix on a shared transport throws for its own, naming the transport. <code>t.time</code>, <code>t.when</code> and <code>t.timestamp</code> answer as every mix on it does. Probing, cueing and handles stay per mix.</li>
   <li><b>One score across mixes.</b> A query that names a <code>score</code> looks in every mix on the transport, and among the marks announced there; one that names none stays in its own mix, so two windows&rsquo; bare names never meet. <code>t.announce</code> takes a named score. Voice ids come from the transport, so resolvers order across mixes by cue and <code>marks</code> and <code>book</code> keys stay unique; <code>Marked.mix</code> names the mix a mark came from.</li>
   <li><b>Cue before sync.</b> A pending voice&rsquo;s anchor is answered again at every sync until it starts, so motion cued while it waits pushes it later. A voice cued after the sync that reached the anchor&rsquo;s time is cued after the start: a host cues a frame&rsquo;s voices before <code>t.sync</code>.</li>
   <li><b>Reading and waking.</b> <code>t.marks</code> lists every mix&rsquo;s; <code>t.project(time).of(mix)</code> reads every mix at once, so anchors across them answer, and a mix&rsquo;s own <code>project</code> does the same and returns its part. <code>t.inert</code> holds while every mix is inert, and <code>t.onWake</code> fires once a change in any mix needs frames.</li>
@@ -1191,7 +1214,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
 <p><code>watched()</code> is the engine side of a debugger; the site's mix page, &ldquo;Watching a mix&rdquo;, says what it does. The DevTools extension's own calls are in <code>apps/devtools/README.md</code>.</p>
 <ul>
   <li><b>Names</b>: <code>watched()</code>, <code>watch</code>, <code>hold</code> and <code>free</code> (2026-10-19).</li>
-  <li><b>A hold's rate scales the host's frame gaps</b> on a host timeline of its own, so the mix plays at the hold's rate times its own. It never writes the transport's rate: an earlier cut that did broke seeking back while paused, and left the hold's rate behind after <code>free</code>. <code>step(ms)</code> is in mix time (2026-10-19).</li>
+  <li><b>A hold's rate scales the host's frame gaps</b> on a host timeline of its own, so the mix plays at the hold's rate times its own. It never writes the transport's rate: an earlier cut that did broke seeking back while paused, and left the hold's rate behind after <code>free</code>. <code>step(ms)</code> is in mix time (2026-10-19). Its <code>seek</code> takes a mix time or <code>{ frame }</code>, as the mix&rsquo;s does (2026-11-09).</li>
   <li><b><code>free</code> takes the held time out of the clock</b>, as <code>rebase</code> does, so the mix resumes where the hold left it, not where the host's clock says (2026-10-19).</li>
   <li><b>No branches</b>: while held behind the tape's last call, the host's own calls act on the mix but go unrecorded, so the calls ahead still play. The spec had <code>free</code> switch branches back, which comes to the same thing with more machinery (2026-10-19).</li>
   <li><b>Mixes register from the public factories</b> (<code>mixer.create</code>, <code>lean.create</code>, and <code>transport()</code> for its history default), never from the <code>Mixer</code> constructor, which projections call. Custom engines don't register (2026-10-19).</li>

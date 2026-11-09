@@ -130,6 +130,7 @@ export type {
   Query,
   Registry,
   RegistryChange,
+  RiseOptions,
   Run,
   SeekOptions,
   Sent,

@@ -2,8 +2,9 @@ import { retime } from './clock.js';
 import { type Motion, motionOf, type Value } from './motion.js';
 import { leave } from './origin.js';
 import { rewriting } from './spans.js';
-import type { Doubt, FadeOptions, FitResult, Handle, SeekOptions } from './types.js';
+import type { Doubt, FadeOptions, FitResult, Handle, RiseOptions, SeekOptions } from './types.js';
 import type { Voice } from './voice.js';
+import { warnOnce } from './warn.js';
 
 /** What a voice's handle asks of the mix that cued it: one per mix, shared by every handle. */
 export interface HandleHost<I, O> {
@@ -19,7 +20,7 @@ export interface HandleHost<I, O> {
    */
   sought(voice: Voice<I, O>, rebuild: boolean, ahead: boolean): Doubt;
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
-  rise(voice: Voice<I, O>, opts: { over?: number } | undefined): void;
+  rise(voice: Voice<I, O>, opts: RiseOptions | undefined): void;
   release(voice: Voice<I, O>): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
   /**
@@ -121,6 +122,11 @@ export class VoiceHandle<I, O> implements Handle<I> {
     plainWeight(w);
     const voice = this.#cued;
     if (voice === null) return;
+    if (typeof voice.spec.weight === 'function')
+      warnOnce(
+        voice.spec.weight,
+        `${voice.spec.name ?? `voice ${voice.id}`} is weighted by a signal, which a weight write does not change`,
+      );
     voice.written = true;
     voice.weight = w;
     this.#host.changed(voice);
@@ -201,7 +207,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (this.#host.taping()) this.#host.record(this, 'fade', (h) => h.fade(opts));
   }
 
-  rise(opts?: { over?: number }): void {
+  rise(opts?: RiseOptions): void {
     const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;

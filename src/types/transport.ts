@@ -18,6 +18,7 @@ export interface TransportOptions {
  * @category mix
  */
 export interface TransportProjection {
+  /** Mix time: the time every mix is read at, not a host timestamp. */
   readonly timestamp: number;
   of<I, O, H>(mix: Mix<I, O, H>): Projection<I, O>;
 }
@@ -50,7 +51,20 @@ export interface Transport {
    * `history.ms` of mix time passes, after which the time needs `prepare` again.
    */
   prepare(time: number): Promise<void>;
+  /**
+   * As `Mix.time`: the mix time the clock will read at host `timestamp`, by the rate and any ramp
+   * in force at the last sync. Every mix on it reads the same.
+   */
+  time(timestamp: number): number;
+  /**
+   * As `Mix.when`: the host timestamp at which the clock reads mix time `time`, and Infinity where
+   * it stops short of it. Meant for times at or after `now`.
+   */
+  when(time: number): number;
+  /** The mix time at the last sync or seek; NaN before the first. */
   readonly now: number;
+  /** Host time: the host's timestamp at the last sync; NaN before the first. */
+  readonly timestamp: number;
   /** As `Mix.seq`, the number of the frame being played. It is the same for every mix on it. */
   readonly seq: number;
   readonly tape: Tape | undefined;

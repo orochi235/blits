@@ -127,6 +127,7 @@ export interface TapeBranch {
   /** Its first entry's id, which `switchBranch` takes. */
   id: number;
   label: string;
+  /** Host time its first call was made at, less what {@link Mix.rebase | `rebase`} took out. */
   timestamp: number;
   /** How many entries run along it from here. */
   length: number;

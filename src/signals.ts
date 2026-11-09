@@ -171,7 +171,7 @@ export interface SlewOptions {
  */
 export function slew<I, H = unknown>(
   of: Signal<I, H>,
-  { riseMs = 0, fallMs = 0, from }: SlewOptions,
+  { riseMs = 0, fallMs = 0, from }: SlewOptions = {},
 ): Signal<I, H> {
   const read = (subject: I, setting: Setting<void, H>): number => {
     const target = of(subject, setting);
@@ -223,7 +223,7 @@ export interface LagOptions {
  */
 export function lag<I, H = unknown>(
   of: Signal<I, H>,
-  { riseMs = 0, fallMs = 0, floor = 1e-6, from }: LagOptions,
+  { riseMs = 0, fallMs = 0, floor = 1e-6, from }: LagOptions = {},
 ): Signal<I, H> {
   const read = (subject: I, setting: Setting<void, H>): number => {
     const target = of(subject, setting);

@@ -350,6 +350,21 @@ describe('an owner’s hits', () => {
     expect(hits().map((h) => h.event)).toEqual(['cymbal']);
   });
 
+  it('carries an owner’s track onto its hits and its marks', () => {
+    const { m, run, took } = booked();
+    const o = m.owns({ track: 'drums', hits: [{ at: 50, event: 'cymbal' }] });
+    cue(m, { owner: o, start: 0 });
+    run(0, 100);
+    const own = m.marks(0, 1000).filter((k) => k.voice === o.id);
+    expect(own.length).toBeGreaterThan(0);
+    for (const k of own) expect(k.track).toBe('drums');
+    run(100, 600);
+    const ownHits = took
+      .map((t) => t.item)
+      .filter((i): i is BookedHit => 'hit' in i && i.voice === o.id);
+    expect(ownHits.map((h) => [h.event, h.track])).toEqual([['cymbal', 'drums']]);
+  });
+
   it('books none past where it leaves', () => {
     const { m, run, hits } = booked();
     const o = m.owns({ hits: [{ at: 600, event: 'late' }] });

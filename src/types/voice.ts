@@ -299,6 +299,8 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   tags?: readonly string[];
   /** What other voices call it by, among its siblings. */
   name?: string;
+  /** The track it plays on, as a voice's {@link VoiceSpec.track | `track`}. A label blits never reads. */
+  track?: string;
   /** The plan it belongs to, as a voice's. */
   score?: string;
   /**
@@ -389,7 +391,7 @@ export interface VoiceFade {
   /** The ramp, ms. Defaults to the voice's own `fade.out`. */
   over?: number;
   /**
-   * When the fade begins, as a mix time or `'rest'`. A mix time: ahead, the voice plays untouched until then and begins
+   * Mix time the fade begins at, or `'rest'`. A mix time: ahead, the voice plays untouched until then and begins
    * its fade exactly there, its `out` mark fixed from now, and {@link Handle.rise | `rise`} before then takes it
    * back with nothing changed; at or behind now, the fade began then and is partway. `'rest'`:
    * leave per subject at the first frame that subject's contribution is at rest. Default now.
@@ -398,6 +400,16 @@ export interface VoiceFade {
   /** Ms after which the voice leaves whether or not it rested. */
   deadline?: number;
   subject?: never;
+}
+
+/**
+ * What {@link Handle.rise | `rise`} takes.
+ *
+ * @category blending
+ */
+export interface RiseOptions {
+  /** Ms for the whole curve back up. Defaults to the voice's own `fade.in`, else its `fade.out`. */
+  over?: number;
 }
 
 /**
@@ -433,6 +445,9 @@ export interface Handle<I = unknown> {
   readonly owner: Handle<I> | undefined;
   /**
    * The voice's weight now, which can be written while it plays. A write shows at the next probe.
+   * On a voice whose {@link VoiceSpec.weight | `weight`} is a signal, the signal alone weighs it:
+   * this reads 1 until written, and a write is kept here but changes nothing on screen (outside
+   * production it warns once). To steer such a voice, set the signal's input, such as a `level`.
    */
   weight: number;
   /**
@@ -476,7 +491,7 @@ export interface Handle<I = unknown> {
    * is left as it is. A voice whose own end began the fade starts it again at its next frame. A
    * voice faded before its start goes back to `pending` and starts on time.
    */
-  rise(opts?: { over?: number }): void;
+  rise(opts?: RiseOptions): void;
   /**
    * The weight this voice gave `subject` the last frame that subject was probed. That is after its
    * fades and its weight signal, before a role folds it with its alternatives. 0 for a subject it does

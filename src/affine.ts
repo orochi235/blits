@@ -106,7 +106,8 @@ export function affine(): Channel<Vec<6>> {
 }
 
 /**
- * The parts of a 2D transform, any left out changing nothing. Angles are in radians.
+ * The parts of a 2D transform, any left out changing nothing. Angles are in radians, where `angle`
+ * defaults to degrees.
  *
  * @category channel
  */

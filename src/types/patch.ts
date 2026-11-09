@@ -23,7 +23,7 @@ export type Easing =
  * @category patch
  */
 export interface Keyframe<O> {
-  /** Phase, 0..1. */
+  /** Phase, 0..1, not ms. */
   at: number;
   delta: Partial<O>;
   ease?: Easing;
@@ -38,8 +38,8 @@ export interface Keyframe<O> {
  */
 export interface Setting<S = void, H = unknown> {
   /**
-   * The mix clock at this frame. The host's timestamp less any time {@link Mix.rebase | `rebase`} took out, run at the
-   * mix's {@link Mix.rate | `rate`}. Identical for every probe in the frame.
+   * Mix time at this frame, not a host timestamp: the host's timestamp less any time {@link Mix.rebase | `rebase`} took
+   * out, run at the mix's {@link Mix.rate | `rate`}. Identical for every probe in the frame.
    */
   readonly timestamp: number;
   /**
@@ -89,7 +89,7 @@ export interface Setting<S = void, H = unknown> {
  * @category state
  */
 export interface Sent<I, E = unknown> {
-  /** The mix clock when it was sent. */
+  /** Mix time when it was sent, not a host timestamp. */
   timestamp: number;
   subject: I;
   /** The id of the voice whose patch sent it, as its handle reports. */

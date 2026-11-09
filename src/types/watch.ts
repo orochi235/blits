@@ -123,7 +123,7 @@ export interface WatchedFrame<I, O> {
   seq: number;
   /** The mix clock the frame stood at. */
   now: number;
-  /** The host's timestamp at the frame's sync. */
+  /** Host time: the host's timestamp at the frame's sync. */
   timestamp: number;
   /** Each probe, in order, with a copy of the pose it returned. */
   probed: Probed<I, O>[];
@@ -173,8 +173,11 @@ export interface Hold {
   readonly reach: number;
   /** How much of each of the host's frames the held mix plays; 0 pauses it. Starts at 0. */
   rate: number;
-  /** Moves the mixes to mix time `to`, back within `reach` or ahead. */
-  seek(to: number): void;
+  /**
+   * Moves the mixes to mix time `to`, back within `reach` or ahead, or to the frame `{ frame }`
+   * names, as `Mix.seek` takes it.
+   */
+  seek(to: number | { readonly frame: number }): void;
   /** Plays the mixes `ms` of mix time further on, in one frame. */
   step(ms: number): void;
   /**
