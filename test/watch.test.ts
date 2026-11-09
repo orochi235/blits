@@ -288,6 +288,18 @@ describe('holding', () => {
     h.free();
   });
 
+  it('seeks to a frame by its number, as the mix does', () => {
+    const { m, e } = setup();
+    m.sync(100);
+    const frame = m.seq;
+    m.sync(300);
+    const h = e.hold();
+    h.seek({ frame });
+    expect(m.now).toBe(100);
+    expect(m.probe(a).x).toBe(100);
+    h.free();
+  });
+
   it('records nothing it does on the tape', () => {
     const { m, e } = setup();
     const t = m.tape as NonNullable<typeof m.tape>;

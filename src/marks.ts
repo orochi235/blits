@@ -26,14 +26,17 @@ export function checkMarks(marks: Readonly<Record<string, number>>, duration: nu
   }
 }
 
+/** What answers for a mix clock: a transport, or a mix on one. */
+type Clocked = Pick<Transport, 'pace' | 'offset'>;
+
 /** The host timestamp the mix clock reads mix time `t` at; Infinity where it never will. */
-export function hostOf<I, O>(mix: Mixer<I, O>, t: number): number {
-  return (mix.pace === null ? t : mix.pace.timeOf(t)) + mix.offset;
+export function hostOf(clock: Clocked, t: number): number {
+  return (clock.pace === null ? t : clock.pace.timeOf(t)) + clock.offset;
 }
 
 /** What the mix clock reads at host time `u`, by the clock in force then. */
-export function readingAt<I, O>(mix: Mixer<I, O>, u: number): number {
-  return mix.pace === null ? u : mix.pace.reading(u);
+export function readingAt(clock: Clocked, u: number): number {
+  return clock.pace === null ? u : clock.pace.reading(u);
 }
 
 /** Every mark between two host timestamps, earliest first, with the order that tells each apart. */
