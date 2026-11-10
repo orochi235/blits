@@ -7,7 +7,7 @@ import { reading } from './reading.js';
 import type { VoiceSetting } from './setting.js';
 import { last } from './sorted.js';
 import type { Subject } from './subject.js';
-import type { Setting, Signal } from './types.js';
+import type { Setting } from './types.js';
 import type { Voice } from './voice.js';
 
 /**
@@ -123,9 +123,7 @@ export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: 
   primed[Primed.ELAPSED] = owner.elapsedAt(now);
   primed[Primed.PASS] = 0;
   this.prime(owner, held);
-  this.sending.voice = owner;
-  this.sending.subject = subject;
-  const read = signalRead(this, owner, subject, now, held, -1);
+  const read = this.base(owner, subject, now, held, -1, false);
   reading.kept = kept;
   held.stepped = now;
   held.probed = this.frame;
@@ -164,7 +162,8 @@ export function weighOwned<I, O>(
 
 /**
  * A voice's weight for a subject before its fade and ramp: its own number, times its signal's read
- * where it has one. `slot` is the subject's number when lanes ask.
+ * where it has one, or the read alone where `scaled` is false. `slot` is the subject's number when
+ * lanes ask.
  */
 export function base<I, O>(
   this: Mixer<I, O>,
@@ -173,29 +172,19 @@ export function base<I, O>(
   now: number,
   held: Subject<unknown>,
   slot = -1,
+  scaled = true,
 ): number {
   this.sending.voice = voice;
   this.sending.subject = subject;
-  if (typeof voice.spec.weight !== 'function') return voice.weight;
-  return signalRead(this, voice, subject, now, held, slot) * voice.weight;
-}
-
-/** A voice's weight signal's read for a subject, or the read its recording replays. */
-function signalRead<I, O>(
-  mix: Mixer<I, O>,
-  voice: Voice<I, O>,
-  subject: I,
-  now: number,
-  held: Subject<unknown>,
-  slot: number,
-): number {
-  const signal = voice.spec.weight as Signal<I>;
+  const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
+  if (signal === null) return voice.weight;
+  // The read stays in this body: a helper returning it boxes the double, 16 B a read (`signal` row).
   const was = held.replay && last(held.replay, now, true);
   const read = was
     ? was.value
     : voice.blend === null
       ? signal(subject, voice.setting as Setting)
-      : mix.blended(voice, subject, held, slot);
-  if (mix.keepsInputs && !was && signal.input) record(mix, voice, subject, held, read);
-  return read;
+      : this.blended(voice, subject, held, slot);
+  if (this.keepsInputs && !was && signal.input) record(this, voice, subject, held, read);
+  return scaled ? read * voice.weight : read;
 }
