@@ -840,6 +840,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - `submit.ts` writes each changed values range separately; `spanned()` (`gpu/mirrors.ts`) may
       apply there too. Unmeasured.
     - The `record` in history.ts and the one in tape.ts still share a name.
+    - Multiplying `handle.weight` into a weight signal (2026-11-09) left `signal` and `blend` at
+      10,000 subjects 1.2% and 3.0% slower than its base on a noisy node, within spread (U 8 and 7
+      of 25), with kB a frame unchanged (`bench/runs/2026-11-09-handle-weight-ab-fix.txt`).
+      Unconfirmed on a quiet node.
     - `redo` at 1,000 subjects and 32 voices read 2.4% slower after the audit on a quiet node
       (145.4 → 148.9 ms, ranges overlapping; `bench/runs/2026-11-09-audit-merged-check.txt`), and
       4.8% on a noisy one. Open measurement; every other row matched main.
