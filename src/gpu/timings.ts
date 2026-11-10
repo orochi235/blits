@@ -3,6 +3,7 @@ import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import { type Answer, type Answers, varies } from './answers.js';
 import { type Laid, lay, moved } from './lay.js';
+import { Origins } from './origins.js';
 import type { Entry } from './region.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
 import { NONE } from './wgsl/timing.js';
@@ -77,11 +78,12 @@ class Block {
     }
     this.early = new Uint8Array(n);
     this.shown = new Float64Array(n);
+    const at = new Origins(mix, voice);
     for (let i = 0; i < n; i++) {
-      const since = mix.sinceOf(voice, delays[i] as number);
+      const since = at.since(delays[i] as number);
       this.early[i] = since <= now ? 0 : 1;
       this.listed += this.early[i] as number;
-      this.shown[i] = mix.shownOf(voice, since);
+      this.shown[i] = at.shown(since);
     }
     this.lay(now);
   }
@@ -94,15 +96,16 @@ class Block {
     const { early, shown } = this;
     const delays = this.answer.delays;
     if (early === null || shown === null || delays === null || this.listed === 0) return;
+    const at = new Origins(mix, this.voice);
     for (let i = 0; i < early.length; i++) {
       if (early[i] === 0) continue;
-      const s = mix.sinceOf(this.voice, delays[i] as number);
+      const s = at.since(delays[i] as number);
       // A motion voice's record stays listed until read past its origin, which the GPU never does.
       if (this.voice.motion === undefined && s <= now) {
         early[i] = 0;
         this.listed--;
       }
-      shown[i] = mix.shownOf(this.voice, s);
+      shown[i] = at.shown(s);
       this.stale = true;
     }
   }

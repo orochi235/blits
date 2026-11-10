@@ -29,6 +29,7 @@ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
   }
   this.lastPoses.delete(subject);
   this.restStamps?.delete(subject);
+  if (chained !== undefined) this.chained--;
   this.chains.delete(subject);
   this.stir();
   // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
