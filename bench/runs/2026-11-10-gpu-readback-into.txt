@@ -27,3 +27,27 @@
 # Measured: handing the arrays back leaves no frame over 16.7 ms and takes the median from 3.3 to 1.8 ms.
 # A read given no array is 3% slower at the median (3.24/3.25 to 3.34/3.38): each mapping is copied into
 # a reused array, then sliced for it, and had 19 and 19 frames over against 17 and 11.
+#
+# 2. A read given no array, copied straight into its own: at ee60817d, a mapping a read handed no array
+#    is already waiting on goes straight into that read's array, and later reads copy from it.
+#      MIX=readback ROWS=gpuread:1000000,gpuinto:1000000 FRAMES=300 WARM=30 \
+#        bench/gpu-ab.sh 556bf116 bench/gpu-readback.mjs bench/runs/ab/readback-bare     (teitou)
+#    Raw records: 2026-11-10-gpu-readback-bare-{a1,b1,b2,a2}.jsonl.
+# == a1
+#  1/2 gpuread readback  1000000  median     3.310 ms  p95    24.190 ms  max    53.115 ms at frame    40  frames 300  wall    2.6 s
+#  2/2 gpuinto readback  1000000  median     1.865 ms  p95     2.080 ms  max     5.940 ms at frame   135  frames 300  wall    1.4 s
+# == b1
+#  1/2 gpuread readback  1000000  median     2.775 ms  p95    22.275 ms  max    47.305 ms at frame   303  frames 300  wall    2.2 s
+#  2/2 gpuinto readback  1000000  median     1.755 ms  p95     1.960 ms  max     5.005 ms at frame   226  frames 300  wall    1.2 s
+# == b2
+#  1/2 gpuread readback  1000000  median     2.755 ms  p95    18.775 ms  max    60.685 ms at frame   304  frames 300  wall    2.3 s
+#  2/2 gpuinto readback  1000000  median     1.775 ms  p95     2.020 ms  max     6.195 ms at frame   174  frames 300  wall    1.4 s
+# == a2
+#  1/2 gpuread readback  1000000  median     3.275 ms  p95    17.495 ms  max    88.795 ms at frame    67  frames 300  wall    2.5 s
+#  2/2 gpuinto readback  1000000  median     1.750 ms  p95     1.975 ms  max     6.275 ms at frame   137  frames 300  wall    1.4 s
+# Frames over 16.7 ms:   a1        b1        b2        a2
+#   gpuread              17 534.7  19 527.4  18 512.5  15 482.0
+#   gpuinto               0   0.0   0   0.0   0   0.0   0   0.0
+# Measured: a read given no array falls from 3.29 to 2.77 ms at the median, under part 1's fce27081 (3.24),
+# since it now copies once and no longer slices a mapped range. Its spikes are the GC's, unchanged;
+# gpuinto is unchanged.
