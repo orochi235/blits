@@ -61,6 +61,10 @@ interface PackedVoice {
   parts: [Key, number, number, number][];
   /** With the ramp that took the subject out; absent from a store written before a voice kept it. */
   parted: [Key, number, number, Parting?][];
+  /** Subjects met inside their stagger and unread; absent from a store written before a voice kept them. */
+  met?: Key[] | null;
+  /** Those read since, with the frame; absent from a store written before a voice kept them. */
+  metRead?: [Key, number][] | null;
 }
 
 /**
@@ -188,6 +192,8 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     parted: [...(voice.parted ?? [])].map(([s, p]) =>
       p.ramp === undefined ? [keys.key(s), p.at, p.seq] : [keys.key(s), p.at, p.seq, p.ramp],
     ),
+    met: voice.met?.map((s) => keys.key(s)) ?? null,
+    metRead: voice.metRead?.map((e) => [keys.key(e.subject), e.seq]) ?? null,
   };
 }
 
@@ -258,6 +264,8 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
         { at, seq, ramp: ramp ?? undefined },
       ]),
     );
+  voice.met = d.met?.map(subjectOf) ?? null;
+  voice.metRead = d.metRead?.map(([key, seq]) => ({ subject: subjectOf(key), seq })) ?? null;
   const h = mix.outs?.take(id) as VoiceHandle<I, O> | undefined;
   if (h === undefined) voice.handle = handle(mix, voice);
   else {

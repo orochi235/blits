@@ -323,9 +323,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      the latest write wins, so it ends running forward at the fit's rate (pinned by "a span held
      by a span keeps the retiming" in `test/stress-findings.test.ts`). What turns on it: whether
      a seek replays the fits as playing through would, or keeps what the host last set.
-   - **A voice paged out to a history store loses its `met` and `metRead`**, so a seek past memory
-     to while it played may find the mix inert when a subject met inside its stagger was not yet
-     read; untested.
 
 3. **What is still slow.** Lanes, `pull`, `tween`, subject fades, a voice per node and crowds are
    built (the schema page's Lanes and motion sections, the changelog's 0.8.0 section); Mike set the

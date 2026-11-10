@@ -2,7 +2,7 @@ import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
-import { spring } from '../src/motion.js';
+import { spring, tween } from '../src/motion.js';
 import { HistoryMiss } from '../src/paging.js';
 import { patch } from '../src/patch.js';
 import { peak, slew } from '../src/signals.js';
@@ -39,6 +39,11 @@ function build(d: Described): VoiceSpec<Part, Pose> {
       return { patch: wave, weight: data.w, loop: false, fade: { in: 50, out: 50 } };
     case 'spring':
       return { patch: spring<Part, Pose>('x', { from: 0, to: 100 }) };
+    case 'staggered':
+      return {
+        patch: tween<Part, Pose>('x', { from: 0, to: 1, ms: 100, ease: 'linear' }),
+        stagger: () => 200,
+      };
     default:
       return {
         patch: patch<Part, Pose, { x: number }>(0, (_p, _s, st) => ({ x: st.state.x }), {
@@ -176,4 +181,29 @@ describe('voices paged out with a descriptor', () => {
     t.seek(240);
     expect([...probes(one), ...probes(two)]).toEqual(seen.get(240));
   });
+
+  // A motion subject met inside its stagger has no run until it is read once the stagger runs out,
+  // so the mix is not inert until then; a voice paged out has to come back knowing which those are.
+  for (const readFirst of [false, true])
+    it(`come back knowing which subjects met inside their stagger are still unread${readFirst ? ', read after the moment sought' : ''}`, async () => {
+      const m = mix<Part, Pose>(K, opts());
+      let h: Handle<Part> | undefined;
+      for (const t of every(0, 1200, 10)) {
+        m.sync(t);
+        if (t === 0) h = cue(m, { kind: 'staggered', data: {} }).h;
+        if (t === 10) m.probe(a);
+        if (readFirst && t === 350) m.probe(a);
+        if (t === 400) h?.fade({ over: 0 });
+      }
+      expect(gone(m)).toBe(0);
+      await m.prepare(300);
+      m.seek(300);
+      m.sync(1210);
+      expect(m.inert).toBe(false);
+      m.probe(a);
+      m.sync(1310);
+      m.probe(a);
+      m.sync(1400);
+      expect(m.inert).toBe(true);
+    });
 });

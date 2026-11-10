@@ -30,6 +30,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A seek through a history store back to while a staggered motion voice played finds the mix awake
+  while a subject met inside its stagger is still unread. The voice came back from the store not
+  knowing those subjects, so the mix read as inert before the subject moved.
 - A frame where voices naming the same many subjects start or end costs far less: at 1M subjects
   on the gpu engine, 11–15 ms where a scene of three starts and under 5 ms where one ends, from
   95–137 and 45–73 ms.
