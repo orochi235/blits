@@ -94,7 +94,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       // A blend member after the first takes the read already made, with no setting to fill.
       const read = voice.blend === null ? Number.NaN : mix.laneRead(voice, slot);
       if (!Number.isNaN(read)) {
-        arg[Arg.WEIGHT] = read;
+        arg[Arg.WEIGHT] = read * voice.weight;
         return;
       }
       mix.primeLaned(voice, held, arg);

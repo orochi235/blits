@@ -34,6 +34,7 @@ export function unreadOf<I>(
     const owned = own
       ? mix.envelope(voice, now, origins?.[row] ?? Number.NaN) * weigh.owned
       : weigh.faded;
-    return silent(voice, weighed(reads?.[row] ?? weigh.base, owned, 1));
+    const read = reads?.[row];
+    return silent(voice, weighed(read === undefined ? weigh.base : read * weigh.base, owned, 1));
   };
 }

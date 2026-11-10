@@ -517,8 +517,8 @@ interface Handle&lt;I = unknown&gt; {
   readonly state: 'pending' | 'live' | 'frozen' | 'fading' | 'done';
   <span class="cm">/** The owner's handle, for a voice an owner holds. */</span>
   readonly owner: Handle&lt;I&gt; | undefined;
-  <span class="cm">/** Live. A write shows at the next probe. On a voice weighted by a signal the signal alone weighs it, and a
-     write changes nothing (outside production it warns once). */</span>
+  <span class="cm">/** Live. A write shows at the next probe. On a voice weighted by a signal it reads 1 until written, and is
+     multiplied into the signal's read for every subject. */</span>
   weight: number;
   <span class="cm">/** Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. Below 0 plays backward. On a
      voice still pending, a rate or a ramp applies from the voice's start. */</span>

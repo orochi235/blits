@@ -7,7 +7,7 @@ import { reading } from './reading.js';
 import type { VoiceSetting } from './setting.js';
 import { last } from './sorted.js';
 import type { Subject } from './subject.js';
-import type { Setting } from './types.js';
+import type { Setting, Signal } from './types.js';
 import type { Voice } from './voice.js';
 
 /**
@@ -107,13 +107,14 @@ export function ownedBy<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, subject: I)
 }
 
 /**
- * An owner's signal read for a subject, once a frame: kept on the owner's record for it, which
- * no fold links, in `phase`, with the frame it was read in `probed`.
+ * An owner's signal read for a subject, once a frame, times its own number: the read is kept on
+ * the owner's record for it, which no fold links, in `phase`, with the frame it was read in
+ * `probed`, so a write to the owner's weight shows within the frame.
  */
 export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: I): number {
   const now = this.now;
   const held = this.held(owner, subject, -1);
-  if (held.probed === this.frame) return held.phase;
+  if (held.probed === this.frame) return held.phase * owner.weight;
   const kept = reading.kept;
   // An owner's record keeps a frame in `probed`, not a time, so `prime` leaves its `stepped` be.
   held.probed = Number.NaN;
@@ -122,12 +123,14 @@ export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: 
   primed[Primed.ELAPSED] = owner.elapsedAt(now);
   primed[Primed.PASS] = 0;
   this.prime(owner, held);
-  const base = this.base(owner, subject, now, held);
+  this.sending.voice = owner;
+  this.sending.subject = subject;
+  const read = signalRead(this, owner, subject, now, held, -1);
   reading.kept = kept;
   held.stepped = now;
   held.probed = this.frame;
-  held.phase = base;
-  return base;
+  held.phase = read;
+  return read * owner.weight;
 }
 
 /** The weight a voice gives a subject this frame, with the setting already filled in. */
@@ -160,8 +163,8 @@ export function weighOwned<I, O>(
 }
 
 /**
- * A voice's weight for a subject before its fade and ramp: its signal's, or its own number.
- * `slot` is the subject's number when lanes ask.
+ * A voice's weight for a subject before its fade and ramp: its own number, times its signal's read
+ * where it has one. `slot` is the subject's number when lanes ask.
  */
 export function base<I, O>(
   this: Mixer<I, O>,
@@ -173,14 +176,26 @@ export function base<I, O>(
 ): number {
   this.sending.voice = voice;
   this.sending.subject = subject;
-  const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-  if (signal === null) return voice.weight;
+  if (typeof voice.spec.weight !== 'function') return voice.weight;
+  return signalRead(this, voice, subject, now, held, slot) * voice.weight;
+}
+
+/** A voice's weight signal's read for a subject, or the read its recording replays. */
+function signalRead<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  now: number,
+  held: Subject<unknown>,
+  slot: number,
+): number {
+  const signal = voice.spec.weight as Signal<I>;
   const was = held.replay && last(held.replay, now, true);
-  const base = was
+  const read = was
     ? was.value
     : voice.blend === null
       ? signal(subject, voice.setting as Setting)
-      : this.blended(voice, subject, held, slot);
-  if (this.keepsInputs && !was && signal.input) record(this, voice, subject, held, base);
-  return base;
+      : mix.blended(voice, subject, held, slot);
+  if (mix.keepsInputs && !was && signal.input) record(mix, voice, subject, held, read);
+  return read;
 }

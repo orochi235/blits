@@ -837,8 +837,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       `hosts.ts`'s fade dispatch, which throws for `at: 'rest'` on an owner.
     - `blend` copies only `name`, `tags`, and `hits` off a member (`mixer.ts`), so `BlendMember`
       takes no `marks` or `track`.
-    - `handle.weight` stays inert under a weight signal (it now warns): multiplying it in means
-      changing the gpu's `baseOf` (`src/gpu/weight.ts`) and about eight CPU readers together.
     - `submit.ts` writes each changed values range separately; `spanned()` (`gpu/mirrors.ts`) may
       apply there too. Unmeasured.
     - The `record` in history.ts and the one in tape.ts still share a name.

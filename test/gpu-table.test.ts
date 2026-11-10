@@ -5,6 +5,7 @@ import { mixerOf } from '../src/gpu/engine.js';
 import { Regions } from '../src/gpu/region.js';
 import { Col, ROW, type Slot, voiceTable } from '../src/gpu/table.js';
 import { Timings } from '../src/gpu/timings.js';
+import { unreadOf } from '../src/gpu/unread.js';
 import { weighsOf } from '../src/gpu/weight.js';
 import { Flag, NONE } from '../src/gpu/wgsl/timing.js';
 import { level, mix } from '../src/index.js';
@@ -244,6 +245,35 @@ describe('voice table', () => {
     expect(t.rows[Col.WEIGHT]).toBe(0.25);
     const plain = tableOf(mixer, voices, [{ runner: 0, values: 0, sub: 0 }]);
     expect(new Uint32Array(plain.rows.buffer)[Col.WEIGHTS]).toBe(NONE);
+  });
+
+  it("carries a handle's written weight into a per-subject row and its unread check", () => {
+    const m = mix<C, P>(K);
+    m.sync(0);
+    const h = m.cue({ patch: wave, subjects: cells, weight: (c: C) => c.x + 1, fade: { in: 400 } });
+    h.weight = 0.5;
+    m.sync(100);
+    const mixer = mixerOf(m);
+    const voices = [...mixer.cued];
+    const t = tableOf(mixer, voices, [{ runner: 0, values: 0, sub: 0, weights: 64 }]);
+    expect(t.rows[Col.WEIGHT]).toBe(0.125);
+    const cell = cells[1] as C;
+    m.probe(cell);
+    expect(Math.min(1, (t.rows[Col.WEIGHT] as number) * (cell.x + 1))).toBeCloseTo(
+      h.weightOf(cell),
+      6,
+    );
+    const answers = new Answers<C>(mixer as unknown as Mixer<C, unknown>);
+    answers.register(cells);
+    const reads = new Float32Array([1, 2]);
+    const voice = voices[0] as Voice<C, unknown>;
+    const unread = () =>
+      [0, 1].map(
+        unreadOf(mixer as unknown as Mixer<C, unknown>, voice, answers, new Timings(), reads),
+      );
+    expect(unread()).toEqual([false, false]);
+    h.weight = 0;
+    expect(unread()).toEqual([true, true]);
   });
 
   it("keeps a staggered row's weight unclamped where reads multiply in", () => {
