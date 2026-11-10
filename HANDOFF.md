@@ -845,8 +845,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - `redo` at 1,000 subjects and 32 voices read 2.4% slower after the audit on a quiet node
       (145.4 → 148.9 ms, ranges overlapping; `bench/runs/2026-11-09-audit-merged-check.txt`), and
       4.8% on a noisy one. Open measurement; every other row matched main.
-    - quarks, tone, and rapier each wrap `mix.cue` to cue on their own subject, with three error
-      messages; one engine helper would serve all three.
+    - quarks, tone, and rapier call the engine's `bind` (named 2026-11-09), so their peer ranges
+      must rise to the engine release that carries it; each package's Unreleased changelog says so.
 
 ## Loose ends
 
