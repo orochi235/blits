@@ -1,0 +1,22 @@
+# teitou, 2026-11-09: FRAMES=300 node bench/frame.mjs <row>, at ee211d4b with temporary counters in pullRun (not committed), printed as PR on exit
+# calls: pullRun calls past its ready check; empty: calls gathering no subject; subj: subjects gathered;
+# unprobed: calls before the frame's first probe; rising/fallback: of those, how many counted at once or walked lastStamped
+== turnover^
+ 1/1  turnover^  N= 10000 V=1     0.246 ms/frame     25 ns/subject·voice  p50    0.237  p99    0.298  worst    1.580  first    40.8 ms  gc    2    1.6 ms     189.3 kB/frame
+PR {"calls":10659,"empty":10001,"subj":3289341,"unprobed":330,"fallback":328,"rising":2,"notReady":0,"unprobedSubj":1644996}
+== tweens^
+ 1/1  tweens^    N= 10000 V=1     0.203 ms/frame     20 ns/subject·voice  p50    0.201  p99    0.234  worst    0.248  first    46.6 ms  gc    0    0.0 ms      19.7 kB/frame
+PR {"calls":10329,"empty":10000,"subj":3290000,"unprobed":330,"fallback":0,"rising":330,"notReady":0,"unprobedSubj":3290000}
+== weasel^
+ 1/1  weasel^    N= 10000 V=1     0.229 ms/frame     23 ns/subject·voice  p50    0.226  p99    0.260  worst    0.273  first    18.0 ms  gc    7    3.6 ms      10.5 kB/frame
+PR {"calls":10329,"empty":10000,"subj":3290000,"unprobed":330,"fallback":0,"rising":330,"notReady":0,"unprobedSubj":3290000}
+== deopts turnover^ (bench/deopts.sh, FRAMES=2000)
+== by function
+== by reason
+
+# msb-uai, 2026-11-09: the same, recording the first descent of each non-rising run: position, slot, the slot before, and slots around it
+ 1/1  turnover^  N= 10000 V=1     0.345 ms/frame     34 ns/subject·voice  p50    0.327  p99    0.516  worst    2.284  first    51.1 ms  gc    1    1.8 ms     212.5 kB/frame
+PR {"calls":10659,"empty":10001,"subj":3289341,"unprobed":330,"fallback":328,"rising":2,"notReady":0,"unprobedSubj":1644996,"at":1,"slot":1,"prev":9999,"near":[9999,1,2,3],"from":0,"len":10000}
+# FRAMES=3
+ 1/1  turnover^  N= 10000 V=1     0.323 ms/frame     32 ns/subject·voice  p50    0.321  p99    0.331  worst    0.331  first    47.9 ms  gc    0    0.0 ms     147.3 kB/frame
+PR {"calls":10065,"empty":10001,"subj":319935,"unprobed":33,"fallback":31,"rising":2,"notReady":0,"unprobedSubj":153313,"at":1,"slot":1,"prev":9999,"near":[9999,1,2,3],"from":0,"len":10000}

@@ -43,8 +43,10 @@ export function pullRun<I, O>(
   // The run being gathered: its first slot and row, and how far it has reached.
   let first = -1;
   let start = from;
-  // Whether every slot so far exceeds the one before it, so none repeats.
-  let rising = true;
+  // The span of the runs gathered before this one: while each run lies outside it, none repeats.
+  let lo = lanes.cap;
+  let hi = 0;
+  let apart = true;
   for (; n < list.length; n++) {
     const subject = list[n] as I;
     if (was[n] !== subject) break;
@@ -72,7 +74,10 @@ export function pullRun<I, O>(
     if (holds) subjects[slot] = subject;
     if (slot !== first + (n - start)) {
       if (first >= 0) {
-        if (slot < first + (n - start)) rising = false;
+        const end = first + (n - start);
+        if (end > lo && first < hi) apart = false;
+        if (first < lo) lo = first;
+        if (end > hi) hi = end;
         add(lanes, first, start, n - start);
       }
       first = slot;
@@ -80,7 +85,11 @@ export function pullRun<I, O>(
     }
   }
   if (first >= 0) add(lanes, first, start, n - start);
-  if (unprobed) lanes.distinct += rising ? n - from : lastStamped(per, slots, from, n, stamp);
+  if (unprobed)
+    lanes.distinct +=
+      apart && !(first + (n - start) > lo && first < hi)
+        ? n - from
+        : lastStamped(per, slots, from, n, stamp);
   if (n > from && holds) lanes.holding = true;
   return n;
 }
