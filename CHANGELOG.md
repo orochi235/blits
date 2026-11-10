@@ -20,6 +20,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `bind(mix, subject)` gives one subject its own `cue`, which takes no `subjects`, and a `drop` that
   cuts what it cued, then drops the subject from the mix. blits-quarks, blits-tone, and blits-rapier
   cue their emitters, sounds, and bodies through it.
+- `Mix.mute` takes what a whole-voice `Handle.fade` takes: `at`, a mix time or `'rest'`, and
+  `deadline`, beside `over`. Under `at: 'rest'` an owner fades at once with the other options,
+  since it never rests on its own.
 
 ### Fixed
 

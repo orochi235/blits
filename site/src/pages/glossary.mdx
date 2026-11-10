@@ -401,7 +401,7 @@ In depth: [Mix](../mix/). Reference: [`mix`](../mix/#api-mix), [`Mix`](../mix/#a
 
 ## `mute`
 
-`mix.mute()` fades every voice out at once: over `over` milliseconds when you pass it, or over each voice's own [`fade`](#fade) out otherwise. Once the last voice has gone, the mix is no longer live and the [host](#host) can stop its loop.
+`mix.mute()` fades every voice out at once: over `over` milliseconds when you pass it, or over each voice's own [`fade`](#fade) out otherwise. It takes `at` and `deadline` as a voice's fade does, so `mute({ at: 'rest' })` lets each voice leave once it rests. Once the last voice has gone, the mix is no longer live and the [host](#host) can stop its loop.
 
 ```ts
 dots.mute({ over: 500 });
