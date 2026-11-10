@@ -14,6 +14,8 @@ export class Named<I> {
   readonly delays: Map<I, number> | null = null;
   /** The same answers in `list` order; null for a voice with no stagger. */
   readonly ordered: Float64Array | null = null;
+  /** Whether every one of `ordered` is a finite number. */
+  readonly finite: boolean = true;
   /** The longest of `delays`, 0 at least, and the least, 0 at most: a voice's bounds at cue. */
   readonly latest: number = 0;
   readonly soonest: number = 0;
@@ -24,7 +26,7 @@ export class Named<I> {
       this.list = subjects.slice();
       this.set = null;
       if (stagger) [this.delays, this.ordered] = delaysOf(this.list, stagger);
-      [this.latest, this.soonest] = boundsOf(this.ordered);
+      [this.latest, this.soonest, this.finite] = boundsOf(this.ordered);
       return;
     }
     const list: I[] = [];
@@ -44,7 +46,7 @@ export class Named<I> {
     this.list = list.slice();
     this.set = set;
     if (stagger) [this.delays, this.ordered] = delaysOf(this.list, stagger);
-    [this.latest, this.soonest] = boundsOf(this.ordered);
+    [this.latest, this.soonest, this.finite] = boundsOf(this.ordered);
   }
 
   get size(): number {
@@ -71,14 +73,16 @@ function delaysOf<I>(
   return [delays, ordered];
 }
 
-function boundsOf(delays: Float64Array | null): [number, number] {
+function boundsOf(delays: Float64Array | null): [number, number, boolean] {
   let latest = 0;
   let soonest = 0;
+  let finite = true;
   for (const delay of delays ?? []) {
     if (delay > latest) latest = delay;
     if (delay < soonest) soonest = delay;
+    if (!Number.isFinite(delay)) finite = false;
   }
-  return [latest, soonest];
+  return [latest, soonest, finite];
 }
 
 /** Whether a short array names no subject twice, as `includes` compares; a long one says no. */
