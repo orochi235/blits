@@ -1,0 +1,116 @@
+# teitou (Apple M5 Max, apple metal-3), 2026-11-10, headless Chromium 153.0.8010.12, node v26.13.0, load 3.7-5.3
+# The frames where a voice naming 1M subjects starts or ends, in the owned gpu mix of
+# 2026-11-09-gpu-owned.txt (a program owner, four scenes 1250 ms apart, each cueing three voices
+# naming every subject), after the mix's named index files voices naming the same 1,024 or more
+# subjects by group. Base 556bf116 (main's source). Every gpu run: onto do --kind bench --gui --solo.
+#
+# What changed, from the profile in part 3 of 2026-11-09-gpu-owned.txt:
+#   - `Filed` (src/filed.ts) is the mix's index of the voices naming each subject. A voice naming
+#     fewer than 1,024 subjects is filed under each as before. One naming more joins a group of the
+#     voices naming the same list in the same order, which is filed under each subject once, so the
+#     voice joins or leaves its group with no work per subject. A group whose last voice leaves is
+#     taken off its subjects by `sweep`, each sync, at least 4,096 subjects or 1/256 of those left.
+#   - `changed` skips its walk of a naming voice's subjects where the mix has never linked a chain,
+#     as on the gpu engine, which has no chain to make stale.
+#   - A timing block works out a voice's start once and each distinct delay's origin once
+#     (src/gpu/origins.ts); `Answers` asks once per group whether a named list is the registered
+#     list, and takes a stagger's finiteness from `Named`, found at cue.
+#
+# 1. A/B at c7ee085e: a is 556bf116, b the tree.
+#      MIX=owned ROWS=gpu:1000000,gpu:100000 FRAMES=300 WARM=30 bench/gpu-ab.sh 556bf116 bench/gpu-reach.mjs <out>
+#    Raw records: 2026-11-10-gpu-owned-groups-ab-{a1,b1,b2,a2}.jsonl (a's say commit "unknown": built outside git).
+#
+# == a1
+#  1/2 gpu   owned     1000000  median     0.520 ms  p95     2.310 ms  max   136.720 ms at frame    75  frames 300  wall    2.4 s
+#  2/2 gpu   owned      100000  median     0.235 ms  p95     1.840 ms  max    16.625 ms at frame    75  frames 300  wall    0.3 s
+# == b1
+#  1/2 gpu   owned     1000000  median     0.375 ms  p95     1.195 ms  max   101.730 ms at frame   151  frames 300  wall    1.1 s
+#  2/2 gpu   owned      100000  median     0.215 ms  p95     0.445 ms  max     2.160 ms at frame    75  frames 300  wall    0.2 s
+# == b2
+#  1/2 gpu   owned     1000000  median     0.375 ms  p95     0.685 ms  max    14.925 ms at frame    75  frames 300  wall    1.1 s
+#  2/2 gpu   owned      100000  median     0.220 ms  p95     0.385 ms  max     2.270 ms at frame    75  frames 300  wall    0.2 s
+# == a2
+#  1/2 gpu   owned     1000000  median     0.485 ms  p95     2.390 ms  max   134.155 ms at frame    75  frames 300  wall    2.5 s
+#  2/2 gpu   owned      100000  median     0.230 ms  p95     1.225 ms  max    13.735 ms at frame    75  frames 300  wall    0.3 s
+#
+# The frames a scene starts in (75, 150, 225) and the eight a voice leaves in, at 1M
+# (ms: frame, sync, fold; one column of three per side):
+#                   a1                          b1                          b2                          a2
+#   frame  75   136.720   97.835   36.545     12.255    0.395    9.525     14.925    0.415   12.280    134.155   94.760   37.185
+#   frame  87    64.680   63.985    0.080      0.440    0.070    0.035      0.460    0.075    0.025     67.940   67.095    0.160
+#   frame 122    60.815   59.275    0.220      1.220    0.105    0.205      1.710    0.115    0.150     72.895   71.270    0.220
+#   frame 150   100.840   61.915   36.475     11.650    0.040    9.210     11.460    0.040    9.780    103.305   61.720   39.635
+#   frame 162    58.795   58.070    0.085      0.560    0.055    0.030      0.440    0.045    0.025     57.655   56.335    0.115
+#   frame 197    58.070   56.165    0.535      1.470    0.060    0.405      1.845    0.065    0.190     62.255   60.555    0.315
+#   frame 225    95.405   57.285   36.320     12.955    0.045   11.175     12.310    0.040   10.655    108.490   57.625   36.710
+#   frame 237    52.130   51.360    0.090      0.445    0.045    0.025      4.670    0.045    0.030     54.015   53.120    0.115
+#   frame 272    52.205   50.640    0.290      1.095    0.050    0.135      1.135    0.055    0.135     51.170   47.515    0.555
+#   frame 300    50.885   49.600    0.075      0.320    0.030    0.010      0.320    0.030    0.015     46.080   45.610    0.090
+#   frame 312    46.460   46.020    0.080      0.280    0.025    0.030      0.285    0.010    0.035     45.765   44.515    0.120
+#   in all        777.0                          42.7                          49.6                         803.7
+# At 100k the same frames took 83.3 and 70.7 ms in all (a), 8.2 and 8.7 (b); the start frames
+# 10.9-16.6 ms (a), 1.6-2.3 (b).
+# b1's frame 151 is 101.665 ms of waiting on `onSubmittedWorkDone`, as before's frame 225 was in
+# 2026-11-09-gpu-owned.txt; not this change's. No b frame's sync passed 0.42 ms.
+#
+# 2. Where the start frames' 11-15 ms goes. At 4809f73d (the groups, before `Answers` asked once
+#    per group): PROFILE=75,150 MIX=owned ROWS=gpu:1000000 FRAMES=300 WARM=30 node bench/gpu-reach.mjs
+#    Records: 2026-11-10-gpu-owned-groups-mid-prof.jsonl, -mid-f75.cpuprofile, -mid-f150.cpuprofile;
+#    its A/B against 556bf116, start frames 23-28 ms: -mid-ab-{a1,b1,b2,a2}.jsonl.
+# frame 75 (sampled at 100 µs, which roughly doubles a frame: read as shares):
+#    15.4 ms   src/gpu/answers.ts   `whole`'s loop finding whether every delay is finite
+#    12.5 ms   src/gpu/answers.ts   `inOrder`, a named list against the registered one, subject by subject
+#    11.2 ms   src/gpu/answers.ts   the call of `inOrder`
+#    20.7 ms   src/gpu/timings.ts   the timing block's loop over subjects, `Origins.since` and `shown`
+# c7ee085e took the first three out for all but the first voice of a group. What is left is inferred
+# to be the timing block and one `inOrder` per group; not profiled at c7ee085e.
+#
+# 3. The sweep, where the last voice of the group leaves (frame ~346), at c7ee085e, on studio
+#    (Apple M1 Max, node v26.8.1): MIX=owned ROWS=gpu:1000000 FRAMES=700 WARM=30 node bench/gpu-reach.mjs
+#    Records: 2026-11-10-gpu-owned-groups-700.jsonl; with PROFILE=463, -700-prof.jsonl and -700-f463.cpuprofile.
+#  1/1 gpu   owned     1000000  median     0.695 ms  p95     2.030 ms  max    63.420 ms at frame    75  frames 700  wall    2.6 s
+# From frame 350 to 590 each sync spends 0.45 ms falling to 0.05 on the sweep; after it, 0.00. One frame,
+# 463, took 17.7 ms, 16.7 of it in the sync, and its profile puts all of it in the sweep's line, at
+# a budget of 4,096 subjects. Inferred, not measured: the subjects' WeakMap shrinking as its last
+# entries go, a rehash of the whole table.
+#
+# 4. Decided against (2026-11-10): marking each leaving voice gone and sweeping it off its subjects a
+#    share each sync, at fd449857. It took the sync-only frames away, but the sweep, at least 8,192
+#    subjects or 1/64 of those left each sync, ran through every frame from the first voice leaving:
+#      == a1  1000000  median 0.595 ms  p95 1.590 ms  max 146.815 ms
+#      == b1  1000000  median 2.875 ms  p95 7.690 ms  max 110.960 ms
+#      == b2  1000000  median 2.855 ms  p95 6.485 ms  max  56.960 ms
+#      == a2  1000000  median 0.440 ms  p95 1.800 ms  max 122.740 ms
+#    Each subject costs one lookup whether the voice leaves at once or later, and here twelve voices
+#    leave in under six seconds, so a share small enough to leave the median alone never caught up.
+#    Records: 2026-11-10-gpu-owned-groups-swept-ab-{a1,b1,b2,a2}.jsonl, -swept-cpu-ab.txt.
+#
+# 5. The CPU frame bench, a is 556bf116, b c7ee085e, each row in a process of its own, three rounds:
+#      AB_EACH=1 bench/ab.sh 556bf116 c7ee085e 3 named rest kept mixed churn churn^ turnover^ tweens^ swap back redo
+#    Full output: 2026-11-10-gpu-owned-groups-cpu-ab.txt. ms a frame, each round:
+#   named     100 1   a  0.018  0.018  0.019    b  0.018  0.018  0.019
+#   named    1000 1   a  0.105  0.178  0.179    b  0.107  0.112  0.107
+#   named   10000 1   a  1.192  1.213  1.235    b  1.246  2.588  1.597
+#   rest    10000 2   a  1.045  1.086  1.056    b  1.088  1.099  1.051
+#   kept     1000 3   a  0.400  0.412  0.398    b  0.394  0.430  0.422
+#   kept    10000 3   a  6.729  6.768  4.560    b  5.978  6.738  6.191
+#   mixed   10000 1   a  1.256  1.019  1.287    b  1.030  1.872  1.035
+#   churn   10000 1   a  0.644  0.638  0.667    b  0.659  0.712  0.652
+#   churn^  10000 1   a  0.211  0.214  0.218    b  0.224  0.225  0.228
+#   turnover^ 10000 1 a  0.232  0.234  0.233    b  0.241  0.247  0.244
+#   tweens^ 10000 1   a  0.189  0.193  0.190    b  0.193  0.200  0.194
+#   swap    10000 1   a  1.625  1.588  1.578    b  1.558  1.871  1.576
+#   back     1000 3   a  0.981  0.802  0.988    b  0.965  1.010  0.798
+#   redo     1000 8   a 16.572 16.580 16.586    b 16.376 18.005 16.214
+#   redo     1000 32  a 99.464 101.623 99.952   b 103.739 103.368 97.698
+#    churn^ and turnover^ came out 4-5% slower in every round, so they were run again, five rounds
+#    (2026-11-10-gpu-owned-groups-cpu-recheck.txt):
+#   churn^  10000 1   a  0.216  0.213  0.214  0.215  0.222    b  0.229  0.215  0.223  0.218  0.213
+#   turnover^ 10000 1 a  0.231  0.234  0.234  0.237  0.230    b  0.251  0.234  0.235  0.232  0.233
+#   tweens^ 10000 1   a  0.191  0.193  0.206  0.199  0.193    b  0.200  0.191  0.192  0.192  0.191
+#    Inside the spread on the recheck. No CPU bench row names 1,024 subjects, so none files a group.
+#
+# Measured: the frames a voice leaves in went from 45-73 ms to 0.3-4.7 at 1M, and the frames a scene
+# starts in from 95-137 ms to 11-15; at 100k, from 11-17 ms to under 2.3 at most. The median at 1M
+# went from 0.49-0.52 ms to 0.375. The work per subject that is left is the timing block and one
+# list comparison per group as a scene starts, and the sweep once a group's last voice leaves.

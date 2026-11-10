@@ -817,11 +817,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       3.36 ms, `bench/runs/2026-11-10-gpu-readback-into.txt`): each mapping is copied into a reused
       array and then sliced, two copies where there was one. Skipping the reused array where no read
       hands one in would need knowing that before the mapping ends.
-    - **A frame where a voice naming 1M subjects starts or ends still costs 28–155 ms on the gpu
-      engine** (cut about 45% 2026-11-09; `bench/runs/2026-11-09-gpu-owned.txt`): one WeakMap
-      lookup per named subject in `unfile` as a voice leaves and in `changed` as one changes,
-      `originOf`, and the timings `Block`. Going further means the named index stops being per subject, such as
-      dropping a voice from it lazily.
+    - **A frame where a scene of voices naming 1M subjects starts still costs 11–15 ms on the gpu
+      engine**, and one where a voice ends 0.3–4.7 ms (from 95–137 and 45–73, 2026-11-10;
+      `bench/runs/2026-11-10-gpu-owned-groups.txt`), now that voices naming the same 1,024 or more
+      subjects share one entry per subject in `Filed`. What is left: the timing `Block` per subject
+      and one `inOrder` per group as a scene starts; a voice naming a list no other names still
+      costs a lookup per subject as it joins, and its group's sweep after it leaves (at most
+      max(4,096, 1/256 of what is left) subjects a sync, 0.05–0.45 ms at 1M), and one 17 ms frame
+      at 1M in that sweep, inferred to be the WeakMap shrinking. Under `history` the gone index
+      (`src/gone.ts`) still files and unfiles each leaving voice per subject. churn^ and turnover^
+      read 4–5% slower in a three-round A/B and inside the spread on a five-round recheck.
     - At 1M subjects a motion voice's re-anchor, every 2^14 ms of voice time, still costs one
       6.6 ms frame against a 0.4 ms median (`bench/runs/2026-11-03-gpu-anchor-after.jsonl`), most
       of it uploading every row's new time.
