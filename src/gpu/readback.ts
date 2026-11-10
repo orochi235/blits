@@ -96,6 +96,8 @@ interface Shot<I> {
   values: Float32Array | null;
   /** Reads still taking the values. */
   takers: number;
+  /** Of `takers`, those handed no array. */
+  bare: number;
   held: boolean;
   /** The read handed out to reads given no array, made at the first. */
   fresh: GpuRead<I> | null;
@@ -193,8 +195,11 @@ export class Readback<I> {
     }
     const shot = h.shot;
     shot.takers++;
+    const bare = into === undefined;
+    if (bare) shot.bare++;
     return h.done.then((mapped) => {
       shot.takers--;
+      if (bare) shot.bare--;
       const values = shot.values;
       const read = mapped && values !== null ? this.take(shot, values, into) : null;
       this.release(shot);
@@ -225,6 +230,8 @@ export class Readback<I> {
   /** Gives a shot's array back for the next copy, once nothing holds or takes it. */
   private release(shot: Shot<I>): void {
     if (shot.held || shot.takers > 0 || shot.values === null) return;
+    // A shot copied straight into its fresh read's array has none of the readback's to give back.
+    if (shot.fresh !== null && shot.fresh.values === shot.values) return void (shot.values = null);
     const spare = this.spare.get(shot.name) ?? [];
     if (!this.closed && spare.length < SPARE) spare.push(shot.values);
     this.spare.set(shot.name, spare);
@@ -302,6 +309,7 @@ export class Readback<I> {
         meta: { axes: p.axes, now, timestamp, subjects },
         values: null,
         takers: 0,
+        bare: 0,
         held: true,
         fresh: null,
       }),
@@ -322,8 +330,15 @@ export class Readback<I> {
           parts.forEach((p, i) => {
             const shot = shots[i] as Shot<I>;
             if (!shot.held && shot.takers === 0) return;
+            const from = new Float32Array(range, p.at, p.bytes / 4);
+            if (shot.bare > 0) {
+              // A read handed no array is waiting: its array is the one copy, and the rest copy from it.
+              shot.fresh = { ...shot.meta, values: from.slice() };
+              shot.values = shot.fresh.values;
+              return;
+            }
             const values = this.array(p.name, p.bytes / 4);
-            values.set(new Float32Array(range, p.at, p.bytes / 4));
+            values.set(from);
             shot.values = values;
           });
           ok = true;

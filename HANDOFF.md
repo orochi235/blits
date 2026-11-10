@@ -853,9 +853,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       10,000 subjects 1.2% and 3.0% slower than its base on a noisy node, within spread (U 8 and 7
       of 25), with kB a frame unchanged (`bench/runs/2026-11-09-handle-weight-ab-fix.txt`).
       Unconfirmed on a quiet node.
-    - Two shortcuts miss a signal voice whose handle weight is 0: `gpu/eligible.ts` skips only a
-      number weight of 0, and `bound.ts`'s outside-the-bound check reads the raw signal. Both cost
-      work, not correctness.
+    - Decided against (2026-11-10): letting `gpu/eligible.ts` skip a signal voice whose handle
+      weight is 0. Nothing would then read a signal that keeps state per subject, so after the
+      weight rose it could read otherwise than on a CPU mix, which reads it at weight 0 too. The
+      matching check in `bound.ts` runs only outside production, every few frames.
     - `redo` at 1,000 subjects and 32 voices read 2.4% slower after the audit on a quiet node
       (145.4 → 148.9 ms, ranges overlapping; `bench/runs/2026-11-09-audit-merged-check.txt`), and
       4.8% on a noisy one. Open measurement; every other row matched main.
