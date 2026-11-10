@@ -486,8 +486,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      first probe it now counts `distinct` once a run (`bb450b2`, 2026-11-03; teitou, 9 rounds:
      `tweens^` 0.132 → 0.127, U = 6; `weasel^` 0.197 → 0.190, U = 9; `turnover^` 0.192 → 0.196,
      U = 14.5, and 0.202 → 0.207 on a second pass, U = 16; `bench/runs/2026-11-03-distinct-once.txt`,
-     `2026-11-03-branch-turnover.txt`). Why `turnover^` pays about 2% for it is unexplained: its
-     list stays in slot order, so the counting fallback (`lastStamped`) should not run.
+     `2026-11-03-branch-turnover.txt`). `turnover^` paid about 2% for it because its list does not
+     stay in slot order: position 0 holds slot 9999 for the whole run, so 328 of 330 frames walked
+     the fallback (`lastStamped`) over the first run, about half the list (measured with temporary
+     counters, `bench/runs/2026-11-09-pullrun-counts.txt`; no deopts). Inferred, not traced: the
+     bench's first churn drops subject 0, then frame 0 reads the original list, which numbers it
+     again into the slot it freed, so the subject moved into position 0 cannot take slot 0, and no
+     later frame retries the renumber. `pullRun` now counts at once whenever each run of
+     consecutive slots lies outside the span of the runs before it, not only when they rise
+     (`32a6142`, 2026-11-09; msb-uai, 9 rounds, 5,000 frames: `turnover^` 0.297 → 0.291, U = 0;
+     `tweens^` 0.206 → 0.205, U = 30.5; `weasel^` 0.260 either way;
+     `bench/runs/2026-11-09-run-span.txt`). Not changed: the bench's frame-0 read, which keeps
+     subject 0 numbered for the run and `turnover^`'s position 0 out of order; fixing it would move
+     the row's baseline.
    - **A landed shortcut for a lane** (`runMotion`, so `weasel^`) is built (`ec8888d`, 2026-11-03):
      a bare position seen landed keeps the voice time less delay it landed at in `Lane.landed`,
      which `remove` carries, and folds its `to` at any later one until it stops being bare.

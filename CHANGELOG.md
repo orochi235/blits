@@ -38,6 +38,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   for the whole mix, by the subject's chain, not a copy of the pose per subject per probe. A
   10,000-subject frame reads 20–24% faster and allocates about 1.25 MB less, through `probe` and
   `pull` alike.
+- A `pull` of a list holding a subject out of the order its subjects were first read in, such as
+  one a swap-remove moved, counts the frame's subjects at once rather than walking the list again,
+  where no subject is listed twice: a 10,000-subject frame that drops and cues a subject reads 2%
+  faster.
 
 ## 1.2.0
 
