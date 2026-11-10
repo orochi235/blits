@@ -132,6 +132,24 @@ describe('Answers', () => {
     expect(some.voice.asked).toBeNull();
   });
 
+  it('gives the same answers for a voice naming the registered list in its order as out of it', () => {
+    const list = cells(12);
+    const stagger = (c: C) => (c.i === 5 ? Number.POSITIVE_INFINITY : c.i * 3);
+    const answerOf = (subjects: C[]) => {
+      const s = setup({ subjects, stagger });
+      s.answers.register(list);
+      return s.answers.of(s.voice);
+    };
+    const same = answerOf(list);
+    const shuffled = answerOf([...list].reverse());
+    expect(same.reach).toBeNull();
+    expect(shuffled.reach).toBeNull();
+    expect([...(same.delays as Float64Array)]).toEqual(list.map(stagger));
+    expect(same.delays).toEqual(shuffled.delays);
+    expect(same.finite).toBe(false);
+    expect(shuffled.finite).toBe(false);
+  });
+
   it("leaves a never-probed staggered finite voice's end as mixer has it", () => {
     const list = cells(10);
     const spec = { loop: 2, target: () => true, stagger: (c: C) => c.i * 100 };

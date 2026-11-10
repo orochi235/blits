@@ -81,6 +81,7 @@ export class Answers<I> {
     const list = this.list;
     const n = list.length;
     const { named } = voice;
+    if (named !== null && inOrder(list, named.list)) return whole(named.ordered);
     const delays = voice.spec.stagger !== undefined ? new Float64Array(n) : null;
     const bits = new Uint32Array((n + 31) >>> 5);
     let all = true;
@@ -129,6 +130,21 @@ export class Answers<I> {
     known.set(s, answer);
     return answer;
   }
+}
+
+/** Whether `named` is `list`, subject for subject, as a host naming every subject it registered has it. */
+function inOrder<I>(list: readonly I[], named: readonly I[]): boolean {
+  const n = list.length;
+  if (named.length !== n) return false;
+  for (let i = 0; i < n; i++) if (list[i] !== named[i]) return false;
+  return true;
+}
+
+/** The answer of a voice naming every registered subject in order, delayed by `ordered`. */
+function whole(ordered: Float64Array | null): Answer {
+  let finite = true;
+  if (ordered !== null) for (const d of ordered) if (!Number.isFinite(d)) finite = false;
+  return { delays: ordered === null ? null : ordered.slice(), reach: null, finite };
 }
 
 /** The hook reading `answer` through `at`, the index its arrays were made by. */
