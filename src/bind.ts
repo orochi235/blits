@@ -1,6 +1,10 @@
 import type { Handle, Mix, VoiceSpec } from './types.js';
 
-/** A subject's own `cue` and `drop`, from {@link bind}. */
+/**
+ * A subject's own `cue` and `drop`, from {@link bind}.
+ *
+ * @category mix
+ */
 export interface Binding<I, O, H = unknown> {
   /** Cues a voice on this subject alone; the spec names no `subjects`. */
   cue(spec: Omit<VoiceSpec<I, O, H>, 'subjects'>): Handle<I>;
