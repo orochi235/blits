@@ -218,6 +218,66 @@ describe('fade', () => {
     await h.done;
     expect(h.state).toBe('done');
   });
+
+  it('mute with no options fades each voice over its own fade.out', () => {
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: holds('crawl', 100), fade: { out: 200 } });
+    m.sync(0);
+    m.probe(part);
+    m.mute();
+    m.sync(100);
+    expect(m.probe(part).crawl).toBeCloseTo(50, 9);
+    m.sync(200);
+    m.probe(part);
+    expect(m.live).toBe(false);
+  });
+
+  it("mute at: 'rest' leaves each voice at rest, and fades an owner at once", () => {
+    const settling = patch<Part, Pose>(
+      0,
+      (_phase, _p, setting) => ({ crawl: setting.timestamp >= 100 ? 0 : 10 }),
+      { writes: ['crawl'] },
+    );
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: settling });
+    const o = m.owns({});
+    m.cue({ patch: holds('crawl', 10), owner: o });
+    m.sync(0);
+    expect(m.probe(part).crawl).toBe(20);
+    m.mute({ at: 'rest', over: 100 });
+    m.sync(50);
+    expect(m.probe(part).crawl).toBeCloseTo(15, 9);
+    m.sync(100);
+    expect(m.probe(part).crawl).toBe(0);
+    m.sync(116);
+    expect(m.live).toBe(false);
+    expect(o.state).toBe('done');
+  });
+
+  it('mute honors a deadline for a voice that never rests', () => {
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: holds('crawl', 10) });
+    m.sync(0);
+    m.probe(part);
+    m.mute({ at: 'rest', deadline: 200 });
+    m.sync(100);
+    expect(m.probe(part).crawl).toBe(10);
+    m.sync(200);
+    m.probe(part);
+    expect(m.live).toBe(false);
+  });
+
+  it('mute at a mix time ahead plays every voice untouched until then', () => {
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: holds('crawl', 100) });
+    m.sync(0);
+    m.probe(part);
+    m.mute({ at: 100, over: 100 });
+    m.sync(50);
+    expect(m.probe(part).crawl).toBeCloseTo(100, 9);
+    m.sync(150);
+    expect(m.probe(part).crawl).toBeCloseTo(50, 9);
+  });
 });
 
 describe('handover at rest', () => {

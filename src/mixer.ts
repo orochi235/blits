@@ -12,7 +12,7 @@ import { DepartedIndex } from './departed.js';
 import { drop, dropIn, recordDrop, releaseIn } from './drop.js';
 import { DueQueue } from './due.js';
 import type { Share } from './everyone.js';
-import { beginFade, parting } from './fade.js';
+import { fadeVoice, parting } from './fade.js';
 import {
   apply,
   clamp,
@@ -85,6 +85,7 @@ import type {
   Tape,
   Trace,
   TraceOptions,
+  VoiceFade,
   VoiceSpec,
 } from './types.js';
 import { none, type Voice } from './voice.js';
@@ -626,10 +627,11 @@ export class Mixer<I, O> implements Mix<I, O> {
     unregister(this as unknown as Mixer<unknown, unknown>);
   }
 
-  mute(opts?: { over?: number }): void {
+  mute(opts?: VoiceFade): void {
+    const owners = opts?.at === 'rest' ? { ...opts, at: undefined } : opts;
     for (const voice of this.cued) {
       voice.written = true;
-      beginFade(this, voice, { over: opts?.over });
+      fadeVoice(this, voice, voice.holding === null ? opts : owners);
     }
     record(this, 'mute', (stage) => stage.mix(this)?.mute(opts));
   }

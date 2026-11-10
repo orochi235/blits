@@ -399,7 +399,7 @@ export interface VoiceFade {
    * leave per subject at the first frame that subject's contribution is at rest. Default now.
    */
   at?: number | 'rest';
-  /** Ms after which the voice leaves whether or not it rested. */
+  /** Under `at: 'rest'`, ms after which the voice leaves whether or not it rested. */
   deadline?: number;
   subject?: never;
 }

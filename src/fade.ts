@@ -12,8 +12,23 @@ import { isRested } from './record.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
 import type { Left, Parted, Parting, Subject } from './subject.js';
+import type { FadeOptions } from './types/voice.js';
 import { unreach } from './unreached.js';
 import type { Ramp, Voice } from './voice.js';
+
+/** Fades a voice, or one subject out of it, as `Handle.fade` takes its options. */
+export function fadeVoice<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  opts: FadeOptions<I> | undefined,
+): void {
+  if (voice.holding !== null && opts !== undefined && ('subject' in opts || opts.at === 'rest'))
+    throw new Error('blits: an owner fades as a whole, not by subject or at rest');
+  if (opts !== undefined && 'subject' in opts)
+    fadeSubject(mix, voice, opts.subject as I, opts.over);
+  else if (typeof opts?.at === 'number') fadeAt(mix, voice, opts.at, opts.over);
+  else beginFade(mix, voice, (opts ?? {}) as { over?: number; at?: 'rest'; deadline?: number });
+}
 
 /** Starts one subject's ramp out of a voice, or takes it out at once for a ramp of 0. */
 export function fadeSubject<I, O>(

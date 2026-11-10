@@ -833,8 +833,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       a `Hold`; the teardown verbs (tone's `cancel`, the panel's `dispose`, quarks' driver with none);
       rapier's `Body.drop` and `Body.drive` meaning other things than quarks' and tone's; the
       panel's `Source` and `wire` colliding with quarks'.
-    - `mute` takes only `{ over }`: honoring `at` and `deadline` means routing each voice through
-      `hosts.ts`'s fade dispatch, which throws for `at: 'rest'` on an owner.
     - `handle.weight` stays inert under a weight signal (it now warns): multiplying it in means
       changing the gpu's `baseOf` (`src/gpu/weight.ts`) and about eight CPU readers together.
     - `submit.ts` writes each changed values range separately; `spanned()` (`gpu/mirrors.ts`) may

@@ -12,6 +12,7 @@ import type {
   OwnerSpec,
   SpanHandle,
   SpanSpec,
+  VoiceFade,
   VoiceSpec,
 } from './voice.js';
 
@@ -420,8 +421,12 @@ export interface Mix<I, O, H = unknown> {
    * mix on its transport shares. It still plays if synced.
    */
   close(): void;
-  /** Fades every voice out. The ramp is `over` when given, else each voice's own `fade.out`. */
-  mute(opts?: { over?: number }): void;
+  /**
+   * Fades every voice out, each as {@link Handle.fade | `fade`} would with `opts`: the ramp is `over`
+   * when given, else each voice's own `fade.out`, and `at` and `deadline` mean what they do there.
+   * Under `at: 'rest'` an owner, which never rests, fades at once with the rest of `opts`.
+   */
+  mute(opts?: VoiceFade): void;
   /**
    * Forgets a subject's state, so nothing keeps the subject alive. That includes a motion patch's
    * state for the subject, and any fade of the subject out of a voice.
