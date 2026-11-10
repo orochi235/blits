@@ -721,7 +721,11 @@ interface Mix&lt;I, O, H = unknown&gt; {
   book&lt;E&gt;(opts: { clock: () =&gt; number; ahead: number; late: number; tag?: string; score?: string;
     take(item: Marked | BookedHit&lt;E, I&gt;, when: number, lateBy: number): { cancel(): void } | undefined }):
     { cancel(): void; at(timestamp: number): number };
-}</code></pre>
+}
+
+<span class="cm">/** A cue and a drop bound to one subject, as a companion's emitter, sound, or body cues on itself. `cue` takes no
+   `subjects` and throws after `drop`; `drop` cuts what it cued that still plays, then calls `mix.drop(subject)`. */</span>
+function bind&lt;I, O, H&gt;(mix: Mix&lt;I, O, H&gt;, subject: I): { cue(spec: Omit&lt;VoiceSpec&lt;I, O, H&gt;, 'subjects'&gt;): Handle&lt;I&gt;; drop(): void };</code></pre>
 
 <p>A probe walks the voices that may reach its subject, not every voice. With no <code>target</code> in the mix that is all of them, so nothing is kept; once a voice targets, each subject keeps the list of voices whose <code>target</code> took it, rebuilt when a voice is cued, starts or leaves. One voice per subject on a shared mix then costs one voice per probe: 1000 subjects, each with its own voice, took 95&nbsp;ms a frame before the list and 0.45&nbsp;ms after (<code>npm run bench</code>, rows <code>own</code>). Building the list still asks every <code>target</code> of every new subject, so the first frame of that scene took 500&ndash;580&nbsp;ms. A voice that names its subjects with <code>subjects</code> is filed under each of them at <code>cue</code>, and a subject's list is built from the voices filed under it and those that name none: the same scene's first frame took 1.0&nbsp;ms, and 10.6&nbsp;ms at 10,000 subjects (rows <code>named</code>).</p>
 

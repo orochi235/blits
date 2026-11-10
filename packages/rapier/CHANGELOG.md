@@ -8,6 +8,9 @@ section here.
 
 ### Changed
 
+- `Body.cue` and `Body.drive` cue through the engine's `bind`, so a spec naming `subjects` throws
+  the engine's message, prefixed `blits:`.
+- Needs `@msb235/blits` 1.3.0 or later, for `bind`: the peer range rises with the next engine release.
 - `channels2`, `channels3`, `kinematic2`, and `kinematic3` are typed as the engine's `Kit`, so their
   properties are `readonly`. They behave as before.
 

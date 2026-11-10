@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Changed
+
+- An emitter cues and drops through the engine's `bind`, so a cue naming `subjects` or made after
+  `drop` throws the engine's message, prefixed `blits:`.
+- Needs `@msb235/blits` 1.3.0 or later, for `bind`: the peer range rises with the next engine release.
+
 ## 0.17.2
 
 ### Changed

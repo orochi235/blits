@@ -1,4 +1,4 @@
-import type { Channel, Handle, Kit, Mix, VoiceSpec } from '@msb235/blits';
+import { bind, type Channel, type Handle, type Kit, type Mix, type VoiceSpec } from '@msb235/blits';
 import { Param, PolySynth, Signal, type Synth, ToneAudioNode } from 'tone';
 import type { Driven, Target } from './drive.js';
 
@@ -20,20 +20,20 @@ export interface Sound<N, I, O> {
 }
 
 /** What `wire` needs of the driver it belongs to. */
-export interface Bind<I, O> {
+export interface Host<I, O> {
   readonly mix: Mix<I, O>;
   readonly kit: Kit<O> | undefined;
   seconds(): number;
   /** Holds a target at `time`, s, as the driver does, and returns the time it held at. */
   hold(target: Target, time: number): number;
-  bind(subject: I, targets: Driven<O>[], release: () => void): void;
-  unbind(subject: I): void;
+  hook(subject: I, targets: Driven<O>[], release: () => void): void;
+  unhook(subject: I): void;
 }
 
 /** Each node some live sound wires, across every driver, to that sound: two would write the same parameters. */
 const wired = new WeakMap<object, object>();
 
-export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): Sound<N, I, O> {
+export function wire<I, O, N extends ToneAudioNode>(host: Host<I, O>, node: N): Sound<N, I, O> {
   if (!(node instanceof ToneAudioNode))
     throw new TypeError('blits-tone: wire takes a Tone node, and that is not a Tone node');
   const kit = host.kit;
@@ -53,18 +53,9 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
   }
 
   let dropped = false;
-  const cued = new Set<Handle<I>>();
   const sound: Sound<N, I, O> = {
     node,
-    cue(spec) {
-      if (dropped) throw new Error('blits-tone: that sound is dropped');
-      if ('subjects' in spec)
-        throw new Error('blits-tone: a sound names its own subject; cue it without `subjects`');
-      const h = host.mix.cue({ ...spec, subjects: [sound as unknown as I] } as VoiceSpec<I, O>);
-      cued.add(h);
-      void h.done.then(() => cued.delete(h));
-      return h;
-    },
+    cue: (spec) => self.cue(spec),
     copy() {
       const twin = remake(node);
       // `get()` reads each parameter as it plays now, voices included; the copy starts from the bases.
@@ -75,22 +66,22 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
     drop() {
       if (dropped) return;
       dropped = true;
-      for (const h of cued) h.fade({ over: 0 });
-      host.unbind(sound as unknown as I);
+      host.unhook(sound as unknown as I);
       const owner = wired.get(node);
       release();
       if (owner === undefined || owner === sound) {
         const time = host.seconds();
         for (const [, param, base] of bases) param.setValueAtTime(base, host.hold(param, time));
       }
-      host.mix.drop(sound as unknown as I);
+      self.drop();
     },
   };
+  const self = bind(host.mix, sound as unknown as I);
   // A sound detached, or whose driver was cancelled, may be dropped after another sound wired its node.
   const release = (): void => {
     if (wired.get(node) === sound) wired.delete(node);
   };
-  host.bind(sound as unknown as I, targets, release);
+  host.hook(sound as unknown as I, targets, release);
   wired.set(node, sound);
   return sound;
 }

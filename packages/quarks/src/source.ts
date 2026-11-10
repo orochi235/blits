@@ -1,4 +1,4 @@
-import type { Handle, Mix, VoiceSpec } from '@msb235/blits';
+import { type Binding, bind, type Handle, type Mix, type VoiceSpec } from '@msb235/blits';
 import { ParticleSystem } from 'three.quarks';
 import type { AttachOptions } from './drive.js';
 
@@ -50,36 +50,23 @@ export function wire<I, O>(host: Host<I, O>, system: ParticleSystem): Source<I, 
   const source: Source<I, O> = {
     system,
     at(position, opts) {
-      let dropped = false;
-      const cued = new Set<Handle<I>>();
+      let self: Binding<I, O> | undefined;
       const emitter: Emitter<I, O> = {
         source,
-        cue(spec) {
-          if (dropped) throw new Error('blits-quarks: that emitter is dropped');
-          if ('subjects' in spec)
-            throw new Error(
-              'blits-quarks: an emitter names its own subject; cue it without `subjects`',
-            );
-          const h = host.mix.cue({ ...spec, subjects: [emitter as unknown as I] } as VoiceSpec<
-            I,
-            O
-          >);
-          cued.add(h);
-          void h.done.then(() => cued.delete(h));
-          return h;
-        },
+        cue: (spec) => (self as Binding<I, O>).cue(spec),
         burst(n) {
           if (!dropped) host.burst(emitter as unknown as I, n);
         },
         drop() {
           if (dropped) return;
           dropped = true;
-          for (const h of cued) h.fade({ over: 0 });
           live.delete(emitter);
           host.detach(emitter as unknown as I);
-          host.mix.drop(emitter as unknown as I);
+          (self as Binding<I, O>).drop();
         },
       };
+      let dropped = false;
+      self = bind(host.mix, emitter as unknown as I);
       host.attach(emitter as unknown as I, system, { ...opts, at: position });
       live.add(emitter);
       return emitter;

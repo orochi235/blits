@@ -1,4 +1,4 @@
-import { bind } from './bound.js';
+import { confine } from './bound.js';
 import type { Mixer } from './mixer.js';
 import { Places } from './places.js';
 import { production } from './warn.js';
@@ -33,7 +33,7 @@ function placesOf<I, O>(mix: Mixer<I, O>): Places<I> {
   if (mix.places !== null) return mix.places;
   const places = new Places<I>((s) => mix.chains.get(s)?.slot ?? -1, !production());
   mix.places = places;
-  for (const voice of mix.cued) if (voice.bound === null) bind(mix, voice);
+  for (const voice of mix.cued) if (voice.bound === null) confine(mix, voice);
   return places;
 }
 

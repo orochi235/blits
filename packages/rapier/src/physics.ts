@@ -1,4 +1,5 @@
 import {
+  bind,
   type Handle,
   type HistoryStore,
   type Kit,
@@ -425,23 +426,18 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       call('add body', adding(key, desc, colliders));
       const controls = {};
       keys.set(controls, `controls ${key}`);
-      const own = (spec: Omit<VoiceSpec<object, O, H>, 'subjects'>, subject: object) => {
-        if ('subjects' in spec)
-          throw new Error('blits-rapier: a body cues on itself; its spec names no subjects');
-        return m.cue({ ...spec, subjects: [subject] } as VoiceSpec<object, O, H>);
-      };
       const body: Body<O, H> = {
         key,
         controls,
         simulated: undefined as unknown as Handle<object>,
         cue: (spec) => {
-          const h = own(spec, body);
+          const h = self.cue(spec);
           if (spec.role === ROLE) authored.set(body, [...(authored.get(body) ?? []), h]);
           return h;
         },
         drive: (spec) => {
           driven.add(body);
-          return own(spec, controls);
+          return steer.cue(spec);
         },
         impulse: (v) => {
           const copied = [...v];
@@ -449,6 +445,8 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         },
         drop: () => call('drop body', (at, seq) => ({ at, seq, key, kind: 'drop' })),
       };
+      const self = bind(m, body as object);
+      const steer = bind(m, controls);
       keys.set(body, `body ${key}`);
       (body as { simulated: Handle<object> }).simulated = m.cue({
         patch: simulated,

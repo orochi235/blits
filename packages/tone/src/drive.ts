@@ -2,7 +2,7 @@ import type { Bend, BookedHit, Kit, Marked, Mix, NumberChannel, Taken } from '@m
 import { immediate, Noise, Oscillator, PolySynth, Synth, type ToneAudioNode } from 'tone';
 import { hold as holdAt, ramp, set } from './held.js';
 import { lines } from './lines.js';
-import { type Bind, type Sound, wire } from './sound.js';
+import { type Host, type Sound, wire } from './sound.js';
 
 /** What the driver schedules on: a Tone `Param` or `Signal`, or a native `AudioParam`. */
 export interface Target {
@@ -123,17 +123,17 @@ export function drive<I, O, E = unknown>(
     return latest;
   };
 
-  const host: Bind<I, O> = {
+  const host: Host<I, O> = {
     mix,
     kit: opts.kit,
     seconds,
     hold: holdAt,
-    bind: (subject, targets, release) => {
+    hook: (subject, targets, release) => {
       if (done) throw new Error('blits-tone: that driver is cancelled');
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
       bound.set(subject, { targets, release });
     },
-    unbind: (subject) => bound.delete(subject),
+    unhook: (subject) => bound.delete(subject),
   };
 
   return {

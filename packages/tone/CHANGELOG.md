@@ -8,6 +8,9 @@ section here.
 
 ### Changed
 
+- A sound cues and drops through the engine's `bind`, so a cue naming `subjects` or made after
+  `drop` throws the engine's message, prefixed `blits:`.
+- Needs `@msb235/blits` 1.3.0 or later, for `bind`: the peer range rises with the next engine release.
 - `take` returns the engine's `Taken`, the same shape as before, and its doc gives `lateBy` in ms.
 
 ## 0.12.3

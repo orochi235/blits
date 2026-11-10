@@ -88,7 +88,7 @@ export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void
  * Bounds a voice just made to its cue's `within`, or to the circle its `around` weight carries once
  * the mix has indices. A carried circle is the signal's own edge, so it is not checked.
  */
-export function bind<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+export function confine<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   const spec = voice.spec;
   const own = carried(spec.weight);
   const area = spec.within ?? (own !== undefined && mix.places !== null ? own : undefined);

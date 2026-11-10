@@ -17,6 +17,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `Hold.seek` takes `{ frame }`, as `Mix.seek` and `Transport.seek` do.
 - An owner takes `track`, carried onto its marks and booked hits as a voice's is.
 - `RiseOptions`, the named options `Handle.rise` takes.
+- `bind(mix, subject)` gives one subject its own `cue`, which takes no `subjects`, and a `drop` that
+  cuts what it cued, then drops the subject from the mix. blits-quarks, blits-tone, and blits-rapier
+  cue their emitters, sounds, and bodies through it.
 
 ### Fixed
 

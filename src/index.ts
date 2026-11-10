@@ -1,5 +1,7 @@
 export type { MatrixParts } from './affine.js';
 export { affine, matrix, partsOf } from './affine.js';
+export type { Binding } from './bind.js';
+export { bind } from './bind.js';
 export type { BlendMode } from './blend-modes.js';
 export { add, blendMode, darken, lighten, multiply, screen } from './blend-modes.js';
 export type { LastOptions, NumberOptions, NumberTuple, Vec } from './channels.js';

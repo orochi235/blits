@@ -1,6 +1,6 @@
 import { type Blend, blendOf } from './blend.js';
 import { checkHits } from './book.js';
-import { bind, checkWithin } from './bound.js';
+import { checkWithin, confine } from './bound.js';
 import { changed } from './chain.js';
 import { copyable } from './clone.js';
 import { roundsHue } from './color.js';
@@ -85,7 +85,7 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
     voice.waking = true;
     mix.waking = true;
   }
-  bind(mix, voice);
+  confine(mix, voice);
   enter(mix, voice);
   const h = handle(mix, voice) as VoiceHandle<I, O>;
   voice.handle = h;
