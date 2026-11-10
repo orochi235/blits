@@ -94,14 +94,14 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       // A blend member after the first takes the read already made, with no setting to fill.
       const read = voice.blend === null ? Number.NaN : mix.laneRead(voice, slot);
       if (!Number.isNaN(read)) {
-        arg[Arg.WEIGHT] = read;
+        arg[Arg.WEIGHT] = read * voice.weight;
         return;
       }
       mix.primeLaned(voice, held, arg);
       const kept = reading.kept;
       const base = mix.base(voice, subject, mix.now, held, slot);
       if (reading.kept !== kept && !voice.keeping) stateful(mix, voice);
-      arg[Arg.WEIGHT] = base;
+      arg[Arg.WEIGHT] = base * voice.weight;
     },
     horizon: (voice, delay) => {
       if (voice.motion !== undefined) reading.horizon = mix.horizonFor(voice, delay, mix.now);

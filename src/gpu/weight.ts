@@ -21,13 +21,14 @@ export function perSubject<I, O>(voice: Voice<I, O>): boolean {
 }
 
 /**
- * A voice's weight before its fade, as the kernel takes it: its number, its uniform signal's read,
- * or 1 where the kernel multiplies each subject's read in. Callers read it once per voice per fold.
+ * A voice's weight before its fade, as the kernel takes it: its number, times its uniform signal's
+ * read where it has one. The kernel multiplies a signal read per subject in after. Callers read it
+ * once per voice per fold.
  */
 export function baseOf<I, O>(voice: Voice<I, O>): number {
   const w = voice.spec.weight;
-  if (typeof w !== 'function') return voice.weight;
-  return uniform(w as Signal<unknown>) ? sampled(w as Signal<unknown>) : 1;
+  if (typeof w !== 'function' || !uniform(w as Signal<unknown>)) return voice.weight;
+  return sampled(w as Signal<unknown>) * voice.weight;
 }
 
 /** Each owner's signal read and the `mix.frame` it was read in. */

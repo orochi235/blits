@@ -128,4 +128,25 @@ describe('gpu weight', () => {
     expect(vs.map(baseOf)).toEqual([0.7, 0.3, 1]);
     expect(vs.map(perSubject)).toEqual([false, false, true]);
   });
+
+  it("multiplies a handle's written weight into a signal's base, and an owner's into its read", () => {
+    const m = mix<C, P>(K);
+    m.sync(0);
+    const handles = [
+      m.cue({ patch: wave, subjects: cells, weight: 0.7 }),
+      m.cue({ patch: wave, subjects: cells, weight: level(0.3) }),
+      m.cue({ patch: wave, subjects: cells, weight: (c: C) => c.x }),
+    ];
+    for (const h of handles) h.weight = 0.5;
+    const owner = m.owns({ weight: level<C>(0.5) });
+    m.cue({ patch: wave, subjects: cells, owner });
+    owner.weight = 0.5;
+    m.sync(10);
+    const mixer = mixerOf(m);
+    const vs = leaves(m);
+    expect(vs.slice(0, 3).map(baseOf)).toEqual([0.5, 0.15, 0.5]);
+    const child = vs[3] as Voice<C, P>;
+    expect(ownedOf(mixer, child)).toBe(0.25);
+    expect(mixer.ownedBy(child, c0)).toBe(0.25);
+  });
 });

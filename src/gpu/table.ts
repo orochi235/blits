@@ -94,7 +94,8 @@ export function voiceTable<I, O>(
     bits[o + Col.PASS] = passBits(passAt(elapsed, voice.duration, voice.passes));
     // Where the kernel multiplies each subject's read in, it clamps after.
     const owned = weigh.faded;
-    rows[o + Col.WEIGHT] = slot.weights === undefined ? weighed(weigh.base, owned, 1) : owned;
+    rows[o + Col.WEIGHT] =
+      slot.weights === undefined ? weighed(weigh.base, owned, 1) : weigh.base * owned;
   });
   return { rows, count: voices.length, roles: roles.size };
 }

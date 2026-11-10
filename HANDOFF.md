@@ -849,10 +849,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       a `Hold`; the teardown verbs (tone's `cancel`, the panel's `dispose`, quarks' driver with none);
       rapier's `Body.drop` and `Body.drive` meaning other things than quarks' and tone's; the
       panel's `Source` and `wire` colliding with quarks'.
-    - `handle.weight` stays inert under a weight signal (it now warns): multiplying it in means
-      changing the gpu's `baseOf` (`src/gpu/weight.ts`) and about eight CPU readers together.
     - `submit.ts` writes each changed values range separately; `spanned()` (`gpu/mirrors.ts`) may
       apply there too. Unmeasured.
+    - Multiplying `handle.weight` into a weight signal (2026-11-09) left `signal` and `blend` at
+      10,000 subjects 1.2% and 3.0% slower than its base on a noisy node, within spread (U 8 and 7
+      of 25), with kB a frame unchanged (`bench/runs/2026-11-09-handle-weight-ab-fix.txt`).
+      Unconfirmed on a quiet node.
+    - Two shortcuts miss a signal voice whose handle weight is 0: `gpu/eligible.ts` skips only a
+      number weight of 0, and `bound.ts`'s outside-the-bound check reads the raw signal. Both cost
+      work, not correctness.
     - `redo` at 1,000 subjects and 32 voices read 2.4% slower after the audit on a quiet node
       (145.4 → 148.9 ms, ranges overlapping; `bench/runs/2026-11-09-audit-merged-check.txt`), and
       4.8% on a noisy one. Open measurement; every other row matched main.

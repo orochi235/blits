@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { kit, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
-import { patch } from '../src/patch.js';
+import { keys, patch } from '../src/patch.js';
 import { level } from '../src/signals.js';
 import type { Handle } from '../src/types.js';
 
@@ -131,30 +131,152 @@ describe('a handle reaches its voice’s motion patch', () => {
     });
     expect(again[5]).toBe(-5);
   });
+});
 
-  it('a weight write on a signal-weighted voice changes nothing and warns once', () => {
+const ten = () => patch<Part, Pose>(Infinity, () => ({ x: 10 }), { writes: ['x'] });
+
+describe('a weight write on a signal-weighted voice multiplies into the signal', () => {
+  it('scales the probe, clamped to 0..1, and warns nothing', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       const m = mix<Part, Pose>(K);
-      const weight = level<Part>(0.5);
-      const h = m.cue({
-        name: 'weighted',
-        patch: patch<Part, Pose>(Infinity, () => ({ x: 10 }), { writes: ['x'] }),
-        weight,
-      });
+      const h = m.cue({ name: 'weighted', patch: ten(), weight: level<Part>(0.5) });
       m.sync(0);
       expect(m.probe(a).x).toBeCloseTo(5, 9);
-      h.weight = 0;
-      h.weight = 0.25;
+      h.weight = 0.5;
+      expect(h.weight).toBe(0.5);
       m.sync(16);
-      expect(m.probe(a).x).toBeCloseTo(5, 9);
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(String(warn.mock.calls[0]?.[0])).toMatch(/weighted is weighted by a signal/);
-      weight.set(1);
+      expect(m.probe(a).x).toBeCloseTo(2.5, 9);
+      expect(h.weightOf(a)).toBeCloseTo(0.25, 9);
+      h.weight = 4;
       m.sync(32);
       expect(m.probe(a).x).toBeCloseTo(10, 9);
+      h.weight = 0;
+      m.sync(48);
+      expect(m.probe(a).x).toBe(0);
+      expect(warn).not.toHaveBeenCalled();
     } finally {
       warn.mockRestore();
     }
+  });
+
+  it('agrees on lanes and off, for a patch, a keys voice, a tween, and a crowd', () => {
+    interface Id {
+      id: number;
+    }
+    const subjects = Array.from({ length: 24 }, (_, id) => ({ id }));
+    const run = (lanes: boolean) => {
+      const m = mix<Id, Pose>(K, { lanes });
+      const by = (s: Id) => (s.id % 4) / 4;
+      const plain = m.cue({
+        patch: patch<Id, Pose>(Infinity, () => ({ x: 1 }), { writes: ['x'] }),
+        subjects,
+        weight: by,
+      });
+      const keyed = m.cue({
+        patch: keys<Id, Pose>(Infinity, [{ at: 0, delta: { x: 100 } }]),
+        subjects,
+        weight: level<Id>(0.5),
+      });
+      const tweened = m.cue({
+        patch: tween<Id, Pose>('x', { from: 0, to: 10_000, ms: 1000, ease: 'linear' }),
+        subjects,
+        weight: by,
+      });
+      const crowded = m.cue({
+        patch: patch<Id, Pose>(Infinity, () => ({ x: 1_000_000 }), { writes: ['x'] }),
+        subjects: [subjects[5] as Id],
+        weight: level<Id>(1),
+      });
+      const frames: number[][] = [];
+      for (const t of [0, 16, 32, 48, 64]) {
+        if (t === 32) {
+          plain.weight = 0.5;
+          keyed.weight = 0.25;
+          tweened.weight = 2;
+          crowded.weight = 0.5;
+        }
+        m.sync(t);
+        frames.push(subjects.map((s) => m.probe(s).x));
+      }
+      const laned = (m as unknown as { lanes: { laned: unknown[] } | null }).lanes;
+      return { frames, laned: laned === null ? 0 : laned.laned.length };
+    };
+    const on = run(true);
+    const off = run(false);
+    expect(on.laned).toBeGreaterThan(0);
+    on.frames.forEach((row, i) => {
+      row.forEach((x, j) => {
+        expect(x).toBeCloseTo((off.frames[i] as number[])[j] as number, 6);
+      });
+    });
+    const last = on.frames[4] as number[];
+    const tweenAt = 10_000 * 0.064;
+    for (const [j, x] of last.entries()) {
+      const k = (j % 4) / 4;
+      const expected =
+        0.5 * k + 100 * 0.125 + tweenAt * Math.min(1, 2 * k) + (j === 5 ? 500_000 : 0);
+      expect(x).toBeCloseTo(expected, 6);
+    }
+  });
+
+  it("multiplies a blend member's written weight into its share, on lanes and off", () => {
+    const subjects = Array.from({ length: 24 }, (_, i) => ({ id: `p${i}` }));
+    const run = (lanes: boolean) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const at = (x: number) => patch<Part, Pose>(Infinity, () => ({ x }), { writes: ['x'] });
+      const [, second] = m.blend([at(0), at(10)], level<Part>(0.5), { subjects });
+      const out: number[][] = [];
+      for (const t of [0, 16, 32, 48]) {
+        if (t === 32 && second !== undefined) second.weight = 0.5;
+        m.sync(t);
+        out.push(subjects.map((s) => m.probe(s).x));
+      }
+      return { out, share: second?.weightOf(subjects[3] as Part) };
+    };
+    const on = run(true);
+    const off = run(false);
+    expect(on.share).toBeCloseTo(0.25, 9);
+    expect(off.share).toBeCloseTo(0.25, 9);
+    on.out.forEach((row, i) => {
+      row.forEach((x, j) => {
+        expect(x).toBeCloseTo((off.out[i] as number[])[j] as number, 9);
+      });
+    });
+    expect(on.out[3]?.[0]).not.toBeCloseTo(on.out[0]?.[0] as number, 6);
+  });
+
+  it("multiplies an owner's written weight into its signal for every child", () => {
+    const m = mix<Part, Pose>(K);
+    const owner = m.owns({ weight: level<Part>(0.5) });
+    m.cue({ patch: ten(), owner });
+    m.sync(0);
+    expect(m.probe(a).x).toBeCloseTo(5, 9);
+    owner.weight = 0.5;
+    m.sync(16);
+    expect(m.probe(a).x).toBeCloseTo(2.5, 9);
+  });
+
+  it('a seek back restores the weight before the write, and plays the write again', () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+    const h = m.cue({ patch: ten(), weight: level<Part>(0.5) });
+    const first = FRAMES.map((t) => {
+      m.sync(t);
+      if (t === 100) h.weight = 0.5;
+      return m.probe(a).x;
+    });
+    expect(first[1]).toBeCloseTo(5, 9);
+    expect(first[2]).toBeCloseTo(2.5, 9);
+    m.seek(50);
+    expect(h.weight).toBe(1);
+    expect(m.probe(a).x).toBeCloseTo(5, 9);
+    m.seek(0);
+    const again = FRAMES.map((t) => {
+      if (t > 0) m.sync(700 + t);
+      return m.probe(a).x;
+    });
+    again.forEach((x, i) => {
+      expect(x).toBeCloseTo(first[i] as number, 9);
+    });
   });
 });

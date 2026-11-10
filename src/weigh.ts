@@ -139,7 +139,7 @@ export function weigh<I, O>(
   held: Subject<unknown>,
 ): number {
   if (voice.owner !== null) return this.weighOwned(voice, subject, now, held);
-  const base = this.base(voice, subject, now, held);
+  const base = this.base(voice, subject, now, held) * voice.weight;
   const fade = this.envelope(voice, now, held.shown);
   return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
 }
@@ -154,14 +154,14 @@ export function weighOwned<I, O>(
 ): number {
   // Its owners first, since a signal on one takes over the setting `base` leaves for the patch.
   const owned = this.ownedBy(voice, subject);
-  const base = this.base(voice, subject, now, held);
+  const base = this.base(voice, subject, now, held) * voice.weight;
   const fade = this.envelope(voice, now, held.shown) * owned;
   return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
 }
 
 /**
- * A voice's weight for a subject before its fade and ramp: its signal's, or its own number.
- * `slot` is the subject's number when lanes ask.
+ * What a voice's own weight is multiplied by for a subject, before its fade and ramp: its signal's
+ * read, or 1 where its weight is a number. `slot` is the subject's number when lanes ask.
  */
 export function base<I, O>(
   this: Mixer<I, O>,
@@ -174,7 +174,7 @@ export function base<I, O>(
   this.sending.voice = voice;
   this.sending.subject = subject;
   const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-  if (signal === null) return voice.weight;
+  if (signal === null) return 1;
   const was = held.replay && last(held.replay, now, true);
   const base = was
     ? was.value
@@ -182,5 +182,7 @@ export function base<I, O>(
       ? signal(subject, voice.setting as Setting)
       : this.blended(voice, subject, held, slot);
   if (this.keepsInputs && !was && signal.input) recordInput(this, voice, subject, held, base);
+  // Callers multiply the voice's weight in: a product returned from here is a fresh heap number
+  // each read, 16 B (bench `signal` row, 2026-11-09).
   return base;
 }

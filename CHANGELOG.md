@@ -31,8 +31,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   it had reached and that never rested. It waited for its deadline, or forever without one.
 - A weight or fade share that came out as −0 comes out as 0.
 - `slew()` and `lag()` take no options: `slew(signal)` follows its input at once, where it threw.
-- Writing `handle.weight` on a voice weighted by a signal warns once outside production. The write
-  never changed anything, and `Handle.weight` now says so.
+- Writing `handle.weight` on a voice weighted by a signal multiplies into the signal's read, on the
+  CPU and the GPU alike, for a blend member and an owner too. The write changed nothing before.
 - Every `at` and `timestamp` field says first which clock it is on: phase, voice ms, mix time, or
   host time. `angle()`'s `turn` is in degrees by default where `matrix()` takes radians, and a
   glide's `ms` is a time constant, not a duration as a tween's is; both now say so.
