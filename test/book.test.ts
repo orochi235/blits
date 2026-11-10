@@ -365,6 +365,19 @@ describe('an owner’s hits', () => {
     expect(ownHits.map((h) => [h.event, h.track])).toEqual([['cymbal', 'drums']]);
   });
 
+  it('carries a blend member’s own track onto its marks', () => {
+    const { m, run } = booked();
+    const [x, y] = m.blend([{ patch: still, track: 'bass' }, still], () => 0.5, {
+      track: 'pad',
+      loop: false,
+    });
+    run(0, 100);
+    const of = (id: number) => m.marks(0, 1000).filter((k) => k.voice === id);
+    expect(of((x as { id: number }).id).every((k) => k.track === 'bass')).toBe(true);
+    expect(of((y as { id: number }).id).every((k) => k.track === 'pad')).toBe(true);
+    expect(of((x as { id: number }).id).length).toBeGreaterThan(0);
+  });
+
   it('books none past where it leaves', () => {
     const { m, run, hits } = booked();
     const o = m.owns({ hits: [{ at: 600, event: 'late' }] });

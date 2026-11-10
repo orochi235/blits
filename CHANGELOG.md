@@ -16,6 +16,7 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `Transport` reads its clock as a mix does: `time(timestamp)`, `when(time)`, and `timestamp`.
 - `Hold.seek` takes `{ frame }`, as `Mix.seek` and `Transport.seek` do.
 - An owner takes `track`, carried onto its marks and booked hits as a voice's is.
+- A `BlendMember` takes `track`, in place of the spec's for that member alone.
 - `RiseOptions`, the named options `Handle.rise` takes.
 - `bind(mix, subject)` gives one subject its own `cue`, which takes no `subjects`, and a `drop` that
   cuts what it cued, then drops the subject from the mix. blits-quarks, blits-tone, and blits-rapier

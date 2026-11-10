@@ -155,7 +155,8 @@ export interface Mix<I, O, H = unknown> {
    * The signal is read once per subject per frame, with the first member's setting, and every
    * member takes its share of that one reading, which `share` reads outside the blend; a signal
    * keeping state keeps it once, not per member. One `spec` cues them all, and a member given as a
-   * `BlendMember` carries its own {@link BlendMember.name | `name`}, {@link BlendMember.tags | `tags`} and {@link BlendMember.hits | `hits`} in place of the spec's.
+   * `BlendMember` carries its own {@link BlendMember.name | `name`}, {@link BlendMember.tags | `tags`}, {@link BlendMember.hits | `hits`},
+   * and {@link BlendMember.track | `track`} in place of the spec's.
    */
   blend(
     // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one

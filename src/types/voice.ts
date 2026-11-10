@@ -259,6 +259,8 @@ export interface BlendMember<I, O, H = unknown> {
   tags?: readonly string[];
   /** Events at times on this member's clock, as a voice's `hits`. Default: the spec's. */
   hits?: readonly Hit[];
+  /** The track this member plays on, as a voice's `track`. Default: the spec's. */
+  track?: string;
 }
 
 /**

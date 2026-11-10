@@ -482,6 +482,7 @@ export class Mixer<I, O> implements Mix<I, O> {
         if (member.name !== undefined) own.name = member.name;
         if (member.tags !== undefined) own.tags = member.tags;
         if (member.hits !== undefined) own.hits = member.hits;
+        if (member.track !== undefined) own.track = member.track;
       }
       const handle = this.cue(own);
       const voice = this.cued[this.cued.length - 1] as Voice<I, O>;
