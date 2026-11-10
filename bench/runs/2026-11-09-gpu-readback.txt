@@ -1,0 +1,69 @@
+# Why 1M-subject frames awaiting four `read`s spike (2026-11-04-gpu-readback.txt: 14 of 300 over 16.7 ms,
+# up to 147 ms). The mix, rows and parts are that file's; only the `gpuread` row at 1M runs here.
+# Every run: onto do --kind bench --gui --solo, onto picking the node.
+#
+# 1. msb-uai (Apple M3 Max, apple metal-3), headless Chromium 153.0.8010.12, node v26.8.1, load 4.0-5.1, at 0f1a6470
+#    (records say +dirty: the earlier run's output sat untracked in the tree)
+#      MIX=readback ROWS=gpuread:1000000 FRAMES=300 WARM=30 node bench/gpu-readback.mjs --out bench/runs/2026-11-09-gpu-readback
+#      TRACE=1 (same) ... --out ...-traced        PROFILE=timed (same) ... --out ...-profiled (its profile never came back)
+#  1/1 gpuread readback  1000000  median     3.825 ms  p95    25.340 ms  max    89.825 ms at frame   276  frames 300  wall    3.2 s
+#  1/1 gpuread readback  1000000  median     3.900 ms  p95     4.615 ms  max   176.745 ms at frame   234  frames 300  wall    3.5 s   (traced)
+#  1/1 gpuread readback  1000000  median     4.010 ms  p95     4.625 ms  max   100.710 ms at frame   179  frames 300  wall    2.9 s   (profiled)
+# node bench/gpu-slow.mjs ... --over 16.7: 18, 12 and 10 frames over, 665.0, 763.8 and 672.1 ms in all; in each,
+# as on 2026-11-04, most such frames are in `read` and a few in `wait`.
+#
+# node bench/gpu-trace.mjs <the traced run's .trace.json>   (17 MB, not kept: TRACE=1 makes it again)
+# 330 frames, 15 over 16.7 ms; main-thread GC in frames 926.8 ms
+#   frame    1     43.159 ms  gc    5.328 ms     (the first warm-up frame: 35.3 ms of microtasks)
+#   frame   17     44.915 ms  gc   41.267 ms     V8.GCIncrementalMarking
+#   frame   21     49.869 ms  gc   46.852 ms     MajorGC (V8.GC_MARK_COMPACTOR)
+#   frame   64     40.884 ms  gc   37.904 ms     MajorGC
+#   frame  100     39.970 ms  gc   36.504 ms     V8.GCIncrementalMarking
+#   frame  103     48.205 ms  gc   44.853 ms     MajorGC
+#   frame  140     44.846 ms  gc   42.385 ms     V8.GCIncrementalMarking
+#   frame  141     55.211 ms  gc   52.127 ms     MajorGC
+#   frame  174     33.755 ms  gc   31.305 ms     V8.GCIncrementalMarking
+#   frame  176     49.574 ms  gc   46.357 ms     MajorGC
+#   frame  209     95.925 ms  gc   92.528 ms     MajorGC
+#   frame  234    176.745 ms  gc  173.800 ms     MajorGC
+#   frame  257     67.020 ms  gc   63.820 ms     MajorGC
+#   frame  280     73.991 ms  gc   71.084 ms     MajorGC
+#   frame  315     37.681 ms  gc   34.827 ms     MajorGC
+# Measured: every slow frame after the first is 91-98% garbage collection on the page's main thread,
+# marking a heap that holds 1M subjects; the GPU process's main thread is idle in each (under 0.3 ms
+# but frame 21's 7.4). Whether the collection lands while awaiting the reads or `onSubmittedWorkDone`
+# is only which await it interrupts.
+#
+# 2. What drives the collections: keiei (Apple M2, apple metal-3), node v26.8.2, load 5.7-7.6, at 746a9124
+#    with this uncommitted change, so each run's values come out of the mapped range one of three ways:
+#      `copy` as shipped (a fresh ArrayBuffer per channel per frame: 32 MB a frame at 1M), `view` (no copy:
+#      a view onto the mapping, emptied by the unmap; the bench never reads values), and `into` (copied
+#      into one Float32Array per channel, made once and reused every frame).
+#    --- src/gpu/readback.ts, in `Readback.copy`'s `end`:
+#    -            const values = new Float32Array(range.slice(p.at, p.at + p.bytes));
+#    +            const mode = (globalThis as { blitsReadMode?: string }).blitsReadMode;
+#    +            const pool = ((globalThis as { blitsReadPool?: Map<string, Float32Array> }).blitsReadPool ??= new Map());
+#    +            let values: Float32Array;
+#    +            if (mode === 'view') values = new Float32Array(range, p.at, p.bytes / 4);
+#    +            else if (mode === 'into') {
+#    +              let into = pool.get(p.name);
+#    +              if (into === undefined || into.length !== p.bytes / 4) pool.set(p.name, (into = new Float32Array(p.bytes / 4)));
+#    +              into.set(new Float32Array(range, p.at, p.bytes / 4));
+#    +              values = into;
+#    +            } else values = new Float32Array(range.slice(p.at, p.at + p.bytes));
+#    (the page set `globalThis.blitsReadMode` from READ_MODE through the harness)
+#      MIX=readback ROWS=gpuread:1000000 FRAMES=300 WARM=30 [READ_MODE=view|into] [TRACE=1] node bench/gpu-readback.mjs
+#        --out bench/runs/2026-11-09-gpu-readback-mode-<copy|view|into|into-traced|copy2>
+#  copy         1/1 gpuread readback  1000000  median     5.495 ms  p95    18.265 ms  max    60.225 ms at frame    52  frames 300  wall    4.6 s
+#  view         1/1 gpuread readback  1000000  median     3.280 ms  p95     3.480 ms  max     5.070 ms at frame    31  frames 300  wall    2.1 s
+#  into         1/1 gpuread readback  1000000  median     3.495 ms  p95     4.460 ms  max     9.770 ms at frame    64  frames 300  wall    2.0 s
+#  into traced  1/1 gpuread readback  1000000  median     3.345 ms  p95     3.700 ms  max     4.435 ms at frame   276  frames 300  wall    2.5 s
+#  copy2        1/1 gpuread readback  1000000  median     5.735 ms  p95    22.425 ms  max    81.040 ms at frame   183  frames 300  wall    3.5 s
+# Frames over 16.7 ms: copy 17 (551.1 ms in all), view 0, into 0, into traced 0, copy2 17 (701.2 ms).
+# The `into` trace: main-thread GC in all 330 frames 6.8 ms, 6.0 of it a scavenge in frame 1, against 926.8
+# for `copy` in part 1.
+#
+# Measured: the spikes are major collections the reads' fresh arrays bring on. Copying the same 32 MB a
+# frame into arrays that are reused leaves no frame over 16.7 ms and takes 2.0-2.2 ms off the median.
+# `GpuRead.values` is promised never to be written again, so reusing one breaks that promise; a fix
+# needs a way for the host to hand back, or hand in, the array a read fills.

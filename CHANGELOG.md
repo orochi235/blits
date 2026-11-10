@@ -46,6 +46,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   one a swap-remove moved, counts the frame's subjects at once rather than walking the list again,
   where no subject is listed twice: a 10,000-subject frame that drops and cues a subject reads 2%
   faster.
+- A voice naming many subjects costs less in the frame it starts or ends. On the gpu engine, a voice
+  naming the registered subjects in their order is answered without a lookup per subject, and a voice
+  leaving the list no longer makes an array per subject it named. With 1M subjects on the gpu
+  engine, a frame where three such voices start went from 209–260 ms to 111–154, and one where a
+  voice ends from 72–105 ms to 39–62.
 
 ## 1.2.0
 

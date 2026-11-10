@@ -12,6 +12,8 @@ export class Named<I> {
   private readonly set: Set<I> | null;
   /** Each subject's `stagger` answer, asked at cue; null for a voice with no stagger. */
   readonly delays: Map<I, number> | null = null;
+  /** The same answers in `list` order; null for a voice with no stagger. */
+  readonly ordered: Float64Array | null = null;
   /** The longest of `delays`, 0 at least, and the least, 0 at most: a voice's bounds at cue. */
   readonly latest: number = 0;
   readonly soonest: number = 0;
@@ -21,8 +23,8 @@ export class Named<I> {
     if (Array.isArray(subjects) && distinct(subjects)) {
       this.list = subjects.slice();
       this.set = null;
-      if (stagger) this.delays = delaysOf(this.list, stagger);
-      [this.latest, this.soonest] = boundsOf(this.delays);
+      if (stagger) [this.delays, this.ordered] = delaysOf(this.list, stagger);
+      [this.latest, this.soonest] = boundsOf(this.ordered);
       return;
     }
     const list: I[] = [];
@@ -41,8 +43,8 @@ export class Named<I> {
     // Exactly as long as it is: a list grown by push keeps room for 17.
     this.list = list.slice();
     this.set = set;
-    if (stagger) this.delays = delaysOf(this.list, stagger);
-    [this.latest, this.soonest] = boundsOf(this.delays);
+    if (stagger) [this.delays, this.ordered] = delaysOf(this.list, stagger);
+    [this.latest, this.soonest] = boundsOf(this.ordered);
   }
 
   get size(): number {
@@ -54,16 +56,25 @@ export class Named<I> {
   }
 }
 
-function delaysOf<I>(list: readonly I[], stagger: (subject: I) => number): Map<I, number> {
+function delaysOf<I>(
+  list: readonly I[],
+  stagger: (subject: I) => number,
+): [Map<I, number>, Float64Array] {
   const delays = new Map<I, number>();
-  for (const s of list) delays.set(s, stagger(s));
-  return delays;
+  const ordered = new Float64Array(list.length);
+  for (let i = 0; i < list.length; i++) {
+    const s = list[i] as I;
+    const d = stagger(s);
+    delays.set(s, d);
+    ordered[i] = d ?? 0;
+  }
+  return [delays, ordered];
 }
 
-function boundsOf(delays: Map<unknown, number> | null): [number, number] {
+function boundsOf(delays: Float64Array | null): [number, number] {
   let latest = 0;
   let soonest = 0;
-  for (const delay of delays?.values() ?? []) {
+  for (const delay of delays ?? []) {
     if (delay > latest) latest = delay;
     if (delay < soonest) soonest = delay;
   }
@@ -99,7 +110,10 @@ export function unfile<I, V>(index: Store<I, V[]>, subjects: readonly I[], voice
     const list = index.get(subject);
     if (list === undefined) continue;
     const i = list.indexOf(voice);
-    if (i >= 0) list.splice(i, 1);
+    if (i < 0) continue;
+    // Shifted by hand: `splice` makes an array of what it took, once a subject.
+    for (let k = i + 1; k < list.length; k++) list[k - 1] = list[k] as V;
+    list.pop();
     if (list.length === 0) index.delete(subject);
   }
 }

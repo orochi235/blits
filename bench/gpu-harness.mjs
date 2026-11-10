@@ -2,6 +2,9 @@
 // with WebGPU, the run's conditions, the per-row loop with its progress line and `.jsonl` append,
 // and `--digest`. A caller hands over the page source, which defines `window.bench(engine, n,
 // frames, warm, mix)` returning `{ frames, parts, adapter, ua, isolated }`, and its rows.
+// PROFILE=<frame>,... (or `timed`) has the page CPU-profile those frames through `window.profiled`,
+// written to <out>-<engine>-<n>-<title>.cpuprofile; TRACE=1 records a Chromium trace of each row
+// to <out>-<engine>-<n>.trace.json, frames marked as `performance.measure`s named `frame <f>`.
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -16,6 +19,21 @@ export const arg = (name) => {
   return i < 0 ? undefined : process.argv[i + 1];
 };
 export const out = arg('--out');
+const PROFILE = process.env.PROFILE
+  ? process.env.PROFILE === 'timed'
+    ? 'timed'
+    : process.env.PROFILE.split(',').map(Number)
+  : null;
+const TRACE = process.env.TRACE === '1';
+const CATEGORIES = [
+  'blink.user_timing',
+  'v8',
+  'v8.gc',
+  'disabled-by-default-v8.gc',
+  'gpu',
+  'toplevel',
+  'devtools.timeline',
+];
 export const quantile = (xs, q) => {
   const s = [...xs].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor(q * s.length))];
@@ -66,6 +84,8 @@ export async function launch(source) {
       logLevel: 'error',
     })
   ).outputFiles[0].text;
+  // A profile's lines are the bundle's, so it goes beside them.
+  if (PROFILE && out) writeFileSync(`${out}.bundle.js`, js);
   // Cross-origin isolated, so performance.now() reads to 5 µs rather than 100.
   const server = createServer((req, res) => {
     const headers = {
@@ -134,11 +154,29 @@ export async function run(source, rows, mix) {
   console.log(`onto: plan ${rows.length}`);
   for (const [k, { engine, n }] of rows.entries()) {
     const page = await b.open('bench');
+    const tag = `${out}-${engine}-${n}`;
+    const profiles = [];
+    if (PROFILE && out) {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Profiler.enable');
+      await cdp.send('Profiler.setSamplingInterval', { interval: 100 });
+      cdp.on('Profiler.consoleProfileFinished', (e) => profiles.push(e));
+      await page.evaluate((p) => {
+        window.profiled = p;
+      }, PROFILE);
+    }
+    if (TRACE && out) await b.browser.startTracing(page, { categories: CATEGORIES });
     const started = Date.now();
     const got = await page.evaluate(
       ([e, n, f, w, v]) => window.bench(e, n, f, w, v),
       [engine, n, FRAMES, WARM, mix],
     );
+    const want = PROFILE === 'timed' ? 1 : (PROFILE?.length ?? 0);
+    for (let t = 0; PROFILE && out && profiles.length < want && t < 100; t++)
+      await new Promise((r) => setTimeout(r, 50));
+    if (TRACE && out) writeFileSync(`${tag}.trace.json`, await b.browser.stopTracing());
+    for (const p of profiles)
+      writeFileSync(`${tag}-${p.title.replace(/\W+/g, '-')}.cpuprofile`, JSON.stringify(p.profile));
     await page.close();
     const c = b.conditions();
     const rec = {

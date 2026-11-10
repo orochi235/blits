@@ -1,0 +1,108 @@
+# msb-uai (Apple M3 Max, apple metal-3), 2026-11-09, headless Chromium 153.0.8010.12, node v26.8.1, load 3.9-5.1
+# Where the gpu engine's frames go when a scene starts or a voice ends, at 1M subjects, in the owned mix
+# of 2026-11-04-gpu-owned.txt (a program owner, four scenes 1250 ms apart, each cueing three voices
+# naming every subject). Every run: onto do --kind bench --gui --solo, onto picking the node.
+#
+# 1. Before, at 0f1a6470 (main's source, plus the bench's PROFILE and TRACE hooks):
+#      MIX=owned ROWS=gpu:1000000 FRAMES=300 WARM=30 node bench/gpu-reach.mjs --out bench/runs/2026-11-09-gpu-owned-before
+#      PROFILE=75,150,225 (same rows) ... --out ...-before-prof     CPU profiles: 2026-11-09-gpu-owned-before-f*.cpuprofile
+#
+#  1/1 gpu   owned     1000000  median     1.115 ms  p95     2.390 ms  max   297.635 ms at frame   225  frames 300  wall    4.0 s
+#  1/1 gpu   owned     1000000  median     1.060 ms  p95     2.165 ms  max   326.295 ms at frame    75  frames 300  wall    4.0 s   (profiled)
+#
+# node bench/gpu-slow.mjs bench/runs/2026-11-09-gpu-owned-before.jsonl   (ms: frame, then sync, fold, pull, wait)
+# 2026-11-09-gpu-owned-before.jsonl gpu 1000000: 12 frames over 10 ms, 1574.1 ms in all
+#   frame   75   262.975    125.675   133.060     0.005     4.235     scene 1 starts
+#   frame   87    91.010     88.980     0.110     0.000     1.920
+#   frame  122    93.310     90.620     0.370     0.000     2.320
+#   frame  150   232.220     98.695   130.395     0.000     3.130     scene 2 starts
+#   frame  162    89.970     87.870     0.090     0.000     2.010
+#   frame  197    92.485     88.695     0.845     0.000     2.945
+#   frame  225   297.635    118.915   132.170     0.000    46.550     scene 3 starts
+#   frame  234    42.600      0.020     0.080     0.005    42.495
+#   frame  237    92.995     90.930     0.115     0.000     1.950
+#   frame  272    91.140     88.045     0.615     0.000     2.480
+#   frame  300    91.450     89.995     0.080     0.000     1.375
+#   frame  312    96.350     95.090     0.105     0.000     1.155
+# Of the eight sync-only frames, 87 and 122 (profiled in part 3) are a voice leaving the list; the other
+# six are inferred to be the same from their size. Which voice leaves at each was not traced. 2026-11-04-gpu-owned.jsonl, on teitou, has the same eight, 70-107 ms.
+#
+# node bench/gpu-lines.mjs bench/runs/2026-11-09-gpu-owned-before-f75.cpuprofile <bundle> 10
+# (the bundle is the one PROFILE writes beside the profiles, at that commit; 100 µs sampling roughly
+# doubles a frame, so read these as shares, not times)
+#   150.4 ms   16198 src/gpu/answers.ts           const answer = this.answer(voice);
+#   109.2 ms    1472 src/named.ts                 if (i >= 0) list.splice(i, 1);
+#    38.4 ms    1679 src/chain.ts                 unfile(mix2.named, voice.named.list, voice);
+#    31.7 ms    1656 src/chain.ts                 for (const subject of voice.named.list) {
+#    25.7 ms    1964 src/origin.ts                function originOf(voice, elapsed, rebuilt) {
+#    14.9 ms   18240 src/gpu/timings.ts           b = new Block(m, v, answer, mix2.now);
+#     8.0 ms    1468 src/named.ts                 for (const subject of subjects) {
+#     7.8 ms      79 src/clock.ts                 function timeWith(c, elapsed) {
+#     7.4 ms    2136 src/held.ts                  changed(mix2, voice);
+#     4.6 ms    2171 src/store.ts                 if (typeof key === "object" && key !== null) return this.weak.get(key);
+# frame 150 (225 alike):
+#   142.6 ms    1679 src/chain.ts                 unfile(mix2.named, voice.named.list, voice);
+#    99.8 ms    1431 src/named.ts                 return this.set === null ? this.list.includes(subject) : this.set.has(subject);
+#    27.1 ms    1964 src/origin.ts                function originOf(voice, elapsed, rebuilt) {
+#    16.5 ms   18240 src/gpu/timings.ts           b = new Block(m, v, answer, mix2.now);
+#    11.6 ms   16225 src/gpu/answers.ts           if (named3 !== null) delay = named3.has(s) ? named3.delays?.get(s) ?? 0 : null;
+#     7.8 ms   17363 src/gpu/eligible.ts          function why(mix2, voice, codes, answers, refused2) {
+#
+# Measured: the fold's half of a start frame is `Answers.answer` for the three voices the scene starts,
+# a `Set.has` and a `Map.get` per voice per registered subject (3M of each). The sync's half, and all of
+# each sync-only frame, is a voice leaving the list: `unfile` takes it out of every named subject's
+# list of voices, one WeakMap lookup and one `splice` (an array made per call) a subject, plus `changed`
+# unlinking each subject's chain, and `originOf`.
+#
+# 2. A/B at e11c4ada: a is 8fd8a20f's source (main's), b the tree (a voice naming the registered list
+#    in order answers from `Named.ordered` with no lookup; `unfile` shifts by hand instead of `splice`).
+#      MIX=owned ROWS=gpu:1000000,gpu:100000 FRAMES=300 WARM=30 bench/gpu-ab.sh 8fd8a20f bench/gpu-reach.mjs bench/runs/ab/owned
+#    Raw records: 2026-11-09-gpu-owned-ab-{a1,b1,b2,a2}.jsonl (a's records say commit "unknown": built outside git).
+#
+# == a1
+#  1/2 gpu   owned     1000000  median     0.835 ms  p95     2.185 ms  max   352.425 ms at frame    75  frames 300  wall    5.0 s
+#  2/2 gpu   owned      100000  median     0.415 ms  p95     0.645 ms  max    28.735 ms at frame    75  frames 300  wall    0.7 s
+# == b1
+#  1/2 gpu   owned     1000000  median     0.830 ms  p95     2.390 ms  max   192.830 ms at frame   150  frames 300  wall    2.8 s
+#  2/2 gpu   owned      100000  median     0.445 ms  p95     0.795 ms  max    21.755 ms at frame    75  frames 300  wall    0.4 s
+# == b2
+#  1/2 gpu   owned     1000000  median     0.800 ms  p95     2.115 ms  max   153.755 ms at frame    75  frames 300  wall    2.7 s
+#  2/2 gpu   owned      100000  median     0.420 ms  p95     0.755 ms  max    19.700 ms at frame    75  frames 300  wall    0.4 s
+# == a2
+#  1/2 gpu   owned     1000000  median     0.850 ms  p95     2.210 ms  max   259.730 ms at frame    75  frames 300  wall    3.4 s
+#  2/2 gpu   owned      100000  median     0.360 ms  p95     0.615 ms  max    28.720 ms at frame    75  frames 300  wall    0.4 s
+#
+# The frames over 10 ms at 1M (node bench/gpu-slow.mjs ...-ab-*.jsonl; ms: frame, then sync, fold, pull, wait):
+#              a1                          b1                          b2                          a2
+#   frame  75  352.425 223.365 125.400     144.720  87.010  53.790     153.755  95.440  54.315     259.730 127.930 127.885
+#   frame  87  202.500 200.435   0.115      56.870  54.635   0.090      62.275  60.080   0.110      99.410  97.050   0.110
+#   frame 122  191.795 188.810   0.290      57.695  55.330   0.255      62.225  59.335   0.265     101.095  98.070   0.255
+#   frame 150  317.355 192.405 121.415     192.830  59.210  54.460     116.235  59.185  53.900     220.410  96.075 121.200
+#   frame 162  184.295 182.180   0.110      57.035  54.750   0.130      54.125  51.975   0.120      91.520  89.385   0.105
+#   frame 197  202.580 199.375   0.610      52.880  49.620   0.800      52.105  48.960   0.375      85.745  83.030   0.305
+#   frame 225  347.665 210.455 133.665     109.680  53.770  52.425     111.040  53.460  53.815     209.120  84.515 121.005
+#   frame 237  196.310 193.900   0.155      49.720  48.165   0.130      50.685  48.530   0.105      81.350  79.165   0.095
+#   frame 272  180.410 177.630   0.250      34.875  32.795   0.190      44.970  42.765   0.375      78.875  75.620   0.435
+#   frame 300  191.400 189.630   0.135      32.240  30.960   0.085      43.880  42.910   0.095      71.955  70.315   0.100
+#   frame 312  181.745 180.430   0.130      29.565  28.260   0.095      39.410  38.655   0.100     105.415 104.055   0.145
+#   in all    2548.5                       869.5 (+ frame 159, 51.4 ms, all wait)     790.7       1404.6
+# (b1's frame 150 waited 79.160 ms on `onSubmittedWorkDone`, as before's frame 225 did 46.550; not this change's.)
+# At 100k the start frames went from 28.7 / 21.0 / 21.6 ms (a1) to 21.8 / 14.4 / 11.3 (b1). Medians did not move.
+#
+# 3. After, at e11c4ada: PROFILE=75,87,122 MIX=owned ROWS=gpu:1000000 FRAMES=300 WARM=30 node bench/gpu-reach.mjs
+#      --out ...-after-prof     CPU profiles: 2026-11-09-gpu-owned-after-f*.cpuprofile
+#  1/1 gpu   owned     1000000  median     1.015 ms  p95     2.145 ms  max   164.300 ms at frame    75  frames 300  wall    3.1 s
+# frame 75:
+#    30.1 ms    1666 src/chain.ts                 for (const subject of voice.named.list) {
+#    28.9 ms    1689 src/chain.ts                 unfile(mix2.named, voice.named.list, voice);
+#    28.7 ms    1974 src/origin.ts                function originOf(voice, elapsed, rebuilt) {
+#    27.7 ms    1482 src/named.ts                 list.pop();
+#    23.6 ms   16223 src/gpu/answers.ts           if (named3 !== null && inOrder(list, named3.list)) return whole(named3.ordered);
+#    22.2 ms    1481 src/named.ts                 for (let k = i + 1; k < list.length; k++) list[k - 1] = list[k];
+#    19.9 ms   18264 src/gpu/timings.ts           b = new Block(m, v, answer, mix2.now);
+# frames 87 and 122: 130.3 and 148.9 ms of 136 and 155 on `unfile` (line 1689, the lookups inlined into it).
+#
+# Measured: the change halves the scene-start frames' fold (121-134 ms to 52-54) and takes the
+# sync-only frames from 70-105 ms (a2) to 28-62 (b). What is left is one WeakMap lookup per named
+# subject per voice leaving (`unfile`) and per voice changing (`changed`), and `originOf`: per-subject
+# bookkeeping of voices that name 1M subjects one by one.
