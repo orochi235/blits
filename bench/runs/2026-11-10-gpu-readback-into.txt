@@ -1,0 +1,29 @@
+# teitou, 2026-11-10, onto do --kind bench --gui --solo, onto picking the node. What `read(name, into)` buys a
+# host awaiting four reads a frame at 1M subjects, in 2026-11-09-gpu-readback.txt's mix.
+#   MIX=readback ROWS=gpuread:1000000,gpuinto:1000000 FRAMES=300 WARM=30 \
+#     bench/gpu-ab.sh fce27081 bench/gpu-readback.mjs bench/runs/ab/readback-into
+# a is fce27081 (every read a fresh array; `gpuinto`'s `into` is ignored there), b is b9e91318 (reads copy
+# into reused arrays, and into `into` where handed one). `gpuinto` hands each read the last one's `values`.
+# Raw records: 2026-11-10-gpu-readback-into-{a1,b1,b2,a2}.jsonl.
+#
+# == a1
+#  1/2 gpuread readback  1000000  median     3.240 ms  p95    26.940 ms  max    52.540 ms at frame    50  frames 300  wall    2.6 s
+#  2/2 gpuinto readback  1000000  median     3.295 ms  p95     8.320 ms  max    49.500 ms at frame    55  frames 300  wall    2.3 s
+# == b1
+#  1/2 gpuread readback  1000000  median     3.335 ms  p95    22.890 ms  max   101.345 ms at frame    39  frames 300  wall    2.6 s
+#  2/2 gpuinto readback  1000000  median     1.765 ms  p95     2.100 ms  max     5.470 ms at frame   116  frames 300  wall    1.4 s
+# == b2
+#  1/2 gpuread readback  1000000  median     3.375 ms  p95    21.625 ms  max    60.215 ms at frame    66  frames 300  wall    2.5 s
+#  2/2 gpuinto readback  1000000  median     1.835 ms  p95     2.150 ms  max     5.710 ms at frame   156  frames 300  wall    1.4 s
+# == a2
+#  1/2 gpuread readback  1000000  median     3.250 ms  p95     5.100 ms  max    49.450 ms at frame   302  frames 300  wall    2.3 s
+#  2/2 gpuinto readback  1000000  median     3.315 ms  p95    27.470 ms  max    60.995 ms at frame   299  frames 300  wall    2.3 s
+#
+# node bench/gpu-slow.mjs <each>.jsonl --over 16.7, frames over 16.7 ms:
+#              a1          b1          b2          a2
+#   gpuread    17 567.1    19 662.4    19 557.8    11 374.9    (count, then ms in all)
+#   gpuinto    12 349.2     0   0.0     0   0.0    16 590.3
+#
+# Measured: handing the arrays back leaves no frame over 16.7 ms and takes the median from 3.3 to 1.8 ms.
+# A read given no array is 3% slower at the median (3.24/3.25 to 3.34/3.38): each mapping is copied into
+# a reused array, then sliced for it, and had 19 and 19 frames over against 17 and 11.

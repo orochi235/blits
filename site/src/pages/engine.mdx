@@ -43,7 +43,7 @@ const glow = gpuOf(m).channel('glow'); // { buffer, offset, stride, axes }, or n
 const r = await gpuOf(m).read('glow'); // r.values, r.axes, r.timestamp — or null
 ```
 
-For the values in JavaScript, `read` copies a channel back from the GPU and resolves with the previous frame's, so the frame being folded never waits on it, except where no fold from the previous frame can be copied; `timestamp` says which sync they came from.
+For the values in JavaScript, `read` copies a channel back from the GPU and resolves with the previous frame's, so the frame being folded never waits on it, except where no fold from the previous frame can be copied; `timestamp` says which sync they came from. Pass the last read's `values` back, as `read('glow', r.values)`, and it fills that array instead of making a new one each frame.
 
 A `spring`, `glide` or `tween` keeps working as on the CPU: a `to()`, `set()` or `push()` lands at the voice's time, though nothing reads the subject on the CPU.
 

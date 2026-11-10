@@ -24,6 +24,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `Mix.mute` takes what a whole-voice `Handle.fade` takes: `at`, a mix time or `'rest'`, and
   `deadline`, beside `over`. Under `at: 'rest'` an owner fades at once with the other options,
   since it never rests on its own.
+- `GpuSide.read(name, into)` copies the values into `into`, where it holds them, and gives it as
+  `values`, so a host reading every frame makes no new arrays. At 1M subjects, four reads a frame
+  handed back their arrays had no frame over 16.7 ms, against 11–19 of 300 without.
 
 ### Fixed
 

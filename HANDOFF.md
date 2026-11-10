@@ -813,12 +813,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     voices and voices reaching some subjects, owners and weight signals, and readback
     (`gpuOf(m).read`). The schema page's `#gpu` ("The gpu engine") says what folds, why, and what
     each part costs. Still open (rest cleared 2026-11-04):
-    - **At 1M subjects, frames awaiting four `read`s spike to 18–180 ms, 10–18 of 300**: each is a
-      major garbage collection, brought on by the 32 MB of fresh `Float32Array`s the reads make a
-      frame, marking a heap holding 1M subjects (`bench/runs/2026-11-09-gpu-readback.txt`, measured
-      by trace). Copying into arrays reused each frame left none over 16.7 ms and 2 ms off the
-      median, but `GpuRead.values` is promised never to be written again, so the fix needs a way for
-      the host to hand in or hand back the array a read fills: a design call, not made (2026-11-09).
+    - A read given no array costs 3% more at 1M subjects since `read(name, into)` (median 3.24 to
+      3.36 ms, `bench/runs/2026-11-10-gpu-readback-into.txt`): each mapping is copied into a reused
+      array and then sliced, two copies where there was one. Skipping the reused array where no read
+      hands one in would need knowing that before the mapping ends.
     - **A frame where a voice naming 1M subjects starts or ends still costs 28–155 ms on the gpu
       engine** (cut about 45% 2026-11-09; `bench/runs/2026-11-09-gpu-owned.txt`): one WeakMap
       lookup per named subject in `unfile` as a voice leaves and in `changed` as one changes,
