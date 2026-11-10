@@ -102,7 +102,9 @@ window.bench = async (engine, n, frames, warm, variant) => {
 
   const times = [];
   const parts = [];
+  const pf = window.profiled;
   for (let f = 1; f <= warm + frames; f++) {
+    if (pf === 'timed' ? f === warm + 1 : pf?.includes(f)) console.profile(pf === 'timed' ? 'timed' : 'frame ' + f);
     const a = performance.now();
     m.sync(f * FRAME_MS);
     const b = performance.now();
@@ -119,11 +121,14 @@ window.bench = async (engine, n, frames, warm, variant) => {
     const d = performance.now();
     await wait();
     const e = performance.now();
+    if (Array.isArray(pf) && pf.includes(f)) console.profileEnd('frame ' + f);
+    performance.measure('frame ' + f, { start: a, end: e });
     if (f > warm) {
       times.push(e - a);
       parts.push([b - a, c - b, d - c, e - d, behind]);
     }
   }
+  if (pf === 'timed') console.profileEnd('timed');
   m.close();
   g?.device.destroy();
   return { frames: times, parts, adapter: g?.adapter ?? null, ua: navigator.userAgent, isolated: crossOriginIsolated };
