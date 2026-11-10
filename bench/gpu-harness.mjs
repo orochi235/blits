@@ -84,6 +84,8 @@ export async function launch(source) {
       logLevel: 'error',
     })
   ).outputFiles[0].text;
+  // A profile's lines are the bundle's, so it goes beside them.
+  if (PROFILE && out) writeFileSync(`${out}.bundle.js`, js);
   // Cross-origin isolated, so performance.now() reads to 5 µs rather than 100.
   const server = createServer((req, res) => {
     const headers = {
@@ -169,6 +171,9 @@ export async function run(source, rows, mix) {
       ([e, n, f, w, v]) => window.bench(e, n, f, w, v),
       [engine, n, FRAMES, WARM, mix],
     );
+    const want = PROFILE === 'timed' ? 1 : (PROFILE?.length ?? 0);
+    for (let t = 0; PROFILE && out && profiles.length < want && t < 100; t++)
+      await new Promise((r) => setTimeout(r, 50));
     if (TRACE && out) writeFileSync(`${tag}.trace.json`, await b.browser.stopTracing());
     for (const p of profiles)
       writeFileSync(`${tag}-${p.title.replace(/\W+/g, '-')}.cpuprofile`, JSON.stringify(p.profile));
