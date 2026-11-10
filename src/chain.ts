@@ -1,7 +1,6 @@
 import type { Share } from './everyone.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
-import { file, type Named, unfile } from './named.js';
 import { wholeRecord } from './record.js';
 import { insertById } from './sorted.js';
 import type { Subject } from './subject.js';
@@ -51,7 +50,10 @@ export function relink<I, O>(
     was.slot = -1;
   }
   head.slot = slot;
-  if (was !== head) this.chains.set(subject, head);
+  if (was !== head) {
+    if (was === undefined) this.chained++;
+    this.chains.set(subject, head);
+  }
   return head;
 }
 
@@ -187,10 +189,12 @@ export function changed<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     mix.steps.push(voice, ++mix.version);
     return;
   }
-  for (const subject of voice.named.list) {
-    const head = headOf(mix, subject);
-    if (head !== undefined) unlink(mix, head);
-  }
+  // A mix that never linked a chain, as the gpu engine's need not, has none to make stale.
+  if (mix.chained > 0)
+    for (const subject of voice.named.list) {
+      const head = headOf(mix, subject);
+      if (head !== undefined) unlink(mix, head);
+    }
   mix.relinks++;
 }
 
@@ -213,10 +217,10 @@ export function index<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     return;
   }
   mix.naming++;
-  file(mix.named, voice.named.list, voice);
+  mix.named.file(voice);
 }
 
 export function unindex<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   mix.naming--;
-  unfile(mix.named, (voice.named as Named<I>).list, voice);
+  mix.named.unfile(voice);
 }

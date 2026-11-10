@@ -80,6 +80,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   mix.asleep = false;
   if (mix.retired.length > 0) prune(mix);
   forget(mix);
+  mix.named.sweep();
 }
 
 /** Takes the span children waiting their turn, then lets go of spans and arcs that are over. */

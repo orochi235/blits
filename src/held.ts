@@ -190,9 +190,12 @@ export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: numb
   return shownFrom(voice, since);
 }
 
-/** As `shownOf`, for a caller with no mix at hand. */
-export function shownFrom<I, O>(voice: Voice<I, O>, since: number): number {
-  const start = startedAt(voice);
+/** As `shownOf`, for a caller with no mix at hand, or one that worked out `startedAt` already. */
+export function shownFrom<I, O>(
+  voice: Voice<I, O>,
+  since: number,
+  start: number = startedAt(voice),
+): number {
   const from = since < start ? start : since;
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;
 }

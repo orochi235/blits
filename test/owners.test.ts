@@ -19,8 +19,9 @@ const owners: Record<string, string[]> = {
   pulledRelinks: ['pull.ts'],
 };
 
-/** Methods that change an array, a `Map` or a `Set` in place. */
-const mutators = 'push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin|set|add|delete|clear';
+/** Methods that change an array, a `Map`, a `Set` or a `Filed` in place. */
+const mutators =
+  'push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin|set|add|delete|clear|file|unfile';
 /** Functions that change the index passed them first, from named.ts. */
 const changers = 'file|unfile';
 

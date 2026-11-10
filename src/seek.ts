@@ -321,7 +321,10 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
   const oldLanes = mix.lanes;
   if (oldLanes !== null && mix.lanesOf !== null)
     mix.lanes = new mix.lanesOf<I, O>(laneHost(mix), oldLanes);
-  else mix.chains = new Store();
+  else {
+    mix.chains = new Store();
+    mix.chained = 0;
+  }
   recount(mix);
   mix.parters.clear();
   for (const voice of [...kept, ...gone])

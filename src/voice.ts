@@ -15,6 +15,7 @@ import {
 } from './clock.js';
 import { type Cut, within } from './cut.js';
 import { type Curve, curve } from './easing.js';
+import type { Group } from './filed.js';
 import type { Leavings } from './leavings.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
@@ -175,6 +176,8 @@ export class Voice<I, O> {
   subjects = new Store<I, Subject<unknown>>();
   /** The subjects its spec names, or null where it names none. */
   readonly named: Named<I> | null;
+  /** The group the mix's `named` index files it in, where it names many subjects; see `Filed`. */
+  group: Group<unknown> | null = null;
   /** Kit slot of each channel the patch writes, in `writes` order. */
   readonly slots: number[];
   /** By kit slot, the spec's `axes`: the weight it gives each axis of a `vec`; null with none. */
@@ -833,6 +836,7 @@ export class Voice<I, O> {
     v.met = null;
     v.metRead = null;
     v.leaps = null;
+    v.group = null;
     // A span's fit writes its own, which a read ahead's must not write through to the live span.
     if (this.fitting !== null) v.fitting = { ...this.fitting };
     if (controls) v.take(controls);

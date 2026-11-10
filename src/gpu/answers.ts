@@ -1,6 +1,7 @@
 import type { Asked } from '../asked.js';
 import { headOf } from '../chain.js';
 import type { Mixer } from '../mixer.js';
+import type { Named } from '../named.js';
 import { Store } from '../store.js';
 import { unreached } from '../unreached.js';
 import type { Voice } from '../voice.js';
@@ -32,6 +33,8 @@ export class Answers<I> {
   private list: readonly I[] = [];
   private at = new Map<I, number>();
   private made = new WeakMap<Voice<I, unknown>, Answer>();
+  /** Per named list, or the list of the group filing it, whether it is `list` in order. */
+  private inOrders = new WeakMap<readonly unknown[], boolean>();
   /** Per voice over no named list, each subject answered: its delay where reached, else null. */
   private readonly known = new WeakMap<Voice<I, unknown>, Store<I, number | null>>();
 
@@ -50,6 +53,7 @@ export class Answers<I> {
     });
     this.at = at;
     this.made = new WeakMap();
+    this.inOrders = new WeakMap();
   }
 
   /** Forgets `voice`'s answer for `subject`, so its next `of` asks for it afresh. */
@@ -72,6 +76,20 @@ export class Answers<I> {
     return answer;
   }
 
+  /**
+   * Whether `named` is the registered list, subject for subject: asked once for all the voices the
+   * mix's index files in one group, which name the same list.
+   */
+  private inOrder(voice: Voice<I, unknown>, named: readonly I[]): boolean {
+    const key = voice.group?.list ?? named;
+    let known = this.inOrders.get(key);
+    if (known === undefined) {
+      known = inOrder(this.list, named);
+      this.inOrders.set(key, known);
+    }
+    return known;
+  }
+
   /** A registered subject's place in the list. */
   index(subject: I): number | undefined {
     return this.at.get(subject);
@@ -81,7 +99,7 @@ export class Answers<I> {
     const list = this.list;
     const n = list.length;
     const { named } = voice;
-    if (named !== null && inOrder(list, named.list)) return whole(named.ordered);
+    if (named !== null && this.inOrder(voice, named.list)) return whole(named);
     const delays = voice.spec.stagger !== undefined ? new Float64Array(n) : null;
     const bits = new Uint32Array((n + 31) >>> 5);
     let all = true;
@@ -141,9 +159,8 @@ function inOrder<I>(list: readonly I[], named: readonly I[]): boolean {
 }
 
 /** The answer of a voice naming every registered subject in order, delayed by `ordered`. */
-function whole(ordered: Float64Array | null): Answer {
-  let finite = true;
-  if (ordered !== null) for (const d of ordered) if (!Number.isFinite(d)) finite = false;
+function whole(named: Named<unknown>): Answer {
+  const { ordered, finite } = named;
   return { delays: ordered === null ? null : ordered.slice(), reach: null, finite };
 }
 

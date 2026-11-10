@@ -13,6 +13,7 @@ import { drop, dropIn, recordDrop, releaseIn } from './drop.js';
 import { DueQueue } from './due.js';
 import type { Share } from './everyone.js';
 import { fadeVoice, parting } from './fade.js';
+import { Filed } from './filed.js';
 import {
   apply,
   clamp,
@@ -243,6 +244,8 @@ export class Mixer<I, O> implements Mix<I, O> {
    * head stale: see `changed` in `chain.ts`.
    */
   chains = new Store<I, Subject<unknown>>();
+  /** How many subjects `chains` holds a chain for. */
+  chained = 0;
   version = 0;
   /** The positions `plot` gave, which a voice's `within` reads: see `bound.ts`. */
   places: Places<I> | null = null;
@@ -250,7 +253,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly primed = new Float64Array(Primed.SIZE);
   readonly steps = new Steps<Voice<I, O>, I>();
   /** Per subject, the voices whose `subjects` name it, in voice order. */
-  named = new Store<I, Voice<I, O>[]>();
+  named = new Filed<I, Voice<I, O>>();
   /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
   readonly parters = new Set<Voice<I, O>>();
   /** What an anchor can still find of voices that left without history, or past its reach. */

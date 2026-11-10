@@ -1,6 +1,6 @@
 import { index, unindex } from './chain.js';
+import { Filed } from './filed.js';
 import type { Mixer } from './mixer.js';
-import { Store } from './store.js';
 import type { Voice } from './voice.js';
 
 /**
@@ -46,7 +46,7 @@ export function delist<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
 export function recount<I, O>(mix: Mixer<I, O>): void {
   const owners = mix.cued.filter((v) => v.holding !== null);
   mix.owners = owners.length > 0 ? owners : null;
-  mix.named = new Store<I, Voice<I, O>[]>();
+  mix.named = new Filed<I, Voice<I, O>>();
   mix.naming = 0;
   mix.general = [];
   mix.sharers = [];
