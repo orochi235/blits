@@ -802,12 +802,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     voices and voices reaching some subjects, owners and weight signals, and readback
     (`gpuOf(m).read`). The schema page's `#gpu` ("The gpu engine") says what folds, why, and what
     each part costs. Still open (rest cleared 2026-11-04):
-    - **At 1M subjects, 14 of 300 frames awaiting four `read`s took over 16.7 ms**, up to 147 ms,
-      against a 3.155 ms median (`bench/runs/2026-11-04-gpu-readback.txt`): 10 mostly awaiting the
-      reads, 4 mostly in `onSubmittedWorkDone`; unexplained.
-    - **A frame where a scene starts costs 195–241 ms at 1M on the gpu engine**, about half in
-      `sync` and half in the fold, against a 0.515 ms median (`bench/runs/2026-11-04-gpu-owned.txt`);
-      unexplained.
+    - **At 1M subjects, frames awaiting four `read`s spike to 18–180 ms, 10–18 of 300**: each is a
+      major garbage collection, brought on by the 32 MB of fresh `Float32Array`s the reads make a
+      frame, marking a heap holding 1M subjects (`bench/runs/2026-11-09-gpu-readback.txt`, measured
+      by trace). Copying into arrays reused each frame left none over 16.7 ms and 2 ms off the
+      median, but `GpuRead.values` is promised never to be written again, so the fix needs a way for
+      the host to hand in or hand back the array a read fills: a design call, not made (2026-11-09).
+    - **A frame where a voice naming 1M subjects starts or ends still costs 28–155 ms on the gpu
+      engine** (cut about 45% 2026-11-09; `bench/runs/2026-11-09-gpu-owned.txt`): one WeakMap
+      lookup per named subject in `unfile` as a voice leaves and in `changed` as one changes,
+      `originOf`, and the timings `Block`. Going further means the named index stops being per subject, such as
+      dropping a voice from it lazily.
     - At 1M subjects a motion voice's re-anchor, every 2^14 ms of voice time, still costs one
       6.6 ms frame against a 0.4 ms median (`bench/runs/2026-11-03-gpu-anchor-after.jsonl`), most
       of it uploading every row's new time.
