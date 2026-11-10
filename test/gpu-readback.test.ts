@@ -149,6 +149,58 @@ describe('gpu read', () => {
     expect(ra?.timestamp).toBe(16);
   });
 
+  it('copies into the array it is handed, where that holds the values', async () => {
+    const { fake, m, side } = await folding();
+    // Each frame, a read handed `into` and one handed nothing, of the same copy.
+    const both = async (t: number, into?: Float32Array) => {
+      m.sync(t);
+      const a = side.read('y', into);
+      const b = side.read('y');
+      await fake.settle();
+      return [await a, await b] as const;
+    };
+    const into = new Float32Array(3);
+    const [ra, rf] = await both(16, into);
+    expect(ra?.values).toBe(into);
+    expect(rf?.values).not.toBe(into);
+    expect(Array.from(into)).toEqual(Array.from(rf?.values ?? []));
+    expect(ra?.timestamp).toBe(rf?.timestamp);
+    const first = Array.from(rf?.values ?? []);
+
+    for (const t of [32, 48, 64]) {
+      const [r, f] = await both(t, into);
+      expect(r?.values).toBe(into);
+      expect(Array.from(into)).toEqual(Array.from(f?.values ?? []));
+    }
+    expect(Array.from(rf?.values ?? [])).toEqual(first);
+
+    const wide = new Float32Array(5).fill(-1);
+    const [rw, fw] = await both(80, wide);
+    expect(rw?.values).toHaveLength(3);
+    expect(rw?.values.buffer).toBe(wide.buffer);
+    expect(Array.from(wide)).toEqual([...Array.from(fw?.values ?? []), -1, -1]);
+
+    const short = new Float32Array(2);
+    const [rs, fs] = await both(96, short);
+    expect(rs?.values).not.toBe(short);
+    expect(Array.from(rs?.values ?? [])).toEqual(Array.from(fs?.values ?? []));
+    expect(Array.from(short)).toEqual([0, 0]);
+  });
+
+  it("never writes a read's values given no array, across frames", async () => {
+    const { fake, m, side } = await folding();
+    const kept: [Float32Array, number[]][] = [];
+    for (let t = 16; t <= 96; t += 16) {
+      m.sync(t);
+      const r = side.read('y');
+      await fake.settle();
+      const values = (await r)?.values as Float32Array;
+      kept.push([values, Array.from(values)]);
+    }
+    expect(new Set(kept.map(([v]) => v[0])).size).toBeGreaterThan(3);
+    for (const [values, then] of kept) expect(Array.from(values)).toEqual(then);
+  });
+
   it('a control change starts a frame', async () => {
     const { fake, m, h, side } = await folding();
     m.sync(100);
