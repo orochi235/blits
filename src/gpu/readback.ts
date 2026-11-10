@@ -231,10 +231,11 @@ export class Readback<I> {
   private release(shot: Shot<I>): void {
     if (shot.held || shot.takers > 0 || shot.values === null) return;
     // A shot copied straight into its fresh read's array has none of the readback's to give back.
-    if (shot.fresh !== null && shot.fresh.values === shot.values) return void (shot.values = null);
-    const spare = this.spare.get(shot.name) ?? [];
-    if (!this.closed && spare.length < SPARE) spare.push(shot.values);
-    this.spare.set(shot.name, spare);
+    if (shot.fresh === null || shot.fresh.values !== shot.values) {
+      const spare = this.spare.get(shot.name) ?? [];
+      if (!this.closed && spare.length < SPARE) spare.push(shot.values);
+      this.spare.set(shot.name, spare);
+    }
     shot.values = null;
   }
 
