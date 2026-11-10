@@ -232,7 +232,7 @@ export function recordHost<I, O>(mix: Mixer<I, O>, now: number): void {
 }
 
 /** Under `history` with `inputs`, keeps what an input signal read, each time it changes. */
-export function record<I, O>(
+export function recordInput<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,

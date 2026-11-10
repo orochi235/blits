@@ -1,5 +1,5 @@
 import { voiceEnvelope, weighed } from './clock.js';
-import { elapsedThen, record } from './history.js';
+import { elapsedThen, recordInput } from './history.js';
 import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
 import { ownersWeight } from './owner.js';
@@ -181,6 +181,6 @@ export function base<I, O>(
     : voice.blend === null
       ? signal(subject, voice.setting as Setting)
       : this.blended(voice, subject, held, slot);
-  if (this.keepsInputs && !was && signal.input) record(this, voice, subject, held, base);
+  if (this.keepsInputs && !was && signal.input) recordInput(this, voice, subject, held, base);
   return base;
 }

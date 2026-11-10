@@ -3,7 +3,7 @@ import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, restsAt } from './fold.js';
 import { originate, patchKeeps, voiceKeeps, waits } from './held.js';
-import { apart, copyState, record, recordHost, remember } from './history.js';
+import { apart, copyState, recordHost, recordInput, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
@@ -107,7 +107,7 @@ export function contribution<I, O>(
   // it for subjects no probe asked about.
   const keptAtWeigh = reading.kept;
   const weight = outside ? 0 : this.weigh(voice, subject, now, held);
-  if (recorded) record(this, voice, subject, held, 0);
+  if (recorded) recordInput(this, voice, subject, held, 0);
   if (reading.kept !== keptAtWeigh && !voice.keeping) stateful(this, voice);
   setting.weight = weight;
   held.weight = weight;

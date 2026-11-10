@@ -839,7 +839,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       changing the gpu's `baseOf` (`src/gpu/weight.ts`) and about eight CPU readers together.
     - `submit.ts` writes each changed values range separately; `spanned()` (`gpu/mirrors.ts`) may
       apply there too. Unmeasured.
-    - The `record` in history.ts and the one in tape.ts still share a name.
     - `redo` at 1,000 subjects and 32 voices read 2.4% slower after the audit on a quiet node
       (145.4 → 148.9 ms, ranges overlapping; `bench/runs/2026-11-09-audit-merged-check.txt`), and
       4.8% on a noisy one. Open measurement; every other row matched main.
