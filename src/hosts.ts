@@ -101,7 +101,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       const kept = reading.kept;
       const base = mix.base(voice, subject, mix.now, held, slot);
       if (reading.kept !== kept && !voice.keeping) stateful(mix, voice);
-      arg[Arg.WEIGHT] = base;
+      arg[Arg.WEIGHT] = base * voice.weight;
     },
     horizon: (voice, delay) => {
       if (voice.motion !== undefined) reading.horizon = mix.horizonFor(voice, delay, mix.now);

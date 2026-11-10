@@ -53,7 +53,7 @@ function ownerRead<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>): number {
  */
 export function ownedOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): number {
   if (voice.owner === null) return 1;
-  return ownersWeight(voice, mix.now, mix.reducedNow, (o) => ownerRead(mix, o) * o.weight);
+  return ownersWeight(voice, mix.now, mix.reducedNow, (o) => ownerRead(mix, o));
 }
 
 /** A voice's `baseOf` and `ownedOf`, read once per fold for its row and its unread check alike. */

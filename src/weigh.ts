@@ -107,14 +107,13 @@ export function ownedBy<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, subject: I)
 }
 
 /**
- * An owner's signal read for a subject, once a frame, times its own number: the read is kept on
- * the owner's record for it, which no fold links, in `phase`, with the frame it was read in
- * `probed`, so a write to the owner's weight shows within the frame.
+ * An owner's signal read for a subject, once a frame: kept on the owner's record for it, which
+ * no fold links, in `phase`, with the frame it was read in `probed`.
  */
 export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: I): number {
   const now = this.now;
   const held = this.held(owner, subject, -1);
-  if (held.probed === this.frame) return held.phase * owner.weight;
+  if (held.probed === this.frame) return held.phase;
   const kept = reading.kept;
   // An owner's record keeps a frame in `probed`, not a time, so `prime` leaves its `stepped` be.
   held.probed = Number.NaN;
@@ -123,12 +122,12 @@ export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: 
   primed[Primed.ELAPSED] = owner.elapsedAt(now);
   primed[Primed.PASS] = 0;
   this.prime(owner, held);
-  const read = this.base(owner, subject, now, held, -1, false);
+  const base = this.base(owner, subject, now, held);
   reading.kept = kept;
   held.stepped = now;
   held.probed = this.frame;
-  held.phase = read;
-  return read * owner.weight;
+  held.phase = base;
+  return base;
 }
 
 /** The weight a voice gives a subject this frame, with the setting already filled in. */
@@ -140,7 +139,7 @@ export function weigh<I, O>(
   held: Subject<unknown>,
 ): number {
   if (voice.owner !== null) return this.weighOwned(voice, subject, now, held);
-  const base = this.base(voice, subject, now, held);
+  const base = this.base(voice, subject, now, held) * voice.weight;
   const fade = this.envelope(voice, now, held.shown);
   return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
 }
@@ -155,15 +154,14 @@ export function weighOwned<I, O>(
 ): number {
   // Its owners first, since a signal on one takes over the setting `base` leaves for the patch.
   const owned = this.ownedBy(voice, subject);
-  const base = this.base(voice, subject, now, held);
+  const base = this.base(voice, subject, now, held) * voice.weight;
   const fade = this.envelope(voice, now, held.shown) * owned;
   return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
 }
 
 /**
- * A voice's weight for a subject before its fade and ramp: its own number, times its signal's read
- * where it has one, or the read alone where `scaled` is false. `slot` is the subject's number when
- * lanes ask.
+ * What a voice's own weight is multiplied by for a subject, before its fade and ramp: its signal's
+ * read, or 1 where its weight is a number. `slot` is the subject's number when lanes ask.
  */
 export function base<I, O>(
   this: Mixer<I, O>,
@@ -172,19 +170,19 @@ export function base<I, O>(
   now: number,
   held: Subject<unknown>,
   slot = -1,
-  scaled = true,
 ): number {
   this.sending.voice = voice;
   this.sending.subject = subject;
   const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-  if (signal === null) return voice.weight;
-  // The read stays in this body: a helper returning it boxes the double, 16 B a read (`signal` row).
+  if (signal === null) return 1;
   const was = held.replay && last(held.replay, now, true);
-  const read = was
+  const base = was
     ? was.value
     : voice.blend === null
       ? signal(subject, voice.setting as Setting)
       : this.blended(voice, subject, held, slot);
-  if (this.keepsInputs && !was && signal.input) record(this, voice, subject, held, read);
-  return scaled ? read * voice.weight : read;
+  if (this.keepsInputs && !was && signal.input) record(this, voice, subject, held, base);
+  // Callers multiply the voice's weight in: a product returned from here is a fresh heap number
+  // each read, 16 B (bench `signal` row, 2026-11-09).
+  return base;
 }
