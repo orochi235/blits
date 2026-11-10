@@ -118,3 +118,31 @@ describe('a list pulled again reads what a probe of each subject reads', () => {
     }, frames(18));
   });
 });
+
+describe('a pull counts each subject it reads once a frame', () => {
+  const counted = (order: readonly number[]) => {
+    const m = mix<Part, Pose>(K, { lanes: true });
+    const list = Array.from({ length: 6 }, (_, id) => ({ id }));
+    for (const p of list) m.cue({ patch: slide(p, 0), subjects: [p] });
+    const cols = { x: new Float64Array(8), position: new Float64Array(16) };
+    m.sync(0);
+    m.pull(list, cols);
+    const read = order.map((id) => list[id] as Part);
+    for (let f = 1; f <= 3; f++) {
+      m.sync(f * 16);
+      m.pull(read, cols);
+    }
+    return (m as unknown as { lanes: { lastDistinct: number } }).lanes.lastDistinct;
+  };
+
+  it('with its numbers out of order and none repeated', () => {
+    expect(counted([5, 1, 2, 3])).toBe(4);
+    expect(counted([2, 3, 0, 1])).toBe(4);
+  });
+
+  it('with one listed twice, apart and beside itself', () => {
+    expect(counted([5, 1, 2, 5])).toBe(3);
+    expect(counted([1, 2, 4, 2, 3])).toBe(4);
+    expect(counted([0, 1, 1, 2])).toBe(3);
+  });
+});
