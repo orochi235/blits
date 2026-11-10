@@ -260,11 +260,11 @@ describe('gpu readback ring', () => {
     r.want('s');
     r.fold(fold(1));
     r.turn(2, 2);
-    const slice = vi.spyOn(ArrayBuffer.prototype, 'slice').mockImplementationOnce(() => {
+    const set = vi.spyOn(Float32Array.prototype, 'set').mockImplementationOnce(() => {
       throw new Error('no range');
     });
     await d.settle();
-    slice.mockRestore();
+    set.mockRestore();
     expect(await read('s', 2)).toBeNull();
     r.want('s');
     r.fold(fold(2));
@@ -279,11 +279,11 @@ describe('gpu readback ring', () => {
       r.want('s');
       r.fold(fold(frame));
       r.turn(frame + 1, frame + 1);
-      const slice = vi.spyOn(ArrayBuffer.prototype, 'slice').mockImplementation(() => {
+      const set = vi.spyOn(Float32Array.prototype, 'set').mockImplementation(() => {
         throw new Error('no range');
       });
       await d.settle();
-      slice.mockRestore();
+      set.mockRestore();
       expect(await read('s', frame + 1)).toBeNull();
       return r;
     };

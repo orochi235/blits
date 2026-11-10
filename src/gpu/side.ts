@@ -146,16 +146,18 @@ export class GpuSide<I> {
    * older one, its `timestamp` saying which. A read waiting across `subjects()` keeps its fold's
    * list, in `GpuRead.subjects`. Resolves `null`, never rejecting, wherever `channel(name)` is
    * null, and for reads still waiting at `close()` or device loss, though on a real loss a map that
-   * settles with zeros first may not.
+   * settles with zeros first may not. Handed `into`, it copies the values there, if it holds them,
+   * and gives it as `values`, so a host reading every frame can pass back the last read's `values`
+   * and make no new array.
    */
-  read(name: string): Promise<GpuRead<I> | null> {
+  read(name: string, into?: Float32Array): Promise<GpuRead<I> | null> {
     if (this.off) return Promise.resolve(null);
     this.readback.want(name);
     this.refresh();
     // Wanted again: this frame's turn took the first, and the next frame's copies it.
     this.readback.want(name);
     if (!this.outputs.has(name)) return Promise.resolve(null);
-    return this.readback.read(name, this.mix.frame, this.mix.seq);
+    return this.readback.read(name, this.mix.frame, this.mix.seq, into);
   }
 
   /**

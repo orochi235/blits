@@ -1,7 +1,7 @@
 // What reading a gpu channel back into JS costs, each row on a page of its own in headless Chromium
 // with WebGPU: `mixer` (`sync`, then a `pull` of every channel), `gpu` (`sync`, `channel()` of each,
 // then `onSubmittedWorkDone`) and `gpuread` (`sync`, then `await Promise.all` of `read()` for each,
-// then `onSubmittedWorkDone`).
+// then `onSubmittedWorkDone`), and `gpuinto` (as `gpuread`, each read handed the last one's `values`).
 //
 //   MIX=readback ROWS=gpuread:100000,gpu:100000 FRAMES=300 WARM=30 \
 //     node bench/gpu-readback.mjs --out bench/runs/<date>-gpu-readback     writes <out>.jsonl
@@ -26,10 +26,12 @@ if (recs) {
 const MIX = process.env.MIX ?? 'readback';
 if (MIX !== 'readback') throw new Error(`no mix ${MIX}`);
 const ROWS = process.env.ROWS;
-if (!ROWS) throw new Error('ROWS is required, as engine:subjects pairs: mixer, gpu or gpuread');
+if (!ROWS)
+  throw new Error('ROWS is required, as engine:subjects pairs: mixer, gpu, gpuread or gpuinto');
 const rows = ROWS.split(',').map((r) => {
   const [engine, n] = r.split(':');
-  if (!['mixer', 'gpu', 'gpuread'].includes(engine)) throw new Error(`no engine ${engine}`);
+  if (!['mixer', 'gpu', 'gpuread', 'gpuinto'].includes(engine))
+    throw new Error(`no engine ${engine}`);
   return { engine, n: Number(n) };
 });
 
@@ -80,13 +82,14 @@ window.bench = async (engine, n, frames, warm, variant) => {
   // Per frame: the calls (channel, read or pull), then what they leave to await.
   let fold = () => null;
   let wait = async () => {};
+  const into = {};
   if (g) {
     const side = gpuOf(m);
     side.subjects(cells, () => ({}));
     m.sync(FRAME_MS / 2);
     for (const name of NAMES) {
       side.channel(name);
-      if (engine === 'gpuread') void side.read(name);
+      if (engine !== 'gpu') void side.read(name);
     }
     await side.ready;
     fold =
@@ -96,7 +99,15 @@ window.bench = async (engine, n, frames, warm, variant) => {
               if (side.channel(name) === null) throw new Error(name + ' left the GPU at frame ' + f);
             return null;
           }
-        : () => NAMES.map((name) => side.read(name));
+        : engine === 'gpuread'
+          ? () => NAMES.map((name) => side.read(name))
+          : () =>
+              NAMES.map((name) =>
+                side.read(name, into[name]).then((r) => {
+                  if (r !== null) into[name] = r.values;
+                  return r;
+                }),
+              );
     wait = () => g.device.queue.onSubmittedWorkDone();
   } else fold = () => (m.pull(cells, all), null);
 

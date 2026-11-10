@@ -9,7 +9,10 @@ import { type GpuBuffer, type GpuDevice, MAP_READ, Usage } from './webgpu.js';
  * @category gpu
  */
 export interface GpuRead<I> {
-  /** `subjects.length × axes` numbers; subject `i`'s axis `a` at `i * axes + a`. Never written again. */
+  /**
+   * `subjects.length × axes` numbers; subject `i`'s axis `a` at `i * axes + a`. The array the read
+   * was handed, where it was handed one that holds them; else one blits never writes again.
+   */
   readonly values: Float32Array;
   readonly axes: number;
   /** The mix time of the fold these came from. */
@@ -83,12 +86,32 @@ interface Part {
   readonly bytes: number;
 }
 
+/**
+ * One channel's copy out of one fold: its values in an array the readback reuses, kept while the
+ * copy is held or a read is still taking them.
+ */
+interface Shot<I> {
+  readonly name: string;
+  readonly meta: Omit<GpuRead<I>, 'values'>;
+  values: Float32Array | null;
+  /** Reads still taking the values. */
+  takers: number;
+  held: boolean;
+  /** The read handed out to reads given no array, made at the first. */
+  fresh: GpuRead<I> | null;
+}
+
 /** The newest copy of one channel, and the fold it came from. */
 interface Held<I> {
   readonly frame: number;
   readonly seq: number;
-  readonly read: Promise<GpuRead<I> | null>;
+  readonly shot: Shot<I>;
+  /** Whether the copy mapped. */
+  readonly done: Promise<boolean>;
 }
+
+/** The most spare arrays the readback keeps a channel. */
+const SPARE = 2;
 
 /**
  * Copies a fold's read channels into a ring of mapped staging buffers. A frame whose copy finds no
@@ -100,11 +123,13 @@ export class Readback<I> {
   /** The channels of `last` copied so far. */
   private copied = new Set<string>();
   private readonly held = new Map<string, Held<I>>();
+  /** Arrays a channel's copies left, to copy the next into. */
+  private readonly spare = new Map<string, Float32Array[]>();
   private readonly slots: Slot[] = [];
   /** Staging buffers made for a single read, destroyed once it maps. */
   private readonly loose = new Set<GpuBuffer>();
   /** How to resolve each copy still mapping. */
-  private readonly waiting = new Set<(reads: null) => void>();
+  private readonly waiting = new Set<() => void>();
   /** The frame whose turn found every slot busy. */
   private skipped = Number.NaN;
   private closed = false;
@@ -133,7 +158,7 @@ export class Readback<I> {
     const f = this.last;
     if (this.closed || f === null || f.frame >= frame) return;
     for (const [name, h] of this.held)
-      if (!this.wanted.has(name) && h.seq < seq - 1) this.held.delete(name);
+      if (!this.wanted.has(name) && h.seq < seq - 1) this.unhold(name);
     const names =
       f.seq >= seq - 1
         ? [...this.wanted].filter((n) => f.outputs.has(n) && !this.copied.has(n))
@@ -150,28 +175,77 @@ export class Readback<I> {
    * The newest copy of `name` from a fold before `frame`, if that fold was made at most one `seq`
    * before `seq` or this frame's turn was skipped; else the current fold, copied now. Resolves `null`
    * when there is no fold holding `name`, and never rejects. On a real device loss, a map that
-   * resolves with zeros before the loss is reported may still reach the host.
+   * resolves with zeros before the loss is reported may still reach the host. Copies the values into
+   * `into` where it holds them all.
    */
-  read(name: string, frame: number, seq: number): Promise<GpuRead<I> | null> {
+  read(name: string, frame: number, seq: number, into?: Float32Array): Promise<GpuRead<I> | null> {
     if (this.closed) return Promise.resolve(null);
-    const h = this.held.get(name);
+    let h = this.held.get(name);
     if (
-      h !== undefined &&
-      (h.frame === frame || (h.frame < frame && (h.seq >= seq - 1 || this.skipped === frame)))
-    )
-      return h.read;
-    const f = this.last;
-    if (f === null || !f.outputs.has(name)) return Promise.resolve(null);
-    const parts = layout(f, [name]);
-    this.copy(f, parts, this.slot(size(parts)));
-    return (this.held.get(name) as Held<I>).read;
+      h === undefined ||
+      !(h.frame === frame || (h.frame < frame && (h.seq >= seq - 1 || this.skipped === frame)))
+    ) {
+      const f = this.last;
+      if (f === null || !f.outputs.has(name)) return Promise.resolve(null);
+      const parts = layout(f, [name]);
+      this.copy(f, parts, this.slot(size(parts)));
+      h = this.held.get(name) as Held<I>;
+    }
+    const shot = h.shot;
+    shot.takers++;
+    return h.done.then((mapped) => {
+      shot.takers--;
+      const values = shot.values;
+      const read = mapped && values !== null ? this.take(shot, values, into) : null;
+      this.release(shot);
+      return read;
+    });
+  }
+
+  /** A shot's values as a read: in `into` where it holds them, else in the shot's own copy. */
+  private take(shot: Shot<I>, values: Float32Array, into?: Float32Array): GpuRead<I> {
+    if (into !== undefined && into.length >= values.length) {
+      into.set(values);
+      const out = into.length === values.length ? into : into.subarray(0, values.length);
+      return { ...shot.meta, values: out };
+    }
+    shot.fresh ??= { ...shot.meta, values: values.slice() };
+    return shot.fresh;
+  }
+
+  /** Lets go of `name`'s held copy. */
+  private unhold(name: string): void {
+    const h = this.held.get(name);
+    if (h === undefined) return;
+    this.held.delete(name);
+    h.shot.held = false;
+    this.release(h.shot);
+  }
+
+  /** Gives a shot's array back for the next copy, once nothing holds or takes it. */
+  private release(shot: Shot<I>): void {
+    if (shot.held || shot.takers > 0 || shot.values === null) return;
+    const spare = this.spare.get(shot.name) ?? [];
+    if (!this.closed && spare.length < SPARE) spare.push(shot.values);
+    this.spare.set(shot.name, spare);
+    shot.values = null;
+  }
+
+  /** An array of `length` for `name`'s next copy, reusing a spare. */
+  private array(name: string, length: number): Float32Array {
+    const spare = this.spare.get(name);
+    while (spare !== undefined && spare.length > 0) {
+      const a = spare.pop() as Float32Array;
+      if (a.length === length) return a;
+    }
+    return new Float32Array(length);
   }
 
   /** Forgets the last fold and the frame's copies (subjects() was called). */
   forget(): void {
     this.last = null;
     this.copied = new Set();
-    this.held.clear();
+    for (const name of [...this.held.keys()]) this.unhold(name);
     this.skipped = Number.NaN;
   }
 
@@ -182,7 +256,7 @@ export class Readback<I> {
   close(destroy: boolean): void {
     if (this.closed) return;
     this.closed = true;
-    for (const resolve of this.waiting) resolve(null);
+    for (const resolve of this.waiting) resolve();
     this.waiting.clear();
     if (destroy) {
       for (const s of this.slots) s.buffer.destroy();
@@ -191,6 +265,7 @@ export class Readback<I> {
     this.slots.length = 0;
     this.loose.clear();
     this.held.clear();
+    this.spare.clear();
     this.wanted.clear();
     this.last = null;
   }
@@ -220,28 +295,40 @@ export class Readback<I> {
   private copy(f: Fold<I>, parts: readonly Part[], slot: Slot | null): void {
     const buffer = slot?.buffer ?? this.make(size(parts));
     if (slot === null) this.loose.add(buffer);
-    let resolve: (reads: Map<string, GpuRead<I>> | null) => void = () => {};
-    const done = new Promise<Map<string, GpuRead<I>> | null>((r) => {
+    const { now, timestamp, list: subjects } = f;
+    const shots = parts.map(
+      (p): Shot<I> => ({
+        name: p.name,
+        meta: { axes: p.axes, now, timestamp, subjects },
+        values: null,
+        takers: 0,
+        held: true,
+        fresh: null,
+      }),
+    );
+    let resolve: (mapped: boolean) => void = () => {};
+    const done = new Promise<boolean>((r) => {
       resolve = r;
     });
-    this.waiting.add(resolve);
+    const close = () => resolve(false);
+    this.waiting.add(close);
     const end = (mapped: boolean) => {
-      this.waiting.delete(resolve);
-      if (this.closed) return resolve(null);
-      let reads: Map<string, GpuRead<I>> | null = null;
+      this.waiting.delete(close);
+      if (this.closed) return resolve(false);
+      let ok = false;
       try {
         if (mapped) {
           const range = buffer.getMappedRange();
-          const got = new Map<string, GpuRead<I>>();
-          for (const p of parts) {
-            const values = new Float32Array(range.slice(p.at, p.at + p.bytes));
-            const { now, timestamp, list: subjects } = f;
-            got.set(p.name, { values, axes: p.axes, now, timestamp, subjects });
-          }
-          reads = got;
+          parts.forEach((p, i) => {
+            const shot = shots[i] as Shot<I>;
+            if (!shot.held && shot.takers === 0) return;
+            const values = this.array(p.name, p.bytes / 4);
+            values.set(new Float32Array(range, p.at, p.bytes / 4));
+            shot.values = values;
+          });
+          ok = true;
         }
       } catch (err) {
-        reads = null;
         errorOnce(this, `a gpu read could not copy its values out, so it resolves null: ${err}`);
       } finally {
         if (mapped) buffer.unmap();
@@ -250,7 +337,7 @@ export class Readback<I> {
           this.loose.delete(buffer);
           buffer.destroy();
         }
-        resolve(reads);
+        resolve(ok);
       }
     };
     mapCopy(
@@ -259,11 +346,11 @@ export class Readback<I> {
       parts.map((p) => ({ from: f.out, offset: p.offset, at: p.at, bytes: p.bytes })),
       end,
     );
-    for (const p of parts) {
+    parts.forEach((p, i) => {
       this.copied.add(p.name);
-      const read = done.then((reads) => reads?.get(p.name) ?? null);
-      this.held.set(p.name, { frame: f.frame, seq: f.seq, read });
-    }
+      this.unhold(p.name);
+      this.held.set(p.name, { frame: f.frame, seq: f.seq, shot: shots[i] as Shot<I>, done });
+    });
   }
 }
 
