@@ -113,7 +113,7 @@ describe('a voice naming many subjects leaving the mix', () => {
     expect(m.probe(cells[3] as { i: number })).toEqual({ x: 2 + 0.5 });
     m.sync(200);
     expect(m.probe(cells[3] as { i: number })).toEqual({ x: 2 });
-    const named = mixerOf(m).named as unknown as Filed<object, V>;
+    const named = mixerOf(m).named;
     let syncs = 0;
     while ((named as unknown as { queue: unknown[] }).queue.length > 0) {
       m.sync(200 + ++syncs);
