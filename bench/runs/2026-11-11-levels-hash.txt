@@ -1,0 +1,11 @@
+# teitou, 2026-11-11, node v26.13.0. onto do --kind bench --solo.
+# levelsOf's hash (src/gpu/levels.ts) against three variants, on 1M delays of three shapes:
+# mod256 = (i % 256) * 4 as bench/gpu-stock.mjs MIX=stagger; groups = 1,000 subjects to a delay;
+# rand64 = 64 delays at random. bench/levels-hash.mjs; raw: 2026-11-11-levels-hash.jsonl.
+# Median of 15 calls, ms, rounds 1-7 (range):
+#            old (as shipped)   view (u32 view of delays)   last (prev-delay check)   int (one-probe fast path)
+#   mod256   1.93-2.07          2.19-2.32                   2.19-2.29                 2.18-2.31
+#   groups   1.99-2.10          2.20-2.37                   0.92-0.98                 2.21-2.33
+#   rand64   1.93-2.05          2.20-2.32                   2.31-2.44                 2.19-2.51
+# The shipped hash runs at about 2 ns a subject and no variant beats it on the stagger shape; the
+# previous-delay check halves a run-grouped stagger and costs 10-20% on the others. Kept as is.

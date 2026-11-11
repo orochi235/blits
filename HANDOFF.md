@@ -818,7 +818,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       engine** (2.8–4.0 of it sync and fold; 2026-11-11, `bench/runs/2026-11-11-gpu-level-codes.txt`),
       and one where a voice ends 0.3–4.7 ms (`bench/runs/2026-11-10-gpu-owned-groups.txt`). What is
       left as a scene starts is two passes over the staggered voice's subjects: `levelsOf` hashing
-      each delay, about two thirds, and uploading the 2-byte codes. Also left: a voice naming a list no other names still
+      each delay, about two thirds, and uploading the 2-byte codes. The hash runs at about 2 ns a
+      subject and three variants measured no faster on a stagger's shape (2026-11-11,
+      `bench/runs/2026-11-11-levels-hash.txt`), so what is left there is the pass itself. Also left: a voice naming a list no other names still
       costs a lookup per subject as it joins, and its group's sweep after it leaves (at most
       max(4,096, 1/256 of what is left) subjects a sync, 0.05–0.45 ms at 1M). The sweep's 5–17 ms syncs are
       gone: the index points an emptied object entry at a shared empty list rather than deleting
