@@ -820,8 +820,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       at 1M in that sweep, inferred to be the WeakMap shrinking. Under `history` the gone index
       (`src/gone.ts`) still files and unfiles each leaving voice per subject. churn^ and turnover^
       read 4–5% slower in a three-round A/B and inside the spread on a five-round recheck.
-    - The light-board demo on the gpu engine still probes about 1,230 subjects a frame on the CPU
-      (`bench/runs/2026-11-03-demos-keys-gpu.json`); unexplained.
+    - **A frame folds nothing on the GPU while a new kernel compiles** (found 2026-11-11, on the
+      light-board demo's 1,230 probes a frame; `bench/runs/2026-11-11-demos-light-board.txt`). A
+      voice whose runner the side has not met makes it compile a kernel, and `channel()` gives
+      null for every channel until it is ready: 3 to 11 frames of 9–49 ms on the board, each
+      probing all 10,368 cells. The site's grid now probes once a cell for all channels, not once
+      a channel. Still open: the side could keep folding on the last ready kernel the voices it
+      can run, though a host probing a cell still folds its whole pose on the CPU.
     - `Reads` forgets a voice's read times when it is absent from one read, so its next `dt` jumps
       to `now - since`; `dt` is per voice, not per subject (a subject met late gets the voice's);
       it resets `dt` on every seek, the CPU only on seeks that send back. Matching the CPU means

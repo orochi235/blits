@@ -1,0 +1,23 @@
+# teitou (Apple M5 Max), 2026-11-11, headless Chromium, the built site, bench/demos.mjs --engine gpu
+# Why the light-board demo probed about 1,230 subjects a frame on the gpu engine
+# (2026-11-03-demos-keys-gpu.json), and the site's grid probing each cell once for all channels.
+#
+# 1. Why. A look that brings a runner the gpu side has not met (each spot sweep is a shader patch
+#    of its own) makes it compile a new kernel; the cache is keyed by how many runners it has met
+#    (src/gpu/side.ts, `dispatch`). Until the pipeline is ready, `channel()` gives null for every
+#    channel, and the grid falls back to `probed`, which probed every cell once per channel: 3 x
+#    10,368 = 31,104 probes a frame, for 3 to 11 frames at each first sight of a runner set. Found by
+#    replaying the board's cues against the fake device (a scratch test, not kept) and confirmed by
+#    the raw frames of the 2026-11-03 record: 7 frames of 31,104 probes, 14-62 ms each.
+#
+# 2. The fix, in site/src/live/gpu-grid.ts: the grid hands every channel the GPU gave back to its
+#    fill at once, and `probed` probes each cell once and copies out every wanted channel.
+#      PAGES=examples/light-board/ node bench/demos.mjs --engine gpu --out <out>, after a site build,
+#      in the order b1 a1 a2 b2 (a: main's gpu-grid.ts, b: the change), one solo job.
+#    Raw records: -{a1,a2,b1,b2}.json. The frames that fell back:
+#          frames   probes each   frame ms                                    mix ms
+#   a1        3        31104      45.2 17.4 15.1                              38.9 14.0 11.5
+#   a2        3        31104      48.7 18.1 16.6                              41.8 14.4 12.9
+#   b1       11        10368      33.5 16.1 11.5 10.5 9.5 10.3 10.8 9.4 9.6 9.0 8.9   27.0 13.7 8.6 ...
+#   b2        3        10368      30.7 13.6 10.3                              24.1 11.0 8.1
+#    Every other frame read alike on both sides (frame 1.95-2.04 ms on average over ~358 frames).

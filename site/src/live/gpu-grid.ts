@@ -41,8 +41,11 @@ export interface GridChannel<I = unknown> {
   /** The name the body reads it by, where two mixes' channels share a name. Default `name`. */
   as?: string;
   /** Fills it on the CPU, where it is not the grid's own `cpu`. */
-  cpu?: (name: string, out: Float32Array) => void;
+  cpu?: Fill;
 }
+
+/** Fills each wanted channel's values for every cell on the CPU, `axes` a cell, in one pass. */
+export type Fill = (wants: readonly { name: string; out: Float32Array }[]) => void;
 
 export interface GridSpec<I> {
   canvas: HTMLCanvasElement;
@@ -58,8 +61,8 @@ export interface GridSpec<I> {
    * `c_<name>(i, a)` reads axis `a` of a channel's value and `c4_<name>(i)` its first four.
    */
   body: string;
-  /** Fills `out` with a channel's values for every cell, probed on the CPU, `axes` a cell. */
-  cpu(name: string, out: Float32Array): void;
+  /** Fills channels' values for every cell, probed on the CPU. */
+  cpu: Fill;
 }
 
 export interface Grid {
@@ -160,6 +163,8 @@ ${decls}
 
   return {
     draw() {
+      // Channels the GPU gives back are filled per fill, so each cell is probed once a fill.
+      const off = new Map<Fill, { name: string; out: Float32Array }[]>();
       const sources: Buf[] = channels.map((c, k) => {
         const on: GpuChannel | null = (c.side ?? side).channel(c.name);
         const f = fallbacks[k] as { data: Float32Array; buf: Buf };
@@ -168,11 +173,15 @@ ${decls}
           metaData[5 + 4 * k] = on.stride / 4;
           return on.buffer;
         }
-        (c.cpu ?? spec.cpu)(c.name, f.data);
-        device.queue.writeBuffer(f.buf, 0, f.data);
+        const fill = c.cpu ?? spec.cpu;
+        off.set(fill, [...(off.get(fill) ?? []), { name: c.name, out: f.data }]);
         metaData[4 + 4 * k] = 0;
         metaData[5 + 4 * k] = c.axes;
         return f.buf;
+      });
+      for (const [fill, wants] of off) fill(wants);
+      fallbacks.forEach((f, k) => {
+        if (sources[k] === f.buf) device.queue.writeBuffer(f.buf, 0, f.data);
       });
       device.queue.writeBuffer(meta, 0, metaData);
       const group = raw.createBindGroup({
@@ -208,25 +217,27 @@ ${decls}
 }
 
 /**
- * A grid's `cpu`: probes every cell on the CPU and copies a channel's values out, `axes` a cell, for
- * a frame the GPU is not folding that channel.
+ * A grid's `cpu`: probes every cell on the CPU once and copies each wanted channel's values out,
+ * `axes` a cell, for a frame the GPU is not folding those channels.
  */
 export function probed<I>(
   m: { probe(subject: I, out?: object): object },
   cells: readonly I[],
   /** What a cell no voice wrote reads, for a channel with no rest such as `last`. */
   missing = 0,
-): (name: string, out: Float32Array) => void {
+): Fill {
   const pose: Record<string, unknown> = {};
-  return (name, out) => {
-    const axes = out.length / cells.length;
+  return (wants) => {
+    const axes = wants.map((w) => w.out.length / cells.length);
     cells.forEach((c, i) => {
       m.probe(c, pose);
-      const v = pose[name];
-      if (typeof v === 'number') out[i] = v;
-      else
-        for (let a = 0; a < axes; a++)
-          out[i * axes + a] = (v as number[] | undefined)?.[a] ?? missing;
+      wants.forEach(({ name, out }, k) => {
+        const v = pose[name];
+        const n = axes[k] as number;
+        if (typeof v === 'number') out[i] = v;
+        else
+          for (let a = 0; a < n; a++) out[i * n + a] = (v as number[] | undefined)?.[a] ?? missing;
+      });
     });
   };
 }
