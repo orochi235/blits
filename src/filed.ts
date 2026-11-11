@@ -1,3 +1,4 @@
+import { EMPTIED, emptied } from './named.js';
 import { byId, insertById } from './sorted.js';
 import { Store } from './store.js';
 
@@ -145,7 +146,7 @@ export class Filed<I, V extends Filer<I>> {
     const lists = this.lists;
     for (const subject of subjects) {
       const list = lists.get(subject);
-      if (list === undefined || list === NONE) lists.set(subject, [entry]);
+      if (list === undefined || list === EMPTIED) lists.set(subject, [entry]);
       else list.push(entry);
     }
   }
@@ -161,17 +162,10 @@ export class Filed<I, V extends Filer<I>> {
       // Shifted by hand: `splice` makes an array of what it took, once a subject.
       for (let k = i + 1; k < list.length; k++) list[k - 1] = list[k] as V | Group<V>;
       list.pop();
-      if (list.length > 0) continue;
-      // An object keeps its entry, pointed at `NONE`: deleting a million shrinks the WeakMap's
-      // table, up to 14 ms a frame, and the next scene naming them grows it back.
-      if (typeof subject === 'object' && subject !== null) lists.set(subject, NONE);
-      else lists.delete(subject);
+      if (list.length === 0) emptied(lists, subject);
     }
   }
 }
-
-/** The list of a subject no voice names any longer, kept in place of its entry. */
-const NONE: never[] = Object.freeze([]) as unknown as never[];
 
 function equal(a: readonly unknown[], b: readonly unknown[]): boolean {
   if (a === b) return true;
