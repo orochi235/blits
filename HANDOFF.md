@@ -303,7 +303,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      not the weak-reference deref behind it (1.1% from `subjectAt`, 3.2% from a motion's
      `commit`). With inlining off, `base` in `src/weigh.ts` was 8–11%, most of it on the `record`
      call that returns at once with no history; it now asks `keepsInputs` first, which measured
-     5.53 → 5.24 ms lanes on and unchanged off, inside the noise of a node at load 5–6.
+     5.53 → 5.24 ms lanes on and unchanged off, inside the noise of a node at load 5–6. By line
+     (studio, 2026-11-11, `LINES` on `bench/heatprof.sh`): inlined, 8.3% of the frame sits on
+     `one`'s call to `signalled` and 3.1% on its read of the weight after; with inlining off that
+     call splits into `base` 4.4%, `signal` 4.2%, `primeLaned` 3.3% and `signalled` 2.0%, each
+     spread over its returns and field writes with no line above 2%. Nothing left there to cut
+     but a call layer, if the four were folded into one.
    - **The rig reads 1,000 bones in 1.2 ms** (`pull`, 70 voices), lanes on about 20% faster than
      off. Profiled before its height hold moved onto `axes` (teitou, 2026-11-04,
      `bench/stressprof.sh rig`, `bench/runs/2026-11-04-rig-profile.txt`), the quat folds are not
