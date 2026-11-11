@@ -1,7 +1,7 @@
 import type { Buffers } from './buffers.js';
 import { layoutOf } from './compile.js';
 import { GROUP, type Kernel } from './kernel.js';
-import type { Mirrors } from './mirrors.js';
+import { type Mirrors, writeRanges } from './mirrors.js';
 import type { Reads } from './reads.js';
 import type { Placement, Regions } from './region.js';
 import type { GpuChannel } from './side.js';
@@ -50,9 +50,7 @@ export function submit<I>(s: Submission<I>, outputs: Map<string, GpuChannel>): G
   const data = regions.data;
   if (s.stale || v !== had) {
     if (regions.length > 0) dev.queue.writeBuffer(v, 0, data.subarray(0, regions.length));
-  } else
-    for (const [from, to] of s.placed.changed)
-      dev.queue.writeBuffer(v, from, data.subarray(from / 4, to / 4));
+  } else writeRanges(dev, v, 0, data, s.placed.changed);
   s.mirrors.upload(dev, persub, persub !== hadSub);
   s.timings.upload(dev, persub, persub !== hadSub);
   s.reads.upload(dev, persub);
