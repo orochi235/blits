@@ -274,8 +274,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      pose store it replaced (`RETARGET=1 bench/frame.mjs`,
      `bench/runs/2026-11-08-probes-store-ab.txt`); `lastPoses` is left for a projection's probes.
      The trail itself costs `pull` about 0.01 ms a frame on `tweens^` 10,000 (0.186 → 0.200,
-     `bench/runs/2026-11-08-trail-ab.txt`), copying the subject list and columns each frame; a
-     list unchanged since the last frame need not be copied again.
+     `bench/runs/2026-11-08-trail-ab.txt`), copying the subject list and columns each frame.
+     Writing the list only where a subject moved measured slower, not faster (`tweens^` +4%,
+     2026-11-11, `bench/runs/2026-11-11-trail-list-ab.txt`), so the plain copy stays.
    - **`pull` on the heatmap is slower with lanes than without** (2026-11-03). 5,000 springs
      retargeted at 20–60 Hz, with three `ink` voices weighted per cell by `input` signals, read in
      5.40 ms a frame with lanes and 3.78 without (studio, solo, 7 rounds,

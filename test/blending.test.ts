@@ -436,6 +436,34 @@ describe('retarget on interruption', () => {
         expect(read(m) - a).toBeCloseTo(0.1, 2);
       });
 
+  it("takes a subject's speed from pulls that list it at another place each frame", () => {
+    const other = { id: 'b' };
+    const m = mix<Part, Pose>(PART);
+    const moving = m.cue({
+      patch: keys<Part, Pose>(1000, [
+        { at: 0, delta: { crawl: 0 } },
+        { at: 1, delta: { crawl: 100 } },
+      ]),
+      loop: false,
+    });
+    const crawl = new Float64Array(2);
+    const at = (list: Part[]) => {
+      m.pull(list, { crawl });
+      return crawl[list.indexOf(part)] as number;
+    };
+    // The trail keeps two frames, so the pull at 400 lands where the one at 368 was.
+    m.sync(368);
+    at([part, other]);
+    m.sync(384);
+    at([part, other]);
+    m.sync(400);
+    const before = at([other, part]);
+    moving.fade({ over: 0 });
+    m.cue({ patch: keys<Part, Pose>(1000, [{ at: 1, delta: { crawl: 0 } }]), from: 'current' });
+    m.sync(401);
+    expect(at([part, other]) - before).toBeCloseTo(0.1, 2);
+  });
+
   it("a from: 'current' voice cued on a still subject runs its segment as written", () => {
     const m = mix<Part, Pose>(PART);
     const held = m.cue({
