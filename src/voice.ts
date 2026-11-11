@@ -178,6 +178,8 @@ export class Voice<I, O> {
   readonly named: Named<I> | null;
   /** The group the mix's `named` index files it in, where it names many subjects; see `Filed`. */
   group: Group<unknown> | null = null;
+  /** The group the mix's index of gone voices files it in; see `Filed`. */
+  goneGroup: Group<unknown> | null = null;
   /** Kit slot of each channel the patch writes, in `writes` order. */
   readonly slots: number[];
   /** By kit slot, the spec's `axes`: the weight it gives each axis of a `vec`; null with none. */
@@ -837,6 +839,7 @@ export class Voice<I, O> {
     v.metRead = null;
     v.leaps = null;
     v.group = null;
+    v.goneGroup = null;
     // A span's fit writes its own, which a read ahead's must not write through to the live span.
     if (this.fitting !== null) v.fitting = { ...this.fitting };
     if (controls) v.take(controls);

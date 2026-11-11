@@ -1,7 +1,6 @@
+import { Filed } from './filed.js';
 import type { Mixer } from './mixer.js';
-import { file, unfile } from './named.js';
 import { scoredCut } from './scored.js';
-import { Store } from './store.js';
 import type { Voice } from './voice.js';
 
 /**
@@ -15,7 +14,7 @@ export class GoneIndex<I, O> {
   of: readonly Voice<I, O>[] | null = null;
   count = 0;
   general: Voice<I, O>[] = [];
-  named = new Store<I, Voice<I, O>[]>();
+  named = new Filed<I, Voice<I, O>>('goneGroup');
   /** The latest `reachedTo` in `of`, and how far any voice's falls before one listed ahead of it. */
   latest = Number.NEGATIVE_INFINITY;
   slack = 0;
@@ -29,7 +28,7 @@ function add<I, O>(ix: GoneIndex<I, O>, voice: Voice<I, O>): void {
     ix.general.push(voice);
     return;
   }
-  file(ix.named, voice.named.list, voice);
+  ix.named.file(voice);
 }
 
 function remove<I, O>(ix: GoneIndex<I, O>, out: readonly Voice<I, O>[]): void {
@@ -39,7 +38,7 @@ function remove<I, O>(ix: GoneIndex<I, O>, out: readonly Voice<I, O>[]): void {
       general = true;
       continue;
     }
-    unfile(ix.named, v.named.list, v);
+    ix.named.unfile(v);
   }
   if (general) {
     const leaving = new Set(out);
@@ -53,7 +52,7 @@ export function goneIndex<I, O>(mix: Mixer<I, O>): GoneIndex<I, O> {
   const list = mix.gone;
   if (ix.of !== list || ix.count > list.length) {
     ix.general = [];
-    ix.named = new Store();
+    ix.named = new Filed('goneGroup');
     ix.count = 0;
     ix.of = list;
     ix.latest = Number.NEGATIVE_INFINITY;

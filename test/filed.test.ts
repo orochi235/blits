@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { Filed, type Filer, Group } from '../src/filed.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { keys, kit, mix, sum } from '../src/index.js';
-import { EMPTIED, file, unfile } from '../src/named.js';
-import { Store } from '../src/store.js';
 
 interface V extends Filer<number> {
   readonly named: { readonly list: readonly number[] };
@@ -130,25 +128,19 @@ describe('voices naming many subjects leaving the mix', () => {
   });
 });
 
-describe('file and unfile', () => {
-  it('keep an object subject’s emptied entry, which a later file fills afresh', () => {
-    const index = new Store<object, string[]>();
-    const subjects = [{ n: 1 }, { n: 2 }];
-    file(index, subjects, 'a');
-    unfile(index, subjects, 'a');
-    expect(index.get(subjects[0] as object)).toBe(EMPTIED);
-    expect(Object.isFrozen(EMPTIED)).toBe(true);
-    unfile(index, subjects, 'a');
-    file(index, subjects, 'b');
-    expect(index.get(subjects[1] as object)).toEqual(['b']);
-    expect(EMPTIED).toEqual([]);
-  });
-
-  it('delete a value subject’s emptied entry', () => {
-    const index = new Store<number, string[]>();
-    file(index, [1, 2], 'a');
-    unfile(index, [1, 2], 'a');
-    expect(index.get(1)).toBeUndefined();
-    expect(index.has(2)).toBe(false);
+describe('Filed in two group slots', () => {
+  it('files a voice in a gone index without moving it out of the named one', () => {
+    const named = new Filed<number, V>();
+    const gone = new Filed<number, V>('goneGroup');
+    const many = range(2000);
+    const a = voice(1, many);
+    named.file(a);
+    gone.file(a);
+    expect(a.group).not.toBe(a.goneGroup);
+    gone.unfile(a);
+    expect(a.goneGroup).toBeNull();
+    expect(named.get(5)).toEqual([a]);
+    for (let i = 0; i < 10; i++) gone.sweep();
+    expect(gone.get(5)).toBeUndefined();
   });
 });
