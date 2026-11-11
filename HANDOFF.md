@@ -311,9 +311,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      are staggered, so every bone has a time of its own and each keys voice reads its stops once
      a subject, not once a voice: `readKeys`, `segment`, `firstPast`, `read`, `phaseAt` and the
      lerps are about 30% on and off alike, which is why lanes gain little; the role's gather and
-     fold (`gatherRole`, `gatherInto`, `meetRole`, `foldAt`, `foldRole`) are another 12%. A
-     staggered keys voice reading its stops once a distinct time, not once a subject, is what
-     would move it.
+     fold (`gatherRole`, `gatherInto`, `meetRole`, `foldAt`, `foldRole`) are another 12%. Within
+     one voice no two subjects share a time: each voice is one bone over every character, each
+     character's offset drawn at random (`apps/stress/src/scenarios/rig/scenario.ts`). What is
+     shared is across voices: every bone of one clip on one character reads at the same time, and
+     every track keys at `k / STOPS`, so the stops sit at the same times (checked 2026-11-11). What
+     would move it is a segment lookup shared across keys patches whose stops sit at the same
+     times, per frame and time: unbuilt, a new engine mechanism, so a call for Mike.
    - **A mix's `rate` goes below 0** (Mike's call, 2026-11-08; unbuilt, no design yet). It
      throws today, so the timeline demo plays reverse as an owner turned back. Each voice that
      keeps state or moves (springs, tweens, kept patches, fades, loops) needs an answer for its
