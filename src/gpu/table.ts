@@ -68,6 +68,7 @@ export function voiceTable<I, O>(
     bits[o + Col.DELAYS] = timing?.delays ?? NONE;
     bits[o + Col.MASK] = timing?.mask ?? NONE;
     bits[o + Col.SHOWN] = timing?.shown ?? NONE;
+    bits[o + Col.CODES] = timing?.codes ?? NONE;
     bits[o + Col.EASE] = slot.ease ?? NONE;
     bits[o + Col.WEIGHTS] = slot.weights ?? NONE;
     const weigh = weighs[k] as Weighs;

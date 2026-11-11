@@ -11,9 +11,13 @@ import { NONE } from './wgsl/timing.js';
 
 /** Where a voice's timing block sits in `persub`, in f32s; NONE for a part it has none of. */
 export interface TimingSlot {
+  /** Its delays: one per level where `codes` is set, else one per subject. */
   readonly delays: number;
   readonly mask: number;
+  /** Its fade-in origins, less `anchor`, laid as `delays` are. */
   readonly shown: number;
+  /** Each subject's level, a u16, two to a u32; NONE where each subject is its own level. */
+  readonly codes: number;
   /** The mix time `shown` counts from (f64; never sent to the GPU itself). */
   readonly anchor: number;
   /** The latest subject's fade-in origin, f64: the fade is done for all once `end - latest >= fade in`. */
@@ -21,13 +25,19 @@ export interface TimingSlot {
 }
 
 /**
- * f32s a voice's timing block takes: its delays, its reach mask where some registered subject is
- * not reached, and its subjects' fade-in origins where it staggers and `fades` in.
+ * f32s a voice's timing block takes: a delay per level, its reach mask where some registered
+ * subject is not reached, a fade-in origin per level where it `fades` in, and each subject's level.
  */
 export function sizeOf(answer: Answer, fades: boolean): number {
-  const n = answer.delays?.length ?? 0;
-  return n + (answer.reach?.length ?? 0) + (fades ? n : 0);
+  const { delays, reach } = answer;
+  const levels = delays === null ? null : levelsOf(delays);
+  const k = levels?.values.length ?? 0;
+  return k + (reach?.length ?? 0) + (fades ? k : 0) + codeWords(levels);
 }
+
+/** u32s a block's level codes take. */
+const codeWords = (levels: Levels | null): number =>
+  levels?.codes == null ? 0 : levels.codes.length >>> 1;
 
 enum Dirty {
   NONE = 0,
@@ -35,12 +45,15 @@ enum Dirty {
   ALL = 2,
 }
 
-/** One voice's timing block for one `register`: its f32s, and the f64 origins they are made from. */
+/**
+ * One voice's timing block for one `register`: its f32s, and the f64 origins they are made from.
+ * Origins, `early` and reach follow from a subject's delay alone, so all are kept per level.
+ */
 class Block {
+  /** The levels' delays, the reach mask, and the levels' origins; the codes follow it in `persub`. */
   readonly data: Float32Array;
   /** Where the origins start in `data`; -1 for none. */
   private readonly at: number;
-  /** The voice's delays by distinct value: origins, `early` and `shown` follow from a delay alone. */
   private readonly levels: Levels | null;
   /** Per level, 1 where its subjects' records would be on the voice's `early` list. */
   private readonly early: Uint8Array | null;
@@ -69,25 +82,24 @@ class Block {
     const { delays, reach } = answer;
     const fades = (voice.fade.in ?? 0) > 0;
     this.seeks = voice.seeks;
-    this.data = new Float32Array(sizeOf(answer, fades));
-    const n = delays?.length ?? 0;
-    if (delays !== null) this.data.set(delays);
-    if (reach !== null) new Uint32Array(this.data.buffer).set(reach, n);
-    this.at = delays !== null && fades ? n + (reach?.length ?? 0) : -1;
+    const levels = delays === null ? null : levelsOf(delays);
+    this.levels = levels;
+    const k = levels?.values.length ?? 0;
+    const words = reach?.length ?? 0;
+    this.data = new Float32Array(k + words + (fades ? k : 0));
+    if (levels !== null) this.data.set(levels.values);
+    if (reach !== null) new Uint32Array(this.data.buffer).set(reach, k);
+    this.at = levels !== null && fades ? k + words : -1;
     const curve = this.at >= 0 && !straight(voice.ease) ? curveData(voice.ease) : undefined;
     this.curve = curve === undefined ? null : Float32Array.from(curve);
     this.anchor = now;
-    if (this.at < 0 || delays === null) {
-      this.levels = null;
+    if (this.at < 0 || levels === null) {
       this.early = null;
       this.shown = null;
       this.reached = null;
       return;
     }
-    const levels = levelsOf(delays);
     const { values, codes } = levels;
-    const k = values.length;
-    this.levels = levels;
     this.early = new Uint8Array(k);
     this.shown = new Float64Array(k);
     const at = new Origins(mix, voice);
@@ -101,12 +113,18 @@ class Block {
     if (reach === null) this.reached = null;
     else {
       const reached = new Uint8Array(k);
+      const n = delays?.length ?? 0;
       for (let i = 0; i < n; i++)
         if ((((reach[i >>> 5] as number) >>> (i & 31)) & 1) === 1)
           reached[codes === null ? i : (codes[i] as number)] = 1;
       this.reached = reached;
     }
     this.lay(now);
+  }
+
+  /** f32s the block takes in `persub`: `data`, then the codes. */
+  get size(): number {
+    return this.data.length + codeWords(this.levels);
   }
 
   /**
@@ -139,12 +157,13 @@ class Block {
   }
 
   slotAt(offset: number): TimingSlot {
-    const { delays, reach } = this.answer;
-    const n = delays?.length ?? 0;
+    const { levels, data } = this;
+    const k = levels?.values.length ?? 0;
     return {
-      delays: delays !== null ? offset : NONE,
-      mask: reach !== null ? offset + n : NONE,
+      delays: levels !== null ? offset : NONE,
+      mask: this.answer.reach !== null ? offset + k : NONE,
       shown: this.at >= 0 ? offset + this.at : NONE,
+      codes: levels?.codes == null ? NONE : offset + data.length,
       anchor: this.anchor,
       latest: this.latest,
     };
@@ -163,21 +182,23 @@ class Block {
     return [this.at, this.data.length];
   }
 
+  /** Writes all of the block at `offset` in f32s: `data`, then the codes, which never change. */
+  write(device: GpuDevice, buffer: GpuBuffer, offset: number): void {
+    const { data } = this;
+    if (data.length > 0) device.queue.writeBuffer(buffer, offset * 4, data);
+    const codes = this.levels?.codes;
+    if (codes != null && codes.length > 0)
+      device.queue.writeBuffer(buffer, (offset + data.length) * 4, codes);
+  }
+
   private lay(now: number): void {
     const shown = this.shown as Float64Array;
-    const { codes } = this.levels as Levels;
     const { data, at, reached } = this;
-    const k = shown.length;
     let latest = Number.NEGATIVE_INFINITY;
-    for (let l = 0; l < k; l++) {
+    for (let l = 0; l < shown.length; l++) {
       const s = shown[l] as number;
+      data[at + l] = s - now;
       if ((reached === null || reached[l] === 1) && s > latest) latest = s;
-    }
-    if (codes === null) for (let i = 0; i < k; i++) data[at + i] = (shown[i] as number) - now;
-    else {
-      const rel = new Float32Array(k);
-      for (let l = 0; l < k; l++) rel[l] = (shown[l] as number) - now;
-      for (let i = 0; i < codes.length; i++) data[at + i] = rel[codes[i] as number] as number;
     }
     this.anchor = now;
     this.latest = latest;
@@ -265,7 +286,7 @@ export class Timings {
       return b;
     });
     for (const v of this.by.keys()) if (!live.has(v)) this.by.delete(v);
-    const { placed, offsets, end } = lay(blocks, from, (b) => b.data.length);
+    const { placed, offsets, end } = lay(blocks, from, (b) => b.size);
     if (moved(this.placed, placed)) this.moved = true;
     this.placed = placed;
     this.length = end - from;
@@ -282,9 +303,8 @@ export class Timings {
   upload(device: GpuDevice, buffer: GpuBuffer, full: boolean): void {
     const all = full || this.moved;
     for (const { item: block, offset } of this.placed) {
-      if (all || block.dirty === Dirty.ALL) {
-        if (block.data.length > 0) device.queue.writeBuffer(buffer, offset * 4, block.data);
-      } else if (block.dirty === Dirty.SHOWN) {
+      if (all || block.dirty === Dirty.ALL) block.write(device, buffer, offset);
+      else if (block.dirty === Dirty.SHOWN) {
         const [from, to] = block.range;
         device.queue.writeBuffer(buffer, (offset + from) * 4, block.data.subarray(from, to));
       }
