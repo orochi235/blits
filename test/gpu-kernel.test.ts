@@ -82,7 +82,7 @@ describe('kernel', () => {
   it('gives the same code for two frames whose voices differ only in data', () => {
     const near = spring<{ id: number }, O>('y', { to: (c) => c.id });
     const far = spring<{ id: number }, O>('y', { to: (c) => 10 * c.id, stiffness: 400 });
-    expect(runnerOf(near).wgsl).toContain('let t = values[k] - lag;');
+    expect(runnerOf(near).wgsl).toContain('let t = select(values[k], values[k + 5u], ');
     expect(kernel([runnerOf(near), stub], channels, 100).code).toBe(
       kernel([runnerOf(far), stub], channels, 100).code,
     );
