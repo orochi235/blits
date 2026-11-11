@@ -1,3 +1,4 @@
+import { setLeast } from '../../src/gpu/anchors.js';
 import { agree, N, NEGATIVE, rank, type Script, STAGGER } from './agree.js';
 import { test } from './harness.js';
 import { MOTIONS, type Motion, moving } from './kinds.js';
@@ -77,7 +78,25 @@ const negative = (kind: Motion): Script => ({
   times: [1, 250, 400, 999, 1700, 4100],
 });
 
+/** Played past the re-anchor 40 rows a frame, so for some frames rows count from each anchor. */
+const split = (kind: Motion): Script => ({
+  cues: [{ stagger: STAGGER }],
+  acts: [
+    { at: 500, act: moving(kind, [0], (i) => i % 2 === 0) },
+    { at: 16450, act: moving(kind, [0], (i) => i % 5 === 0) },
+  ],
+  times: [1, 500, 16000, ...Array.from({ length: 12 }, (_, k) => 16400 + 16 * k), 17500],
+});
+
 for (const kind of MOTIONS) {
+  test(`motion stagger (${kind.name}, named): moving its rows to a new anchor over frames`, async (d) => {
+    const was = setLeast(40);
+    try {
+      return await agree(d, kind, split(kind), true);
+    } finally {
+      setLeast(was);
+    }
+  });
   for (const [name, script] of scripts(kind)) {
     test(`motion stagger (${kind.name}, named): ${name}`, (d) => agree(d, kind, script, true));
     test(`motion stagger (${kind.name}, asked as met): ${name}`, (d) =>

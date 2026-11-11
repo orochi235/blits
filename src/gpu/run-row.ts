@@ -47,3 +47,18 @@ export function rangesOf(dirty: Iterable<number>, bytes: number): [number, numbe
   for (const row of [...dirty].sort((a, b) => a - b)) join(out, row * bytes, (row + 1) * bytes);
   return out;
 }
+
+/** Sorted, joined byte ranges `out` with `[from, to)` among them, joined where they touch. */
+export function spliced(out: [number, number][], from: number, to: number): [number, number][] {
+  const all: [number, number][] = [];
+  let placed = false;
+  for (const [a, b] of out) {
+    if (!placed && from <= a) {
+      join(all, from, to);
+      placed = true;
+    }
+    join(all, a, b);
+  }
+  if (!placed) join(all, from, to);
+  return all;
+}

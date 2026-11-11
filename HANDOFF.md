@@ -820,9 +820,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       at 1M in that sweep, inferred to be the WeakMap shrinking. Under `history` the gone index
       (`src/gone.ts`) still files and unfiles each leaving voice per subject. churn^ and turnover^
       read 4–5% slower in a three-round A/B and inside the spread on a five-round recheck.
-    - At 1M subjects a motion voice's re-anchor, every 2^14 ms of voice time, still costs one
-      6.6 ms frame against a 0.4 ms median (`bench/runs/2026-11-03-gpu-anchor-after.jsonl`), most
-      of it uploading every row's new time.
     - The light-board demo on the gpu engine still probes about 1,230 subjects a frame on the CPU
       (`bench/runs/2026-11-03-demos-keys-gpu.json`); unexplained.
     - `Reads` forgets a voice's read times when it is absent from one read, so its next `dt` jumps

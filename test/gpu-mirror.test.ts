@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { SECOND, setLeast } from '../src/gpu/anchors.js';
 import { Answers } from '../src/gpu/answers.js';
 import { codesOf } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
@@ -272,6 +273,43 @@ describe('motion mirror', () => {
     warn.mockRestore();
   });
 
+  it('moves rows to a new anchor a share a frame, each row counting from the one its flags name', () => {
+    const was = setLeast(20);
+    try {
+      const list = cells(50);
+      const { s, m, mirror } = setup(list, list.slice(0, 10));
+      mirror.prepare(0, Number.POSITIVE_INFINITY);
+      mirror.take();
+      const st = mirror.stride;
+      const t = 2 ** 14 + 100;
+      m.sync(t);
+      s.to(list[30] as C, 1);
+      mirror.prepare(t, Number.POSITIVE_INFINITY);
+      const bytes = st * 4;
+      expect(mirror.take()).toEqual([
+        [0, 20 * bytes],
+        [30 * bytes, 31 * bytes],
+      ]);
+      const last = mirror.values().length - 1;
+      expect([mirror.values()[0], mirror.values()[last]]).toEqual([t, 0]);
+      const second = (row: number) => ((mirror.rows[row * st + 1] as number) & SECOND) !== 0;
+      // Moved, and retargeted now: from the new anchor. The rest: from the old one, still.
+      for (const row of [0, 19, 30]) expect(second(row)).toBe(true);
+      for (const row of [20, 49]) expect(second(row)).toBe(false);
+      expect(mirror.rows[0]).toBe(-t);
+      expect(mirror.rows[20 * st]).toBe(0);
+      expect(mirror.rows[30 * st]).toBe(0);
+      mirror.prepare(t + 16, Number.POSITIVE_INFINITY);
+      expect(mirror.take()).toEqual([[20 * bytes, 40 * bytes]]);
+      mirror.prepare(t + 32, Number.POSITIVE_INFINITY);
+      expect(mirror.take()).toEqual([[40 * bytes, 50 * bytes]]);
+      for (const row of [20, 49]) expect(second(row)).toBe(true);
+      expect(mirror.rows[49 * st]).toBe(-t);
+    } finally {
+      setLeast(was);
+    }
+  });
+
   it('hands every row over as one range when it re-anchors, each time counted from the new anchor', () => {
     const list = cells(50);
     const { s, m, motions, mirror } = setup(list, list.slice(0, 10));
@@ -291,11 +329,12 @@ describe('motion mirror', () => {
     // Row 3 was retargeted at t: released now, heading for 1.
     expect(mirror.rows[3 * st]).toBe(0);
     expect(mirror.rows[3 * st + 3 + 2 * n]).toBe(1);
-    // Every other row, met (0) or not (20), only moved its release time.
+    // Every other row, met (0) or not (20), only moved its release time and the anchor its flags name.
     for (const row of [0, 20]) {
       expect(mirror.rows[row * st]).toBe(-t);
-      expect(Array.from(mirror.rows.subarray(row * st + 1, (row + 1) * st))).toEqual(
-        before.slice(row * st + 1, (row + 1) * st),
+      expect(mirror.rows[row * st + 1]).toBe((before[row * st + 1] as number) | SECOND);
+      expect(Array.from(mirror.rows.subarray(row * st + 2, (row + 1) * st))).toEqual(
+        before.slice(row * st + 2, (row + 1) * st),
       );
     }
   });

@@ -1,0 +1,31 @@
+# teitou (Apple M5 Max, apple metal-3), 2026-11-11, headless Chromium 153.0.8010.12, node v26.13.0
+# A motion voice's mirror moving its rows to a new anchor a share a frame, rather than all in one.
+# Base 28d2f6fc (main). Every run: onto do --kind bench --gui --solo --node teitou.
+#
+# What changed: a mirror keeps two anchors (src/gpu/anchors.ts). Once the voice's time drifts
+# 2^14 ms from the one rows are written against, rows switch to the other, set at that time, the
+# greater of 4,096 rows and a 64th of them a frame, each row's flags word marking which anchor it
+# counts from (bit 20). The voice's numbers carry its time against each: the first number, and a
+# new last one. The motion runner picks by the row's bit. A jump of 2^15 ms or more from an anchor
+# a row counts from (a seek) still moves every row at once.
+#
+# 1. gpu-stock's MIX=anchor, played past 2^14 ms of voice time (frame 964 is the first past it).
+#      MIX=anchor ROWS=gpu:1000000,gpu:100000 FRAMES=1100 bench/gpu-ab.sh 28d2f6fc bench/gpu-stock.mjs <out>
+#    Raw records: -{a1,b1,b2,a2}.jsonl.
+#                 median   frame 964   largest other frame
+#   a1  1M        0.585      13.775     4.84
+#   b1  1M        0.440       1.160     5.55
+#   b2  1M        0.460       1.690     4.93
+#   a2  1M        0.430      10.945     4.27
+#   a1  100k      0.195       1.570     2.78
+#   b1  100k      0.350       0.980     3.63
+#   b2  100k      0.200       0.980     2.53
+#   a2  100k      0.200       2.140     3.35
+#    The largest other frames are early ones (frames 100-650) on both sides. While rows move (64
+#    frames at 1M, 25 at 100k), b's frames read 0.0-0.4 ms above a's neighbors, inside the spread.
+#    b1's 100k median, 0.350, disagreed with b2's; a second round at 100k alone:
+#      MIX=anchor ROWS=gpu:100000 FRAMES=1100 bench/gpu-ab.sh 28d2f6fc bench/gpu-stock.mjs <out>
+#    Raw records: -100k-{a1,b1,b2,a2}.jsonl. Medians: a 0.220, 0.220; b 0.210, 0.220. Noise, then.
+#
+# Measured before the mirror's row numbering moved to src/gpu/numbering.ts, which moves code
+# without changing what it does; the WebGPU suite passed on both.
