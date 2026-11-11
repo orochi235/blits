@@ -50,7 +50,8 @@ export class Filed<I, V extends Filer<I>> {
   /** The voices naming `subject`, in voice order; undefined where none do. Not to be changed. */
   get(subject: I): V[] | undefined {
     const raw = this.lists.get(subject);
-    if (raw === undefined || this.wide === 0) return raw as V[] | undefined;
+    if (raw === undefined || raw.length === 0) return undefined;
+    if (this.wide === 0) return raw as V[];
     if (raw.length === 1) {
       const only = raw[0];
       if (!(only instanceof Group)) return raw as V[];
@@ -160,7 +161,10 @@ export class Filed<I, V extends Filer<I>> {
       // Shifted by hand: `splice` makes an array of what it took, once a subject.
       for (let k = i + 1; k < list.length; k++) list[k - 1] = list[k] as V | Group<V>;
       list.pop();
-      if (list.length === 0) lists.delete(subject);
+      // An object's emptied list stays for the next voice naming it, which the WeakMap drops with
+      // the subject: deleting a million shrinks the table, a 17 ms frame, and the next scene grows it back.
+      if (list.length === 0 && (typeof subject !== 'object' || subject === null))
+        lists.delete(subject);
     }
   }
 }
