@@ -1,0 +1,23 @@
+# 2026-11-11. The named index (src/filed.ts) pointing an object subject's emptied entry at one
+# shared empty list, rather than deleting it. Base dceabd7e (main), b 2f17bdc5.
+#
+# Why: a group whose last voice leaves is swept off its subjects a share a sync, and each subject
+# left naming nothing was deleted from the index's WeakMap. At 1M subjects that shrank the table
+# as it emptied: syncs of 5-14 ms in a few frames of the sweep (2026-11-10-gpu-owned-groups.txt
+# put one at 17 ms and inferred the cause). Writing a key the table holds never resizes it.
+# A first version kept each emptied array itself (ac222505); it measured the same at the spikes
+# but holds an array per subject named once, so it was replaced before merging.
+#
+# 1. The owned gpu mix at 1M over 700 frames, which sweeps its first scene's groups from ~frame 320.
+#    teitou (Apple M5 Max), solo: MIX=owned ROWS=gpu:1000000 FRAMES=700 WARM=30 bench/gpu-ab.sh dceabd7e bench/gpu-reach.mjs <out>
+#    Raw records: -gpu-{a1,b1,b2,a2}.jsonl. Syncs over 1 ms among frames 320-640 (index: ms):
+#   a1   432: 12.0   496: 6.2   528: 2.5   544: 1.2      median 0.350
+#   b1   none (largest 0.47)                              median 0.385
+#   b2   none (largest 0.49)                              median 0.385
+#   a2   432: 13.8   496: 5.6   528: 2.4   544: 1.1      median 0.395
+#
+# 2. CPU rows touching the named index. keiei, solo:
+#      AB_EACH=1 bench/ab.sh dceabd7e 2f17bdc5 3 named rest kept mixed churn churn^ turnover^ tweens^ swap back redo
+#    -cpu-ab.txt: every row 0.979-1.071 of main, ranges overlapping, but churn^ (1.034, apart) and
+#    redo V=32 (1.032). Five rounds of those two, -cpu-recheck.txt: churn^ 0.997, redo V=8 0.991,
+#    V=32 1.009, ranges overlapping. As in 2026-11-10, churn^ at three rounds is noise at this size.
