@@ -183,6 +183,46 @@ describe('Timings', () => {
     expect(after.anchor + (r.f32[after.shown + 9] as number)).toBe(250 + (900 - 250) / 2);
   });
 
+  it('gives subjects sharing a delay one origin, through a reach mask and a rate change', () => {
+    const list = cells(64);
+    const { m, mixer, voices, handles, answers, timings } = setup(list, {
+      stagger: (c: C) => (c.i % 4) * 100,
+      target: (c: C) => c.i % 3 !== 0,
+      fade: { in: 300 },
+    });
+    const voice = voices[0] as Voice<C, unknown>;
+    m.sync(150);
+    timings.place(mixer, voices, answers, 0);
+    const r = recording(timings.length);
+    timings.upload(r.device, r.buffer, true);
+    (handles[0] as { rate: number }).rate = 2;
+    m.sync(160);
+    const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
+    timings.upload(r.device, r.buffer, false);
+    for (const [i, c] of list.entries()) {
+      if (i % 3 === 0) continue;
+      m.probe(c);
+      expect(r.f32[slot.shown + i]).toBe(
+        Math.fround((voice.subjects.get(c)?.shown as number) - slot.anchor),
+      );
+    }
+    expect(slot.latest).toBe(150 + (300 - 150) / 2);
+  });
+
+  it('gives each subject its own origin past 4,096 distinct delays', () => {
+    const list = cells(5000);
+    const { m, mixer, voices, answers, timings } = setup(list, {
+      stagger: (c: C) => c.i * 0.5,
+      fade: { in: 300 },
+    });
+    m.sync(100);
+    const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
+    const r = uploaded(timings);
+    for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r.f32))
+      expect(o.gpu).toBe(o.cpu);
+    expect(slot.latest).toBe(4999 * 0.5);
+  });
+
   it('moves an origin the clock reached between the change and the fold', () => {
     const list = cells(8);
     const { m, mixer, voices, handles, answers, timings } = setup(list, {
