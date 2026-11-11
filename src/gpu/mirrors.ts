@@ -16,6 +16,24 @@ export function spanned(ranges: readonly (readonly [number, number])[]): boolean
   return ranges.length > 500 + (last[1] - first[0]) / 13_000;
 }
 
+/** Writes `data`'s byte `ranges` to `buffer` at `base` bytes on, as one span where `spanned` says so. */
+export function writeRanges(
+  device: GpuDevice,
+  buffer: GpuBuffer,
+  base: number,
+  data: Float32Array,
+  ranges: readonly (readonly [number, number])[],
+): void {
+  if (spanned(ranges)) {
+    const from = (ranges[0] as readonly [number, number])[0];
+    const to = (ranges[ranges.length - 1] as readonly [number, number])[1];
+    device.queue.writeBuffer(buffer, base + from, data.subarray(from / 4, to / 4));
+    return;
+  }
+  for (const [from, to] of ranges)
+    device.queue.writeBuffer(buffer, base + from, data.subarray(from / 4, to / 4));
+}
+
 /**
  * The GPU side's mirrors, one per motion voice it folds, laid end to end in the `persub` buffer in
  * voice order. All made again when the subject list changes.
@@ -94,14 +112,7 @@ export class Mirrors {
         if (mirror.rows.length > 0) device.queue.writeBuffer(buffer, offset * 4, mirror.rows);
         continue;
       }
-      if (spanned(ranges)) {
-        const from = (ranges[0] as [number, number])[0];
-        const to = (ranges[ranges.length - 1] as [number, number])[1];
-        device.queue.writeBuffer(buffer, offset * 4 + from, mirror.rows.subarray(from / 4, to / 4));
-        continue;
-      }
-      for (const [from, to] of ranges)
-        device.queue.writeBuffer(buffer, offset * 4 + from, mirror.rows.subarray(from / 4, to / 4));
+      writeRanges(device, buffer, offset * 4, mirror.rows, ranges);
     }
     this.moved = false;
   }

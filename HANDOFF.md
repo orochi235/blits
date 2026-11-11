@@ -854,8 +854,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       a `Hold`; the teardown verbs (tone's `cancel`, the panel's `dispose`, quarks' driver with none);
       rapier's `Body.drop` and `Body.drive` meaning other things than quarks' and tone's; the
       panel's `Source` and `wire` colliding with quarks'.
-    - `submit.ts` writes each changed values range separately; `spanned()` (`gpu/mirrors.ts`) may
-      apply there too. Unmeasured.
     - Multiplying `handle.weight` into a weight signal (2026-11-09) left `signal` and `blend` at
       10,000 subjects 1.2% and 3.0% slower than its base on a noisy node, within spread (U 8 and 7
       of 25), with kB a frame unchanged (`bench/runs/2026-11-09-handle-weight-ab-fix.txt`).
