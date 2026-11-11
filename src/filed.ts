@@ -6,9 +6,14 @@ import { Store } from './store.js';
 export interface Filer<I> {
   readonly id: number;
   readonly named: { readonly list: readonly I[] } | null;
-  /** The group it is filed in, or null where it is filed under each subject itself. */
+  /** The group the mix's named index files it in, or null where it is filed under each subject itself. */
   group: Group<unknown> | null;
+  /** The same, for the index of gone voices. */
+  goneGroup?: Group<unknown> | null;
 }
+
+/** Which of a voice's fields an index keeps its group in: a voice can be in two at once. */
+export type GroupSlot = 'group' | 'goneGroup';
 
 /**
  * The voices naming one list of many subjects, in id order: listed under each subject once for all
@@ -48,6 +53,8 @@ export class Filed<I, V extends Filer<I>> {
   private readonly dead: Group<V>[] = [];
   private pending = 0;
 
+  constructor(private readonly slot: GroupSlot = 'group') {}
+
   /** The voices naming `subject`, in voice order; undefined where none do. Not to be changed. */
   get(subject: I): V[] | undefined {
     const raw = this.lists.get(subject);
@@ -72,7 +79,7 @@ export class Filed<I, V extends Filer<I>> {
   file(voice: V): void {
     const list = (voice.named as { list: readonly I[] }).list;
     if (list.length < WIDE) {
-      voice.group = null;
+      voice[this.slot] = null;
       this.under(list, voice);
       return;
     }
@@ -89,16 +96,16 @@ export class Filed<I, V extends Filer<I>> {
       this.pending -= list.length;
     }
     insertById(g.voices, voice);
-    voice.group = g as Group<unknown>;
+    voice[this.slot] = g as Group<unknown>;
   }
 
   unfile(voice: V): void {
-    const g = voice.group as Group<V> | null;
+    const g = (voice[this.slot] ?? null) as Group<V> | null;
     if (g === null) {
       this.off((voice.named as { list: readonly I[] }).list, voice);
       return;
     }
-    voice.group = null;
+    voice[this.slot] = null;
     const i = g.voices.indexOf(voice);
     if (i >= 0) g.voices.splice(i, 1);
     if (g.voices.length > 0) return;

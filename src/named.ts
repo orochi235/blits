@@ -99,29 +99,6 @@ function distinct<I>(subjects: readonly I[]): boolean {
   return true;
 }
 
-/** Files `voice` under each subject in `subjects`, in an index of the voices naming each. */
-export function file<I, V>(index: Store<I, V[]>, subjects: readonly I[], voice: V): void {
-  for (const subject of subjects) {
-    const list = index.get(subject);
-    if (list === undefined || list === EMPTIED) index.set(subject, [voice]);
-    else list.push(voice);
-  }
-}
-
-/** Takes `voice` out from under each subject in `subjects`, as `file` put it there. */
-export function unfile<I, V>(index: Store<I, V[]>, subjects: readonly I[], voice: V): void {
-  for (const subject of subjects) {
-    const list = index.get(subject);
-    if (list === undefined) continue;
-    const i = list.indexOf(voice);
-    if (i < 0) continue;
-    // Shifted by hand: `splice` makes an array of what it took, once a subject.
-    for (let k = i + 1; k < list.length; k++) list[k - 1] = list[k] as V;
-    list.pop();
-    if (list.length === 0) emptied(index, subject);
-  }
-}
-
 /** The list of a subject no voice is filed under any longer, kept in place of its entry. */
 export const EMPTIED: never[] = Object.freeze([]) as unknown as never[];
 

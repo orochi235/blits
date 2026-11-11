@@ -1,23 +1,25 @@
-# teitou? onto chose (solo), 2026-11-11, node v26.13.0. npx tsc -b && node bench/gone-churn.mjs (N=1000000, ROUNDS=8)
-# The gone index's file and unfile (src/named.ts) over 1M object subjects, four voices in turn on one
-# index: `delete` drops an emptied entry from the WeakMap (main), `kept` points it at the shared
-# frozen EMPTIED list (this change). Every pass's times, ms, as printed:
-1/8 delete file 97.2 85.2 116.8 89.9   unfile 116.9 101.5 101.1 113.8 ms
-1/8 kept   file 135.8 57.5 55.6 44.4   unfile 90.9 85.9 85.3 93.8 ms
-2/8 delete file 78.0 74.7 79.1 74.4   unfile 167.5 125.2 97.2 132.7 ms
-2/8 kept   file 73.7 42.5 41.2 43.4   unfile 98.4 89.1 96.3 95.7 ms
-3/8 delete file 144.8 77.9 73.0 72.9   unfile 87.7 93.2 95.7 87.2 ms
-3/8 kept   file 133.4 41.7 41.1 36.0   unfile 69.8 61.0 61.7 52.6 ms
-4/8 delete file 70.1 71.3 76.3 70.9   unfile 82.6 120.6 85.8 91.8 ms
-4/8 kept   file 76.0 108.8 41.8 39.7   unfile 62.3 70.8 59.7 65.8 ms
-5/8 delete file 73.9 69.4 71.9 81.2   unfile 97.6 88.1 139.6 88.1 ms
-5/8 kept   file 67.4 40.2 35.1 101.8   unfile 54.5 56.9 52.5 59.6 ms
-6/8 delete file 73.5 69.9 75.9 81.0   unfile 83.5 92.6 93.3 142.4 ms
-6/8 kept   file 81.3 44.1 39.9 39.9   unfile 71.7 70.9 64.5 62.7 ms
-7/8 delete file 145.9 80.3 76.2 77.5   unfile 93.8 86.3 89.5 89.6 ms
-7/8 kept   file 145.2 42.0 42.1 43.6   unfile 64.6 71.0 71.5 74.9 ms
-8/8 delete file 78.7 78.7 153.4 81.3   unfile 95.0 92.3 95.3 100.2 ms
-8/8 kept   file 77.2 43.1 41.6 39.6   unfile 77.1 74.1 76.8 69.0 ms
-# Refiling over kept entries takes about 42 ms against 75; unfiling about 65 against 93 (the
-# first file of each pass makes every entry, so it matches). Both are still one pass of the whole
-# voice in one call.
+# teitou (onto do --kind bench --solo), 2026-11-11, node v26.13.0.
+#   npx tsc -b && N=1000000 ROUNDS=8 node bench/gone-churn.mjs; raw: 2026-11-11-gone-churn.jsonl
+# The gone index's churn: four voices naming one list of 1M object subjects filed, then let go.
+# `each` files every voice under every subject, as the index did (src/named.ts file/unfile, with its
+# emptied entries already kept in place); `filed` is the index on `Filed('goneGroup')`, which files
+# the four as one group and lets the dead group go a share a sync. Every pass, ms:
+1/8 each  file   429.3  unfile   260.7
+1/8 filed file   107.0  unfile     0.0  sweep  245 syncs, worst 1.03 ms
+2/8 each  file   260.1  unfile   236.6
+2/8 filed file    91.2  unfile     0.0  sweep  245 syncs, worst 0.36 ms
+3/8 each  file   378.3  unfile   295.6
+3/8 filed file   129.6  unfile     0.0  sweep  245 syncs, worst 0.50 ms
+4/8 each  file   292.2  unfile   243.7
+4/8 filed file    87.4  unfile     0.0  sweep  245 syncs, worst 0.31 ms
+5/8 each  file   391.0  unfile   233.8
+5/8 filed file    92.5  unfile     0.0  sweep  245 syncs, worst 0.35 ms
+6/8 each  file   461.4  unfile   219.2
+6/8 filed file    90.7  unfile     0.0  sweep  245 syncs, worst 0.51 ms
+7/8 each  file   245.2  unfile   196.7
+7/8 filed file    83.5  unfile     0.0  sweep  245 syncs, worst 0.45 ms
+8/8 each  file   323.7  unfile   273.1
+8/8 filed file    82.0  unfile     0.0  sweep  245 syncs, worst 0.56 ms
+# What is left is the first voice of a list making the group's entry under each subject, 82-130 ms
+# in one call. An earlier step the same day, keeping emptied entries under per-subject filing, took
+# one voice's refile from about 75 ms to 42 and its unfile from 93 to 65 (that bench was replaced).

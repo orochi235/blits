@@ -35,8 +35,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   knowing those subjects, so the mix read as inert before the subject moved.
 - A group of voices naming 1M subjects leaving no longer costs a few 5–14 ms syncs as the mix
   takes it off its subjects.
-- Under `history`, a voice naming many subjects trimmed off the tape costs less: at 1M subjects
-  about 65 ms where it took 93, and 42 where the next such voice is kept, from 75.
+- Under `history`, voices naming many subjects cost far less to keep once gone and to trim off
+  the tape: at 1M subjects, four voices of one scene are kept in 82–130 ms where they took
+  245–461, and trimmed a share a sync, under 1.1 ms each, where it took 197–296 ms in one.
 - A motion voice on the gpu engine no longer stalls a frame every 2^14 ms of voice time: its rows
   move to a new anchor a share a frame, 1.2–1.7 ms at 1M subjects where it took 10.9–13.8.
 - A rate change, ramp or seek on a staggered voice fading in on the gpu engine re-sends an origin per
