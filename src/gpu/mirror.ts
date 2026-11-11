@@ -1,9 +1,10 @@
 import type { Motions } from '../motions.js';
-import { absent } from '../numbers.js';
 import { reading } from '../reading.js';
 import { RunFlag, type Segment } from '../stretch.js';
 import { warnOnce } from '../warn.js';
-import { putRun, rangesOf } from './run-row.js';
+import { Anchors } from './anchors.js';
+import { Numbering } from './numbering.js';
+import { putRun, rangesOf, spliced } from './run-row.js';
 
 /** The warning where two voices fold one motion patch, each taking its one watch from the other. */
 export const SHARED =
@@ -11,12 +12,6 @@ export const SHARED =
 
 const PENDING = RunFlag.PENDING;
 const OLDER = RunFlag.OLDER;
-
-/**
- * How far, in voice ms, the voice's time may move from `anchor` before every row is written again
- * from a new one: f32 keeps times there to 1/512 ms.
- */
-const DRIFT = 2 ** 14;
 
 /**
  * A motion voice's runs as the GPU reads them: each registered subject's run, in registration
@@ -27,21 +22,13 @@ const DRIFT = 2 ** 14;
  * the rows that changed.
  */
 export class Mirror<I> {
-  /** Each registered subject's run, `stride` numbers apiece, its release time counted from `anchor`. */
+  /** Each registered subject's run, `stride` numbers apiece, its release time counted from its anchor. */
   rows = new Float32Array(0);
   stride = 0;
-  /** The voice time the rows' times count from; NaN until a frame shows the voice. */
-  anchor = Number.NaN;
-  /** By row, the subject's number in `motions`; -1 for one the patch has not met. */
-  private slots = new Int32Array(0);
-  /**
-   * By row, the first stretch of a subject the patch has not met, and its flags; undefined for a
-   * met one, or an unmet one not worked out yet.
-   */
-  private unmet: ({ seg: Segment; flags: number } | undefined)[] = [];
-  /** By subject number, its row; undefined for a number not yet matched to a registered subject. */
-  private rowOf: (number | undefined)[] = [];
-  private bySubject = new Map<I, number>();
+  private readonly anchors = new Anchors();
+  /** Rows moved to a new anchor since the last `take`, `[from, to)`. */
+  private moved: [number, number] | null = null;
+  private numbering: Numbering<I>;
   /** Subject numbers whose run or pending changes moved, or that were given up, since the last `prepare`. */
   private touched = new Set<number>();
   /** Subject numbers with a change still to come or an earlier stretch kept, met every frame. */
@@ -52,7 +39,7 @@ export class Mirror<I> {
   private rewrite = false;
   /** Set where `take` hands over every row as one range, as after a rewrite or a new anchor. */
   private all = false;
-  private time = Number.NaN;
+  private times: [number, number] = [Number.NaN, Number.NaN];
   private detached = false;
   private vals: Float32Array;
   private readonly listen = (s: number) => {
@@ -69,7 +56,7 @@ export class Mirror<I> {
   ) {
     this.vals = packed;
     this.watch();
-    this.number();
+    this.numbering = this.number();
   }
 
   /** Takes the patch's one watch, from a mirror on another mix that may never let it go. */
@@ -78,65 +65,47 @@ export class Mirror<I> {
     this.motions.watch(this.listen);
   }
 
-  /** Matches every registered subject to its number, working out the first row of one with none. */
-  private number(): void {
+  /** Matches every registered subject to its number, and sets every row to be written. */
+  private number(): Numbering<I> {
     const m = this.motions;
-    this.rowOf = [];
-    this.bySubject = new Map();
-    this.slots = new Int32Array(this.list.length).fill(-1);
-    this.unmet = [];
+    const numbering = new Numbering(m, this.list);
+    this.numbering = numbering;
     this.due = new Set();
-    this.list.forEach((subject, i) => {
-      this.bySubject.set(subject, i);
-      const s = m.known(subject);
-      if (s === undefined) {
-        const run = m.freshRun(subject);
-        this.unmet[i] = { seg: run.stretches[0] as Segment, flags: run.flags };
-        return;
-      }
-      this.slots[i] = s;
-      this.rowOf[s] = i;
-      if (this.flags(s) & (PENDING | OLDER)) this.due.add(s);
-    });
+    for (const s of numbering.slots)
+      if (s >= 0 && this.flags(s) & (PENDING | OLDER)) this.due.add(s);
     this.stride = m.stride;
     this.rows = new Float32Array(this.list.length * this.stride);
     this.touched.clear();
     this.rewrite = true;
     this.all = true;
+    return numbering;
+  }
+
+  /** The voice time rows are written against; NaN until a frame shows the voice. */
+  get anchor(): number {
+    return this.anchors.anchor;
   }
 
   /**
-   * Counts every row's release time from a new anchor. Only that number moves, so the rest of the
-   * row stands; a row whose subject has a change this frame is written in full after.
+   * Counts rows `from` to `to`'s release times from the current anchor, and marks them so. Only
+   * those numbers move, so the rest of each row stands; a row whose subject has a change this
+   * frame is written in full after.
    */
-  private shift(anchor: number): void {
-    const runs = this.motions.runs;
-    const rows = this.rows;
-    const stride = this.stride;
-    this.anchor = anchor;
-    this.all = true;
-    if (this.rewrite) return;
-    for (let row = 0, o = 0; row < this.list.length; row++, o += stride) {
-      const s = this.slots[row] as number;
-      if (s >= 0) rows[o] = (runs[this.motions.base(s)] as number) - anchor;
-      else {
-        const u = this.unmet[row];
-        if (u !== undefined) rows[o] = u.seg.at - anchor;
-      }
+  private shift(from: number, to: number): void {
+    const { rows, stride, anchors, numbering } = this;
+    const anchor = anchors.anchor;
+    for (let row = from, o = from * stride; row < to; row++, o += stride) {
+      const at = numbering.releaseAt(row);
+      if (at !== undefined) rows[o] = at - anchor;
+      rows[o + 1] = anchors.mark(rows[o + 1] as number);
     }
   }
 
   /** Lets go of the number of each touched subject's row where the patch gave it up or to another. */
   private recheck(): void {
-    const numbers = this.motions.numbers;
     for (const s of this.touched) {
-      const row = this.rowOf[s];
+      const row = this.numbering.recheck(s);
       if (row === undefined) continue;
-      const now = numbers.subject(s);
-      if (now !== absent && Object.is(now, this.list[row])) continue;
-      this.rowOf[s] = undefined;
-      this.slots[row] = -1;
-      this.unmet[row] = undefined;
       this.due.delete(s);
       this.dirty.add(row);
     }
@@ -146,18 +115,8 @@ export class Mirror<I> {
     return this.motions.runs[this.motions.base(s) + 1] as number;
   }
 
-  /** Subject number `s`'s row, matching it to its registered subject the first time it is seen. */
   private rowFor(s: number): number | undefined {
-    const known = this.rowOf[s];
-    if (known !== undefined) return known;
-    const subject = this.motions.numbers.subject(s);
-    if (subject === absent) return undefined;
-    const row = this.bySubject.get(subject);
-    if (row === undefined) return undefined;
-    this.slots[row] = s;
-    this.rowOf[s] = row;
-    this.unmet[row] = undefined;
-    return row;
+    return this.numbering.rowFor(s);
   }
 
   /**
@@ -172,6 +131,8 @@ export class Mirror<I> {
   dirtyRows(): number[] {
     if (this.all) return Array.from(this.list, (_, i) => i);
     const rows = new Set(this.dirty);
+    if (this.moved !== null)
+      for (let row = this.moved[0]; row < this.moved[1]; row++) rows.add(row);
     for (const s of this.touched) {
       const row = this.rowFor(s);
       if (row !== undefined) rows.add(row);
@@ -199,7 +160,15 @@ export class Mirror<I> {
       this.watch();
       this.number();
     } else this.recheck();
-    if (!Number.isNaN(t) && !(Math.abs(t - this.anchor) <= DRIFT)) this.shift(t);
+    const step = this.anchors.step(t, this.list.length);
+    if (step === 'all') {
+      this.all = true;
+      if (!this.rewrite) this.shift(0, this.list.length);
+    } else if (step !== null && !this.rewrite) {
+      this.shift(step[0], step[1]);
+      const m = this.moved;
+      this.moved = m === null ? step : [Math.min(m[0], step[0]), Math.max(m[1], step[1])];
+    }
     const work = new Set([...this.touched, ...this.due]);
     this.touched.clear();
     if (!Number.isNaN(t) && reading.live) {
@@ -231,10 +200,12 @@ export class Mirror<I> {
       for (let row = 0; row < this.list.length; row++) this.write(row, this.at(row, t, holds));
       this.rewrite = false;
     } else for (const row of this.dirty) this.write(row, this.at(row, t, holds));
-    if (!Object.is(t - this.anchor, this.time)) {
-      this.time = t - this.anchor;
+    const times = this.anchors.times(t);
+    if (!Object.is(times[0], this.times[0]) || !Object.is(times[1], this.times[1])) {
+      this.times = times;
       this.vals = this.packed.slice();
-      this.vals[0] = this.time;
+      this.vals[0] = times[0];
+      this.vals[this.packed.length - 1] = times[1];
     }
   }
 
@@ -246,21 +217,16 @@ export class Mirror<I> {
     return x >= 0 || Number.isNaN(x) ? x : holds ? 0 : Number.NaN;
   }
 
-  /** The voice's numbers this frame, its time counted from `anchor`; a new array when it moved. */
+  /** The voice's numbers this frame, its time counted from each anchor, first and last; a new array when it moved. */
   values(): Float32Array {
     return this.vals;
   }
 
   private write(row: number, t: number): void {
     const m = this.motions;
-    const s = this.slots[row] as number;
+    const s = this.numbering.slots[row] as number;
     if (s < 0) {
-      let u = this.unmet[row];
-      if (u === undefined) {
-        const run = m.freshRun(this.list[row] as I);
-        u = { seg: run.stretches[0] as Segment, flags: run.flags };
-        this.unmet[row] = u;
-      }
+      const u = this.numbering.unmetAt(row);
       this.put(row, u.flags, u.seg);
       return;
     }
@@ -273,19 +239,23 @@ export class Mirror<I> {
   }
 
   private put(row: number, flags: number, seg: Segment): void {
-    putRun(this.rows, row * this.stride, this.motions, flags, seg, this.anchor);
+    const anchors = this.anchors;
+    putRun(this.rows, row * this.stride, this.motions, anchors.mark(flags), seg, anchors.anchor);
   }
 
   /** The rows written since the last call, as sorted `[start, end)` byte ranges, touching ones joined. */
   take(): [number, number][] {
+    const moved = this.moved;
+    this.moved = null;
     if (this.all) {
       this.all = false;
       this.dirty.clear();
       return this.rows.length > 0 ? [[0, this.rows.byteLength]] : [];
     }
-    const out = rangesOf(this.dirty, this.stride * 4);
+    const bytes = this.stride * 4;
+    const out = rangesOf(this.dirty, bytes);
     this.dirty.clear();
-    return out;
+    return moved === null ? out : spliced(out, moved[0] * bytes, moved[1] * bytes);
   }
 
   /** Stops listening to the patch. */

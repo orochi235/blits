@@ -33,6 +33,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A seek through a history store back to while a staggered motion voice played finds the mix awake
   while a subject met inside its stagger is still unread. The voice came back from the store not
   knowing those subjects, so the mix read as inert before the subject moved.
+- A motion voice on the gpu engine no longer stalls a frame every 2^14 ms of voice time: its rows
+  move to a new anchor a share a frame, 1.2–1.7 ms at 1M subjects where it took 10.9–13.8.
 - A rate change, ramp or seek on a staggered voice fading in on the gpu engine re-sends an origin per
   distinct delay, not one per subject: 1 KB, from 4 MB, for 256 delays over 1M subjects.
 - A frame where voices naming the same many subjects start or end costs far less: at 1M subjects

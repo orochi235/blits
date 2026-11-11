@@ -1,6 +1,7 @@
 import { EASED } from '../../closed.js';
 import { curveData } from '../../easing.js';
 import { motionOf } from '../../motion.js';
+import { SECOND } from '../anchors.js';
 import {
   type ChannelLookup,
   cachedRunner,
@@ -11,16 +12,19 @@ import {
 import { closedWgsl, FORMS } from '../wgsl/closed.js';
 import { widthOf } from './keys.js';
 
-/** One runner per law form, axis count and channel written, since the kernel names its output. */
-function motionRunner(form: number, axes: number, writes: string): Runner {
-  return cachedRunner(`motion:${form}:${axes}:${writes}`, () => {
+/**
+ * One runner per law form, axis count, channel written and count of numbers, since the kernel
+ * names its output and reads the voice's time against the second anchor from its last number.
+ */
+function motionRunner(form: number, axes: number, writes: string, last: number): Runner {
+  return cachedRunner(`motion:${form}:${axes}:${writes}:${last}`, () => {
     const c = closedWgsl(form, axes);
     return {
       helpers: c.helpers,
       wgsl: [
         'let k = base;',
         'let r = sub;',
-        'let t = values[k] - lag;',
+        `let t = select(values[k], values[k + ${last}u], (u32(persub[r + 1u]) & ${SECOND}u) != 0u) - lag;`,
         `var x: array<f32, ${axes}>;`,
         c.body,
         `out.${writes} = ${axes === 1 ? 'x[0]' : 'x'};`,
@@ -34,7 +38,8 @@ function motionRunner(form: number, axes: number, writes: string): Runner {
 
 /**
  * A `tween`, `spring` or `glide` patch's runner and numbers: a placeholder for the voice's time,
- * then the law's settle and constants, then a tween's curve. Each subject's run is its own, which
+ * then the law's settle and constants, then a tween's curve, then a placeholder for its time
+ * against a `Mirror`'s second anchor. Each subject's run is its own, which
  * a `Mirror` keeps on the GPU and puts the voice's time in front of.
  */
 export function motionPack(patch: object, channels: ChannelLookup): Packed | undefined {
@@ -56,9 +61,10 @@ export function motionPack(patch: object, channels: ChannelLookup): Packed | und
     if (data === undefined) return { why: EASING_FUNCTION };
     curve = data;
   }
+  const values = Float32Array.from([0, ...Array.from(law).slice(1), ...curve, 0]);
   return {
-    runner: motionRunner(form, axes, name),
-    values: Float32Array.from([0, ...Array.from(law).slice(1), ...curve]),
+    runner: motionRunner(form, axes, name, values.length - 1),
+    values,
     perSubject: { motions },
   };
 }
