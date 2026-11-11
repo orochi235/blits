@@ -60,6 +60,14 @@ function setup(list: readonly C[], ...specs: Record<string, unknown>[]) {
   return { m, mixer, voices, handles, answers, timings: new Timings() };
 }
 
+/** Subject `i`'s level in the block at `slot`, as the kernel reads it. */
+const levelAt = (u32: Uint32Array, slot: TimingSlot, i: number) =>
+  slot.codes === NONE ? i : ((u32[slot.codes + (i >>> 1)] as number) >>> ((i & 1) * 16)) & 0xffff;
+const delayAt = (u32: Uint32Array, f32: Float32Array, slot: TimingSlot, i: number) =>
+  f32[slot.delays + levelAt(u32, slot, i)];
+const shownAt = (u32: Uint32Array, f32: Float32Array, slot: TimingSlot, i: number) =>
+  f32[slot.shown + levelAt(u32, slot, i)];
+
 const bit = (words: Uint32Array, at: number, i: number) =>
   ((words[at + (i >>> 5)] as number) >>> (i & 31)) & 1;
 
@@ -69,13 +77,13 @@ function origins(
   voice: Voice<C, unknown>,
   list: readonly C[],
   slot: TimingSlot,
-  f32: Float32Array,
+  { u32, f32 }: { u32: Uint32Array; f32: Float32Array },
 ) {
   return list.map((c, i) => {
     m.probe(c);
     return {
       cpu: Math.fround((voice.subjects.get(c)?.shown as number) - slot.anchor),
-      gpu: f32[slot.shown + i],
+      gpu: shownAt(u32, f32, slot, i),
     };
   });
 }
@@ -102,19 +110,20 @@ describe('Timings', () => {
     const slots = timings.place(mixer, voices, answers, from);
     const [a, none, b, c] = slots as [TimingSlot, undefined, TimingSlot, TimingSlot];
     expect(none).toBeUndefined();
-    expect([a.delays, a.mask, a.shown]).toEqual([from, from + n, from + n + 1]);
-    expect([b.delays, b.mask, b.shown]).toEqual([NONE, from + 2 * n + 1, NONE]);
-    expect([c.delays, c.mask, c.shown]).toEqual([from + 2 * n + 2, NONE, NONE]);
-    expect(timings.length).toBe(2 * n + 1 + 1 + n);
+    // a: 4 levels (subject 2, unreached, holds delay 0), a mask word, 4 origins, 3 words of codes.
+    expect([a.delays, a.mask, a.shown, a.codes]).toEqual([from, from + 4, from + 5, from + 9]);
+    expect([b.delays, b.mask, b.shown, b.codes]).toEqual([NONE, from + 12, NONE, NONE]);
+    expect([c.delays, c.mask, c.shown, c.codes]).toEqual([from + 13, NONE, NONE, from + 18]);
+    expect(timings.length).toBe(12 + 1 + 8);
 
     const r = recording(from + timings.length);
     timings.upload(r.device, r.buffer, true);
     for (let i = 0; i < n; i++) {
-      if (i !== 2) expect(r.f32[a.delays + i]).toBe(i * 10);
+      if (i !== 2) expect(delayAt(r.u32, r.f32, a, i)).toBe(i * 10);
       expect(bit(r.u32, a.mask, i)).toBe(i !== 2 ? 1 : 0);
-      if (i !== 2) expect(r.f32[a.shown + i]).toBe(Math.fround(i * 10 - a.anchor));
+      if (i !== 2) expect(shownAt(r.u32, r.f32, a, i)).toBe(Math.fround(i * 10 - a.anchor));
       expect(bit(r.u32, b.mask, i)).toBe(i % 2 === 0 ? 1 : 0);
-      expect(r.f32[c.delays + i]).toBe(i);
+      expect(delayAt(r.u32, r.f32, c, i)).toBe(i);
     }
     expect([...r.f32.subarray(0, from)]).toEqual(new Array(from).fill(0));
   });
@@ -146,7 +155,9 @@ describe('Timings', () => {
       m.probe(c);
       const held = voice.subjects.get(c);
       expect(held).toBeDefined();
-      expect(r.f32[slot.shown + i]).toBe(Math.fround((held?.shown as number) - slot.anchor));
+      expect(shownAt(r.u32, r.f32, slot, i)).toBe(
+        Math.fround((held?.shown as number) - slot.anchor),
+      );
     }
     expect(slot.latest).toBe(700);
   });
@@ -162,7 +173,7 @@ describe('Timings', () => {
     const before = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
     const r = recording(timings.length);
     timings.upload(r.device, r.buffer, true);
-    const was = list.map((_, i) => before.anchor + (r.f32[before.shown + i] as number));
+    const was = list.map((_, i) => before.anchor + (shownAt(r.u32, r.f32, before, i) as number));
 
     m.sync(250);
     (handles[0] as { rate: number }).rate = 2;
@@ -171,7 +182,7 @@ describe('Timings', () => {
     timings.upload(r.device, r.buffer, false);
     for (const [i, c] of list.entries()) {
       const d = i * 100;
-      const shown = r.f32[after.shown + i] as number;
+      const shown = shownAt(r.u32, r.f32, after, i) as number;
       if (d <= 250) expect(after.anchor + shown).toBe(was[i]);
       else
         expect(shown).toBe(
@@ -180,7 +191,7 @@ describe('Timings', () => {
       m.probe(c);
       expect(shown).toBe(Math.fround((voice.subjects.get(c)?.shown as number) - after.anchor));
     }
-    expect(after.anchor + (r.f32[after.shown + 9] as number)).toBe(250 + (900 - 250) / 2);
+    expect(after.anchor + (shownAt(r.u32, r.f32, after, 9) as number)).toBe(250 + (900 - 250) / 2);
   });
 
   it('gives subjects sharing a delay one origin, through a reach mask and a rate change', () => {
@@ -202,7 +213,7 @@ describe('Timings', () => {
     for (const [i, c] of list.entries()) {
       if (i % 3 === 0) continue;
       m.probe(c);
-      expect(r.f32[slot.shown + i]).toBe(
+      expect(shownAt(r.u32, r.f32, slot, i)).toBe(
         Math.fround((voice.subjects.get(c)?.shown as number) - slot.anchor),
       );
     }
@@ -218,7 +229,7 @@ describe('Timings', () => {
     m.sync(100);
     const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
     const r = uploaded(timings);
-    for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r.f32))
+    for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r))
       expect(o.gpu).toBe(o.cpu);
     expect(slot.latest).toBe(4999 * 0.5);
   });
@@ -236,8 +247,8 @@ describe('Timings', () => {
     m.sync(266);
     const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
     const r = uploaded(timings);
-    expect(slot.anchor + (r.f32[slot.shown + 2] as number)).toBe(255);
-    for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r.f32))
+    expect(slot.anchor + (shownAt(r.u32, r.f32, slot, 2) as number)).toBe(255);
+    for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r))
       expect(o.gpu).toBe(o.cpu);
   });
 
@@ -257,9 +268,9 @@ describe('Timings', () => {
     m.sync(320);
     const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
     const r = uploaded(timings);
-    const at = (i: number) => slot.anchor + (r.f32[slot.shown + i] as number);
+    const at = (i: number) => slot.anchor + (shownAt(r.u32, r.f32, slot, i) as number);
     expect([at(1), at(2), at(3), at(4)]).toEqual([130, 230, 295, 540]);
-    for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r.f32))
+    for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r))
       expect(o.gpu).toBe(o.cpu);
   });
 
@@ -307,7 +318,7 @@ describe('Timings', () => {
     expect(heard).toContain(400);
     const slot = timings.place(mixer, [voice], answers, 0)[0] as TimingSlot;
     const r = uploaded(timings);
-    for (const o of origins(m, voice, list, slot, r.f32)) expect(o.gpu).toBe(o.cpu);
+    for (const o of origins(m, voice, list, slot, r)) expect(o.gpu).toBe(o.cpu);
   });
 
   it("keeps a motion voice's origins as its records hold them through rate changes and a seek", () => {
@@ -343,7 +354,7 @@ describe('Timings', () => {
     for (const c of list) m.probe(c);
     const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
     const r = uploaded(timings);
-    for (const o of origins(m, voice, list, slot, r.f32)) expect(o.gpu).toBe(o.cpu);
+    for (const o of origins(m, voice, list, slot, r)) expect(o.gpu).toBe(o.cpu);
   });
 
   it("follows a mix-level seek back to before a rate change, as the records' origins do", () => {
@@ -361,7 +372,7 @@ describe('Timings', () => {
       for (const c of list) m.probe(c);
       const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
       const r = uploaded(timings);
-      for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r.f32))
+      for (const o of origins(m, voices[0] as Voice<C, unknown>, list, slot, r))
         expect(o.gpu).toBe(o.cpu);
     };
     for (let t = 0; t <= 300; t += 50) frame(t);
@@ -406,5 +417,24 @@ describe('Timings', () => {
     r.writes.length = 0;
     timings.upload(r.device, r.buffer, false);
     expect(r.writes).toEqual([]);
+  });
+  it("lays a level's delay and origin once, and re-sends only the levels' origins after a rate change", () => {
+    const list = cells(1000);
+    const { m, mixer, voices, handles, answers, timings } = setup(list, {
+      stagger: (c: C) => (c.i % 4) * 100,
+      fade: { in: 300 },
+    });
+    const slot = timings.place(mixer, voices, answers, 0)[0] as TimingSlot;
+    expect(timings.length).toBe(4 + 4 + 500);
+    const r = uploaded(timings);
+    expect([0, 1, 2, 3, 4, 999].map((i) => delayAt(r.u32, r.f32, slot, i))).toEqual([
+      0, 100, 200, 300, 0, 300,
+    ]);
+    m.sync(50);
+    (handles[0] as { rate: number }).rate = 2;
+    timings.place(mixer, voices, answers, 0);
+    r.writes.length = 0;
+    timings.upload(r.device, r.buffer, false);
+    expect(r.writes).toEqual([{ offset: slot.shown * 4, length: 4 * 4 }]);
   });
 });

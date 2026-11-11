@@ -1,0 +1,40 @@
+# teitou (Apple M5 Max, apple metal-3), 2026-11-11, headless Chromium 153.0.8010.12, node v26.13.0
+# The gpu engine's timing blocks laid by level: a delay and a fade-in origin per distinct delay, and
+# a u16 per subject naming its level, two to a u32, read by the kernel through a new row column
+# `CODES`. A voice with more than 4,096 distinct delays keeps one delay and origin per subject
+# (`CODES` NONE). The codes go up once per block, straight from `levelsOf`'s array; a clock change
+# re-sends only the levels' origins. Follows 2026-11-11-gpu-start-levels.txt.
+# Base 2400ed17 (main). Every run: onto do --kind bench --gui --solo --node teitou.
+#
+# 1. The owned mix's scene starts (the shape of 2026-11-10-gpu-owned-groups.txt).
+#      MIX=owned ROWS=gpu:1000000,gpu:100000 FRAMES=300 WARM=30 bench/gpu-ab.sh 2400ed17 bench/gpu-reach.mjs <out>
+#    Raw records: -start-{a1,b1,b2,a2}.jsonl. Start frames 75, 150, 225, ms:
+#                  sync + fold              whole frame          median
+#   a1  1M      5.51   6.19   4.69      8.28  41.55   6.26     0.395
+#   b1  1M      3.73   3.16   2.82      4.93   3.63   3.30     0.385
+#   b2  1M      3.97   3.32   3.31      4.76   3.79   3.88     0.380
+#   a2  1M      5.15   4.77   4.73      7.72   7.38   6.26     0.380
+#   a1  100k    1.39   0.97   0.89      1.77   1.24   1.17     0.225
+#   b1  100k    0.94   0.48   0.40      1.23   0.70   0.62     0.220
+#   b2  100k    1.02   0.54   0.43      1.46   0.96   0.64     0.220
+#   a2  100k    1.43   0.92   0.91      1.86   1.17   1.16     0.230
+#    a1's 41.55 is the wait on `onSubmittedWorkDone`, as in the earlier records.
+#
+# 2. A steady frame with every voice staggered, to price the kernel's extra read per subject.
+#      MIX=stagger ROWS=gpu:1000000,gpu:100000 FRAMES=300 bench/gpu-ab.sh 2400ed17 bench/gpu-stock.mjs <out>
+#    Raw records: -steady-{a1,b1,b2,a2}.jsonl. Medians, ms (retargets, read = the dispatch, wait = the GPU):
+#                  frame   retargets    read    wait
+#   a1  1M       65.665     25.350   36.300   3.955
+#   b1  1M       61.045     23.465   33.565   4.145
+#   b2  1M       61.495     23.960   33.275   3.985
+#   a2  1M       62.850     23.885   34.895   3.840
+#   a1  100k      5.605      1.590    3.285   0.775
+#   b1  100k      5.290      1.445    3.110   0.805
+#   b2  100k      5.140      1.305    3.055   0.820
+#   a2  100k      5.100      1.275    3.065   0.795
+#    The GPU wait reads about 4% longer (ranges apart at both sizes), inferred to be the read of each
+#    subject's code before its delay and origin; the dispatch reads 1.5-3 ms shorter at 1M.
+#
+# 3. What is left of a start frame (-prof.jsonl, -f75.cpuprofile, -f150.cpuprofile; sampled at 100 µs,
+#    read as shares). Frame 75: 22.2 ms `distinct` in levels.ts, hashing each delay; 11.8 ms writing
+#    the codes. Nothing else over 1.5 ms.

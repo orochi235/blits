@@ -10,7 +10,7 @@ const words = new Uint32Array(bits.buffer);
 export interface Levels {
   /** Each distinct delay, in order of first appearance; the delays themselves where `codes` is null. */
   readonly values: Float64Array;
-  /** Each subject's index into `values`; null where there were more than `MOST`, each its own. */
+  /** Each subject's index into `values`, padded to even length; null past `MOST` values, each its own. */
   readonly codes: Uint16Array | null;
 }
 
@@ -32,7 +32,8 @@ export function levelsOf(delays: Float64Array): Levels {
 
 function distinct(delays: Float64Array): Levels {
   const n = delays.length;
-  const codes = new Uint16Array(n);
+  // Even, so the GPU's u32 words take it whole.
+  const codes = new Uint16Array(n + (n & 1));
   const values = new Float64Array(MOST);
   // Each slot holds a level + 1; 0 for empty.
   const slots = new Uint16Array(SLOTS);

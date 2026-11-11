@@ -1,5 +1,5 @@
 /** How many numbers each voice takes in the table. */
-export const ROW = 21;
+export const ROW = 22;
 
 /**
  * Where each of a row's numbers sits. Offsets and `FLAGS` are a u32's bits; times are ms. A voice
@@ -20,7 +20,8 @@ export enum Col {
   FLAGS = 6,
   /** Where the voice's per-subject region starts in the per-subject buffer, in f32s. */
   SUB = 7,
-  /** Its timing block's delays, reach mask and fade-in origins in `persub`; NONE for none. */
+  /** Its timing block's delays, reach mask and fade-in origins in `persub`, the first and last by
+   * level where `CODES` is set; NONE for none. */
   DELAYS = 8,
   MASK = 9,
   SHOWN = 10,
@@ -42,6 +43,8 @@ export enum Col {
   EASE = 19,
   /** Where its per-subject weight reads start in `persub`, in f32s; NONE for none. */
   WEIGHTS = 20,
+  /** Its timing block's level per subject, two u16s to a u32; NONE where each subject is its own. */
+  CODES = 21,
 }
 
 /** A pass count as the kernel's i32 reads it, held at the i32 range: exact to 2^31 passes. */

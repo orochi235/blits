@@ -85,6 +85,25 @@ const CASES: [string, Script][] = [
     },
   ],
   [
+    'subjects sharing delays, some masked out, through a rate change and a seek back',
+    {
+      cues: [
+        { stagger: (c) => (rank(c) % 5) * 90, fade: { in: 400 } },
+        { stagger: (c) => (rank(c) % 3) * 200, reach: (i) => i % 3 !== 1, weight: 0.5 },
+      ],
+      acts: [
+        {
+          at: 150,
+          act: (h) => {
+            if (h[0]) h[0].rate = 0.5;
+          },
+        },
+        { at: 1500, act: (h) => h[0]?.seek(100) },
+      ],
+      times: [1, 100, 150, 250, 400, 700, 999, 1500, 1600, 2000, 4100],
+    },
+  ],
+  [
     'an unstarted voice holding its first frame, sought ahead on its handle',
     {
       cues: [{ stagger: STAGGER, freeze: 'before', start: 2000 }],

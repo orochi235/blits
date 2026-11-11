@@ -364,20 +364,22 @@ describe('voice table', () => {
       runner: 0,
       values: 0,
       sub: 0,
-      timing: { delays: far, mask: far + 2, shown: far + 4, anchor: 0, latest: 0 },
+      timing: { delays: far, mask: far + 2, shown: far + 4, codes: far + 8, anchor: 0, latest: 0 },
       ease: far + 6,
     };
     const t = tableOf(mixerOf(m), [...mixerOf(m).cued], [slot]);
     const bits = new Uint32Array(t.rows.buffer);
-    expect([Col.DELAYS, Col.MASK, Col.SHOWN, Col.EASE].map((c) => bits[c])).toEqual([
+    expect([Col.DELAYS, Col.MASK, Col.SHOWN, Col.EASE, Col.CODES].map((c) => bits[c])).toEqual([
       far,
       far + 2,
       far + 4,
       far + 6,
+      far + 8,
     ]);
     const plain = tableOf(mixerOf(m), [...mixerOf(m).cued], [{ runner: 0, values: 0, sub: 0 }]);
     const none = new Uint32Array(plain.rows.buffer);
-    expect([Col.DELAYS, Col.MASK, Col.SHOWN, Col.EASE].map((c) => none[c])).toEqual([
+    expect([Col.DELAYS, Col.MASK, Col.SHOWN, Col.EASE, Col.CODES].map((c) => none[c])).toEqual([
+      NONE,
       NONE,
       NONE,
       NONE,
