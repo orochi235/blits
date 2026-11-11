@@ -1,0 +1,51 @@
+# teitou (Apple M5 Max, apple metal-3), 2026-11-11, headless Chromium 153.0.8010.12, node v26.13.0, load 3.4-4.3
+# The frames where a scene of voices naming 1M subjects starts, in the owned gpu mix of
+# 2026-11-10-gpu-owned-groups.txt, after a timing block keeps its state per distinct delay.
+# Every run: onto do --kind bench --gui --solo --node teitou.
+#
+# What changed:
+#   - A timing block (src/gpu/timings.ts) finds its voice's distinct delays once (`levelsOf`,
+#     src/gpu/levels.ts: a hash on each delay's bits, up to 4,096 levels, else each subject its own),
+#     and works out each level's origin, `early` and fade-in origin once. Per subject it keeps only a
+#     2-byte code and the f32s the GPU reads; `reorigin` walks levels, not subjects. `Origins` lost
+#     its per-delay Map, which cost a lookup per subject. Levels are kept per delays array, so a block
+#     remade after a seek or `register` reuses them.
+#   - `whole` (src/gpu/answers.ts) hands out the voice's `Named.ordered` rather than an 8 MB copy.
+#
+# 1. Where main's start frame went, profiled at 35d15d50 (sampled at 100 µs, which roughly doubles a
+#    frame: read as shares): PROFILE=75,150 MIX=owned ROWS=gpu:1000000 FRAMES=200 WARM=30 node bench/gpu-reach.mjs
+#    Records: -main-prof.jsonl, -main-f75.cpuprofile, -main-f150.cpuprofile. Frame 75:
+#    30.6 ms   timings.ts   the Block constructor's loop over subjects (`Origins.since`'s Map, `shown`)
+#     5.3 ms   timings.ts   the block's upload
+#     7.7 ms   timings.ts   `lay`, each subject's origin less `now`
+#     2.4 ms   answers.ts   `whole`'s `ordered.slice()`
+#     2.4 ms   timings.ts   `data.set(delays)`
+#
+# 2. A/B: a is 35d15d50, b the tree.
+#      MIX=owned ROWS=gpu:1000000,gpu:100000 FRAMES=300 WARM=30 bench/gpu-ab.sh 35d15d50 bench/gpu-reach.mjs <out>
+#    Raw records: -ab-{a1,b1,b2,a2}.jsonl (a's say commit "unknown": built outside git).
+#    The three start frames (75, 150, 225), sync + fold, and the whole frame with its GPU wait, ms:
+#                  sync + fold              whole frame
+#   a1  1M     10.17   9.24  12.30     12.47  78.47  13.88
+#   b1  1M      5.20   4.22   4.59      7.52  34.46   6.48
+#   b2  1M      4.54   4.02   3.51      6.74   5.93   5.36
+#   a2  1M      9.77  11.68   9.73     47.87  13.67  11.74
+#   a1  100k    1.98   1.44   1.45      2.39   1.68   1.72
+#   b1  100k    1.49   0.94   0.94      1.92   1.23   1.17
+#   b2  100k    1.53   0.87   0.87      1.93   1.10   1.10
+#   a2  100k    2.03   1.52   1.40      2.76   1.87   1.64
+#    Medians 0.380-0.390 ms at 1M and 0.200-0.220 at 100k on both sides. The 34-78 ms frames are
+#    the wait on `onSubmittedWorkDone`, on both sides, as in 2026-11-10's b1; not this change's.
+#
+# 3. What is left, profiled on the tree (-prof.jsonl, -f75.cpuprofile, -f150.cpuprofile). Frame 75:
+#    13.4 ms   levels.ts    `distinct`, hashing each delay
+#     9.6 ms   timings.ts   the block's upload
+#     5.7 ms   timings.ts   `lay`
+#     5.7 ms   timings.ts   `data.set(delays)`
+#    Each is a pass over the subjects of the scene's staggered voice. Taking more off means the GPU
+#    reading a level code per subject rather than a delay and an origin (a WGSL change), so the
+#    block uploads 2 bytes a subject rather than 8 and needs no `lay` per subject.
+#
+# 4. Local microbench of the hash (node, this laptop, 1M delays, medians of 15): dropping a count
+#    per level took the 256-delay pattern from 9.2 to 5.3 ms; hashing `d | 0` and `d * 65536 | 0`
+#    rather than the bits took it to 14.5, from collisions. Script not kept.

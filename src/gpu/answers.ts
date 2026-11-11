@@ -8,7 +8,7 @@ import type { Voice } from '../voice.js';
 
 /** A voice's `stagger` and `target` answers for the registered subjects, in registration order. */
 export interface Answer {
-  /** Each registered subject's delay, registration order; null where the voice does not stagger. */
+  /** Each registered subject's delay, registration order; null where the voice does not stagger. Never written: it may be the voice's `Named.ordered`. */
   readonly delays: Float64Array | null;
   /** One bit per registered subject, set where reached; null where every one is reached. */
   readonly reach: Uint32Array | null;
@@ -161,7 +161,7 @@ function inOrder<I>(list: readonly I[], named: readonly I[]): boolean {
 /** The answer of a voice naming every registered subject in order, delayed by `ordered`. */
 function whole(named: Named<unknown>): Answer {
   const { ordered, finite } = named;
-  return { delays: ordered === null ? null : ordered.slice(), reach: null, finite };
+  return { delays: ordered, reach: null, finite };
 }
 
 /** The hook reading `answer` through `at`, the index its arrays were made by. */

@@ -810,11 +810,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     voices and voices reaching some subjects, owners and weight signals, and readback
     (`gpuOf(m).read`). The schema page's `#gpu` ("The gpu engine") says what folds, why, and what
     each part costs. Still open (rest cleared 2026-11-04):
-    - **A frame where a scene of voices naming 1M subjects starts still costs 11–15 ms on the gpu
-      engine**, and one where a voice ends 0.3–4.7 ms (from 95–137 and 45–73, 2026-11-10;
-      `bench/runs/2026-11-10-gpu-owned-groups.txt`), now that voices naming the same 1,024 or more
-      subjects share one entry per subject in `Filed`. What is left: the timing `Block` per subject
-      and one `inOrder` per group as a scene starts; a voice naming a list no other names still
+    - **A frame where a scene of voices naming 1M subjects starts still costs 5–8 ms on the gpu
+      engine** (3.5–5.2 of it sync and fold; 2026-11-11, `bench/runs/2026-11-11-gpu-start-levels.txt`),
+      and one where a voice ends 0.3–4.7 ms (`bench/runs/2026-11-10-gpu-owned-groups.txt`). What is
+      left as a scene starts is four passes over the staggered voice's subjects: `levelsOf` finding
+      its distinct delays, copying the delays, `lay` writing each origin, and the upload. Fewer
+      would need the GPU to read a 2-byte level code per subject in place of a delay and an origin,
+      a WGSL change. Also left: a voice naming a list no other names still
       costs a lookup per subject as it joins, and its group's sweep after it leaves (at most
       max(4,096, 1/256 of what is left) subjects a sync, 0.05–0.45 ms at 1M), and one 17 ms frame
       at 1M in that sweep, inferred to be the WeakMap shrinking. Under `history` the gone index

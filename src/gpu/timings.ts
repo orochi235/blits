@@ -3,6 +3,7 @@ import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import { type Answer, type Answers, varies } from './answers.js';
 import { type Laid, lay, moved } from './lay.js';
+import { type Levels, levelsOf } from './levels.js';
 import { Origins } from './origins.js';
 import type { Entry } from './region.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
@@ -39,11 +40,16 @@ class Block {
   readonly data: Float32Array;
   /** Where the origins start in `data`; -1 for none. */
   private readonly at: number;
-  /** 1 where a subject's record would be on its voice's `early` list. */
+  /** The voice's delays by distinct value: origins, `early` and `shown` follow from a delay alone. */
+  private readonly levels: Levels | null;
+  /** Per level, 1 where its subjects' records would be on the voice's `early` list. */
   private readonly early: Uint8Array | null;
-  /** How many of `early` are 1. */
+  /** How many levels' records would be on `early`. */
   private listed = 0;
+  /** Per level, the subjects' fade-in origin. */
   private readonly shown: Float64Array | null;
+  /** Per level, 1 where some subject at it is reached; null where every subject is. */
+  private readonly reached: Uint8Array | null;
   /** Set where an origin moved since `data` last took them, so the next `place` lays them again. */
   private stale = false;
   /** The voice's fade curve as `blits_ease` reads it, where it fades its origins in on one. */
@@ -72,18 +78,33 @@ class Block {
     this.curve = curve === undefined ? null : Float32Array.from(curve);
     this.anchor = now;
     if (this.at < 0 || delays === null) {
+      this.levels = null;
       this.early = null;
       this.shown = null;
+      this.reached = null;
       return;
     }
-    this.early = new Uint8Array(n);
-    this.shown = new Float64Array(n);
+    const levels = levelsOf(delays);
+    const { values, codes } = levels;
+    const k = values.length;
+    this.levels = levels;
+    this.early = new Uint8Array(k);
+    this.shown = new Float64Array(k);
     const at = new Origins(mix, voice);
-    for (let i = 0; i < n; i++) {
-      const since = at.since(delays[i] as number);
-      this.early[i] = since <= now ? 0 : 1;
-      this.listed += this.early[i] as number;
-      this.shown[i] = at.shown(since);
+    for (let l = 0; l < k; l++) {
+      const since = at.since(values[l] as number);
+      const early = since <= now ? 0 : 1;
+      this.early[l] = early;
+      this.listed += early;
+      this.shown[l] = at.shown(since);
+    }
+    if (reach === null) this.reached = null;
+    else {
+      const reached = new Uint8Array(k);
+      for (let i = 0; i < n; i++)
+        if ((((reach[i >>> 5] as number) >>> (i & 31)) & 1) === 1)
+          reached[codes === null ? i : (codes[i] as number)] = 1;
+      this.reached = reached;
     }
     this.lay(now);
   }
@@ -93,19 +114,19 @@ class Block {
    * them, and stay listed while still ahead of `now`, as `reorigin` moves its `early` records.
    */
   reorigin(mix: Mixer<unknown, unknown>, now: number): void {
-    const { early, shown } = this;
-    const delays = this.answer.delays;
-    if (early === null || shown === null || delays === null || this.listed === 0) return;
+    const { early, shown, levels } = this;
+    if (early === null || shown === null || levels === null || this.listed === 0) return;
+    const { values } = levels;
     const at = new Origins(mix, this.voice);
-    for (let i = 0; i < early.length; i++) {
-      if (early[i] === 0) continue;
-      const s = at.since(delays[i] as number);
+    for (let l = 0; l < early.length; l++) {
+      if (early[l] === 0) continue;
+      const s = at.since(values[l] as number);
       // A motion voice's record stays listed until read past its origin, which the GPU never does.
       if (this.voice.motion === undefined && s <= now) {
-        early[i] = 0;
+        early[l] = 0;
         this.listed--;
       }
-      shown[i] = at.shown(s);
+      shown[l] = at.shown(s);
       this.stale = true;
     }
   }
@@ -129,9 +150,12 @@ class Block {
     };
   }
 
-  /** Each subject's fade-in origin by registration order, mix times; null where the block keeps none. */
-  get origins(): Float64Array | null {
-    return this.shown;
+  /** Registered subject `row`'s fade-in origin, a mix time; NaN where the block keeps none. */
+  originAt(row: number): number {
+    const { shown, levels } = this;
+    if (shown === null || levels === null) return Number.NaN;
+    const codes = levels.codes;
+    return shown[codes === null ? row : (codes[row] as number)] ?? Number.NaN;
   }
 
   /** The origins' range in `data`, in f32s. */
@@ -141,13 +165,19 @@ class Block {
 
   private lay(now: number): void {
     const shown = this.shown as Float64Array;
-    const reach = this.answer.reach;
+    const { codes } = this.levels as Levels;
+    const { data, at, reached } = this;
+    const k = shown.length;
     let latest = Number.NEGATIVE_INFINITY;
-    for (let i = 0; i < shown.length; i++) {
-      const s = shown[i] as number;
-      this.data[this.at + i] = s - now;
-      const reached = reach === null || (((reach[i >>> 5] as number) >>> (i & 31)) & 1) === 1;
-      if (reached && s > latest) latest = s;
+    for (let l = 0; l < k; l++) {
+      const s = shown[l] as number;
+      if ((reached === null || reached[l] === 1) && s > latest) latest = s;
+    }
+    if (codes === null) for (let i = 0; i < k; i++) data[at + i] = (shown[i] as number) - now;
+    else {
+      const rel = new Float32Array(k);
+      for (let l = 0; l < k; l++) rel[l] = (shown[l] as number) - now;
+      for (let i = 0; i < codes.length; i++) data[at + i] = rel[codes[i] as number] as number;
     }
     this.anchor = now;
     this.latest = latest;
@@ -209,15 +239,16 @@ export class Timings {
   }
 
   /**
-   * Each registered subject's fade-in origin for `voice` this frame, mix times by registration
-   * order, as the GPU fades them in from; null where the voice does not both stagger and fade in.
+   * Each registered subject's fade-in origin for `voice` this frame, a mix time by its row, as the
+   * GPU fades it in from; null where the voice does not both stagger and fade in.
    */
   originsOf<I>(
     mix: Mixer<I, unknown>,
     voice: Voice<I, unknown>,
     answers: Answers<I>,
-  ): Float64Array | null {
-    return this.blockOf(mix, voice, answers)?.origins ?? null;
+  ): ((row: number) => number) | null {
+    const b = this.blockOf(mix, voice, answers);
+    return b === undefined ? null : (row) => b.originAt(row);
   }
 
   /** This frame's blocks, one per voice or undefined for one needing none, laid from `from`. */

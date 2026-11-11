@@ -32,7 +32,7 @@ export function unreadOf<I>(
   return (row) => {
     if (!reaches(reach, row)) return true;
     const owned = own
-      ? mix.envelope(voice, now, origins?.[row] ?? Number.NaN) * weigh.owned
+      ? mix.envelope(voice, now, origins === null ? Number.NaN : origins(row)) * weigh.owned
       : weigh.faded;
     const read = reads?.[row];
     return silent(voice, weighed(read === undefined ? weigh.base : read * weigh.base, owned, 1));
