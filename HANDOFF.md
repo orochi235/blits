@@ -816,8 +816,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       left as a scene starts is two passes over the staggered voice's subjects: `levelsOf` hashing
       each delay, about two thirds, and uploading the 2-byte codes. Also left: a voice naming a list no other names still
       costs a lookup per subject as it joins, and its group's sweep after it leaves (at most
-      max(4,096, 1/256 of what is left) subjects a sync, 0.05–0.45 ms at 1M), and one 17 ms frame
-      at 1M in that sweep, inferred to be the WeakMap shrinking. Under `history` the gone index
+      max(4,096, 1/256 of what is left) subjects a sync, 0.05–0.45 ms at 1M), and no longer a 17 ms
+      frame in that sweep: the index points an emptied object entry at a shared empty list
+      rather than deleting it, which shrank the WeakMap (2026-11-11,
+      `bench/runs/2026-11-11-filed-none.txt`). Under `history` the gone index
       (`src/gone.ts`) still files and unfiles each leaving voice per subject. churn^ and turnover^
       read 4–5% slower in a three-round A/B and inside the spread on a five-round recheck.
     - **A frame folds nothing on the GPU while a new kernel compiles** (found 2026-11-11, on the
