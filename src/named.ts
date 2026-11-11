@@ -103,7 +103,7 @@ function distinct<I>(subjects: readonly I[]): boolean {
 export function file<I, V>(index: Store<I, V[]>, subjects: readonly I[], voice: V): void {
   for (const subject of subjects) {
     const list = index.get(subject);
-    if (list === undefined) index.set(subject, [voice]);
+    if (list === undefined || list === EMPTIED) index.set(subject, [voice]);
     else list.push(voice);
   }
 }
@@ -118,6 +118,18 @@ export function unfile<I, V>(index: Store<I, V[]>, subjects: readonly I[], voice
     // Shifted by hand: `splice` makes an array of what it took, once a subject.
     for (let k = i + 1; k < list.length; k++) list[k - 1] = list[k] as V;
     list.pop();
-    if (list.length === 0) index.delete(subject);
+    if (list.length === 0) emptied(index, subject);
   }
+}
+
+/** The list of a subject no voice is filed under any longer, kept in place of its entry. */
+export const EMPTIED: never[] = Object.freeze([]) as unknown as never[];
+
+/**
+ * Lets go of `subject`'s emptied list. An object keeps its entry, pointed at `EMPTIED`: deleting a
+ * million shrinks the WeakMap's table, up to 14 ms a frame, and the next voice naming them grows it back.
+ */
+export function emptied<I, V>(index: Store<I, V[]>, subject: I): void {
+  if (typeof subject === 'object' && subject !== null) index.set(subject, EMPTIED);
+  else index.delete(subject);
 }

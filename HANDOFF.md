@@ -831,7 +831,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       max(4,096, 1/256 of what is left) subjects a sync, 0.05–0.45 ms at 1M). The sweep's 5–17 ms syncs are
       gone: the index points an emptied object entry at a shared empty list rather than deleting
       it, which shrank the WeakMap (2026-11-11, `bench/runs/2026-11-11-filed-none.txt`). Under `history` the gone index
-      (`src/gone.ts`) still files and unfiles each leaving voice per subject. churn^ and turnover^
+      (`src/gone.ts`) still files and unfiles each leaving voice per subject, at 1M subjects 40–75
+      ms to file and 55–95 to unfile, in one call; it now keeps emptied object entries as the named
+      index does, which cut refiling from about 75 ms to 42 and unfiling from 93 to 65 (2026-11-11,
+      `bench/gone-churn.mjs`, `bench/runs/2026-11-11-gone-churn.txt`). Spreading it over frames, as
+      the named index's group sweep does, is not built. churn^ and turnover^
       read 4–5% slower in a three-round A/B and inside the spread on a five-round recheck.
     - **A frame folds nothing on the GPU while a new kernel compiles** (found 2026-11-11, on the
       light-board demo's 1,230 probes a frame; `bench/runs/2026-11-11-demos-light-board.txt`). A
