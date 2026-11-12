@@ -538,8 +538,7 @@ export class Voice<I, O> {
     this.leaps = null;
     this.seen = 0;
     this.made = 0;
-    this.latest = this.named?.latest ?? 0;
-    this.soonest = this.named?.soonest ?? 0;
+    // `latest` and `soonest` stay: the staggers it met live end it on replay, read or not.
     this.restedCount = 0;
     this.cuedAt = Number.NEGATIVE_INFINITY;
     this.cuedSeq = Number.NEGATIVE_INFINITY;

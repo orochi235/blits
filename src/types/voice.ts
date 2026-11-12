@@ -150,8 +150,10 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * Per-subject delay in voice ms. It is klieg's stagger grammar reduced to the one thing the mix
    * needs. It runs once per subject and the answer is kept: at `cue` for every subject a voice
    * names in `subjects`, else, like `target`, on first sight. So a voice naming its subjects ends by
-   * all of them, and one reaching them by `target` ends by those the mix has been asked about: a
-   * subject first read later than that sees a finite loop already over.
+   * all of them, and one reaching them by `target` ends by those the mix met before its end. A
+   * subject first read after that sees a finite loop already over, and moves its end no more. The
+   * mix keeps the end it reached through a seek back, so a replay or a read ahead ends the voice
+   * where the live mix did, whichever subjects it reads.
    */
   stagger?: (subject: I) => number;
   /**

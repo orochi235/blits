@@ -14,6 +14,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A sync after a `rebase` plays on from exactly where the mix stood. Worked out through the host
   offset, it could land an ulp early, before the mix's first frame, where a seek to the mix's own
   `now` then threw.
+- A staggered voice reaching its subjects by `target` ends where the live mix ended it after a seek
+  back, in a replay or a read ahead that reads none of its later-staggered subjects. A seek back
+  before its cue forgot the staggers it had met, so one reading only its earlier subjects ended it
+  early.
 
 ## 1.3.0
 

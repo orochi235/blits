@@ -34,9 +34,6 @@ Owner tags:
   read by field, `Circle` kept as the 2D alias, `plot`'s array keeps the name `xy`,
   `put(subject, x, y?, z?)`. Not decided: how `plot` learns the axis count (proposed
   `plot(subjects, xy, { axes, cell })`).
-- **[agent] A staggered `target` voice ends by the latest-staggered subject it has met**, so a
-  read ahead or a replay with no reads can end it earlier than the live mix did (documented on
-  `VoiceSpec.stagger`, 2026-10-29). A voice cued with `subjects` ends by all of them.
 - **[agent] Two copies of blits loaded together** share what each knows of its patches and
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
