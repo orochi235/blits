@@ -17,9 +17,8 @@ const range = (n: number, from = 0) => Array.from({ length: n }, (_, i) => from 
 /** Dead groups still listed. */
 const dead = (f: Filed<number, V>) => (f as unknown as { dead: unknown[] }).dead.length;
 
-/** Groups still being listed under their subjects. */
-const filing = (f: Filed<number, V>) =>
-  (f as unknown as { filing: unknown[] }).filing.length;
+/** How many subjects groups have left to be listed under. */
+const filing = (f: Filed<number, V>) => (f as unknown as { unfiled: number }).unfiled;
 
 /** Sweeps until no group is left to list or take off. */
 const settle = (f: Filed<number, V>) => {
@@ -68,7 +67,7 @@ describe('Filed', () => {
   });
 
   it('takes a dead group off its subjects a share at a time, sync by sync', () => {
-    const f = new Filed<number, V>();
+    const f = new Filed<number, V>('group', 0);
     const a = voice(1, range(100_000));
     const b = voice(2, [7]);
     f.file(a);
@@ -89,7 +88,7 @@ describe('Filed', () => {
   });
 
   it('lets a voice naming a dead group’s list join it before the sweep begins, and not after', () => {
-    const f = new Filed<number, V>();
+    const f = new Filed<number, V>('group', 0);
     const list = range(50_000);
     const a = voice(1, list);
     f.file(a);
@@ -114,7 +113,7 @@ describe('Filed', () => {
 
 describe('Filed listing a long list sync by sync', () => {
   it('finds its voices under every subject before they are listed, in voice order', () => {
-    const f = new Filed<number, V>();
+    const f = new Filed<number, V>('group', 0);
     const a = voice(2, range(20_000));
     const b = voice(1, [5]);
     const c = voice(3, [5]);
@@ -138,7 +137,7 @@ describe('Filed listing a long list sync by sync', () => {
   });
 
   it('stops listing a group its last voice leaves, and takes off what it listed', () => {
-    const f = new Filed<number, V>();
+    const f = new Filed<number, V>('group', 0);
     const a = voice(1, range(20_000));
     f.file(a);
     f.sweep();
@@ -151,7 +150,7 @@ describe('Filed listing a long list sync by sync', () => {
   });
 
   it('carries on listing a dead group a voice joins before its sweep', () => {
-    const f = new Filed<number, V>();
+    const f = new Filed<number, V>('group', 0);
     const list = range(20_000);
     const a = voice(1, list);
     f.file(a);
@@ -166,6 +165,44 @@ describe('Filed listing a long list sync by sync', () => {
     settle(f);
     expect(raw(f, 0)).toEqual([b.group]);
     expect(raw(f, 19_999)).toEqual([b.group]);
+  });
+});
+
+describe('Filed finding a few groups by their sets alone', () => {
+  it('lists the first groups of long lists nowhere, and those past them under their subjects', () => {
+    const f = new Filed<number, V>('group', 2);
+    const a = voice(1, range(10_000));
+    const b = voice(2, range(10_000, 5000));
+    const c = voice(3, range(10_000, 20_000));
+    const d = voice(4, [7]);
+    for (const v of [a, b, c, d]) f.file(v);
+    settle(f);
+    expect(raw(f, 6000)).toBeUndefined();
+    expect(raw(f, 20_000)).toEqual([c.group]);
+    expect(raw(f, 7)).toEqual([d]);
+    expect(f.get(7)).toEqual([a, d]);
+    expect(f.get(6000)).toEqual([a, b]);
+    expect(f.get(20_000)).toEqual([c]);
+    expect(f.get(30_000)).toBeUndefined();
+  });
+
+  it('forgets a group found by its set the moment its last voice leaves', () => {
+    const f = new Filed<number, V>();
+    const list = range(10_000);
+    const a = voice(1, list);
+    const b = voice(2, list.slice());
+    f.file(a);
+    f.file(b);
+    expect(b.group).toBe(a.group);
+    expect(f.get(9999)).toEqual([a, b]);
+    f.unfile(a);
+    f.unfile(b);
+    expect(dead(f)).toBe(0);
+    expect(f.get(9999)).toBeUndefined();
+    const c = voice(3, list);
+    f.file(c);
+    expect(c.group).not.toBe(a.group);
+    expect(f.get(0)).toEqual([c]);
   });
 });
 

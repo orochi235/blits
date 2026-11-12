@@ -1,7 +1,8 @@
 // The gone index's churn at scale: four voices naming one list of N object subjects are filed,
 // then let go, as a tape trimmed under `history` does a scene. `each` files every voice under
 // every subject, as the index did before 2026-11-11 (its emptied entries kept); `filed` is the
-// index now, `Filed` with its group slot, whose sweep lists the group a share a sync and then takes
+// index now, `Filed` with its group slot, which finds the group through the voices' own sets;
+// `listed` is `Filed` made to list every group, which its sweep does a share a sync and then takes
 // the dead group off a share a sync.
 // Needs `npx tsc -b` first.
 //   N=1000000 ROUNDS=8 OUT=<file> node bench/gone-churn.mjs      one JSON line per pass to OUT
@@ -44,14 +45,14 @@ function each() {
   return { file: t1 - t0, unfile: performance.now() - t1, fills: [], syncs: [] };
 }
 
-function filed() {
-  const index = new Filed('goneGroup');
+function filed(sighted) {
+  const index = new Filed('goneGroup', sighted);
   const t0 = performance.now();
   for (const v of voices) index.file(v);
   const t1 = performance.now();
   // The first voice's group is listed under its subjects a share a sync, as the sweep goes.
   const fills = [];
-  for (let k = 0; k < 2000 && index.filing.length > 0; k++) {
+  for (let k = 0; k < 2000 && index.unfiled > 0; k++) {
     const a = performance.now();
     index.sweep();
     fills.push(performance.now() - a);
@@ -67,13 +68,13 @@ function filed() {
   return { file: t1 - t0, unfile: t2 - t1, fills, syncs };
 }
 
-const ways = { each, filed };
+const ways = { each, listed: () => filed(0), filed: () => filed(undefined) };
 for (let r = 1; r <= ROUNDS; r++)
   for (const [way, run] of Object.entries(ways)) {
     const t = run();
     appendFileSync(OUT, `${JSON.stringify({ round: r, way, n: N, ...t })}\n`);
     const worst = (l) => (l.length > 0 ? Math.max(...l) : 0).toFixed(2).padStart(6);
     console.log(
-      `${r}/${ROUNDS} ${way.padEnd(5)} file ${t.file.toFixed(1).padStart(7)}  fill ${String(t.fills.length).padStart(4)} syncs, worst ${worst(t.fills)} ms  unfile ${t.unfile.toFixed(1).padStart(7)}  sweep ${String(t.syncs.length).padStart(4)} syncs, worst ${worst(t.syncs)} ms`,
+      `${r}/${ROUNDS} ${way.padEnd(6)} file ${t.file.toFixed(1).padStart(7)}  fill ${String(t.fills.length).padStart(4)} syncs, worst ${worst(t.fills)} ms  unfile ${t.unfile.toFixed(1).padStart(7)}  sweep ${String(t.syncs.length).padStart(4)} syncs, worst ${worst(t.syncs)} ms`,
     );
   }
