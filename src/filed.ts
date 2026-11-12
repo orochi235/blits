@@ -234,14 +234,22 @@ export class Filed<I, V extends Filer<I>> {
    * voice order; null where none is.
    */
   private bySight(subject: I, raw: (V | Group<V>)[] | undefined): V[] | null {
+    let only: Group<V> | null = null;
     let out: V[] | null = null;
     for (const g of this.sighted) {
       if (g.listing && raw !== undefined && raw.includes(g)) continue;
       if (!(g.has as (s: I) => boolean)(subject)) continue;
-      out ??= [];
+      if (only === null && out === null) {
+        only = g;
+        continue;
+      }
+      out ??= (only as Group<V>).voices.slice();
       for (const v of g.voices) out.push(v);
     }
-    if (out === null) return null;
+    if (only === null) return null;
+    // One group and nothing listed: its own voices, as `get` hands a listed group's.
+    if (out === null && (raw === undefined || raw.length === 0)) return only.voices;
+    out ??= only.voices.slice();
     if (raw !== undefined)
       for (const e of raw) {
         if (e instanceof Group) for (const v of e.voices) out.push(v);
