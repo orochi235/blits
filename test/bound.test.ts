@@ -88,7 +88,7 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
   if (bounded && by === 'place') {
     for (const d of dots) m.place(d);
     putAll();
-  } else if (bounded) m.plot(dots, xy, R);
+  } else if (bounded) m.plot(dots, xy, { cell: R });
   const area = { x: 0, y: 0, r: R };
   const distance = (s: Dot) => Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / R);
   const near = way.history === 'inputs' ? input(distance) : distance;
@@ -266,9 +266,9 @@ describe('within is refused', () => {
   it('on a voice with no signal, and on no voice that has one', () => {
     const m = mix<Dot, Pose>(K);
     const dot = { seed: 0, x: 0, y: 0 };
-    m.plot([dot], new Float64Array(2), 1);
+    m.plot([dot], new Float64Array(2), { cell: 1 });
     const recipe =
-      /needs a signal weight; for a hard-edged disk use weight: mix\.around\(circle, \{ steps: 1, jump: 'start' \}\)/;
+      /needs a signal weight; for a hard-edged disk use weight: mix\.around\(ball, \{ steps: 1, jump: 'start' \}\)/;
     expect(cue(m, {})).toThrow(recipe);
     expect(cue(m, { weight: 0.5 })).toThrow(recipe);
     expect(cue(m, { weight: () => 1, subjects: [dot] })).not.toThrow();
@@ -312,7 +312,7 @@ describe('within keeps its signal from being read outside it', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const m = mix<Dot, Pose>(K, { lanes });
         const dots = grid();
-        m.plot(dots, xyOf(dots), 2);
+        m.plot(dots, xyOf(dots), { cell: 2 });
         const area = { x: 7, y: 9, r: 2 };
         let calls = 0;
         const wide = (s: Dot) => {
@@ -358,7 +358,7 @@ describe('outside production, a circle that cuts off its signal warns once', () 
   const run = (lanes: boolean, falloff: number, frames = 40) => {
     const m = mix<Dot, Pose>(K, { lanes });
     const dots = grid();
-    m.plot(dots, xyOf(dots), 2);
+    m.plot(dots, xyOf(dots), { cell: 2 });
     const area = { x: 10, y: 10, r: 3 };
     m.cue({
       patch: glowPatch(),
@@ -379,7 +379,7 @@ describe('outside production, a circle that cuts off its signal warns once', () 
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       run(lanes, 6);
       expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn.mock.calls[0]?.[0]).toMatch(/glow's weight signal reads .* within circle/);
+      expect(warn.mock.calls[0]?.[0]).toMatch(/glow's weight signal reads .* within ball/);
       warn.mockRestore();
     });
     it(`is silent where the signal falls to 0 by r, ${on}`, () => {
@@ -409,7 +409,7 @@ describe('positions hold their subjects as the mix does', () => {
       const other = { seed: 0, x: 50, y: 50 };
       const ref = (() => {
         const dots = grid();
-        m.plot(dots, xyOf(dots), 2);
+        m.plot(dots, xyOf(dots), { cell: 2 });
         m.cue({
           patch: glowPatch(),
           weight: (s: Dot) => Math.max(0, 1 - Math.hypot(s.x, s.y) / 2),
@@ -433,7 +433,7 @@ describe('positions hold their subjects as the mix does', () => {
       const m = mix<string, Pose>(K, { lanes });
       const ids = ['a', 'b', 'c'];
       const xy = new Float64Array([0, 0, 1, 0, 9, 9]);
-      m.plot(ids, xy, 1);
+      m.plot(ids, xy, { cell: 1 });
       const glow = m.cue({
         patch: glowPatch() as never,
         weight: () => 1,
@@ -448,7 +448,7 @@ describe('positions hold their subjects as the mix does', () => {
       m.drop('a');
       expect(read(16)).toEqual([1, 1.5, 1]);
       expect(glow.weightOf('a')).toBe(0);
-      m.plot(ids, xy, 1);
+      m.plot(ids, xy, { cell: 1 });
       expect(read(32)).toEqual([1.5, 1.5, 1]);
     });
 });

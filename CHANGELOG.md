@@ -6,6 +6,15 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ## Unreleased
 
+### Added
+
+- Positions on 1, 2 or 3 axes: `plot(subjects, xy, { axes, cell })` takes `axes` numbers a subject,
+  2 by default, and `put(subject, x, y?, z?)` as many, an axis left out as 0. `within` and
+  `around` take a `Ball`, `{ x, y?, z?, r }`, read by field over the axes `plot` gave, so
+  `{ x, r }` is a span on a line; `Circle` stays as the ball on 2 axes. Deprecated: `cell` as
+  `plot`'s third argument, `plot(subjects, xy, cell)`, which is still taken for this release with a
+  warning once a mix outside production.
+
 ### Fixed
 
 - A hold's `free` no longer throws for a host's seek to a frame the hold's own `seek` let go

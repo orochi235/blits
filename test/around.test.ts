@@ -92,7 +92,7 @@ function play(way: Way, mine: boolean, frames = 50): unknown[] {
     for (const d of dots) m.probe(d);
     expect(bounds(m)).toBe(0);
   }
-  m.plot(dots, xy, 3);
+  m.plot(dots, xy, { cell: 3 });
   const glow = early ?? cueGlow();
   if (early || mine) expect(bounds(m)).toBe(1);
   const cols = { gain: new Float64Array(dots.length), color: new Float64Array(dots.length) };
@@ -183,6 +183,6 @@ describe('around', () => {
   });
   it('refuses a circle that is not one', () => {
     const m = plain<Dot, Pose>(K);
-    expect(() => m.around(null as never)).toThrow(/around takes a circle/);
+    expect(() => m.around(null as never)).toThrow(/around takes a ball/);
   });
 });

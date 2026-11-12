@@ -1,9 +1,13 @@
 /**
- * Positions side by side, `x` then `y`, by place, and a uniform grid over them built again at the
- * first query after they move, so a circle finds the places within it without visiting the rest.
+ * Positions side by side, `axes` numbers a place, `x`, then `y` and `z` where there are, and a
+ * uniform grid over `x` and `y` built again at the first query after they move, so a ball finds the
+ * places within it without visiting the rest. On 3 axes a cell holds every `z`, which the distance
+ * test reads.
  */
 export class Grid {
   xy: Float64Array = new Float64Array(0);
+  /** Numbers a place: 1, 2 or 3. */
+  axes = 2;
   /** How many places the list had. */
   n = 0;
   /** The cell size asked for, NaN for one from the spread; the grid widens it where the positions are spread too thin. */
@@ -31,17 +35,22 @@ export class Grid {
   found = new Int32Array(64);
   count = 0;
 
-  /** Moves place `i` to (`x`, `y`) in `xy`, leaving the grid as it is where the place keeps its cell. */
-  put(i: number, x: number, y: number): void {
-    this.xy[2 * i] = x;
-    this.xy[2 * i + 1] = y;
+  /**
+   * Moves place `i` to (`x`, `y`, `z`) in `xy`, as many of them as there are axes, leaving the grid as
+   * it is where the place keeps its cell.
+   */
+  put(i: number, x: number, y: number, z: number): void {
+    const a = this.axes;
+    this.xy[a * i] = x;
+    if (a > 1) this.xy[a * i + 1] = y;
+    if (a > 2) this.xy[a * i + 2] = z;
     if (this.dirty) return;
     if (this.cols === 0 || i >= this.home.length) {
       this.dirty = true;
       return;
     }
     const col = Math.floor((x - this.x0) / this.size);
-    const row = Math.floor((y - this.y0) / this.size);
+    const row = a === 1 ? 0 : Math.floor((y - this.y0) / this.size);
     const c =
       col >= 0 && col < this.cols && row >= 0 && row < this.rows ? row * this.cols + col : -2;
     if (c === this.home[i] || this.stray[i] === 1) return;
@@ -55,14 +64,15 @@ export class Grid {
     for (const i of this.strays) this.stray[i] = 0;
     this.strays.length = 0;
     const xy = this.xy;
-    const n = Math.min(this.n, xy.length >> 1);
+    const a = this.axes;
+    const n = Math.min(this.n, Math.floor(xy.length / a));
     let x0 = Number.POSITIVE_INFINITY;
     let y0 = Number.POSITIVE_INFINITY;
     let x1 = Number.NEGATIVE_INFINITY;
     let y1 = Number.NEGATIVE_INFINITY;
     for (let i = 0; i < n; i++) {
-      const x = xy[2 * i] as number;
-      const y = xy[2 * i + 1] as number;
+      const x = xy[a * i] as number;
+      const y = a > 1 ? (xy[a * i + 1] as number) : 0;
       if (x < x0) x0 = x;
       if (x > x1) x1 = x;
       if (y < y0) y0 = y;
@@ -74,9 +84,11 @@ export class Grid {
       return;
     }
     // Unasked, about two subjects a cell where they are spread evenly.
-    let size = Number.isNaN(this.cell)
-      ? Math.sqrt((2 * Math.max(x1 - x0, 1e-9) * Math.max(y1 - y0, 1e-9)) / n)
-      : this.cell;
+    let size = !Number.isNaN(this.cell)
+      ? this.cell
+      : a === 1
+        ? (2 * Math.max(x1 - x0, 1e-9)) / n
+        : Math.sqrt((2 * Math.max(x1 - x0, 1e-9) * Math.max(y1 - y0, 1e-9)) / n);
     // At most about four cells a subject: a few far-flung positions would otherwise ask for millions.
     const most = 4 * n + 64;
     if ((Math.floor((x1 - x0) / size) + 1) * (Math.floor((y1 - y0) / size) + 1) > most)
@@ -98,9 +110,9 @@ export class Grid {
     }
     const starts = this.starts;
     const order = this.order;
-    // A position that is not a number is in no cell, and no circle finds it.
+    // A position that is not a number is in no cell, and no ball finds it.
     for (let i = 0; i < n; i++) {
-      const c = cellOf(xy, i, x0, y0, size, cols);
+      const c = cellOf(xy, a, i, x0, y0, size, cols);
       this.home[i] = c;
       if (c >= 0) starts[c + 1] = (starts[c + 1] as number) + 1;
     }
@@ -109,7 +121,7 @@ export class Grid {
     const placed = starts[cells] as number;
     // Filled from each cell's end back to its start: `starts[c + 1]`, the end of cell c, ends at its start.
     for (let i = n - 1; i >= 0; i--) {
-      const c = cellOf(xy, i, x0, y0, size, cols);
+      const c = cellOf(xy, a, i, x0, y0, size, cols);
       if (c < 0) continue;
       const k = (starts[c + 1] as number) - 1;
       starts[c + 1] = k;
@@ -129,23 +141,42 @@ export class Grid {
     return count + 1;
   }
 
+  /** The squared distance from place `i` to (`cx`, `cy`, `cz`), over the axes there are. */
+  d2(i: number, cx: number, cy: number, cz: number): number {
+    const a = this.axes;
+    const xy = this.xy;
+    if (a === 2) {
+      const dx = (xy[2 * i] as number) - cx;
+      const dy = (xy[2 * i + 1] as number) - cy;
+      return dx * dx + dy * dy;
+    }
+    const dx = (xy[a * i] as number) - cx;
+    if (a === 1) return dx * dx;
+    const dy = (xy[a * i + 1] as number) - cy;
+    const dz = (xy[a * i + 2] as number) - cz;
+    return dx * dx + dy * dy + dz * dz;
+  }
+
   /**
-   * Leaves in `found` the places within `r` of (`cx`, `cy`), by the test `inside` makes, `r2`
-   * being `r * r`: the cells the circle touches, and one more where an edge falls a hair from one.
+   * Leaves in `found` the places within `r` of (`x`, `y`, `z`), by the test `inside` makes, `r2`
+   * being `r * r`: the cells the ball touches, and one more where an edge falls a hair from one. An
+   * axis past those there are is not read.
    */
-  query(cx: number, cy: number, r: number, r2: number): number {
+  query(x: number, y: number, z: number, r: number, r2: number): number {
     if (this.dirty) this.build();
     this.count = 0;
     if (this.cols === 0 || !(r >= 0)) return 0;
+    const cy = this.axes === 1 ? 0 : y;
     const size = this.size;
-    const c0 = Math.max(0, edge((cx - r - this.x0) / size, -1));
-    const c1 = Math.min(this.cols - 1, edge((cx + r - this.x0) / size, 1));
+    const c0 = Math.max(0, edge((x - r - this.x0) / size, -1));
+    const c1 = Math.min(this.cols - 1, edge((x + r - this.x0) / size, 1));
     const r0 = Math.max(0, edge((cy - r - this.y0) / size, -1));
     const r1 = Math.min(this.rows - 1, edge((cy + r - this.y0) / size, 1));
-    const xy = this.xy;
     const order = this.order;
     const starts = this.starts;
     const any = this.strays.length > 0;
+    const flat = this.axes === 2;
+    const xy = this.xy;
     let count = 0;
     for (let row = r0; row <= r1 && c0 <= c1; row++) {
       const from = starts[row * this.cols + c0] as number;
@@ -153,59 +184,56 @@ export class Grid {
       for (let k = from; k < to; k++) {
         const i = order[k] as number;
         if (any && this.stray[i] === 1) continue;
-        const dx = (xy[2 * i] as number) - cx;
-        const dy = (xy[2 * i + 1] as number) - cy;
-        if (dx * dx + dy * dy <= r2) count = this.push(i, count);
+        if (flat) {
+          const dx = (xy[2 * i] as number) - x;
+          const dy = (xy[2 * i + 1] as number) - cy;
+          if (dx * dx + dy * dy <= r2) count = this.push(i, count);
+        } else if (this.d2(i, x, cy, z) <= r2) count = this.push(i, count);
       }
     }
-    for (const i of this.strays) {
-      const dx = (xy[2 * i] as number) - cx;
-      const dy = (xy[2 * i + 1] as number) - cy;
-      if (dx * dx + dy * dy <= r2) count = this.push(i, count);
-    }
+    for (const i of this.strays) if (this.d2(i, x, cy, z) <= r2) count = this.push(i, count);
     this.count = count;
     return count;
   }
 
   /**
-   * Leaves in `found` the places beyond `r` of (`cx`, `cy`) and within a cell's width more, from
+   * Leaves in `found` the places beyond `r` of (`x`, `y`, `z`) and within a cell's width more, from
    * the cells that ring touches.
    */
-  ring(cx: number, cy: number, r: number): number {
+  ring(x: number, y: number, z: number, r: number): number {
     if (this.dirty) this.build();
     this.count = 0;
     if (this.cols === 0 || !(r >= 0)) return 0;
+    const a = this.axes;
+    const cy = a === 1 ? 0 : y;
     const size = this.size;
     const out = r + size;
     const r2 = r * r;
     const out2 = out * out;
-    const c0 = Math.max(0, Math.floor((cx - out - this.x0) / size));
-    const c1 = Math.min(this.cols - 1, Math.floor((cx + out - this.x0) / size));
+    const c0 = Math.max(0, Math.floor((x - out - this.x0) / size));
+    const c1 = Math.min(this.cols - 1, Math.floor((x + out - this.x0) / size));
     const r0 = Math.max(0, Math.floor((cy - out - this.y0) / size));
     const r1 = Math.min(this.rows - 1, Math.floor((cy + out - this.y0) / size));
-    const xy = this.xy;
     let count = 0;
     for (let row = r0; row <= r1; row++)
       for (let col = c0; col <= c1; col++) {
-        // A cell wholly inside the circle holds nothing beyond it.
-        const ax = this.x0 + col * size - cx;
-        const ay = this.y0 + row * size - cy;
-        const far = Math.max(ax * ax, (ax + size) ** 2) + Math.max(ay * ay, (ay + size) ** 2);
-        if (far <= r2) continue;
+        // A cell wholly inside the ball holds nothing beyond it; on 3 axes a cell holds every z.
+        if (a < 3) {
+          const ax = this.x0 + col * size - x;
+          const ay = this.y0 + row * size - cy;
+          const farY = a === 1 ? 0 : Math.max(ay * ay, (ay + size) ** 2);
+          if (Math.max(ax * ax, (ax + size) ** 2) + farY <= r2) continue;
+        }
         const c = row * this.cols + col;
         for (let k = this.starts[c] as number; k < (this.starts[c + 1] as number); k++) {
           const i = this.order[k] as number;
           if (this.stray[i] === 1) continue;
-          const dx = (xy[2 * i] as number) - cx;
-          const dy = (xy[2 * i + 1] as number) - cy;
-          const d2 = dx * dx + dy * dy;
+          const d2 = this.d2(i, x, cy, z);
           if (d2 > r2 && d2 <= out2) count = this.push(i, count);
         }
       }
     for (const i of this.strays) {
-      const dx = (xy[2 * i] as number) - cx;
-      const dy = (xy[2 * i + 1] as number) - cy;
-      const d2 = dx * dx + dy * dy;
+      const d2 = this.d2(i, x, cy, z);
       if (d2 > r2 && d2 <= out2) count = this.push(i, count);
     }
     this.count = count;
@@ -215,14 +243,15 @@ export class Grid {
 
 function cellOf(
   xy: Float64Array,
+  a: number,
   i: number,
   x0: number,
   y0: number,
   size: number,
   cols: number,
 ): number {
-  const x = xy[2 * i] as number;
-  const y = xy[2 * i + 1] as number;
+  const x = xy[a * i] as number;
+  const y = a > 1 ? (xy[a * i + 1] as number) : 0;
   if (!(x >= x0) || !(y >= y0)) return -1;
   return Math.floor((x - x0) / size) + Math.floor((y - y0) / size) * cols;
 }
