@@ -44,10 +44,11 @@ DevTools extension's are in their READMEs.
 - **A subject's first `dt` counts from its `since`**, where its delay runs out or its voice starts,
   not from when it was first probed (left to the agent, 2026-11-12): a stateful patch already steps
   from `since`, and a weight signal reading `dt` then sees the same start on both engines.
-- **A voice keeps each subject's `stagger` answer for as long as history reaches** (left to the
-  agent, 2026-11-12), so a replay or a read ahead never asks again for a subject the live mix
-  asked, a dropped one included. Not until the voice ends: a long voice would keep an entry for
-  every subject ever dropped.
+- **A voice keeps its `stagger` answers for as long as history reaches** (left to the agent,
+  2026-11-12), in the order it gave them, so a replay or a read ahead hands back what the live mix
+  asked rather than asking again. A subject dropped and met again live is asked again, as the docs
+  promise, and its replay gets that second answer. Not until the voice ends: a long voice would
+  keep an entry for every subject ever dropped.
 - **Spans** (2026-10-07): fit strategies over a constraint solver or a host helper; `overrun` is
   opt-in and never the default; joins are `all`/`any`; the children's hints are plain fields on the
   spec, not under `give`.
