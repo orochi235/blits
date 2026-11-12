@@ -602,7 +602,10 @@ describe('sync', () => {
     let wall = frame;
     m.sync(wall);
     const first = m.seq;
-    for (let i = 0; i < 3000; i++) m.sync((wall += frame));
+    for (let i = 0; i < 3000; i++) {
+      wall += frame;
+      m.sync(wall);
+    }
     m.sync(wall + 30);
     m.rebase();
     m.seek({ frame: first });
