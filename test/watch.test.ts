@@ -433,7 +433,7 @@ describe('holding', () => {
     const { m, e } = setup();
     const h = e.hold();
     expect(() => {
-      m.rate = -1;
+      m.rate = Number.NaN;
     }).toThrow(RangeError);
     h.free();
     const t = (m as unknown as { transport: { ramp: unknown } }).transport;
