@@ -238,8 +238,9 @@ export function recordOf<I, O>(
 
 /**
  * Where a read ahead's copy of a voice came from, and how it stood when it was made. It answers the
- * copy's `stagger` for a subject from the live voice's record, so a subject the copy meets afresh,
- * as after a drop on the way, starts where the live mix last met it, not from `stagger` asked again.
+ * copy's `stagger` for a subject as the live voice will on replay, else from its record, so a
+ * subject the copy meets afresh, as after a drop on the way, starts where the live mix meets it,
+ * not from `stagger` asked again.
  */
 class Link implements Asked<unknown> {
   /** The link of `voice`, where it is itself a copy at the stop before. */
@@ -263,6 +264,9 @@ class Link implements Asked<unknown> {
   delay(subject: unknown): number | undefined {
     const live = this.live;
     const h = live.subjects.get(subject) as Subject<unknown> | undefined;
+    // A copy meets afresh a subject the live voice holds only once it has left on the way.
+    const next = live.staggers?.next(subject, h?.reaches === true);
+    if (next !== undefined) return next;
     if (h?.reaches) return h.delay;
     return live.asked?.delay(subject);
   }

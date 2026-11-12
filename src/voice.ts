@@ -35,6 +35,7 @@ import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
 import type { Seat } from './seat.js';
 import { keeping, VoiceSetting } from './setting.js';
 import { type Fitting, lingers } from './spans.js';
+import type { Staggers } from './staggers.js';
 import { Filled, Store } from './store.js';
 import type { Parted, Parting, Snap, Subject } from './subject.js';
 import type { Anchor, Channel, FadeSpec, FitResult, Handle, Patch, VoiceSpec } from './types.js';
@@ -352,6 +353,8 @@ export class Voice<I, O> {
   spares: Snap<unknown>[] | null = null;
   /** Its `stagger` and `target` answers as a gpu side keeps them; null without one. `park` keeps it. */
   asked: Asked<I> | null = null;
+  /** Under history, its `stagger` answers for a seek back to give again; null until it asks one. `park` keeps it. */
+  staggers: Staggers<I> | null = null;
   /** The one record of every subject it does not reach. */
   unreached: Subject<unknown> | null = null;
   /** By subject number, a bit set where `unreached` stands for the subject; null until one is. */
@@ -833,6 +836,7 @@ export class Voice<I, O> {
     v.laned = false;
     v.seat = null;
     v.log = null;
+    v.staggers = null;
     v.early = null;
     v.met = null;
     v.metRead = null;

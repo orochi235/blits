@@ -102,7 +102,7 @@ export function held<I, O>(
     voice.keyed ??= new Set();
     voice.keyed.add(this.keys.key(subject));
   }
-  const delay = delayOf(voice, subject);
+  const delay = delayOf(this, voice, subject);
   held = freshOf(voice, subject, true);
   held.delay = delay;
   originate(this, voice, held);

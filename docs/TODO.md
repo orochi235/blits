@@ -34,13 +34,10 @@ Owner tags:
   read by field, `Circle` kept as the 2D alias, `plot`'s array keeps the name `xy`,
   `put(subject, x, y?, z?)`. Not decided: how `plot` learns the axis count (proposed
   `plot(subjects, xy, { axes, cell })`).
-- **[maintainer] A seek back asks `stagger` again for a subject the live mix had already asked**,
-  so a `stagger` that answers differently on a second ask places it elsewhere on replay (seen
-  2026-11-12). Two paths: a stateful record first made after the moment sought is met afresh, and
-  a stateless one is dropped again by a replayed `drop` before the replay meets it. The answers live
-  only in the records, so keeping them takes a per-voice store of answers that outlives both, and
-  a call on how long it holds a dropped subject's answer: until the voice ends, or for the history
-  window. A read ahead already takes the live record's answer (`Link` in `src/ahead.ts`).
+- **[agent] The `gpu` engine's table of `stagger` answers asks again after a drop**
+  (`Answers.forget` in `src/gpu/answers.ts`), outside the per-voice store the CPU takes answers
+  from (`src/staggers.ts`), so a replayed `drop` likely has it ask where the live mix did not.
+  Inferred from the code, not run: WebGPU tests need a real browser.
 - **[agent] Two copies of blits loaded together** share what each knows of its patches and
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the

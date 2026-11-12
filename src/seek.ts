@@ -295,10 +295,12 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
   // Every motion patch takes back the changes made after `t`, which the tape makes again.
   const motions = new Set<Motions<I>>();
   for (const voice of all) if (voice.motion !== undefined) motions.add(voice.motion);
-  for (const voice of all)
+  for (const voice of all) {
+    voice.staggers?.back(seq);
     if (voice.cuedSeq > seq) park(mix, voice);
     else if (voice.doneSeq <= seq) gone.push(voice);
     else kept.push(voice);
+  }
   for (const voice of kept) restoreVoice(mix, voice, t, seq);
   const cut = { seq, strict: false };
   for (const voice of kept) {

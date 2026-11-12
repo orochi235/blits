@@ -28,6 +28,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A read ahead no longer asks a voice's `stagger` again for a subject dropped on the way: it takes
   the answer the live mix got, so a `stagger` that answers differently on a second ask places the
   subject where the live mix did.
+- A replay after a seek back no longer asks a voice's `stagger` again for a subject the live mix
+  asked, whether the replay meets it afresh or after a `drop` it plays again: under history each
+  voice keeps its answers, in the order given, for as long as history reaches the moment each was
+  given. A subject brought back by a motion patch is asked once, where it was asked twice.
 
 ## 1.3.0
 
