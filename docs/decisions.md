@@ -29,6 +29,8 @@ DevTools extension's are in their READMEs.
   it (2026-09-27). That is why the mix's clock verb is `sync`, not `step`.
 - **`duration`, not `period`** (2026-10-04): only a looping voice has a period.
 - **`phase`** is the normalized position within a pass, formerly `t`.
+- **`plot(subjects, xy, { axes, cell })`** learns the axis count from `axes`, 2 by default; `xy`
+  keeps its name (left to the agent, 2026-11-12).
 - **`seek`** names both the mix's and a voice's, as in a media player (2026-10-07).
 
 ## Behavior
@@ -39,6 +41,13 @@ DevTools extension's are in their READMEs.
 - **A seek moves a voice's position, never its speed or direction** (left to the agent,
   2026-11-11): a span's refit leaves a playing child its handle turned back alone until its
   handle turns it forward, so a nested span sought forward while turned back stays turned back.
+- **A subject's first `dt` counts from its `since`**, where its delay runs out or its voice starts,
+  not from when it was first probed (left to the agent, 2026-11-12): a stateful patch already steps
+  from `since`, and a weight signal reading `dt` then sees the same start on both engines.
+- **A voice keeps each subject's `stagger` answer for as long as history reaches** (left to the
+  agent, 2026-11-12), so a replay or a read ahead never asks again for a subject the live mix
+  asked, a dropped one included. Not until the voice ends: a long voice would keep an entry for
+  every subject ever dropped.
 - **Spans** (2026-10-07): fit strategies over a constraint solver or a host helper; `overrun` is
   opt-in and never the default; joins are `all`/`any`; the children's hints are plain fields on the
   spec, not under `give`.
