@@ -65,6 +65,8 @@ export class GpuSide<I> {
   private waiting = false;
   private readonly why = new Reasons();
   private readonly readback: Readback<I>;
+  /** Stops `reads` following the mix's seeks. */
+  private readonly unfollow: () => void;
 
   constructor(
     private readonly mix: Mixer<I, unknown>,
@@ -78,6 +80,7 @@ export class GpuSide<I> {
     this.met = new Met(mix, () => this.answers);
     this.buffers = new Buffers(device);
     this.readback = new Readback(device);
+    this.unfollow = this.reads.follow(mix);
     void device.lost.then(() => {
       this.readback.close(false);
       this.release();
@@ -102,6 +105,7 @@ export class GpuSide<I> {
     this.mirrors.clear();
     this.timings.close();
     this.reads.clear();
+    this.unfollow();
     this.met.close();
     this.why.clear();
   }
@@ -117,14 +121,15 @@ export class GpuSide<I> {
    * Call again when the list changes.
    */
   subjects(list: readonly I[], fieldsOf: (subject: I) => Record<string, number>): void {
+    const was = this.list;
     this.list = Object.freeze(list.slice());
+    this.reads.relist(was, this.list);
     this.fieldsOf = fieldsOf;
     this.frame = Number.NaN;
     this.mirrors.clear();
     this.answers.register(this.list);
     this.met.clear();
     this.timings.clear();
-    this.reads.clear();
     this.readback.forget();
     this.why.clear();
   }

@@ -1,0 +1,36 @@
+# teitou (Apple M5 Max), 2026-11-12, onto do --kind bench --node teitou --solo, at b75f643c with the
+# Reads dt change uncommitted (the change is in the commit that adds this file)
+#   MIX=signal ROWS=gpu:100000,gpu:1000000 FRAMES=300 WARM=30 \
+#     bench/gpu-ab.sh b75f643c bench/gpu-reach.mjs bench/runs/2026-11-12-gpu-reads-dt
+# Raw records: 2026-11-12-gpu-reads-dt-{a1,b1,b2,a2}.jsonl. a is main, b keeps dt as the CPU does:
+# a voice with no delays reads one dt for every subject, worked out once a read, where main worked
+# out each subject's time, pass and dt in the loop. The `fatal` lines are the a side's git lookup
+# in its archive, harmless.
+#
+# Medians, ms a frame (fold part in parens), via `node bench/gpu-reach.mjs --digest`:
+#   subjects   a1              b1              b2              a2
+#    100,000   1.535 (1.200)   1.145 (0.825)   1.210 (0.875)   1.510 (1.155)
+#  1,000,000  14.615 (13.090) 10.445 (8.890)  10.315 (8.760)  14.585 (12.980)
+#
+# Backed out first (same command, same node, raw records overwritten by this run): per-subject
+# Float64Arrays for every voice, read 15.590 and 15.465 ms at 1M against main's 14.480 and 14.640,
+# and 1.660 and 1.690 against 1.520 and 1.550 at 100k.
+a is b75f643c (b75f643c4177ea89b276430eb79c45023de10411), b the working tree
+== a1
+fatal: not a git repository (or any of the parent directories): .git
+onto: plan 2
+ 1/2 gpu   signal     100000  median     1.535 ms  p95     1.650 ms  max     1.895 ms at frame   128  frames 300  wall    0.6 s
+ 2/2 gpu   signal    1000000  median    14.615 ms  p95    15.350 ms  max    16.025 ms at frame   102  frames 300  wall    5.2 s
+== b1
+onto: plan 2
+ 1/2 gpu   signal     100000  median     1.145 ms  p95     1.280 ms  max     1.405 ms at frame    72  frames 300  wall    0.4 s
+ 2/2 gpu   signal    1000000  median    10.445 ms  p95    10.890 ms  max    11.375 ms at frame    78  frames 300  wall    3.7 s
+== b2
+onto: plan 2
+ 1/2 gpu   signal     100000  median     1.210 ms  p95     1.315 ms  max     1.395 ms at frame   110  frames 300  wall    0.5 s
+ 2/2 gpu   signal    1000000  median    10.315 ms  p95    10.760 ms  max    11.055 ms at frame   330  frames 300  wall    3.8 s
+== a2
+fatal: not a git repository (or any of the parent directories): .git
+onto: plan 2
+ 1/2 gpu   signal     100000  median     1.510 ms  p95     1.660 ms  max     1.785 ms at frame   113  frames 300  wall    0.6 s
+ 2/2 gpu   signal    1000000  median    14.585 ms  p95    15.145 ms  max    15.425 ms at frame   321  frames 300  wall    5.2 s

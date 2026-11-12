@@ -12,15 +12,35 @@ import { KEEPS, perSubject, SENDS } from './weight.js';
 /** The largest finite f32, which an infinite read is stored as. */
 const MAX_F32 = 3.4028234663852886e38;
 
-/** One voice's reads for one `read`, and the mix times dt counts from. */
+/**
+ * One voice's reads from the last `read` it was in, and what a CPU record of each subject keeps for
+ * `dt`: where it counts from, NaN until the voice meets the subject, and the mix time the subject
+ * was last read at, NaN before its first read and after a seek back. While every subject's are the
+ * same, as for a voice with no delays, they are `stepped` and `probed`, and `steps` and `probes`
+ * are null; otherwise they are per subject, by registration order.
+ */
 interface Held {
   values: Float32Array;
-  /** The `mix.now` it was last read at, and the one before that; NaN before its first read. */
-  at: number;
-  before: number;
-  /** The voice's `seeks` at its last read: a seek forgets the times dt counts from. */
-  seeks: number;
+  stepped: number;
+  probed: number;
+  steps: Float64Array | null;
+  probes: Float64Array | null;
 }
+
+const heldOf = (n: number): Held => ({
+  values: new Float32Array(n),
+  stepped: Number.NaN,
+  probed: Number.NaN,
+  steps: null,
+  probes: null,
+});
+
+/** Where a read at `now` counts `dt` from, as `prime` has it: a read in an earlier frame, if any. */
+const fromOf = (stepped: number, probed: number, now: number): number =>
+  probed < now ? probed : stepped;
+
+/** Where a subject met at `now` counts from, as `meet` has it: its start, or now if that is ahead. */
+const metAt = (since: number, now: number): number => (since < now ? since : now);
 
 /** The setting a read passes its signal: its own, so `keep` and `send` reach nothing on the CPU. */
 interface ReadSetting {
@@ -48,7 +68,10 @@ export class Reads<I> {
   readonly refused = new WeakMap<object, string>();
   /** f32s the reads take in `persub`. */
   length = 0;
-  private by = new Map<Voice<I, unknown>, Held>();
+  /** Every voice read while it is still in the mix, read in the last `read` or not. */
+  private held = new Map<Voice<I, unknown>, Held>();
+  /** The last `read`'s reads, by voice. */
+  private by = new Map<Voice<I, unknown>, Float32Array>();
   private placed: Laid<Float32Array>[] = [];
   /** The signal being read, which `keep` and `send` refuse. */
   private reading: object | null = null;
@@ -75,8 +98,57 @@ export class Reads<I> {
     this.refusedNow = true;
   }
 
-  /** Lets go of every voice's reads; called from `GpuSide.subjects` and `close`. */
+  /** Has each seek back on `mix` move what `dt` counts from as it moves a CPU record's. */
+  follow(mix: Mixer<I, unknown>): () => void {
+    return mix.onSeek((s) => {
+      if (s.back) this.back(mix, s.at);
+    });
+  }
+
+  /** As `restore` puts back a stateless record for mix time `t`. */
+  private back(mix: Mixer<I, unknown>, t: number): void {
+    for (const [voice, held] of this.held) {
+      // A voice parked before its cue meets its subjects afresh; one done by `t` is left as it is.
+      if (voice.parked) this.held.delete(voice);
+      if (voice.parked || !mix.cued.includes(voice)) continue;
+      if (held.stepped > t) held.stepped = t;
+      held.probed = Number.NaN;
+      const { steps, probes } = held;
+      if (steps === null || probes === null) continue;
+      for (let i = 0; i < steps.length; i++) {
+        if ((steps[i] as number) > t) steps[i] = t;
+        probes[i] = Number.NaN;
+      }
+    }
+  }
+
+  /** Moves each voice's reads from the subjects in `was` to the same subjects in `list`. */
+  relist(was: readonly I[], list: readonly I[]): void {
+    this.by.clear();
+    this.placed = [];
+    this.length = 0;
+    if (this.held.size === 0) return;
+    const at = new Map<I, number>();
+    for (let i = 0; i < was.length; i++) at.set(was[i] as I, i);
+    for (const [voice, old] of this.held) {
+      const held = heldOf(list.length);
+      const steps = new Float64Array(list.length).fill(Number.NaN);
+      const probes = new Float64Array(list.length).fill(Number.NaN);
+      for (let j = 0; j < list.length; j++) {
+        const i = at.get(list[j] as I);
+        if (i === undefined) continue;
+        steps[j] = old.steps === null ? old.stepped : (old.steps[i] as number);
+        probes[j] = old.probes === null ? old.probed : (old.probes[i] as number);
+      }
+      held.steps = steps;
+      held.probes = probes;
+      this.held.set(voice, held);
+    }
+  }
+
+  /** Lets go of every voice's reads; called from `GpuSide.close`. */
   clear(): void {
+    this.held.clear();
     this.by.clear();
     this.placed = [];
     this.length = 0;
@@ -92,70 +164,141 @@ export class Reads<I> {
     list: readonly I[],
     answers: Answers<I>,
   ): boolean {
-    const now = mix.now;
     const n = list.length;
-    const by = new Map<Voice<I, unknown>, Held>();
-    const s = this.setting;
+    const by = new Map<Voice<I, unknown>, Float32Array>();
     this.refusedNow = false;
     for (const voice of voices) {
       if (!perSubject(voice)) continue;
-      let held = this.by.get(voice);
-      if (held === undefined || held.values.length !== n || held.seeks !== voice.seeks)
-        held = {
-          values: new Float32Array(n),
-          at: Number.NaN,
-          before: Number.NaN,
-          seeks: voice.seeks,
-        };
-      else if (held.at !== now) {
-        held.before = held.at;
-        held.at = now;
+      let held = this.held.get(voice);
+      if (held === undefined || held.values.length !== n) {
+        held = heldOf(n);
+        this.held.set(voice, held);
       }
-      by.set(voice, held);
-      const signal = voice.spec.weight as Signal<I>;
+      by.set(voice, held.values);
       const answer = varies(voice as Voice<unknown, unknown>) ? answers.of(voice) : null;
       const delays = answer?.delays ?? null;
       const reach = answer?.reach ?? null;
-      const values = held.values;
-      s.timestamp = now;
-      s.host = voice.setting.host;
-      this.reading = signal;
+      this.setting.host = voice.setting.host;
+      this.reading = voice.spec.weight as Signal<I>;
       try {
-        for (let i = 0; i < n; i++) {
-          const delay = delays === null ? 0 : (delays[i] as number);
-          const elapsed = reaches(reach, i) ? elapsedOf(voice, now, delay) : Number.NaN;
-          if (Number.isNaN(elapsed)) {
-            values[i] = 0;
-            continue;
-          }
-          let previous = held.before;
-          if (Number.isNaN(previous)) {
-            const since = mix.sinceOf(voice, delay);
-            previous = since < now ? since : now;
-          }
-          s.dt = mix.capped(now - previous);
-          s.elapsed = elapsed;
-          s.pass = passAt(elapsed, voice.duration, voice.passes);
-          s.weight = 0;
-          values[i] = stored(signal(list[i] as I, s as never));
-        }
+        if (delays === null && held.steps === null) this.readAlike(mix, voice, held, list, reach);
+        else this.readApart(mix, voice, held, list, reach, delays);
       } finally {
         this.reading = null;
       }
-      if (Number.isNaN(held.at)) held.at = now;
     }
     this.by = by;
+    if (this.held.size > by.size)
+      for (const voice of this.held.keys())
+        if (!by.has(voice) && !mix.cued.includes(voice) && !mix.gone.includes(voice))
+          this.held.delete(voice);
     return !this.refusedNow;
+  }
+
+  /** A voice with no delays, every subject's `dt` the same as its records' are. */
+  private readAlike(
+    mix: Mixer<I, unknown>,
+    voice: Voice<I, unknown>,
+    held: Held,
+    list: readonly I[],
+    reach: Uint32Array | null,
+  ): void {
+    const now = mix.now;
+    const values = held.values;
+    if (Number.isNaN(held.stepped)) held.stepped = metAt(mix.sinceOf(voice, 0), now);
+    const elapsed = elapsedOf(voice, now);
+    if (Number.isNaN(elapsed)) {
+      values.fill(0);
+      return;
+    }
+    held.stepped = fromOf(held.stepped, held.probed, now);
+    held.probed = now;
+    const s = this.setting;
+    s.timestamp = now;
+    s.dt = mix.capped(now - held.stepped);
+    s.elapsed = elapsed;
+    s.pass = passAt(elapsed, voice.duration, voice.passes);
+    const signal = voice.spec.weight as Signal<I>;
+    for (let i = 0; i < list.length; i++) {
+      if (!reaches(reach, i)) {
+        values[i] = 0;
+        continue;
+      }
+      s.weight = 0;
+      values[i] = stored(signal(list[i] as I, s as never));
+    }
+  }
+
+  /**
+   * A voice whose subjects' `dt`s may differ, each kept apart, until a read leaves every subject
+   * it reaches with the same again, as a voice with no delays does once each has been read.
+   */
+  private readApart(
+    mix: Mixer<I, unknown>,
+    voice: Voice<I, unknown>,
+    held: Held,
+    list: readonly I[],
+    reach: Uint32Array | null,
+    delays: Float64Array | null,
+  ): void {
+    const now = mix.now;
+    const n = list.length;
+    const steps = held.steps ?? new Float64Array(n).fill(held.stepped);
+    const probes = held.probes ?? new Float64Array(n).fill(held.probed);
+    held.steps = steps;
+    held.probes = probes;
+    const { values } = held;
+    const s = this.setting;
+    s.timestamp = now;
+    const signal = voice.spec.weight as Signal<I>;
+    let alike = delays === null;
+    let common = Number.NaN;
+    for (let i = 0; i < n; i++) {
+      if (!reaches(reach, i)) {
+        values[i] = 0;
+        continue;
+      }
+      const delay = delays === null ? 0 : (delays[i] as number);
+      let stepped = steps[i] as number;
+      if (Number.isNaN(stepped)) {
+        stepped = metAt(mix.sinceOf(voice, delay), now);
+        steps[i] = stepped;
+      }
+      const elapsed = elapsedOf(voice, now, delay);
+      if (Number.isNaN(elapsed)) {
+        values[i] = 0;
+        alike = false;
+        continue;
+      }
+      stepped = fromOf(stepped, probes[i] as number, now);
+      steps[i] = stepped;
+      probes[i] = now;
+      if (alike && stepped !== common) {
+        if (Number.isNaN(common)) common = stepped;
+        else alike = false;
+      }
+      s.dt = mix.capped(now - stepped);
+      s.elapsed = elapsed;
+      s.pass = passAt(elapsed, voice.duration, voice.passes);
+      s.weight = 0;
+      values[i] = stored(signal(list[i] as I, s as never));
+    }
+    if (alike && !Number.isNaN(common)) {
+      held.stepped = common;
+      held.probed = now;
+      held.steps = null;
+      held.probes = null;
+    }
   }
 
   /** `voice`'s reads from the last `read`, or null where it has none. */
   of(voice: Voice<I, unknown>): Float32Array | null {
-    return this.by.get(voice)?.values ?? null;
+    return this.by.get(voice) ?? null;
   }
 
   /** Where each voice's reads start in `persub`, in voice order, laid from `from`. */
   place(voices: readonly Voice<I, unknown>[], from: number): (number | undefined)[] {
-    const all = voices.map((voice) => this.by.get(voice)?.values);
+    const all = voices.map((voice) => this.by.get(voice));
     const { placed, offsets, end } = lay(all, from, (values) => values.length);
     this.placed = placed;
     this.length = end - from;

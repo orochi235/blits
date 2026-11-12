@@ -44,6 +44,10 @@ Owner tags:
 - **[agent] Consumers still working around step 7 of the 2026-10-09 review**: the "Universal
   applicability" workarounds in klieg, sherpa, weasel, wod and `apps/playground` (`LivePanel`'s
   cast, `expr.ts`'s flag). Whether klieg's level-weighted voices run on lanes is unchecked.
+- **[maintainer] A staggered subject's first `dt` counts from when it was first probed**, not from
+  when its delay ran out: probed every frame from 10 ms, a subject whose delay runs out at 40 first
+  shows at 42 with `dt` 32, not 2 (`meet`; both engines, held by `test/gpu-reads-dt.test.ts`).
+  Keep, or count from `since`?
 
 ## Speed
 
@@ -109,8 +113,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   kernel compiles.** A compiled kernel stands in for everything else (`src/gpu/stand-in.ts`), and a
   shader patch playing at one time for every subject folds from its `at`; a staggered one would need
   each subject's time worked out on the CPU, and `at` sees no `lag`.
-- **[agent] `Reads` differs from the CPU's `dt`**: it forgets a voice absent from one read, keeps
-  `dt` per voice not per subject, and resets on every seek.
 - **[agent] Lifting "it is parting from subjects"** needs the kernel told which subjects a voice
   faded out of, apart from `Answer.reach`.
 

@@ -14,6 +14,13 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A sync after a `rebase` plays on from exactly where the mix stood. Worked out through the host
   offset, it could land an ulp early, before the mix's first frame, where a seek to the mix's own
   `now` then threw.
+- The `gpu` engine hands a weight signal it reads per subject the `dt` a probe would: each
+  subject's own, counting from its last read even across a frame the voice was not read in, a
+  `touch`, a voice's `seek`, or the subjects registered again, and set back by a mix's seek back as
+  a probe's is. It had counted one `dt` per voice and started over after any of those. Reading a
+  voice with no delays is faster for it: 10.4 ms a frame against 14.6 at 1,000,000 subjects.
+- A tween, spring or glide voice on a lane hands its weight signal the gap since the subject's
+  last read, as off lanes. It had handed the gap since the subject was first read.
 
 ## 1.3.0
 
