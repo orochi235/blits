@@ -1,7 +1,9 @@
 // The gone index's churn at scale: four voices naming one list of N object subjects are filed,
 // then let go, as a tape trimmed under `history` does a scene. `each` files every voice under
 // every subject, as the index did before 2026-11-11 (its emptied entries kept); `filed` is the
-// index now, `Filed` with its group slot, whose sweep then takes the dead group off a share a sync.
+// index now, `Filed` with its group slot, which finds the group through the voices' own sets;
+// `listed` is `Filed` made to list every group, which its sweep does a share a sync and then takes
+// the dead group off a share a sync.
 // Needs `npx tsc -b` first.
 //   N=1000000 ROUNDS=8 OUT=<file> node bench/gone-churn.mjs      one JSON line per pass to OUT
 import { appendFileSync } from 'node:fs';
@@ -13,12 +15,22 @@ const N = Number(process.env.N ?? 1_000_000);
 const ROUNDS = Number(process.env.ROUNDS ?? 8);
 const OUT = process.env.OUT ?? 'gone-churn.jsonl';
 const subjects = Array.from({ length: N }, (_, i) => ({ i }));
+const members = new Set(subjects);
 const voices = Array.from({ length: 4 }, (_, k) => ({
   id: k + 1,
-  named: { list: subjects },
+  named: { list: subjects, has: (s) => members.has(s) },
   group: null,
   goneGroup: null,
 }));
+
+/** Ms to read every subject's voices once, as a probe of each would. */
+function readAll(index) {
+  const t = performance.now();
+  let n = 0;
+  for (const s of subjects) n += index.get(s)?.length ?? 0;
+  if (n !== N * voices.length) throw new Error(`read ${n} voices`);
+  return performance.now() - t;
+}
 
 function each() {
   const index = new Store();
@@ -30,6 +42,8 @@ function each() {
       else l.push(v);
     }
   const t1 = performance.now();
+  const get = readAll(index);
+  const t1b = performance.now();
   for (const v of voices)
     for (const s of subjects) {
       const l = index.get(s);
@@ -39,14 +53,23 @@ function each() {
       l.pop();
       if (l.length === 0) emptied(index, s);
     }
-  return { file: t1 - t0, unfile: performance.now() - t1, syncs: [] };
+  return { file: t1 - t0, get, unfile: performance.now() - t1b, fills: [], syncs: [] };
 }
 
-function filed() {
-  const index = new Filed('goneGroup');
+function filed(sighted) {
+  const index = new Filed('goneGroup', sighted);
   const t0 = performance.now();
   for (const v of voices) index.file(v);
   const t1 = performance.now();
+  // The first voice's group is listed under its subjects a share a sync, as the sweep goes.
+  const fills = [];
+  for (let k = 0; k < 2000 && index.unfiled > 0; k++) {
+    const a = performance.now();
+    index.sweep();
+    fills.push(performance.now() - a);
+  }
+  const get = readAll(index);
+  const tu = performance.now();
   for (const v of voices) index.unfile(v);
   const t2 = performance.now();
   const syncs = [];
@@ -55,16 +78,16 @@ function filed() {
     index.sweep();
     syncs.push(performance.now() - a);
   }
-  return { file: t1 - t0, unfile: t2 - t1, syncs };
+  return { file: t1 - t0, get, unfile: t2 - tu, fills, syncs };
 }
 
-const ways = { each, filed };
+const ways = { each, listed: () => filed(0), filed: () => filed(undefined) };
 for (let r = 1; r <= ROUNDS; r++)
   for (const [way, run] of Object.entries(ways)) {
     const t = run();
     appendFileSync(OUT, `${JSON.stringify({ round: r, way, n: N, ...t })}\n`);
-    const worst = t.syncs.length > 0 ? Math.max(...t.syncs) : 0;
+    const worst = (l) => (l.length > 0 ? Math.max(...l) : 0).toFixed(2).padStart(6);
     console.log(
-      `${r}/${ROUNDS} ${way.padEnd(5)} file ${t.file.toFixed(1).padStart(7)}  unfile ${t.unfile.toFixed(1).padStart(7)}  sweep ${String(t.syncs.length).padStart(4)} syncs, worst ${worst.toFixed(2)} ms`,
+      `${r}/${ROUNDS} ${way.padEnd(6)} file ${t.file.toFixed(1).padStart(7)}  get ${t.get.toFixed(1).padStart(6)}  fill ${String(t.fills.length).padStart(4)} syncs, worst ${worst(t.fills)} ms  unfile ${t.unfile.toFixed(1).padStart(7)}  sweep ${String(t.syncs.length).padStart(4)} syncs, worst ${worst(t.syncs)} ms`,
     );
   }

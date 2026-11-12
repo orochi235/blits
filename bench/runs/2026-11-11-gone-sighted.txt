@@ -1,0 +1,27 @@
+# teitou (onto do --kind bench --solo), 2026-11-11, node v26.13.0, at 6561722d.
+#   npx tsc -b && N=1000000 ROUNDS=6 node bench/gone-churn.mjs; raw: 2026-11-11-gone-sighted.jsonl
+# Four voices naming one list of 1M object subjects, filed, every subject read once (get), then let go.
+# each: every voice under every subject (the index before Filed). listed: Filed made to list every group
+# (new Filed('goneGroup', 0)), which lists a new group a share a sync (fill) and takes a dead one off
+# the same way (sweep). filed: Filed as made, which finds up to 8 groups of long lists through their
+# voices' own sets and lists them nowhere. Every pass, ms:
+1/6 each   file   514.5  get   58.6  fill    0 syncs, worst   0.00 ms  unfile   241.5  sweep    0 syncs, worst   0.00 ms
+1/6 listed file     0.1  get   77.6  fill  245 syncs, worst  31.25 ms  unfile     0.1  sweep  245 syncs, worst   1.11 ms
+1/6 filed  file     0.0  get   81.8  fill    0 syncs, worst   0.00 ms  unfile     0.0  sweep    0 syncs, worst   0.00 ms
+2/6 each   file   325.1  get   59.2  fill    0 syncs, worst   0.00 ms  unfile   237.5  sweep    0 syncs, worst   0.00 ms
+2/6 listed file     0.0  get   72.9  fill  245 syncs, worst  29.30 ms  unfile     0.0  sweep  245 syncs, worst   0.30 ms
+2/6 filed  file     0.0  get   57.8  fill    0 syncs, worst   0.00 ms  unfile     0.0  sweep    0 syncs, worst   0.00 ms
+3/6 each   file   470.1  get   32.4  fill    0 syncs, worst   0.00 ms  unfile   237.3  sweep    0 syncs, worst   0.00 ms
+3/6 listed file     0.0  get   59.7  fill  245 syncs, worst  31.28 ms  unfile     0.0  sweep  245 syncs, worst   0.30 ms
+3/6 filed  file     0.0  get   61.3  fill    0 syncs, worst   0.00 ms  unfile     0.0  sweep    0 syncs, worst   0.00 ms
+4/6 each   file   335.2  get   32.5  fill    0 syncs, worst   0.00 ms  unfile   234.2  sweep    0 syncs, worst   0.00 ms
+4/6 listed file     0.0  get   51.4  fill  245 syncs, worst  28.65 ms  unfile     0.0  sweep  245 syncs, worst   0.29 ms
+4/6 filed  file     0.0  get   56.3  fill    0 syncs, worst   0.00 ms  unfile     0.0  sweep    0 syncs, worst   0.00 ms
+5/6 each   file   522.6  get   31.6  fill    0 syncs, worst   0.00 ms  unfile   286.2  sweep    0 syncs, worst   0.00 ms
+5/6 listed file     0.0  get   55.7  fill  245 syncs, worst  39.69 ms  unfile     0.0  sweep  245 syncs, worst   0.32 ms
+5/6 filed  file     0.0  get   69.2  fill    0 syncs, worst   0.00 ms  unfile     0.0  sweep    0 syncs, worst   0.00 ms
+6/6 each   file   393.3  get   35.1  fill    0 syncs, worst   0.00 ms  unfile   248.5  sweep    0 syncs, worst   0.00 ms
+6/6 listed file     0.0  get   53.3  fill  245 syncs, worst  31.66 ms  unfile     0.0  sweep  245 syncs, worst   0.27 ms
+6/6 filed  file     0.0  get   57.0  fill    0 syncs, worst   0.00 ms  unfile     0.0  sweep    0 syncs, worst   0.00 ms
+
+# An earlier run, before a lone sighted group's voices were handed back uncopied, read 82-88 ms in filed's get.

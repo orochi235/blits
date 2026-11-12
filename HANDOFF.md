@@ -826,18 +826,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       left as a scene starts is two passes over the staggered voice's subjects: `levelsOf` hashing
       each delay, about two thirds, and uploading the 2-byte codes. The hash runs at about 2 ns a
       subject and three variants measured no faster on a stagger's shape (2026-11-11,
-      `bench/runs/2026-11-11-levels-hash.txt`), so what is left there is the pass itself. Also left: a voice naming a list no other names still
-      costs a lookup per subject as it joins, and its group's sweep after it leaves (at most
-      max(4,096, 1/256 of what is left) subjects a sync, 0.05–0.45 ms at 1M). The sweep's 5–17 ms syncs are
-      gone: the index points an emptied object entry at a shared empty list rather than deleting
-      it, which shrank the WeakMap (2026-11-11, `bench/runs/2026-11-11-filed-none.txt`). Under `history` the gone index
-      (`src/gone.ts`) now files voices as the named index does, on `Filed` with a group slot of
-      its own (`goneGroup`): four voices over 1M subjects file in 82–130 ms where they took
-      245–461, and leave at once, swept in 245 syncs of under 1.1 ms where unfiling took 197–296
-      ms in one (2026-11-11, `bench/gone-churn.mjs`, `bench/runs/2026-11-11-gone-churn.txt`).
-      Left: the first voice of a list makes its group's entry under every subject in one call, as
-      the gone index catches up lazily on a drop or a freed slot. churn^ and turnover^
-      read 4–5% slower in a three-round A/B and inside the spread on a five-round recheck.
+      `bench/runs/2026-11-11-levels-hash.txt`), so what is left there is the pass itself. The mix's named index and the gone
+      index under `history` (`src/gone.ts`, with a group slot of its own, `goneGroup`) are both
+      `Filed`. Up to 8 groups of lists over 4,096 subjects are listed under no subject: `get` asks
+      each voice's own `Named` set, so four voices over 1M subjects file and leave in under 0.1
+      ms, and reading every subject once costs 56–82 ms, against 51–78 for listed groups
+      (2026-11-11, `bench/gone-churn.mjs`, `bench/runs/2026-11-11-gone-sighted.txt`). Each read asks
+      every such group, so 8 cost up to 8 set lookups a subject. A group past the 8 is listed a share
+      a sync, max(4,096, 1/256 of what is left), and swept off the same way once dead; listing 1M
+      that way still costs a 22–40 ms sync whenever the WeakMap doubles its table. An emptied
+      object entry points at a shared empty list rather than being deleted, which would shrink
+      the WeakMap (`bench/runs/2026-11-11-filed-none.txt`).
     - **A frame folds nothing on the GPU while a new kernel compiles** (found 2026-11-11, on the
       light-board demo's 1,230 probes a frame; `bench/runs/2026-11-11-demos-light-board.txt`). A
       voice whose runner the side has not met makes it compile a kernel, and `channel()` gives
@@ -851,8 +850,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       knowing each subject's last probe, which the GPU path keeps no record of.
     - The timing-block span test compares against records made at the end; probing each frame
       would test records that moved.
-    - `Answer.reach` shows a faded-out named subject as reached. Harmless while parting voices stay
-      on the CPU; lifting "it is parting from subjects" has to fix it first.
+    - Lifting "it is parting from subjects" needs the kernel told which subjects a voice faded
+      out of, apart from `Answer.reach`. `reach` holds the `target` or named list's answer for a
+      faded-out subject too, by design, as the CPU takes it through `asked`; the test "keeps
+      target's answer, not a fade out's" pins it (checked 2026-11-11).
 
 19. **What the 2026-11-09 audit left open.** The audit folded duplication across the engine, value
     code, gpu path, and companions, and filled the public API's gaps without breaking it. Left:
