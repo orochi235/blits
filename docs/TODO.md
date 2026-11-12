@@ -41,10 +41,6 @@ Owner tags:
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
   release carrying it.
-- **[agent] Consumers still cueing with the deprecated `locus`**: astv
-  `packages/engine/draw/windows/turns.ts`; wod `src/clock/morphVoices.ts` and
-  `src/transition/voices.ts`; magicsmoke's `Omit` in `src/smoke.ts`. The alias goes in the release
-  after the one that warns.
 - **[agent] Consumers still working around step 7 of the 2026-10-09 review**: the "Universal
   applicability" workarounds in klieg, sherpa, weasel, wod and `apps/playground` (`LivePanel`'s
   cast, `expr.ts`'s flag). Whether klieg's level-weighted voices run on lanes is unchecked.
