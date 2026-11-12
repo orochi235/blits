@@ -23,6 +23,15 @@ const voices = Array.from({ length: 4 }, (_, k) => ({
   goneGroup: null,
 }));
 
+/** Ms to read every subject's voices once, as a probe of each would. */
+function readAll(index) {
+  const t = performance.now();
+  let n = 0;
+  for (const s of subjects) n += index.get(s)?.length ?? 0;
+  if (n !== N * voices.length) throw new Error(`read ${n} voices`);
+  return performance.now() - t;
+}
+
 function each() {
   const index = new Store();
   const t0 = performance.now();
@@ -33,6 +42,8 @@ function each() {
       else l.push(v);
     }
   const t1 = performance.now();
+  const get = readAll(index);
+  const t1b = performance.now();
   for (const v of voices)
     for (const s of subjects) {
       const l = index.get(s);
@@ -42,7 +53,7 @@ function each() {
       l.pop();
       if (l.length === 0) emptied(index, s);
     }
-  return { file: t1 - t0, unfile: performance.now() - t1, fills: [], syncs: [] };
+  return { file: t1 - t0, get, unfile: performance.now() - t1b, fills: [], syncs: [] };
 }
 
 function filed(sighted) {
@@ -57,6 +68,8 @@ function filed(sighted) {
     index.sweep();
     fills.push(performance.now() - a);
   }
+  const get = readAll(index);
+  const tu = performance.now();
   for (const v of voices) index.unfile(v);
   const t2 = performance.now();
   const syncs = [];
@@ -65,7 +78,7 @@ function filed(sighted) {
     index.sweep();
     syncs.push(performance.now() - a);
   }
-  return { file: t1 - t0, unfile: t2 - t1, fills, syncs };
+  return { file: t1 - t0, get, unfile: t2 - tu, fills, syncs };
 }
 
 const ways = { each, listed: () => filed(0), filed: () => filed(undefined) };
@@ -75,6 +88,6 @@ for (let r = 1; r <= ROUNDS; r++)
     appendFileSync(OUT, `${JSON.stringify({ round: r, way, n: N, ...t })}\n`);
     const worst = (l) => (l.length > 0 ? Math.max(...l) : 0).toFixed(2).padStart(6);
     console.log(
-      `${r}/${ROUNDS} ${way.padEnd(6)} file ${t.file.toFixed(1).padStart(7)}  fill ${String(t.fills.length).padStart(4)} syncs, worst ${worst(t.fills)} ms  unfile ${t.unfile.toFixed(1).padStart(7)}  sweep ${String(t.syncs.length).padStart(4)} syncs, worst ${worst(t.syncs)} ms`,
+      `${r}/${ROUNDS} ${way.padEnd(6)} file ${t.file.toFixed(1).padStart(7)}  get ${t.get.toFixed(1).padStart(6)}  fill ${String(t.fills.length).padStart(4)} syncs, worst ${worst(t.fills)} ms  unfile ${t.unfile.toFixed(1).padStart(7)}  sweep ${String(t.syncs.length).padStart(4)} syncs, worst ${worst(t.syncs)} ms`,
     );
   }
