@@ -18,9 +18,8 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git`, public. Released: engine and blits-panel 1.2.0
-  (2026-11-08, released in lockstep), blits-rapier 0.7.2, blits-quarks 0.17.2, blits-tone 0.12.3.
-  `CHANGELOG.md` has an Unreleased section waiting on the owner's go to release.
+- `main` at `git@github.com:orochi235/blits.git`, public. Released: engine and blits-panel 1.3.0
+  (2026-11-12, released in lockstep), blits-rapier 0.7.3, blits-quarks 0.17.3, blits-tone 0.12.4.
 - `npm run release -- <version>` (`scripts/release.mjs`) releases the engine, then the panel at the
   same version and each companion, one tag at a time, waiting on each run; a rerun resumes from the
   first missing tag. release.yml runs the check once and sets `BLITS_CHECKED` so `prepublishOnly`
@@ -33,6 +32,9 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
 
 ## Traps
 
+- **`onto test` runs the suite only, not lint**, and release.yml lints before it publishes, so an
+  agent's unformatted file stops a release. Run `npx biome check .` on a merge before calling it
+  done (a 1.3.0 publish run failed on four bench JSON files, 2026-11-12).
 - **WebGPU tests need a real browser**, so `onto test` leaves them out. Send them with
   `onto do --kind test --node teitou -- npm run test:gpu`.
 - **Explainer source may import only from under `site/src/explainers`**, and blits only as
