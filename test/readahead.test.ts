@@ -211,4 +211,16 @@ describe('a read ahead past many known events', () => {
       if (t === 304) m.drop(b);
       if (t === 400) m.cue({ patch: ramp, start: 480, weight: slew(() => 1, { riseMs: 100 }) });
     }, 16));
+
+  // The drop asks the saw's copy at its stop for b, so `carry` walks back to that copy, past the
+  // copies at later stops (the ramp's cue makes one) that held nothing while the saw waited.
+  it('meets a voice from the stop a drop asked it at, past stops that never read it', () =>
+    readsAhead((m, t) => {
+      if (t === 0) {
+        m.cue({ patch: drift() });
+        m.cue({ patch: saw, start: 300 });
+      }
+      if (t === 96) m.drop(b);
+      if (t === 160) m.cue({ patch: ramp, start: 200 });
+    }, 16));
 });

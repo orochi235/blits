@@ -37,6 +37,9 @@ Owner tags:
 - **[agent] A staggered `target` voice ends by the latest-staggered subject it has met**, so a
   read ahead or a replay with no reads can end it earlier than the live mix did (documented on
   `VoiceSpec.stagger`, 2026-10-29). A voice cued with `subjects` ends by all of them.
+- **[agent] A read ahead asks `stagger` again for a subject dropped on the way**, where the live
+  mix did not (seen 2026-11-12: a saw waiting to start, `m.drop(b)`, then `project()` past the
+  drop). Only a `stagger` that answers differently on a second ask shows it.
 - **[agent] Two copies of blits loaded together** share what each knows of its patches and
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
@@ -80,7 +83,8 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   more; inferred to be first touches of each object of the voice and each array of its crowd row.
 - **[agent] A read ahead across many events of a stateful mix** costs a lookup per voice copy's
   store per stop; one store shared along a voice's copies (`Filled` in `src/store.ts`) would cut it.
-  No test reaches `carry`'s fallback for a copy that holds a record under copies that hold none.
+  `carry` walks back only past copies that never read the voice, so it was still waiting there:
+  answering none in place of its fallback still passed `test/readahead.test.ts` (2026-11-12).
 - **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
   it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
   the benches still cue the deprecated `lerp: 'oklch'`.
