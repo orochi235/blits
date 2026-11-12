@@ -60,12 +60,22 @@ export function coverFrame(transport: Transport, seq: number): Frame {
         `blits: frame ${seq} reaches past memory; await prepare with its mix time first`,
       );
   }
-  if (frame === undefined)
-    throw new Error(
-      `blits: frame ${seq} is not one this mix's history holds: not played yet, let go, or after a moment a seek went back to`,
-    );
+  if (frame === undefined) throw unheld(seq);
   cover(transport, frame.at);
   return frame;
+}
+
+/** Whether frame `seq` is one a seek could reach: held in memory, or older than it and paged. */
+export function reachable(transport: Transport, seq: number): boolean {
+  if (transport.frames.numbered(seq) !== undefined) return true;
+  const first = transport.frames.first?.seq ?? Number.POSITIVE_INFINITY;
+  return transport.pager !== null && seq <= transport.seq && seq < first;
+}
+
+export function unheld(seq: number): Error {
+  return new Error(
+    `blits: frame ${seq} is not one this mix's history holds: not played yet, let go, or after a moment a seek went back to`,
+  );
 }
 
 /** A seek back to frame `seq`: what the store and `prepare` hold after it is from a future the tape makes again. */

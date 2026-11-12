@@ -183,7 +183,8 @@ export interface Hold {
   /**
    * Gives the clock back to the host. The host's next sync carries on from where the hold left the
    * mix, and its clock calls made meanwhile are made, in order. A call made while the tape holds
-   * later calls acts on the mix but is not recorded, so those calls still play.
+   * later calls acts on the mix but is not recorded, so those calls still play. A seek to a frame
+   * the hold's own seek let go goes to that frame's mix time instead.
    */
   free(): void;
 }

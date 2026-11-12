@@ -255,10 +255,13 @@ export class Transport implements TransportApi {
       return;
     }
     const before = this.now;
-    if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
+    // A rebase carries `u` over the gap as it stands: worked out through the offset, it can land an
+    // ulp behind, under where the mix was born.
+    const rebased = this.rebasing && !Number.isNaN(this.last);
+    if (rebased) this.offset = timestamp - this.u;
     this.rebasing = false;
     this.last = timestamp;
-    const u = timestamp - this.offset;
+    const u = rebased ? this.u : timestamp - this.offset;
     let pace = this.pace;
     let now = pace === null ? u : pace.sync(u);
     const later = u !== this.u;

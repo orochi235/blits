@@ -14,6 +14,7 @@ import type {
   Watched,
   WatchedFrame,
 } from './types.js';
+import { reachable, unheld } from './unpage.js';
 
 type Change = Parameters<Parameters<Registry['on']>[0]>[0];
 type Any = Mixer<unknown, unknown>;
@@ -430,6 +431,18 @@ function hold(t: Transport): Hold {
     sync.call(t, line);
   };
 
+  /**
+   * Where a host's seek made now goes once it is made: a frame the hold's own seek let go
+   * meanwhile is gone, or numbers another, so it is sought by its time instead.
+   */
+  const pin = (to: number | { readonly frame: number }) => {
+    if (typeof to === 'number') return () => to;
+    if (Number.isInteger(to.frame) && !reachable(t, to.frame)) throw unheld(to.frame);
+    const f = t.frames.numbered(to.frame);
+    if (f === undefined) return () => to;
+    return () => (t.frames.numbered(f.seq) === f ? to : f.at);
+  };
+
   const puts: (() => void)[] = [];
   const tape = t.tape as (Tape & Record<string, unknown>) | undefined;
   if (tape !== undefined) {
@@ -450,14 +463,20 @@ function hold(t: Transport): Hold {
       later(() => ramp.call(t, r, over));
     }),
     swap(t, 'rebase', () => later(() => rebase.call(t))),
-    swap(t, 'seek', (to: number | { readonly frame: number }) => later(() => seekT.call(t, to))),
+    swap(t, 'seek', (to: number | { readonly frame: number }) => {
+      const where = pin(to);
+      later(() => seekT.call(t, where()));
+    }),
   );
   for (const m of t.members) {
     const mixSeek = proto(m).seek as Any['seek'];
     puts.push(
       swap(m, 'seek', (to: number | { readonly frame: number }) => {
         if (t.shared) mixSeek.call(m, to);
-        else later(() => mixSeek.call(m, to));
+        else {
+          const where = pin(to);
+          later(() => mixSeek.call(m, where()));
+        }
       }),
     );
   }

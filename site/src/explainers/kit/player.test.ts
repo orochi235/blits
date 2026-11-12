@@ -1,4 +1,4 @@
-import { kit, type Mix, patch, sum } from '@msb235/blits';
+import { kit, type Mix, patch, sum, watched } from '@msb235/blits';
 import { describe, expect, it } from 'vitest';
 import { Player } from './player';
 import { FRAME, type Scene } from './scene';
@@ -88,6 +88,69 @@ describe('the explainer player', () => {
     for (let i = 0; i < 180; i++) frame();
     expect(way).toBe(-1);
     expect(m.now).toBeLessThan(500);
+    p.close();
+  });
+
+  it.each([0.5, 1.5])(
+    'keeps the run on the mix clock where a debugger set its rate to %s for a while',
+    (rate) => {
+      const looped: Scene<string, Pose, object> = {
+        ...scene,
+        voices: () => [
+          {
+            name: 'rise',
+            color: 'v1',
+            spec: { patch: patch(500, (p) => ({ x: p }), { writes: ['x'] }), loop: true },
+          },
+        ],
+      };
+      const duration = 8000;
+      const p = new Player(looped, {}, { name: `player-rate-${rate}`, duration });
+      const m = mixOf(p);
+      let t = 0;
+      let way = 1;
+      const frame = () => {
+        t += FRAME * way;
+        if (t >= duration) {
+          way = -1;
+          t = 2 * duration - t;
+        }
+        t = p.at(Math.max(0, t)).t;
+      };
+      for (let i = 0; i < 60; i++) frame();
+      const lead = m.now - t;
+      m.rate = rate;
+      for (let i = 0; i < 150; i++) frame();
+      expect(m.now - t - lead).toBeGreaterThanOrEqual(-1e-6);
+      expect(m.now - t - lead).toBeLessThan(FRAME);
+      m.rate = 1;
+      // Out past the boomerang and back to the start, which seeks to the run's first frames.
+      while (way === 1) frame();
+      while (t > 0) frame();
+      expect(m.now - t - lead).toBeLessThan(FRAME);
+      p.close();
+    },
+  );
+
+  it("plays back through a debugger's hold that sought back past where it was going", () => {
+    const duration = 1000;
+    const p = new Player(scene, {}, { name: 'player-held-back', duration });
+    const m = mixOf(p);
+    for (let t = 0; t <= 600; t += FRAME) p.at(t);
+    const entry = watched()
+      .entries()
+      .find((e) => e.mix === (m as unknown));
+    const h = (entry as NonNullable<typeof entry>).hold();
+    h.step(30);
+    p.at(500);
+    h.seek(h.now - 300);
+    expect(() => h.free()).not.toThrow();
+    // The next frame follows the mix to where the hold's free left it, rather than moving it on.
+    const now = m.now;
+    p.at(450);
+    expect(m.now).toBe(now);
+    for (let t = 450; t > 0; t -= FRAME) p.at(t);
+    expect(p.at(0).t).toBe(0);
     p.close();
   });
 });

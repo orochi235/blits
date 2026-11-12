@@ -155,14 +155,3 @@ built and what is deliberately not offered.
   label, `.clearable()` takes only a fixed placeholder, `DiagramView` never reports its first
   layout, no file picker, no editable code pane, no `aria-expanded` on `Button`, the `Transport`
   loop switch drawn as a `⟲` character.
-- **[agent] An explainer runs past its history when a debugger slows its mix** (found
-  2026-11-11, in a scripted `Player` run, not yet on a page). Set the main mix's `rate` to 0.5 for
-  150 frames, back to 1, and the player's frame index ends up behind mix time: at the boomerang
-  the mix is near 9.3 s of an 8 s run, and the seek back to the start asks for a frame older than the 9 s of history (`… is older
-  than this mix's history reaches`), which unmounts the island. Rate 0 and below are fine since
-  the solos follow the main mix. Likely fix: index frames by mix time in `Player.follow`, or size
-  history by what the mix can reach rather than `duration + 1000`.
-- **[agent] Intermittent "Maximum update depth exceeded" from `Explainer`'s tick** (seen
-  2026-11-11 on `/mix/?panel`, headless). Logged a few times at rate 1 while a script scanned the
-  whole DOM every frame, after the page had been run backward; never on a fresh page and not
-  reproduced on demand. Next step: catch it with a stack on a page under load.

@@ -18,8 +18,12 @@ interface Played<I, O> {
   seqs: number[];
 }
 
-/** One frame of the mix as it was synced, by frame number: where its clock stood. */
-type Nows = number[];
+/**
+ * One frame of the mix as it was synced, by frame number: where its clock stood, and how far it ran
+ * ahead of the explainer's. The lead moves only where an event moves the mix's clock (a rebase), so
+ * the explainer's time is always the mix's less the lead.
+ */
+type Nows = { now: number; lead: number }[];
 
 export interface PlayerOptions {
   /** What a debugger lists the main mix as. */
@@ -61,6 +65,8 @@ export class Player<I, O, C> {
   private closed = false;
   /** True while this player is the one calling the mix, so a wake it causes is not a debugger's. */
   private own = false;
+  /** Set where something else sought the main mix, so the next frame follows it there. */
+  private sought = false;
   /**
    * Explainer ms from the first frame to where the run ends, which the main mix announces then as
    * `end`; null once announced, and for an unlisted run.
@@ -98,6 +104,14 @@ export class Player<I, O, C> {
     this.attached = listed ? (scene.attach?.(this.main.mix, config) ?? null) : null;
     this.solos = scene.ledger ? this.voices.map((v) => play([v])) : [];
     for (const solo of this.solos) solo.mix.close();
+    for (const p of [this.main, ...this.solos])
+      p.mix.onSeek((s) => {
+        if (p === this.main && !this.own) this.sought = true;
+        // A seek back lets go of every later frame, so their numbers name nothing now.
+        if (!s.back) return;
+        const i = p.seqs.findIndex((seq) => seq > s.frame);
+        if (i >= 0) p.seqs.length = i;
+      });
     if (!listed) this.main.mix.close();
     this.events = [...(scene.events?.(config) ?? [])].sort((a, b) => a.at - b.at);
     this.poses = this.subjects.map(() => ({}) as O);
@@ -117,6 +131,13 @@ export class Player<I, O, C> {
    * where a debugger moved the mix and the player followed.
    */
   at(t: number): Frame<I, O> {
+    if (this.sought) {
+      const now = this.main.mix.now;
+      if (!Number.isNaN(now)) {
+        this.follow(now);
+        return this.frame();
+      }
+    }
     const target = Math.max(0, Math.floor(t / FRAME + 1e-6));
     this.own = true;
     // Played on in time is a frame or a few ahead; anything else is a jump. Asked for the frame it
@@ -150,7 +171,7 @@ export class Player<I, O, C> {
   moved(): Frame<I, O> | null {
     const kept = this.nows[this.k];
     const now = this.main.mix.now;
-    if (kept === undefined || Number.isNaN(now) || Math.abs(now - kept) <= 0.5) return null;
+    if (kept === undefined || Number.isNaN(now) || Math.abs(now - kept.now) <= 0.5) return null;
     this.follow(now);
     return this.frame();
   }
@@ -207,37 +228,46 @@ export class Player<I, O, C> {
       this.end = null;
     }
     const now = this.main.mix.now;
-    const planned =
-      this.nows[k] ?? (ran || before === undefined ? now : before.now + (k - before.k) * FRAME);
-    if (Math.abs(now - planned) > 0.5) return this.follow(now);
-    this.nows[k] = now;
+    const lead = this.nows[k]?.lead ?? (ran || before === undefined ? now - t : before.lead);
+    if (frameOf(now - lead) !== k) return this.follow(now);
+    this.nows[k] = { now, lead };
     this.read(t);
     this.keep(t);
     return true;
   }
 
-  /** The last frame at or before `k` that synced, and where the mix's clock stood then. */
-  private lastNow(k: number): { k: number; now: number } | undefined {
+  /**
+   * The last frame at or before `k` that synced, and where the mix's clock stood then; `held`, the
+   * last a seek can still go to.
+   */
+  private lastNow(k: number, held = false): ({ k: number } & Nows[number]) | undefined {
     for (let j = k; j >= 0; j--) {
-      const now = this.nows[j];
-      if (now !== undefined) return { k: j, now };
+      const kept = this.nows[j];
+      if (kept !== undefined && (!held || this.main.seqs[j] !== undefined))
+        return { k: j, ...kept };
     }
     return undefined;
   }
 
-  /** Moves the player to the frame the mix's clock says, after a debugger moved it. */
+  /**
+   * Moves the player to the frame the mix's clock says, after a debugger moved it. The lead is the
+   * one in effect where the mix now is, and stays: a mix a debugger slowed lands mid-frame, and
+   * taking that as the frame's start would drop the part-frame it ran on every frame it is followed.
+   */
   private follow(now: number): false {
-    let k = Math.floor(now / FRAME + 1e-6);
+    let lead = 0;
     for (let j = this.nows.length - 1; j >= 0; j--) {
-      const n = this.nows[j];
-      if (n !== undefined && n <= now + 0.5) {
-        k = j + Math.max(0, Math.floor((now - n) / FRAME + 1e-6));
+      const kept = this.nows[j];
+      if (kept !== undefined && kept.now <= now + 0.5) {
+        lead = kept.lead;
         break;
       }
     }
+    const k = Math.max(0, frameOf(now - lead));
+    this.sought = false;
     this.forget(k);
     this.k = k;
-    this.nows[k] = now;
+    this.nows[k] = { now, lead };
     // A debugger moves the main mix alone; the solos go where it went, or the ledger and every
     // later seek back read them at another time.
     for (const solo of this.solos) if (solo.mix.now !== now) solo.mix.seek(now);
@@ -246,10 +276,10 @@ export class Player<I, O, C> {
     return false;
   }
 
-  /** Seeks every mix back to frame `k`, or to the last one before it that synced. */
+  /** Seeks every mix back to frame `k`, or to the last one before it that synced and is still held. */
   private back(k: number): void {
-    const last = this.lastNow(k);
-    if (last === undefined || this.main.seqs[last.k] === undefined) return;
+    const last = this.lastNow(k, true);
+    if (last === undefined) return;
     for (const p of [this.main, ...this.solos]) {
       const s = p.seqs[last.k];
       if (s !== undefined) p.mix.seek({ frame: s });
@@ -308,6 +338,9 @@ export class Player<I, O, C> {
     });
   }
 }
+
+/** The frame explainer time `t` falls in. */
+const frameOf = (t: number): number => Math.floor(t / FRAME + 1e-6);
 
 /** One voice across a run: its weight, and the channel of its own that moves most, if one does. */
 export interface Course {
