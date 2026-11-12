@@ -1,6 +1,7 @@
 import type { ArcHandle, ArcSpec } from './arc.js';
 import type { Kit } from './channel.js';
 import type { HistoryOptions, Tape } from './history.js';
+import type { Outline } from './outline.js';
 import type { Band, Easing, Patch, Sent, Signal } from './patch.js';
 import type { Booker, BookOptions, Marked } from './place.js';
 import type { Trace, TraceOptions } from './trace.js';
@@ -386,6 +387,12 @@ export interface Mix<I, O, H = unknown> {
    * handle `cue` returned for that voice, so a listed handle is `===` the cued one.
    */
   voices(tag?: string): Handle<I>[];
+  /**
+   * What the mix holds now, as plain data: its kit's channels, and each voice `voices` lists with
+   * what it plays under, writes, plays in and is anchored to. A tool draws the mix's graph from it
+   * without reaching into the mix; it copies everything, so nothing in it changes with the mix.
+   */
+  describe(): Outline;
   /** Anything still contributing, fading, or pending. */
   readonly live: boolean;
   /**

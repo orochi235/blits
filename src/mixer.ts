@@ -9,6 +9,7 @@ import { type LerpInto, lerpInto, reusesHeld, STOCK_BAND, scalarOp } from './cha
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
 import { cue, roleTags } from './cue.js';
 import { DepartedIndex } from './departed.js';
+import { describe } from './describe.js';
 import { drop, dropIn, recordDrop, releaseIn } from './drop.js';
 import { DueQueue } from './due.js';
 import type { Share } from './everyone.js';
@@ -75,6 +76,7 @@ import type {
   Marked,
   Mix,
   MixOptions,
+  Outline,
   OwnerSpec,
   Patch,
   Projection,
@@ -603,6 +605,10 @@ export class Mixer<I, O> implements Mix<I, O> {
       if (voice.state !== 'done' && (tag === undefined || voice.spec.tags?.includes(tag)))
         out.push(voice.handle as Handle<I>);
     return out;
+  }
+
+  describe(): Outline {
+    return describe(this);
   }
 
   get live(): boolean {

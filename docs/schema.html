@@ -1180,6 +1180,14 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
 <h2 id="chosen">Chosen while building</h2>
 <p>Calls made while building where the design left a choice open. Each is the owner's to overturn, and says what reversing it touches where that is not obvious. A call the owner made himself is marked as his. Each carries the date it was made.</p>
 
+<h3>Describing a mix</h3>
+<ul>
+  <li><b>Names</b>: <code>describe()</code>, returning an <code>Outline</code> of <code>OutlineChannel</code>s and <code>OutlineVoice</code>s; <code>Described</code> was already history&rsquo;s word for what <code>revive</code> rebuilds from (2026-11-11).</li>
+  <li><b>An outline lists what <code>voices()</code> lists</b>, in its order, so a voice that is done drops out; owners, spans and arcs are voices in it with a <code>kind</code>, and each points at its owner by its handle&rsquo;s <code>id</code>, the number <code>marks</code> and <code>book</code> already name voices by (2026-11-11).</li>
+  <li><b>Functions are reported, not carried</b>: a signal weight reads <code>'signal'</code>, a blend member&rsquo;s <code>'blend'</code>, and <code>stagger</code> and <code>target</code> are booleans, so the whole outline survives <code>JSON.stringify</code>. Anchors and marks are copied as given, unresolved: which voice an anchor answers to is the score&rsquo;s to say at a time, not the outline&rsquo;s (2026-11-11).</li>
+  <li><b>Left out</b>: tracks (<code>Watched.voice</code> has them), a channel&rsquo;s rest and bounds, and timings, which <code>marks</code> gives (2026-11-11).</li>
+</ul>
+
 <h3>Signal bounds</h3>
 <ul>
   <li><b>Names are the owner&rsquo;s</b>: <code>place</code> for the call that hands a subject its index, &ldquo;index&rdquo; for the number, <code>find</code> for a finder&rsquo;s method, and <code>within</code> kept for both kinds of bound (2026-10-28). <code>Finder</code>, the type&rsquo;s name, was picked while building.</li>

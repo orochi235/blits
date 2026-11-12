@@ -2,15 +2,8 @@ import type { Kit } from '@msb235/blits';
 import type { Flow, FlowEdge, FlowNode } from '@pg/widgets/FlowDiagram/types';
 import { parseExpressionAt } from 'acorn';
 import { type Composition, type Expr, isExpr, type Level, type PatchSource } from './composition';
-import {
-  CHANNELS,
-  type ChannelName,
-  DEFAULT_RULES,
-  KIT,
-  kitOf,
-  type Mixed,
-  type SwingName,
-} from './kit';
+import { CHANNELS, type ChannelName, DEFAULT_RULES, KIT, type Mixed, type SwingName } from './kit';
+import { outlineOf } from './outline';
 import { groupParams, levelParams, voiceParams } from './params';
 import { subjectsOf } from './stage';
 
@@ -176,10 +169,16 @@ class Builder {
 }
 
 /** The signal flow of a composition: what feeds each group and voice, what each voice
- *  writes, and how each channel folds into the pose. `faulted` holds the ids
- *  of voices and groups that failed to compile; they are drawn, marked. */
+ *  writes, and how each channel folds into the pose. Who holds what, what is written and how a
+ *  channel folds come from `describe()` of its mix; the signals, labels and parameters from the
+ *  composition, as do the holder and writes of a voice or group the mix left out. `faulted` holds
+ *  the ids of voices and groups that failed to compile; they are drawn, marked. */
 export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set()): SignalFlow {
-  const kit = kitOf(comp.rules);
+  const outline = outlineOf(comp);
+  const ownerOf = (x: { id: string; owner?: string }): string | undefined => {
+    const d = outline.voices.get(x.id);
+    return d === undefined ? x.owner : d.owner === undefined ? undefined : outline.ids.get(d.owner);
+  };
   const b = new Builder(new Map(comp.levels.map((l) => [l.name, l])));
   for (const l of comp.levels) b.level(l.name);
   // A field a voice or group sets as an expression acts on what it plays on the way out: a step
@@ -208,7 +207,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       id: `group:${g.id}`,
       kind: 'group',
       label: g.name,
-      aside: g.kind,
+      aside: outline.voices.get(g.id)?.kind ?? g.kind,
       params: groupParams(g),
       hue: g.hue,
       ...(faulted.has(g.id) ? { faulted: true } : {}),
@@ -217,7 +216,8 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       ? [['weight', b.field(g, 'weight', g.weight)]]
       : [];
     out.set(g.id, chain(id, g.hue, steps));
-    if (g.owner !== undefined) b.edge(ownerOut(g.owner), id);
+    const owner = ownerOf(g);
+    if (owner !== undefined) b.edge(ownerOut(owner), id);
   }
   const written = new Set<ChannelName>();
   const writes: [string, ChannelName][] = [];
@@ -240,8 +240,10 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       else if (isExpr(e)) steps.push([field, b.field(v, field, e)]);
     }
     const end = chain(id, v.hue, steps);
-    if (v.owner !== undefined) b.edge(ownerOut(v.owner), id);
-    for (const ch of writesOf(v.patch)) {
+    const owner = ownerOf(v);
+    if (owner !== undefined) b.edge(ownerOut(owner), id);
+    const chs = (outline.voices.get(v.id)?.writes as ChannelName[]) ?? writesOf(v.patch);
+    for (const ch of chs) {
       written.add(ch);
       writes.push([end, ch]);
     }
@@ -254,7 +256,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       id: `ch:${ch}`,
       kind: 'channel',
       label: ch,
-      detail: kit[ch].kind ?? 'custom',
+      detail: outline.channels.find((c) => c.name === ch)?.kind ?? 'custom',
       ...(rule ? { stamp: rule } : {}),
     });
   }
