@@ -42,11 +42,6 @@ Owner tags:
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
   release carrying it.
-- **[agent] Consumers still working around step 7 of the 2026-10-09 review**: the "Universal
-  applicability" workarounds in klieg, sherpa, wod and `apps/playground` (`LivePanel`'s cast,
-  `expr.ts`'s flag). Whether klieg's level-weighted voices run on lanes is unchecked. weasel's
-  (its animator codec) is gone as of weasel `835119f9d` (2026-11-12).
-
 - **[agent] Nothing public says whether a voice runs on a lane.** A consumer checking that its
   voices got their lanes back (klieg's `level()` hinges, 2026-11-12) has to read the private
   `mix.lanes.byId`. `Mix.describe()`'s voices could carry it, with the reason one is off.
