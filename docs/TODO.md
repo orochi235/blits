@@ -65,9 +65,14 @@ Owner tags:
 
 Measure every change on the fleet before the next starts; `bench/README.md` has the method.
 
-- **[agent] `redo` at 1,000 subjects and 32 voices reads 3.7% slower after the 2026-11-09 audit**
-  (149.5 → 155.1 ms, studio, `bench/runs/2026-11-11-audit-redo-quiet.txt`). Not bisected across
-  `efc4950..41628a3b`.
+- **[agent] `redo` at 1,000 subjects and 32 voices: an audit slowdown that did not reproduce.**
+  Three runs read the end of the 2026-11-09 audit (`41628a3b`) slower than its base (`efc4950`):
+  +4.8%, +2.4% and +3.7% (`bench/runs/2026-11-11-audit-redo-quiet.txt`). Three later solo runs did
+  not: +1.5% on keiei, −1.5% on studio, −0.6% on teitou
+  (`bench/runs/2026-11-11-redo-bisect-*.txt`, 2026-11-12). Each audit branch tip alone, and each
+  merge on main, read within spread of the base, so no commit carries it. Any real effect is under
+  about 2%, less than one build's run-to-run spread on this row (7–11 ms). Reopen only if a new
+  run reads it above 3% again.
 - **[agent] Heatmap `pull` reads 5.4 ms with lanes, 3.8 without** (5,000 retargeted springs and
   three `ink` voices weighted by `input` signals). By line, `one`'s calls into `base`, `signal`,
   `primeLaned` and `signalled` are about 14% together, each spread thin; folding the four into one
