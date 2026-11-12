@@ -46,6 +46,11 @@ Owner tags:
   voices got their lanes back (klieg's `level()` hinges, 2026-11-12) has to read the private
   `mix.lanes.byId`. `Mix.describe()`'s voices could carry it, with the reason one is off.
 
+- **[agent] A staggered stateful subject may replay one step (8 ms) ahead of the live run after a
+  seek back** (seen 2026-11-12 in a scratch test with a fixed `stagger`, before the first-`dt`
+  change merged; not rechecked since). Recheck on main; if it holds, it is a seek's restore of
+  where a record steps from.
+
 ## Speed
 
 Measure every change on the fleet before the next starts; `bench/README.md` has the method.
