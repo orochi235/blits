@@ -33,6 +33,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A span held by a span, turned back by its handle and sought forward, stays turned back. The
+  outer span's fits on the way retimed it to run forward; a span's refit now leaves a playing child
+  its handle turned back alone, and fits it again once its handle turns it forward.
 - A seek through a history store back to while a staggered motion voice played finds the mix awake
   while a subject met inside its stagger is still unread. The voice came back from the store not
   knowing those subjects, so the mix read as inert before the subject moved.

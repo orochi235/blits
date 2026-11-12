@@ -1,6 +1,6 @@
 import { settleArcs } from './arcs.js';
 import { changed } from './chain.js';
-import { type Clock, elapsedWith } from './clock.js';
+import { elapsedWith } from './clock.js';
 import { popDue, schedule } from './due.js';
 import { beginFade, part, release, retire, rouse, stay } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
@@ -16,7 +16,7 @@ import { scoredLeft, scoredRemove } from './scored.js';
 import { byId } from './sorted.js';
 import { type Fitting, lapse, lapses, unfit } from './spans.js';
 import { unplay } from './strays.js';
-import type { Controls, Earlier, Voice } from './voice.js';
+import type { Controls, Voice } from './voice.js';
 import { warnOnce } from './warn.js';
 
 /** Numbers every mix's frames apart, so a blend's read is never taken for another mix's or frame's. */
@@ -144,11 +144,9 @@ function ahead<I, O>(
     o.ramp = null;
     // Started where the clock run forward reads 0, so a time on it before now maps back to it.
     o.start = at - o.anchorElapsed;
-    const ran = { anchorNow: at, anchorElapsed: o.anchorElapsed };
     return {
       clock: { anchorNow, anchorElapsed, rate, ramp },
       start,
-      ran,
       earlier: o.earlier,
       logged: o.log?.length ?? 0,
     };
@@ -168,26 +166,18 @@ function ahead<I, O>(
     settle(mix, held, now);
   } finally {
     back.forEach((o, i) => {
-      const { clock, start, ran, earlier, logged } = kept[i] as (typeof kept)[number];
+      const { clock, start, earlier, logged } = kept[i] as (typeof kept)[number];
       o.start = start;
+      // A seek moves a clock, never turns it: a fit made on the clock run forward is let go, as a
+      // span's refit leaves a child its handle turned back alone.
+      Object.assign(o, clock);
+      o.earlier = earlier;
       const log = o.log;
-      // A span's fit retimed the owner it holds on the clock run forward, as playing straight
-      // through would: that clock stands, and the one the fit replaced is the owner's own.
-      const fitted = o.earlier === earlier ? null : replaced(o.earlier, earlier);
-      if (fitted === null) Object.assign(o, clock);
-      else Object.assign(fitted, clock);
       if (log !== null)
         for (let k = logged; k < log.length; k++) {
           const c = log[k] as Controls;
           c.start = start;
-          if (
-            fitted === null ||
-            (c.rate === 1 &&
-              c.ramp === null &&
-              c.anchorNow === ran.anchorNow &&
-              c.anchorElapsed === ran.anchorElapsed)
-          )
-            Object.assign(c, clock);
+          Object.assign(c, clock);
         }
     });
   }
@@ -202,12 +192,6 @@ function ahead<I, O>(
     });
   }
   mix.lanes?.refill();
-}
-
-/** In `top`, the clock fits pushed on `below` first, null where `top` does not reach `below`. */
-function replaced(top: Earlier | null, below: Earlier | null): Clock | null {
-  for (let e = top; e !== null; e = e.prev) if (e.prev === below) return e;
-  return null;
 }
 
 /**

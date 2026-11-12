@@ -36,6 +36,9 @@ DevTools extension's are in their READMEs.
 - **The two seek-back changes in `3fd3eac` stand** (2026-10-18): `weightOf` reads 0 after a seek
   back until the subject is probed again, and a write to the handle of a voice waiting for its cue
   after a seek back is ignored.
+- **A seek moves a voice's position, never its speed or direction** (left to the agent,
+  2026-11-11): a span's refit leaves a playing child its handle turned back alone until its
+  handle turns it forward, so a nested span sought forward while turned back stays turned back.
 - **Spans** (2026-10-07): fit strategies over a constraint solver or a host helper; `overrun` is
   opt-in and never the default; joins are `all`/`any`; the children's hints are plain fields on the
   spec, not under `give`.

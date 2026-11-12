@@ -716,10 +716,9 @@ for (const outer of [false, true])
   });
 
 // A span held by a span, overrunning so that each child's end has the outer span retime it. Sought
-// forward while turned back, the outer span's fits on the way retime it as playing through would,
-// and that retiming stands after the frame; a mix seek back to before the frame finds it turned
-// back, and one after finds the retiming again.
-test('a span held by a span keeps the retiming its span gave it on a seek forward while turned back', () => {
+// forward while turned back, it stays turned back: a seek moves its position, and the outer span's
+// fits leave a child its handle turned back alone. A mix seek back finds it as it stood.
+test('a span held by a span stays turned back on a seek forward, whatever its span fits on the way', () => {
   const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
   m.sync(0);
   const reel = m.owns({ start: 0 });
@@ -743,8 +742,8 @@ test('a span held by a span keeps the retiming its span gave it on a seek forwar
   s.seek(2000);
   m.sync(1320);
   const rate = s.rate;
-  expect(rate).toBeGreaterThan(0);
-  expect(rate).not.toBe(fitted);
+  expect(rate).toBe(-1);
+  expect(fitted).toBeGreaterThan(0);
   const read = (from: number) => {
     const out: number[] = [];
     for (let t = from; t < from + 200; t += 10) {

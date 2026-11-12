@@ -206,6 +206,9 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
   const { plan, fell } = settle(claim, claims, fitting.fit, fitting.spill);
   const { at, length } = layout(claim, claims, plan);
   kids.forEach((c, i) => {
+    // A layout is a plan forward, so a child its handle turned back keeps the clock it runs back
+    // on, holding its place, until its handle turns it forward and a later fit takes it again.
+    if (begun(c, by) && (c.rate < 0 || (c.ramp !== null && c.ramp.to < 0))) return;
     const rate = (c.spec.rate ?? 1) * (plan.rate[i] as number);
     const skipped = (plan.skip[i] as boolean) && c.holding === null;
     const wasSkipped = c.skipped;

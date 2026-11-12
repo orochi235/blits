@@ -16,11 +16,6 @@ Owner tags:
 
 ## Engine
 
-- **[maintainer] Should a host's turn-back survive a span's fits on a seek forward?** A span held
-  by a span, sought forward while turned back, takes the outer span's fits on the way and ends
-  running forward at the fit's rate (pinned by "a span held by a span keeps the retiming" in
-  `test/stress-findings.test.ts`). The question: does a seek replay the fits as playing through
-  would, or keep what the host last set.
 - **[maintainer] Public renames the 2026-11-09 audit asked about:** `timestamp` on mix-clock
   fields (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a
   Promise); glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the
@@ -39,7 +34,8 @@ Owner tags:
   read by field, `Circle` kept as the 2D alias, `plot`'s array keeps the name `xy`,
   `put(subject, x, y?, z?)`. Not decided: how `plot` learns the axis count (proposed
   `plot(subjects, xy, { axes, cell })`).
-- **[maintainer] A shared segment lookup for keys patches whose stops sit at the same times.**
+- **[agent] A shared segment lookup for keys patches whose stops sit at the same times** (go-ahead
+  2026-11-11).
   The stress rig (1,000 bones, 70 voices, 1.2 ms by `pull`) spends about 30% finding segments,
   because each character's clips are staggered and each voice reads its stops once a subject. Every
   bone of one clip on one character reads at one time, and every track keys at `k / STOPS`, so a
