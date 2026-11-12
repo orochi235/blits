@@ -1,5 +1,5 @@
 import { clampWeight, envelope } from './clock.js';
-import { delayOf } from './delay.js';
+import { delayAhead } from './delay.js';
 import { type Curve, stepsOf, straight } from './easing.js';
 import type { Mixer } from './mixer.js';
 import type { Bent } from './trace-fit.js';
@@ -87,7 +87,7 @@ function shapeOf<I, O>(
     if (t > from + slack && t < to - slack) knots.push(t);
   };
   const held = voice.sharing ? undefined : voice.subjects.get(subject);
-  const delay = held?.delay ?? delayOf(voice, subject);
+  const delay = held?.delay ?? delayAhead(mix, voice, subject, false);
   // A ramp's clock inverts within rounding; a jump is read on its own side only at or after it.
   const time = (raw: number): number => {
     let t = voice.timeAt(raw + delay);

@@ -1,5 +1,5 @@
 import { insertByAt } from './changes.js';
-import { delayOf } from './delay.js';
+import { delayAhead } from './delay.js';
 import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
@@ -73,7 +73,7 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
       if (v.parted?.has(subject as I) !== true) return Number.NaN;
       unpart(m, v, subject as I);
       // Its record is gone until it is next read, so its stagger is asked here as it will be there.
-      return timeIn(m, v, delayOf(v, subject as I));
+      return timeIn(m, v, delayAhead(m, v, subject as I, true));
     },
   };
 }
@@ -116,7 +116,7 @@ function changeAhead<I, O>(
     if (parted) unpart(to, v, subject);
     if (at === undefined) {
       const frame = frameOf(to, v, subject);
-      const back = parted ? timeIn(to, v, delayOf(v, subject)) : frame;
+      const back = parted ? timeIn(to, v, delayAhead(to, v, subject, false)) : frame;
       if (!Number.isNaN(frame)) at = frame;
       else if (!Number.isNaN(back)) at = back;
     }
