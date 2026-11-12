@@ -44,8 +44,6 @@ Owner tags:
 - **[agent] Consumers still working around step 7 of the 2026-10-09 review**: the "Universal
   applicability" workarounds in klieg, sherpa, weasel, wod and `apps/playground` (`LivePanel`'s
   cast, `expr.ts`'s flag). Whether klieg's level-weighted voices run on lanes is unchecked.
-- **[agent] `Mix.describe()`**, so any host gets the graph the playground's `flowOf` builds, which
-  then becomes a thin adapter.
 
 ## Speed
 

@@ -8,6 +8,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Added
 
+- `Mix.describe()` returns an `Outline`: the kit's channels with their `kind`, and each voice
+  `voices()` lists, owners, spans and arcs among them, with its handle's `id`, the owner it plays
+  under, an arc part, what it writes, its role, what sets its weight, whether a `stagger` or
+  `target` acts per subject, and its score, tags, anchor and marks. It is plain data, copied, so a
+  tool can draw the mix's graph from it or send it elsewhere. The playground's flow diagram builds
+  from it.
 - A mix's or transport's `rate` and `ramp` go below 0 under `history` with a tape: the mix
   replays backward what it showed, each sync a seek back, and stops at the earliest moment history
   reaches. Turning forward plays the tape on, and the mix is live again past its last recorded call.
