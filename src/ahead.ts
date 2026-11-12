@@ -1,3 +1,4 @@
+import type { Asked } from './asked.js';
 import { ownBlends } from './blend.js';
 import { slotOf } from './chain.js';
 import type { Share } from './everyone.js';
@@ -168,18 +169,12 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
     c,
     mix.cued.filter((v) => v.state !== 'done'),
     (v) => {
-      const link = {
-        mix,
-        voice: v,
-        up: links.get(v),
-        made: 0,
-        shared: false,
-        filled: false,
-      } as unknown as Link;
+      const link = new Link(mix as Mixer<unknown, unknown>, v as Voice<unknown, unknown>);
       const copy: Voice<I, O> = v.copy((subject) => carry(link, subject, c, copy), undefined, true);
       link.made = copy.made;
       link.shared = copy.sharing;
       links.set(copy, link);
+      copy.asked = link as Asked<I>;
       return copy;
     },
     true,
@@ -241,17 +236,40 @@ export function recordOf<I, O>(
   return unreached(voice, slotOf(mix, subject)) ? (voice.unreached as Subject<unknown>) : undefined;
 }
 
-/** Where a read ahead's copy of a voice came from, and how it stood when it was made. */
-interface Link {
-  mix: Mixer<unknown, unknown>;
-  voice: Voice<unknown, unknown>;
+/**
+ * Where a read ahead's copy of a voice came from, and how it stood when it was made. It answers the
+ * copy's `stagger` for a subject from the live voice's record, so a subject the copy meets afresh,
+ * as after a drop on the way, starts where the live mix last met it, not from `stagger` asked again.
+ */
+class Link implements Asked<unknown> {
   /** The link of `voice`, where it is itself a copy at the stop before. */
-  up: Link | undefined;
+  readonly up: Link | undefined;
+  /** The voice in the live mix the copies descend from. */
+  readonly live: Voice<unknown, unknown>;
   /** The copy's `made` and `sharing` as it was made. */
-  made: number;
-  shared: boolean;
+  made = 0;
+  shared = false;
   /** Whether the copy has taken a record from `voice`. */
-  filled: boolean;
+  filled = false;
+
+  constructor(
+    readonly mix: Mixer<unknown, unknown>,
+    readonly voice: Voice<unknown, unknown>,
+  ) {
+    this.up = links.get(voice);
+    this.live = this.up?.live ?? voice;
+  }
+
+  delay(subject: unknown): number | undefined {
+    const live = this.live;
+    const h = live.subjects.get(subject) as Subject<unknown> | undefined;
+    if (h?.reaches) return h.delay;
+    return live.asked?.delay(subject);
+  }
+
+  reaches(subject: unknown): boolean | undefined {
+    return this.live.asked?.reaches(subject);
+  }
 }
 
 /** Each read ahead copy's link, by the copy. */

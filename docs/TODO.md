@@ -34,9 +34,13 @@ Owner tags:
   read by field, `Circle` kept as the 2D alias, `plot`'s array keeps the name `xy`,
   `put(subject, x, y?, z?)`. Not decided: how `plot` learns the axis count (proposed
   `plot(subjects, xy, { axes, cell })`).
-- **[agent] A read ahead asks `stagger` again for a subject dropped on the way**, where the live
-  mix did not (seen 2026-11-12: a saw waiting to start, `m.drop(b)`, then `project()` past the
-  drop). Only a `stagger` that answers differently on a second ask shows it.
+- **[maintainer] A seek back asks `stagger` again for a subject the live mix had already asked**,
+  so a `stagger` that answers differently on a second ask places it elsewhere on replay (seen
+  2026-11-12). Two paths: a stateful record first made after the moment sought is met afresh, and
+  a stateless one is dropped again by a replayed `drop` before the replay meets it. The answers live
+  only in the records, so keeping them takes a per-voice store of answers that outlives both, and
+  a call on how long it holds a dropped subject's answer: until the voice ends, or for the history
+  window. A read ahead already takes the live record's answer (`Link` in `src/ahead.ts`).
 - **[agent] Two copies of blits loaded together** share what each knows of its patches and
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the

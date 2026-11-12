@@ -25,6 +25,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   voice with no delays is faster for it: 10.4 ms a frame against 14.6 at 1,000,000 subjects.
 - A tween, spring or glide voice on a lane hands its weight signal the gap since the subject's
   last read, as off lanes. It had handed the gap since the subject was first read.
+- A read ahead no longer asks a voice's `stagger` again for a subject dropped on the way: it takes
+  the answer the live mix got, so a `stagger` that answers differently on a second ask places the
+  subject where the live mix did.
 
 ## 1.3.0
 

@@ -223,4 +223,27 @@ describe('a read ahead past many known events', () => {
       if (t === 96) m.drop(b);
       if (t === 160) m.cue({ patch: ramp, start: 200 });
     }, 16));
+
+  // Each ask answers anew, so a read ahead that asked again for a subject would place it elsewhere.
+  it('asks `stagger` for no subject the live mix had asked, one dropped on the way included', () => {
+    const asks: Part[] = [];
+    const stagger = (s: Part) => {
+      asks.push(s);
+      return 40 * asks.length;
+    };
+    const run = play((m, t) => {
+      if (t === 0) {
+        m.cue({ patch: drift() });
+        m.cue({ patch: saw, start: 300, stagger });
+      }
+      if (t === 96) m.drop(b);
+      if (t === 160) m.cue({ patch: ramp, start: 200 });
+    });
+    run.m.seek(run.mixT.get(16) as number);
+    for (const f of frames.filter((f) => f > 16))
+      expect(probes(run.m.project(run.mixT.get(f) as number)), `project(${f})`).toEqual(
+        run.poses.get(f),
+      );
+    expect(asks).toEqual([a, b]);
+  });
 });
