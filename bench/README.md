@@ -115,6 +115,7 @@ rows where one was timed.
 | Three variants of `levelsOf`'s delay hash (2026-11-11) | none faster than about 2 ns a subject |
 | Copying each fn result into a delta the record owns, to end the finder commit's pretenuring (2026-10-29) | GC pauses fell, `glowb^` 14% slower; the pauses are 8 µs of a 100 µs loss |
 | Building records with a class (`new`) | layout and time unchanged |
+| A segment lookup shared by keys tracks whose stops sit at the same phases: a 256-slot memo, phase to segment, on a timing interned across patches (2026-11-11) | 98% of the stress rig's searches hit it, yet `read` p50 0.955 against 0.953 ms without (teitou, 7 rounds, `runs/2026-11-11-timing-memo-ab/`): a 9-stop binary search costs what the lookup does |
 
 A lane switching a band off at weight 0 costs the `glowl` rows about 3% (teitou, 2026-10-10,
 against `da6e613`: `glowl` 1.680 to 1.736 ms), and filling only once did not recover it, so the

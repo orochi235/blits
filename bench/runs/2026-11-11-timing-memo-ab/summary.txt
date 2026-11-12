@@ -1,0 +1,14 @@
+round 1 memo off: read p50 0.932 p90 1.005 n 3600
+round 1 memo on: read p50 0.927 p90 0.988 n 3600
+round 2 memo on: read p50 0.956 p90 1.032 n 3600
+round 2 memo off: read p50 0.970 p90 1.054 n 3600
+round 3 memo off: read p50 0.953 p90 1.022 n 3600
+round 3 memo on: read p50 0.955 p90 1.039 n 3600
+round 4 memo on: read p50 0.959 p90 1.050 n 3600
+round 4 memo off: read p50 0.962 p90 1.057 n 3600
+round 5 memo off: read p50 0.957 p90 1.028 n 3600
+round 5 memo on: read p50 0.963 p90 1.040 n 3600
+round 6 memo on: read p50 0.952 p90 1.029 n 3600
+round 6 memo off: read p50 0.947 p90 1.019 n 3600
+round 7 memo off: read p50 0.934 p90 1.011 n 3600
+round 7 memo on: read p50 0.927 p90 0.996 n 3600

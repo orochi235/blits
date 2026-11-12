@@ -34,12 +34,6 @@ Owner tags:
   read by field, `Circle` kept as the 2D alias, `plot`'s array keeps the name `xy`,
   `put(subject, x, y?, z?)`. Not decided: how `plot` learns the axis count (proposed
   `plot(subjects, xy, { axes, cell })`).
-- **[agent] A shared segment lookup for keys patches whose stops sit at the same times** (go-ahead
-  2026-11-11).
-  The stress rig (1,000 bones, 70 voices, 1.2 ms by `pull`) spends about 30% finding segments,
-  because each character's clips are staggered and each voice reads its stops once a subject. Every
-  bone of one clip on one character reads at one time, and every track keys at `k / STOPS`, so a
-  lookup per frame and time could be shared. A new engine mechanism.
 - **[agent] A staggered `target` voice ends by the latest-staggered subject it has met**, so a
   read ahead or a replay with no reads can end it earlier than the live mix did (documented on
   `VoiceSpec.stagger`, 2026-10-29). A voice cued with `subjects` ends by all of them.
