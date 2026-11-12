@@ -52,6 +52,16 @@ the machine being used.
   subjects where `OUT=blank` allocates 19 to 32 kB (teitou, 3 rounds,
   `runs/2026-11-04-keys-out-blank.txt`): a number stored into a literal's shape is boxed. That is a
   host's cost, which `mix.pose()` removes, not the mix's.
+- **On a node, `HEAD` is the node's base commit, not the one synced**, so `same.sh` and `ab.sh`
+  refuse it in a dirty tree (2026-10-26).
+- **Confirm a short-run regression at `FRAMES=5000`** before chasing it: 330 frames can end before
+  the JIT settles. The glow rows read mostly warm-up at the default.
+- **`turnover^` and `named` read two ways on identical code**, by process (0.43–0.46 or 0.48–0.54
+  ms; 1.23–1.26 or 1.41–1.51 ms). Six runs a side at least.
+- **Rows run earlier in one process change a later row's numbers** (the heap a 100k row grew):
+  `AB_EACH=1 bench/ab.sh` runs each row in its own process.
+- **The heatmap stress demo plays a lanes twin**, so profile `bench/heatmap.mjs` with
+  `bench/heatprof.sh` (`INLINE=off`, `LINES`, `CALLERS`), not `bench/stressprof.sh heatmap`.
 
 ## Where `seek` stands
 
@@ -89,6 +99,22 @@ rows where one was timed.
 | Storing a rest into the pose by name, the ceiling for a function made per kit (keiei, 2026-10-20) | the ledger's "ceiling" rows |
 | Answering a probe with nothing laned at the top of `Lanes.prepare`; taking `own`'s targeted voices off lanes as a crowd (2026-10-21) | no change |
 | Leaving `GENERAL_PROBE` unstamped in `linked` (2026-10-21) | about 9% faster, but a voice coming back onto a lane could report a stale `weightOf` |
+| Storing stretches as Float64Arrays (`b4a4260`, 2026-10-02); reading a crowd's keys stops as flat numbers (2026-10-03) | no change |
+| On `swap`: linking a voice stepped twice once; handing `foldNow` its met lanes; skipping the chain walk for a never-linked voice; presizing a lane's `records`/`deltas` (2026-10-26) | no change (`bench/runs/2026-10-26-{dedupe-steps,met-lanes,unchained-walk,presize-records}.txt`) |
+| On roles: clearing `taken` once before inline members; priming a signalled setting once a lane call; clearing once before a member-at-a-time gather (2026-10-26) | short of significance (`bench/runs/2026-10-26-role-*.txt`, `-locus-*.txt`) |
+| Carving motion buffers from a shared slab; keeping a named subject's record out of the WeakMap (2026-10-25) | no change to starting tweens |
+| One `Seat` per crowd voice (`eed156c`); skipping the due-queue push of a voice retiring at once (2026-10-29) | no change to a stop |
+| Pooling everything per voice (2026-10-05); cutting churned-voice garbage from 21.5 to 11.7 KB (2026-10-24) | no row moved; weasel's lever is blits' per-frame work, not bytes per voice |
+| A motion patch's `runs` as a plain array | `tweens^` 6% slower; copying into a Float64Array first made `weasel^` 15% slower |
+| The keys search inside `fold` | `fold` stopped inlining and boxed each row's phase (+155 kB a frame) |
+| Skipping `pullRun`'s `FILLED`/`IDLE`/`SEEN` checks behind a write counter (2026-11-03, reverted in `4a80fd1`) | `tweens^` −3%, but `turnover^` and `churn^` +4–5% |
+| Counting `pullRun`'s probes in locals; answering `runMotion`'s same-`since` check before `same`; inlining `linked` into `probe`/`atRest`; moving `popDue`'s loop out; skipping `atRest`'s second `chains.get` | no change |
+| A public `keys` read into a reused out object (2026-10-08) | slower than `at` (0.87 against 0.78 ms); V8 removes `at`'s fresh object |
+| Writing `pullRun`'s `LANE_PROBE`/`LANE_FILL` once per run | not tried, and not to try: every pace loop reads them by slot, so it would make a second place for the answer |
+| Writing the trail's subject list only where a subject moved (2026-11-11) | `tweens^` +4% (`bench/runs/2026-11-11-trail-list-ab.txt`) |
+| Three variants of `levelsOf`'s delay hash (2026-11-11) | none faster than about 2 ns a subject |
+| Copying each fn result into a delta the record owns, to end the finder commit's pretenuring (2026-10-29) | GC pauses fell, `glowb^` 14% slower; the pauses are 8 µs of a 100 µs loss |
+| Building records with a class (`new`) | layout and time unchanged |
 
 A lane switching a band off at weight 0 costs the `glowl` rows about 3% (teitou, 2026-10-10,
 against `da6e613`: `glowl` 1.680 to 1.736 ms), and filling only once did not recover it, so the

@@ -1,0 +1,166 @@
+# blits TODO
+
+What is still open in blits and its companions, for whoever picks the work up. Shipped work is in
+`CHANGELOG.md`; the design and the calls behind it are in `docs/schema.html` ("Chosen while
+building", "Decided against", "Open") and `docs/decisions.md`. How to measure, and what was tried
+and backed out, is in `bench/README.md`; raw runs are in `bench/runs/`, named by date.
+
+When work merges, retire its entry here in the same change.
+
+Owner tags:
+- **[agent]** — an agent can take it alone
+- **[maintainer]** — needs a call from the owner first
+- **[waiting]** — nothing to do until something outside happens
+
+---
+
+## Engine
+
+- **[maintainer] Should a host's turn-back survive a span's fits on a seek forward?** A span held
+  by a span, sought forward while turned back, takes the outer span's fits on the way and ends
+  running forward at the fit's rate (pinned by "a span held by a span keeps the retiming" in
+  `test/stress-findings.test.ts`). The question: does a seek replay the fits as playing through
+  would, or keep what the host last set.
+- **[maintainer] Public renames the 2026-11-09 audit asked about:** `timestamp` on mix-clock
+  fields (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a
+  Promise); glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the
+  motions' `settle`; `SpanSpec.share` beside the `share` signal; `SpanSpec.priority` meaning two
+  things on a nested span; `blendMode()` returning CSS names; `Ticker.now()` a method where every
+  other `now` is a property; `Ticker.hold()` returning a function where `Watched.hold()` returns a
+  `Hold`; the teardown verbs (tone's `cancel`, the panel's `dispose`, quarks' driver with none);
+  rapier's `Body.drop`/`Body.drive` against quarks' and tone's; the panel's `Source` and `wire`
+  colliding with quarks'.
+- **[maintainer] A staggered subject that finished its passes: does it show its last frame while
+  its voice waits for the others?** Forward it does (staggers 0 and 200 on a 100 ms pass show the
+  first subject's last frame from 100 to 300); backward the mirror case shows nothing ("waits for a
+  subject staggered ahead of it" in `test/backward.test.ts`). Either hold both ways, or show
+  nothing both ways, which would snap each subject of a staggered entrance back as it finishes.
+- **[maintainer] Positions on 1–3 axes** (asked 2026-10-28). Decided: `Ball` `{ x, y?, z?, r }`
+  read by field, `Circle` kept as the 2D alias, `plot`'s array keeps the name `xy`,
+  `put(subject, x, y?, z?)`. Not decided: how `plot` learns the axis count (proposed
+  `plot(subjects, xy, { axes, cell })`).
+- **[maintainer] A shared segment lookup for keys patches whose stops sit at the same times.**
+  The stress rig (1,000 bones, 70 voices, 1.2 ms by `pull`) spends about 30% finding segments,
+  because each character's clips are staggered and each voice reads its stops once a subject. Every
+  bone of one clip on one character reads at one time, and every track keys at `k / STOPS`, so a
+  lookup per frame and time could be shared. A new engine mechanism.
+- **[agent] A staggered `target` voice ends by the latest-staggered subject it has met**, so a
+  read ahead or a replay with no reads can end it earlier than the live mix did (documented on
+  `VoiceSpec.stagger`, 2026-10-29). A voice cued with `subjects` ends by all of them.
+- **[agent] Two copies of blits loaded together** share what each knows of its patches and
+  channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
+  widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
+  release carrying it.
+- **[agent] Consumers still cueing with the deprecated `locus`**: astv
+  `packages/engine/draw/windows/turns.ts`; wod `src/clock/morphVoices.ts` and
+  `src/transition/voices.ts`; magicsmoke's `Omit` in `src/smoke.ts`. The alias goes in the release
+  after the one that warns.
+- **[agent] Consumers still working around step 7 of the 2026-10-09 review**: the "Universal
+  applicability" workarounds in klieg, sherpa, weasel, wod and `apps/playground` (`LivePanel`'s
+  cast, `expr.ts`'s flag). Whether klieg's level-weighted voices run on lanes is unchecked.
+- **[agent] `Mix.describe()`**, so any host gets the graph the playground's `flowOf` builds, which
+  then becomes a thin adapter.
+
+## Speed
+
+Measure every change on the fleet before the next starts; `bench/README.md` has the method.
+
+- **[agent] `redo` at 1,000 subjects and 32 voices reads 3.7% slower after the 2026-11-09 audit**
+  (149.5 → 155.1 ms, studio, `bench/runs/2026-11-11-audit-redo-quiet.txt`). Not bisected across
+  `efc4950..41628a3b`.
+- **[agent] Heatmap `pull` reads 5.4 ms with lanes, 3.8 without** (5,000 retargeted springs and
+  three `ink` voices weighted by `input` signals). By line, `one`'s calls into `base`, `signal`,
+  `primeLaned` and `signalled` are about 14% together, each spread thin; folding the four into one
+  call layer is what is left. Profile with `bench/heatprof.sh`, not the stress demo, which plays a
+  lanes twin.
+- **[agent] A host probing into its own object under `retargets: true`** keeps two poses a
+  subject in `Probes` (`src/trail.ts`), costing a 10,000-subject probe frame 35–70%, spread with no
+  hot spot (`bench/runs/2026-11-08-probes-ab.txt`).
+- **[agent] Steady `tweens^`/`weasel^` frame** (10k one-voice-per-subject tweens by `pull`): 0.235
+  and 0.362 ms on studio against 0.03–0.05 for a hand loop. `tweens^` is 39% `bareRows`, 29%
+  `pullRun` (about 1 ns a subject per check, none dominant); `weasel^` 58% `runMotion`.
+- **[agent] A voice over every subject cued among a crowd** (`swap`, 2.19 ms on msb-uai). Left per
+  subject: relinking its chain (`relink.ts`), the fill's `open`/`one`/`call`/`shut`, and the copy
+  out, which boxes every number into a host's `{}` out; `mix.pose()` gives the unboxed shape.
+- **[agent] A role costs about 20% over its voices played apart, a blend about 33%** (teitou,
+  2026-10-26); `runRole` covers the inline case, everything else gathers then folds.
+- **[agent] Starting 10k one-subject tweens** takes a 20.7 ms first frame against 8.9 for fn
+  voices: crowd `join`, the motion buffer, a second numbering, collection. `Voice` has about 100
+  fields, 12 of them boxed doubles.
+- **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
+  more; inferred to be first touches of each object of the voice and each array of its crowd row.
+- **[agent] A read ahead across many events of a stateful mix** costs a lookup per voice copy's
+  store per stop; one store shared along a voice's copies (`Filled` in `src/store.ts`) would cut it.
+  No test reaches `carry`'s fallback for a copy that holds a record under copies that hold none.
+- **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
+  it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
+  the benches still cue the deprecated `lerp: 'oklch'`.
+- **[agent] A voice leaving the general path or a lane** still requalifies every voice.
+- **[agent] Churn under other reorderings**: `pull` renumbers a swapped-in subject into the freed
+  slot, but not for sorted, reversed or filtered lists, nor under history, roles or a bound
+  (`src/renumber.ts` declines).
+- **[agent] The finder commit `4350a86` made the glow rows 8–15% slower**, cause not found, left
+  there by the owner's call (2026-10-29). Profiling, GC traces and pretenuring flags are in
+  `bench/runs/2026-10-28-finder-*.txt`; the record layout is the one lead not tested.
+- **[agent] astv's glides (+8%) and progress clocks (+39%) since 0.8.0** are unexplained, at 1–2 µs
+  a frame; `MOTION_ONLY=1 probes/blits-version-bench.sh <out> 0.7.1` in `~/src/astv` on a node.
+- **[agent] Running back past a voice's end costs `own` and `keys` 1–3%** (`4a6cc4e`, accepted
+  under the tuning bound, 2026-10-17).
+- **[agent] A probe pays for every channel in the kit, written or not**; skipping unwritten ones
+  needs the pose to stop promising rest in every channel.
+- **[agent] Work nobody will see**: astv's `typing` shape (2% probed) spends 55% in the general
+  path's fold; lanes do nothing for it, since astv's text runs write `last` over row objects.
+
+## gpu engine
+
+- **[agent] A frame where voices naming 1M subjects start costs 3–5 ms**, mostly `levelsOf`
+  hashing each delay and uploading the codes; one where a voice ends 0.3–4.7 ms. Listing past 8
+  groups of 4,096+ subjects still costs a 22–40 ms sync when the WeakMap doubles.
+- **[agent] A frame folds nothing on the GPU while a new kernel compiles** (3–11 frames of
+  9–49 ms on the light-board demo). The side could keep folding on the last ready kernel.
+- **[agent] `Reads` differs from the CPU's `dt`**: it forgets a voice absent from one read, keeps
+  `dt` per voice not per subject, and resets on every seek.
+- **[agent] Lifting "it is parting from subjects"** needs the kernel told which subjects a voice
+  faded out of, apart from `Answer.reach`.
+
+## Playground
+
+The goal is to offer everything in blits it feasibly can (2026-10-09); the README lists what is
+built and what is deliberately not offered.
+
+- **[maintainer] Where a dot is beyond its grid place** (a per-subject position expression, a
+  voice that moves the dot, or other). Decides whether `put` and author-written `within` signals
+  are offered.
+- **[maintainer] Recording level moves** as a composition field, so they save, share and undo.
+- **[maintainer] A booker with its own clock, and link drags on group headers** — wanted or not.
+
+## Companions
+
+- **[maintainer] blits-quarks: does `drive`'s `carry: 'float'` earn its place?** The exact
+  default also matched magicsmoke byte for byte over 1,200 frames. magicsmoke links
+  `file:../blits/packages/quarks` until a quarks release carries it; its typecheck, suite and bench
+  have not run against the link.
+- **[maintainer] blits-tone: should a spring, glide or fling settle at a time it names**, so
+  `mix.trace` can bend them as it does fades instead of reading them on the grid?
+- **[maintainer] `apps/fireworks` has never been listened to.** One bang peaks at 0.88 of full
+  scale, so two at once may clip.
+- **[waiting] `node-web-audio-api` frees a channel's samples under a live array**
+  (ircam-ismm/node-web-audio-api issue 80); `packages/tone/test/render.ts` copies them until fixed.
+- **[agent] blits-rapier: a kinematic goal's weight only switches it on or off**; crossfading
+  goals needs a core channel that blends rest-less values. A seek's catch-up steps read a log the
+  world keeps itself, which can go if blits ever replays recorded host input.
+- **[maintainer] The DevTools extension** is not on the Chrome Web Store. Its `start.js` builds the
+  registry and tape from its own bundled copies, so an engine changing either needs a rebuild or
+  `watch/2`.
+
+## Site and diagrams
+
+- **[maintainer] Channel nodes shaped by their fold rule** (parked 2026-11-05). The outline is the
+  region the rule sweeps: `sum` leans, `mul` and `min` lower the top, `max` raises the bottom,
+  `last` narrows to a funnel. `node spikes/fold-shapes/shapes.mjs > shapes.svg` draws the sketch;
+  the inner lines need weasel to take `detail` beside a `Path` outline.
+- **[waiting] weasel gaps the site and playground work around** (rechecked on 1.18.0,
+  2026-11-08): no per-row layout in labkit's `ControlPanel`, no accessible name apart from a leaf's
+  label, `.clearable()` takes only a fixed placeholder, `DiagramView` never reports its first
+  layout, no file picker, no editable code pane, no `aria-expanded` on `Button`, the `Transport`
+  loop switch drawn as a `⟲` character.
