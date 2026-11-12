@@ -49,10 +49,6 @@ Owner tags:
   applicability" workarounds in klieg, sherpa, wod and `apps/playground` (`LivePanel`'s cast,
   `expr.ts`'s flag). Whether klieg's level-weighted voices run on lanes is unchecked. weasel's
   (its animator codec) is gone as of weasel `835119f9d` (2026-11-12).
-- **[maintainer] A staggered subject's first `dt` counts from when it was first probed**, not from
-  when its delay ran out: probed every frame from 10 ms, a subject whose delay runs out at 40 first
-  shows at 42 with `dt` 32, not 2 (`meet`; both engines, held by `test/gpu-reads-dt.test.ts`).
-  Keep, or count from `since`?
 
 - **[agent] Nothing public says whether a voice runs on a lane.** A consumer checking that its
   voices got their lanes back (klieg's `level()` hinges, 2026-11-12) has to read the private

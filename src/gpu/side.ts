@@ -80,7 +80,7 @@ export class GpuSide<I> {
     this.met = new Met(mix, () => this.answers);
     this.buffers = new Buffers(device);
     this.readback = new Readback(device);
-    this.unfollow = this.reads.follow(mix);
+    this.unfollow = this.reads.follow(mix, () => this.answers);
     void device.lost.then(() => {
       this.readback.close(false);
       this.release();

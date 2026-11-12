@@ -28,6 +28,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A read ahead no longer asks a voice's `stagger` again for a subject dropped on the way: it takes
   the answer the live mix got, so a `stagger` that answers differently on a second ask places the
   subject where the live mix did.
+- A subject's first `dt` counts from its `since`, where its delay runs out or its voice starts, on
+  both engines, as a stateful patch's first step already did. It had counted from when the subject
+  was first probed: probed every frame from 10 ms, a subject whose delay runs out at 40 first showed
+  at 42 with `dt` 32, now 2. The `gpu` engine also counted a voice cued with a `start` ahead from
+  the first frame it read the voice. A subject shown frozen before its `since` still starts at
+  `dt` 0.
 
 ## 1.3.0
 

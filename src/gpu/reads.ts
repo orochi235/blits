@@ -39,7 +39,10 @@ const heldOf = (n: number): Held => ({
 const fromOf = (stepped: number, probed: number, now: number): number =>
   probed < now ? probed : stepped;
 
-/** Where a subject met at `now` counts from, as `meet` has it: its start, or now if that is ahead. */
+/**
+ * Where a subject first read at `now` counts from, as `meet` has it: its start, or now for one shown
+ * frozen before it.
+ */
 const metAt = (since: number, now: number): number => (since < now ? since : now);
 
 /** The setting a read passes its signal: its own, so `keep` and `send` reach nothing on the CPU. */
@@ -98,25 +101,36 @@ export class Reads<I> {
     this.refusedNow = true;
   }
 
-  /** Has each seek back on `mix` move what `dt` counts from as it moves a CPU record's. */
-  follow(mix: Mixer<I, unknown>): () => void {
+  /**
+   * Has each seek back on `mix` move what `dt` counts from as it moves a CPU record's, by the
+   * delays in `answers`.
+   */
+  follow(mix: Mixer<I, unknown>, answers: () => Answers<I>): () => void {
     return mix.onSeek((s) => {
-      if (s.back) this.back(mix, s.at);
+      if (s.back) this.back(mix, s.at, answers());
     });
   }
 
-  /** As `restore` puts back a stateless record for mix time `t`. */
-  private back(mix: Mixer<I, unknown>, t: number): void {
+  /**
+   * As `restore` puts back a stateless record for mix time `t`: one stepped past `t` counts from
+   * `t`, or, with its `since` still ahead, from that once first read.
+   */
+  private back(mix: Mixer<I, unknown>, t: number, answers: Answers<I>): void {
     for (const [voice, held] of this.held) {
       // A voice parked before its cue meets its subjects afresh; one done by `t` is left as it is.
       if (voice.parked) this.held.delete(voice);
       if (voice.parked || !mix.cued.includes(voice)) continue;
-      if (held.stepped > t) held.stepped = t;
+      const waits = !voice.freezesBefore;
+      if (held.stepped > t) held.stepped = waits && mix.sinceOf(voice, 0) > t ? Number.NaN : t;
       held.probed = Number.NaN;
       const { steps, probes } = held;
       if (steps === null || probes === null) continue;
+      const delays = varies(voice as Voice<unknown, unknown>) ? answers.of(voice).delays : null;
       for (let i = 0; i < steps.length; i++) {
-        if ((steps[i] as number) > t) steps[i] = t;
+        if ((steps[i] as number) > t) {
+          const since = mix.sinceOf(voice, delays === null ? 0 : (delays[i] as number));
+          steps[i] = waits && since > t ? Number.NaN : t;
+        }
         probes[i] = Number.NaN;
       }
     }
@@ -205,12 +219,12 @@ export class Reads<I> {
   ): void {
     const now = mix.now;
     const values = held.values;
-    if (Number.isNaN(held.stepped)) held.stepped = metAt(mix.sinceOf(voice, 0), now);
     const elapsed = elapsedOf(voice, now);
     if (Number.isNaN(elapsed)) {
       values.fill(0);
       return;
     }
+    if (Number.isNaN(held.stepped)) held.stepped = metAt(mix.sinceOf(voice, 0), now);
     held.stepped = fromOf(held.stepped, held.probed, now);
     held.probed = now;
     const s = this.setting;
@@ -259,17 +273,14 @@ export class Reads<I> {
         continue;
       }
       const delay = delays === null ? 0 : (delays[i] as number);
-      let stepped = steps[i] as number;
-      if (Number.isNaN(stepped)) {
-        stepped = metAt(mix.sinceOf(voice, delay), now);
-        steps[i] = stepped;
-      }
       const elapsed = elapsedOf(voice, now, delay);
       if (Number.isNaN(elapsed)) {
         values[i] = 0;
         alike = false;
         continue;
       }
+      let stepped = steps[i] as number;
+      if (Number.isNaN(stepped)) stepped = metAt(mix.sinceOf(voice, delay), now);
       stepped = fromOf(stepped, probes[i] as number, now);
       steps[i] = stepped;
       probes[i] = now;
