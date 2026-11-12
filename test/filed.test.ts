@@ -4,12 +4,12 @@ import { mixerOf } from '../src/gpu/engine.js';
 import { keys, kit, mix, sum } from '../src/index.js';
 
 interface V extends Filer<number> {
-  readonly named: { readonly list: readonly number[] };
+  readonly named: { readonly list: readonly number[]; has(subject: number): boolean };
 }
 
 const voice = (id: number, list: readonly number[]): V => {
   const set = new Set(list);
-  return { id, named: { list, has: (s) => set.has(s) }, group: null };
+  return { id, named: { list, has: (s: number) => set.has(s) }, group: null };
 };
 
 const range = (n: number, from = 0) => Array.from({ length: n }, (_, i) => from + i);
