@@ -238,6 +238,9 @@ export class Player<I, O, C> {
     this.forget(k);
     this.k = k;
     this.nows[k] = now;
+    // A debugger moves the main mix alone; the solos go where it went, or the ledger and every
+    // later seek back read them at another time.
+    for (const solo of this.solos) if (solo.mix.now !== now) solo.mix.seek(now);
     for (const p of [this.main, ...this.solos]) p.seqs[k] = p.mix.seq;
     this.read(k * FRAME, true);
     return false;

@@ -1,7 +1,7 @@
 import { kit, type Mix, patch, sum } from '@msb235/blits';
 import { describe, expect, it } from 'vitest';
 import { Player } from './player';
-import type { Scene } from './scene';
+import { FRAME, type Scene } from './scene';
 
 type Pose = { x: number };
 const scene: Scene<string, Pose, object> = {
@@ -50,5 +50,44 @@ describe('the explainer player', () => {
     const p = new Player(scene, {}, { duration: 1000, listed: false });
     p.at(1000);
     expect(ends(p)).toEqual([]);
+  });
+
+  it('keeps the ledger where a debugger ran the main mix back to, and seeks it back later', () => {
+    const ledgered: Scene<string, Pose, object> = {
+      ...scene,
+      voices: () => [
+        {
+          name: 'rise',
+          color: 'v1',
+          spec: { patch: patch(500, (p) => ({ x: p }), { writes: ['x'] }), loop: true },
+        },
+      ],
+      events: () => [{ at: 500, run: (m) => m.mute({ over: 300 }) }],
+      ledger: { subject: (s) => s[0] as string, channels: ['x'] },
+    };
+    const duration = 1500;
+    const p = new Player(ledgered, {}, { name: 'player-reverse', duration });
+    const m = mixOf(p);
+    const solo = (p as unknown as { solos: { mix: Mix<string, Pose> }[] }).solos[0]?.mix;
+    // As the explainer plays: a frame at a time, out to the end and back, following the mix.
+    let t = 0;
+    let way = 1;
+    const frame = () => {
+      t += FRAME * way;
+      if (t >= duration) {
+        way = -1;
+        t = 2 * duration - t;
+      }
+      t = p.at(Math.max(0, t)).t;
+      expect(solo?.now).toBe(m.now);
+    };
+    for (let i = 0; i < 60; i++) frame();
+    m.rate = -1;
+    for (let i = 0; i < 30; i++) frame();
+    m.rate = 1;
+    for (let i = 0; i < 180; i++) frame();
+    expect(way).toBe(-1);
+    expect(m.now).toBeLessThan(500);
+    p.close();
   });
 });
