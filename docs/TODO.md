@@ -42,11 +42,10 @@ Owner tags:
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
   release carrying it.
 - **[agent] Consumers still working around step 7 of the 2026-10-09 review**: the "Universal
-  applicability" workarounds in klieg, sherpa, wod and `apps/playground` (`LivePanel`'s cast,
-  `expr.ts`'s flag). Whether klieg's level-weighted voices run on lanes is unchecked. weasel's,
-  its animator codec casting a voice's motion patch instead of calling `handle.to`/`push`/`read`,
-  is fixed on weasel's `fix/codec-handle-moves` (`dcd12d6dd`, 2026-11-12); strike weasel here once
-  that reaches its `main`.
+  applicability" workarounds in klieg, sherpa and wod. Whether klieg's level-weighted voices run
+  on lanes is unchecked. weasel's, its animator codec casting a voice's motion patch instead of
+  calling `handle.to`/`push`/`read`, is fixed on weasel's `fix/codec-handle-moves` (`dcd12d6dd`,
+  2026-11-12); strike weasel here once that reaches its `main`.
 - **[maintainer] A staggered subject's first `dt` counts from when it was first probed**, not from
   when its delay ran out: probed every frame from 10 ms, a subject whose delay runs out at 40 first
   shows at 42 with `dt` 32, not 2 (`meet`; both engines, held by `test/gpu-reads-dt.test.ts`).
