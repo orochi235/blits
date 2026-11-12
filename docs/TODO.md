@@ -54,6 +54,10 @@ Owner tags:
   shows at 42 with `dt` 32, not 2 (`meet`; both engines, held by `test/gpu-reads-dt.test.ts`).
   Keep, or count from `since`?
 
+- **[agent] Nothing public says whether a voice runs on a lane.** A consumer checking that its
+  voices got their lanes back (klieg's `level()` hinges, 2026-11-12) has to read the private
+  `mix.lanes.byId`. `Mix.describe()`'s voices could carry it, with the reason one is off.
+
 ## Speed
 
 Measure every change on the fleet before the next starts; `bench/README.md` has the method.
