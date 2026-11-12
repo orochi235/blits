@@ -22,6 +22,11 @@ export interface Runner {
   readonly fields: readonly string[];
   /** f32s each subject takes in the voice's per-subject region; absent where it has none. */
   readonly stride?: number;
+  /**
+   * Where set, a voice's values open with one number per write, and each subject's per-subject
+   * numbers hold one at each of these offsets: a write folds only where both are above 0.
+   */
+  readonly flags?: readonly number[];
 }
 
 const built = new Map<string, Runner>();

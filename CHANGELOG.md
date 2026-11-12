@@ -33,6 +33,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- The gpu engine keeps folding while a kernel for a newly met runner compiles, where it gave
+  null for every channel: the last kernel runs the voices it can, and a `shaderPatch` voice it lacks
+  is folded from its `at`, worked out on the CPU for each subject. A channel some other new voice
+  writes, such as a staggered shader patch or a stock kind met for the first time, stays null until
+  the kernel is ready.
 - A seek through a history store back to while a staggered motion voice played finds the mix awake
   while a subject met inside its stagger is still unread. The voice came back from the store not
   knowing those subjects, so the mix read as inert before the subject moved.

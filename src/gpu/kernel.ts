@@ -109,8 +109,15 @@ export function kernel(
     runners
       .map((r, i) => {
         const inner = r.writes
-          .filter((n) => index.has(n))
-          .map((n) => body(n, index.get(n) as number, inputOf(channels.get(n))))
+          .map((n, j) => {
+            if (!index.has(n)) return '';
+            const b = body(n, index.get(n) as number, inputOf(channels.get(n)));
+            const f = r.flags?.[j];
+            return f === undefined
+              ? b
+              : `if (values[base + ${j}u] > 0.0 && persub[sub + i * ${r.stride ?? 0}u + ${f}u] > 0.0) { ${b} }`;
+          })
+          .filter((b) => b !== '')
           .join(' ');
         const sub = r.stride ? `sub + i * ${r.stride}u` : '0u';
         return `      case ${i}u: { let d = run_${i}(tk.phase, tk.pass_index, subject, base, ${sub}, tk.lag); ${inner} }`;

@@ -1,0 +1,16 @@
+# teitou (Apple M5 Max), 2026-11-11, headless Chromium, the built site, bench/demos.mjs --engine gpu
+# The light-board demo with a compiled kernel standing in while a new one compiles
+# (src/gpu/stand-in.ts), against the same tree without it.
+#
+#   PAGES=examples/light-board/ node bench/demos.mjs --engine gpu --out <out>, one solo job, one
+#   site build per side, in the order b1 a1 a2 b2 (a: src/ with the change reverted, b: the change).
+#   Raw records: -stand-in-{a1,a2,b1,b2}.json. The frames that fell back to probing every cell:
+#          frames   probes each   frame ms            slowest frame ms
+#   a1        3        10368      35.2 16.3 11.4      35.2
+#   a2        2        10368      28.9 13.8           28.9
+#   b1        0            -      -                    5.7
+#   b2        0            -      -                    7.4
+#   Average frame: a 1.77 / 1.94 ms, b 1.73 / 1.85 ms over ~360 frames.
+#
+# The look change in the window cues a new spot sweep, a shader patch the kernel lacks: on b the
+# old kernel keeps folding gel, spots and master, the sweep's values worked out from its `at`.

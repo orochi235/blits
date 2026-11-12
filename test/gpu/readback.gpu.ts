@@ -194,7 +194,10 @@ test('readback: a kernel change that grows out', async (d) => {
       subjects: CELLS,
       loop: true,
     });
-  if (side.channel('s') !== null) throw new Error('s folded while the kernel with r compiled');
+  // The old kernel stands in for s and p while the one with r compiles.
+  if (side.channel('r') !== null) throw new Error('r folded while its kernel compiled');
+  if (side.channel('s') === null)
+    throw new Error('s did not fold while the kernel with r compiled');
   await side.ready;
   idle(1);
   side.channel('s');

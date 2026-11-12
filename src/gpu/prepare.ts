@@ -2,6 +2,7 @@ import type { Mixer } from '../mixer.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
 import type { Room } from './eligible.js';
+import type { Hosted } from './hosted.js';
 import type { Mirror } from './mirror.js';
 import type { Mirrors } from './mirrors.js';
 import type { Reads } from './reads.js';
@@ -25,6 +26,9 @@ export interface Preparing<I> {
   readonly reads: Reads<I>;
   readonly regions: Regions;
   readonly limit: number;
+  readonly hosted: Hosted;
+  /** The voices folded through the host runner, `runners` giving it for each. */
+  readonly hosting: ReadonlySet<Voice<I, unknown>>;
 }
 
 /** What a voice takes of the values buffer and the per-subject buffer, for `n` subjects. */
@@ -42,12 +46,21 @@ export function roomOf<I>(
   return { values: p.values.length, persub: rows + block + reads };
 }
 
-/** The frame's table and placement, or 'unfit' where a mirror's stride disagreed and was unpacked. */
-export function prepare<I>(p: Preparing<I>): { table: Table; placed: Placement } | 'unfit' {
-  const { mix, voices, runners, codes, list, answers, mirrors: all, timings, reads } = p;
+/**
+ * The frame's table and placement; 'unfit' where a mirror's stride disagreed and was unpacked, and
+ * 'unhosted' where a hosted voice's values could not be worked out or would not fit.
+ */
+export function prepare<I>(
+  p: Preparing<I>,
+): { table: Table; placed: Placement } | 'unfit' | 'unhosted' {
+  const { mix, voices, runners, codes, list, answers, mirrors: all, timings, reads, hosting } = p;
   const mirrors: (Mirror<unknown> | undefined)[] = [];
   const weighs = voices.map((v) => weighsOf(mix, v));
   const entries: Entry[] = voices.map((v, k) => {
+    if (hosting.has(v)) {
+      mirrors.push(undefined);
+      return { owner: v, values: p.hosted.maskOf(v, codes) };
+    }
     const packed = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
     if (packed.perSubject === undefined) {
       mirrors.push(undefined);
@@ -80,6 +93,15 @@ export function prepare<I>(p: Preparing<I>): { table: Table; placed: Placement }
   const subs = all.place(mirrors);
   const timing = timings.place(mix, voices, answers, all.length);
   const read = reads.place(voices, all.length + timings.length);
+  const from = all.length + timings.length + reads.length;
+  const host = p.hosted.place(
+    mix,
+    voices.map((v) => (hosting.has(v) ? v : undefined)),
+    list,
+    codes,
+    from,
+  );
+  if (host === null || (from + p.hosted.length) * 4 > p.limit) return 'unhosted';
   // Each fade curve's entry after every voice's, at `curves[k]` for voice k.
   const curves = voices.map((v) => {
     const c = timings.curveOf(v as Voice<unknown, unknown>);
@@ -94,7 +116,7 @@ export function prepare<I>(p: Preparing<I>): { table: Table; placed: Placement }
     return {
       runner: p.index.get(r.key) as number,
       values: placed.offsets[k] as number,
-      sub: subs[k] as number,
+      sub: host[k] ?? (subs[k] as number),
       timing: timing[k],
       ...(c === undefined ? {} : { ease: placed.offsets[c] as number }),
       ...(w === undefined ? {} : { weights: w }),

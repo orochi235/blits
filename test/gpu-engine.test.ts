@@ -5,7 +5,7 @@ import { MAX_ROLES } from '../src/gpu/kernel.js';
 import { Reasons } from '../src/gpu/reasons.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import type { GpuDevice } from '../src/gpu/webgpu.js';
-import { kit, level, mix, slew, spring, sum } from '../src/index.js';
+import { keys, kit, level, mix, slew, spring, sum } from '../src/index.js';
 import { motionOf } from '../src/motion.js';
 import { fakeDevice } from './gpu-device.js';
 
@@ -240,7 +240,7 @@ describe('gpu engine', () => {
     await side.ready;
     m.sync(16);
     expect(side.channel('y')).not.toBeNull();
-    m.cue({ patch: wave, subjects: cells, loop: true });
+    m.cue({ patch: keys<C, P>(0, [{ at: 0, delta: { y: 1 } }]), subjects: cells });
     expect(side.channel('y')).toBeNull();
     s.to(cells[0] as C, 5);
     const note = vi.spyOn(Reasons.prototype, 'note');
