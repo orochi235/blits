@@ -308,14 +308,16 @@ describe('gpu read', () => {
     const second = serials[1] as number;
     m.sync(48);
     cpu.weight = 0;
-    // The turn copies frame 2's fold out of `out`; the new kernel then compiles.
-    expect(await side.read('y')).toBeNull();
+    // The turn copies frame 2's fold out of `out`; the old kernel folds y while the new compiles.
+    const during = side.read('y');
+    await fake.settle();
+    expect(every((await during)?.values as Float32Array, second)).toBe(true);
     await side.ready;
     const grown = side.read('y');
     expect(fake.destroyed).toContain('out');
     await fake.settle();
     expect(every((await grown)?.values as Float32Array, second)).toBe(true);
-    const third = serials[2] as number;
+    const third = serials[serials.length - 1] as number;
     m.sync(64);
     const y = side.read('y');
     const z = side.read('z');
@@ -337,9 +339,9 @@ describe('gpu read', () => {
       name: 'drift',
       weight: slew((c) => c.x, { riseMs: 100 }),
     });
-    const before = dispatched();
     expect(side.reasons()).toEqual([]);
     expect(await side.read('y')).toBeNull();
+    const before = dispatched();
     const reasons = [
       {
         voice: 'drift',

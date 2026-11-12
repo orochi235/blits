@@ -1,5 +1,6 @@
 import type { Buffers } from './buffers.js';
 import { layoutOf } from './compile.js';
+import type { Hosted } from './hosted.js';
 import { GROUP, type Kernel } from './kernel.js';
 import { type Mirrors, writeRanges } from './mirrors.js';
 import type { Reads } from './reads.js';
@@ -25,6 +26,7 @@ export interface Submission<I> {
   readonly mirrors: Mirrors;
   readonly timings: Timings;
   readonly reads: Reads<I>;
+  readonly hosted: Hosted;
 }
 
 /**
@@ -43,7 +45,7 @@ export function submit<I>(s: Submission<I>, outputs: Map<string, GpuChannel>): G
   const hadSub = buf.of('persub');
   const persub = buf.sized(
     'persub',
-    (s.mirrors.length + s.timings.length + s.reads.length) * 4,
+    (s.mirrors.length + s.timings.length + s.reads.length + s.hosted.length) * 4,
     Usage.STORAGE | Usage.COPY_DST,
   );
   dev.queue.writeBuffer(t, 0, table.rows);
@@ -54,6 +56,7 @@ export function submit<I>(s: Submission<I>, outputs: Map<string, GpuChannel>): G
   s.mirrors.upload(dev, persub, persub !== hadSub);
   s.timings.upload(dev, persub, persub !== hadSub);
   s.reads.upload(dev, persub);
+  s.hosted.upload(dev, persub);
   dev.queue.writeBuffer(f, 0, new Uint32Array([table.count, n, 0, 0]));
   const group = buf.bind(s.pipeline, layoutOf(dev));
   const enc = dev.createCommandEncoder();

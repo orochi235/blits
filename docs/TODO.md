@@ -100,8 +100,10 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
 - **[agent] A frame where voices naming 1M subjects start costs 3–5 ms**, mostly `levelsOf`
   hashing each delay and uploading the codes; one where a voice ends 0.3–4.7 ms. Listing past 8
   groups of 4,096+ subjects still costs a 22–40 ms sync when the WeakMap doubles.
-- **[agent] A frame folds nothing on the GPU while a new kernel compiles** (3–11 frames of
-  9–49 ms on the light-board demo). The side could keep folding on the last ready kernel.
+- **[agent] A channel a new stock kind or a staggered shader patch writes is null while its
+  kernel compiles.** A compiled kernel stands in for everything else (`src/gpu/stand-in.ts`), and a
+  shader patch playing at one time for every subject folds from its `at`; a staggered one would need
+  each subject's time worked out on the CPU, and `at` sees no `lag`.
 - **[agent] `Reads` differs from the CPU's `dt`**: it forgets a voice absent from one read, keeps
   `dt` per voice not per subject, and resets on every seek.
 - **[agent] Lifting "it is parting from subjects"** needs the kernel told which subjects a voice

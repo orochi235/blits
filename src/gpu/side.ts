@@ -4,9 +4,10 @@ import type { Voice } from '../voice.js';
 import { Answers } from './answers.js';
 import { overBinding, overTable } from './bounds.js';
 import { Buffers } from './buffers.js';
-import { type Built, compile } from './compile.js';
 import { codesOf, eligibility, within } from './eligible.js';
+import { Hosted, hostable } from './hosted.js';
 import { MAX_ROLES } from './kernel.js';
+import { Kernels } from './kernels.js';
 import { Met } from './met.js';
 import { Mirrors } from './mirrors.js';
 import { prepare, roomOf } from './prepare.js';
@@ -14,7 +15,6 @@ import { type GpuRead, Readback } from './readback.js';
 import { Reads } from './reads.js';
 import { type GpuReason, Reasons } from './reasons.js';
 import { Regions } from './region.js';
-import { packOf, type Runner } from './runner.js';
 import { submit } from './submit.js';
 import { Timings } from './timings.js';
 import { Twins } from './twins.js';
@@ -41,8 +41,6 @@ export interface GpuChannel {
  * @category gpu
  */
 export class GpuSide<I> {
-  /** Resolves once the kernel for the current voices has compiled; rejects if it failed. */
-  ready: Promise<void> = Promise.resolve();
   private list: readonly I[] = [];
   private fieldsOf: (subject: I) => Record<string, number> = () => ({});
   private off = false;
@@ -51,10 +49,8 @@ export class GpuSide<I> {
   private stirs = Number.NaN;
   private inputs = Number.NaN;
   private outputs = new Map<string, GpuChannel>();
-  private readonly known: Runner[] = [];
-  /** Each runner's place in `known`, by key, as the table's runner column gives it. */
-  private readonly index = new Map<string, number>();
-  private readonly built = new Map<string, Built>();
+  private readonly kernels: Kernels;
+  private readonly hosted = new Hosted();
   private readonly twins = new Twins();
   private readonly regions = new Regions();
   private readonly mirrors = new Mirrors();
@@ -75,14 +71,18 @@ export class GpuSide<I> {
     private readonly device: GpuDevice,
   ) {
     this.answers = new Answers(mix);
+    // A fold made while a kernel compiled may have shown less; the next read folds again.
+    this.kernels = new Kernels(device, () => {
+      this.frame = Number.NaN;
+    });
     this.met = new Met(mix, () => this.answers);
     this.buffers = new Buffers(device);
     this.readback = new Readback(device);
     void device.lost.then(() => {
       this.readback.close(false);
       this.release();
-      this.ready = Promise.reject(new Error('blits: the GPU device was lost'));
-      this.ready.catch(() => {});
+      this.kernels.ready = Promise.reject(new Error('blits: the GPU device was lost'));
+      this.kernels.ready.catch(() => {});
     });
   }
 
@@ -92,7 +92,7 @@ export class GpuSide<I> {
     this.release();
     this.buffers.destroy();
     this.answers = new Answers(this.mix);
-    this.built.clear();
+    this.kernels.clear();
   }
 
   /** Stops folding, and lets go of every mirror's watch and the mix's `reorigined`. */
@@ -104,6 +104,11 @@ export class GpuSide<I> {
     this.reads.clear();
     this.met.close();
     this.why.clear();
+  }
+
+  /** Resolves once the kernel for the current voices has compiled; rejects if it failed. */
+  get ready(): Promise<void> {
+    return this.kernels.ready;
   }
 
   /**
@@ -126,8 +131,10 @@ export class GpuSide<I> {
 
   /**
    * The buffer holding a channel's folded values this frame, or null where the GPU does not fold
-   * it: a voice writing it cannot run there, the kernel is still compiling, or the device is gone.
-   * The first call after a sync dispatches the frame's fold.
+   * it: a voice writing it cannot run there, or the device is gone. While a kernel for a runner
+   * met for the first time compiles, the last kernel keeps folding, a shader patch it lacks folded
+   * from its `at` on the CPU; a channel another new runner writes is null until the kernel is
+   * ready. The first call after a sync dispatches the frame's fold.
    */
   channel(name: string): GpuChannel | null {
     if (this.off) return null;
@@ -201,48 +208,34 @@ export class GpuSide<I> {
     }
     this.why.note(e.reasons as { voice: Voice<I, unknown>; why: string }[]);
     if (e.channels.size === 0) return;
-    const runners = e.voices.map((v) => {
-      const r = (packOf(v.patch, codes) as { runner: Runner }).runner;
-      if (!this.index.has(r.key)) {
-        this.index.set(r.key, this.known.length);
-        this.known.push(r);
-      }
-      return r;
-    });
+    const runners = this.kernels.runnersOf(e.voices as Voice<I, unknown>[], codes);
     const channels = new Map<string, ChannelCode>();
     for (const name of mix.names)
       if (e.channels.has(name)) channels.set(name, codes.get(name) as ChannelCode);
-    const over = overBinding(channels, this.known, n, limit);
+    const over = overBinding(channels, this.kernels.known, n, limit);
     if (over !== null) {
       this.why.all([...channels.keys()], over);
       return;
     }
-    const key = `${this.known.length}|${[...channels.keys()].join(',')}|${n}`;
-    let b = this.built.get(key);
-    if (b === undefined) {
-      const made = compile(this.device, key, this.known.slice(), channels, n, codes);
-      b = made.built;
-      this.built.set(key, b);
-      this.ready = made.compiled;
-      // A fold made while this compiled had nothing to show; the next read folds again.
-      made.compiled.then(
-        () => {
-          this.frame = Number.NaN;
-        },
-        () => {},
-      );
-    }
-    if (b.pipeline === null || b.failed) {
+    const c = this.kernels.choose(
+      e.voices as Voice<I, unknown>[],
+      runners,
+      channels,
+      n,
+      codes,
+      (v) => hostable(v, this.answers),
+    );
+    if (c === null) {
       this.waiting = true;
       return;
     }
-    const voices = e.voices as Voice<I, unknown>[];
-    const sample = this.twins.before(mix, this.list, runners);
+    const { voices, gives } = c;
+    const sample = gives === null ? this.twins.before(mix, this.list, c.runners) : null;
     const prepared = prepare({
       mix,
       voices,
-      runners,
-      index: this.index,
+      runners: c.runners,
+      index: this.kernels.index,
       codes,
       list: this.list,
       answers: this.answers,
@@ -251,9 +244,15 @@ export class GpuSide<I> {
       reads: this.reads,
       regions: this.regions,
       limit,
+      hosted: this.hosted,
+      hosting: c.hosting,
     });
     if (prepared === 'unfit') {
       this.dispatch();
+      return;
+    }
+    if (prepared === 'unhosted') {
+      this.waiting = true;
       return;
     }
     const { table, placed } = prepared;
@@ -267,13 +266,13 @@ export class GpuSide<I> {
       return;
     }
     this.met.mark(voices);
-    const k = b.kernel;
+    const k = c.kernel;
     const out = submit(
       {
         device: this.device,
         buffers: this.buffers,
         kernel: k,
-        pipeline: b.pipeline,
+        pipeline: c.pipeline,
         list: this.list,
         fieldsOf: this.fieldsOf,
         table,
@@ -283,9 +282,12 @@ export class GpuSide<I> {
         mirrors: this.mirrors,
         timings: this.timings,
         reads: this.reads,
+        hosted: this.hosted,
       },
       this.outputs,
     );
+    if (gives !== null)
+      for (const name of [...this.outputs.keys()]) if (!gives.has(name)) this.outputs.delete(name);
     const { frame, seq, now, timestamp } = mix;
     this.readback.fold({ out, outputs: this.outputs, frame, seq, now, timestamp, list: this.list });
     this.stale = false;

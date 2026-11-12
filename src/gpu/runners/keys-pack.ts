@@ -6,7 +6,7 @@ import type { ChannelCode } from '../wgsl/channels.js';
 import { keysRunner, widthOf } from './keys.js';
 
 /** A stop's value as `width` numbers, or undefined where the GPU cannot read it. */
-function numbersOf(value: unknown, width: number): ArrayLike<number> | undefined {
+export function numbersOf(value: unknown, width: number): ArrayLike<number> | undefined {
   if (width === 1) return typeof value === 'number' ? [value] : undefined;
   if (!Array.isArray(value) && !ArrayBuffer.isView(value)) return undefined;
   const list = value as ArrayLike<unknown>;
