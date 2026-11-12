@@ -18,8 +18,12 @@ interface Played<I, O> {
   seqs: number[];
 }
 
-/** One frame of the mix as it was synced, by frame number: where its clock stood. */
-type Nows = number[];
+/**
+ * One frame of the mix as it was synced, by frame number: where its clock stood, and how far it ran
+ * ahead of the explainer's. The lead moves only where an event moves the mix's clock (a rebase), so
+ * the explainer's time is always the mix's less the lead.
+ */
+type Nows = { now: number; lead: number }[];
 
 export interface PlayerOptions {
   /** What a debugger lists the main mix as. */
@@ -150,7 +154,7 @@ export class Player<I, O, C> {
   moved(): Frame<I, O> | null {
     const kept = this.nows[this.k];
     const now = this.main.mix.now;
-    if (kept === undefined || Number.isNaN(now) || Math.abs(now - kept) <= 0.5) return null;
+    if (kept === undefined || Number.isNaN(now) || Math.abs(now - kept.now) <= 0.5) return null;
     this.follow(now);
     return this.frame();
   }
@@ -207,37 +211,41 @@ export class Player<I, O, C> {
       this.end = null;
     }
     const now = this.main.mix.now;
-    const planned =
-      this.nows[k] ?? (ran || before === undefined ? now : before.now + (k - before.k) * FRAME);
-    if (Math.abs(now - planned) > 0.5) return this.follow(now);
-    this.nows[k] = now;
+    const lead = this.nows[k]?.lead ?? (ran || before === undefined ? now - t : before.lead);
+    if (frameOf(now - lead) !== k) return this.follow(now);
+    this.nows[k] = { now, lead };
     this.read(t);
     this.keep(t);
     return true;
   }
 
   /** The last frame at or before `k` that synced, and where the mix's clock stood then. */
-  private lastNow(k: number): { k: number; now: number } | undefined {
+  private lastNow(k: number): ({ k: number } & Nows[number]) | undefined {
     for (let j = k; j >= 0; j--) {
-      const now = this.nows[j];
-      if (now !== undefined) return { k: j, now };
+      const kept = this.nows[j];
+      if (kept !== undefined) return { k: j, ...kept };
     }
     return undefined;
   }
 
-  /** Moves the player to the frame the mix's clock says, after a debugger moved it. */
+  /**
+   * Moves the player to the frame the mix's clock says, after a debugger moved it. The lead is the
+   * one in effect where the mix now is, and stays: a mix a debugger slowed lands mid-frame, and
+   * taking that as the frame's start would drop the part-frame it ran on every frame it is followed.
+   */
   private follow(now: number): false {
-    let k = Math.floor(now / FRAME + 1e-6);
+    let lead = 0;
     for (let j = this.nows.length - 1; j >= 0; j--) {
-      const n = this.nows[j];
-      if (n !== undefined && n <= now + 0.5) {
-        k = j + Math.max(0, Math.floor((now - n) / FRAME + 1e-6));
+      const kept = this.nows[j];
+      if (kept !== undefined && kept.now <= now + 0.5) {
+        lead = kept.lead;
         break;
       }
     }
+    const k = Math.max(0, frameOf(now - lead));
     this.forget(k);
     this.k = k;
-    this.nows[k] = now;
+    this.nows[k] = { now, lead };
     // A debugger moves the main mix alone; the solos go where it went, or the ledger and every
     // later seek back read them at another time.
     for (const solo of this.solos) if (solo.mix.now !== now) solo.mix.seek(now);
@@ -308,6 +316,9 @@ export class Player<I, O, C> {
     });
   }
 }
+
+/** The frame explainer time `t` falls in. */
+const frameOf = (t: number): number => Math.floor(t / FRAME + 1e-6);
 
 /** One voice across a run: its weight, and the channel of its own that moves most, if one does. */
 export interface Course {

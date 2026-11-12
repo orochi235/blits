@@ -90,4 +90,45 @@ describe('the explainer player', () => {
     expect(m.now).toBeLessThan(500);
     p.close();
   });
+
+  it.each([0.5, 1.5])(
+    'keeps the run on the mix clock where a debugger set its rate to %s for a while',
+    (rate) => {
+      const looped: Scene<string, Pose, object> = {
+        ...scene,
+        voices: () => [
+          {
+            name: 'rise',
+            color: 'v1',
+            spec: { patch: patch(500, (p) => ({ x: p }), { writes: ['x'] }), loop: true },
+          },
+        ],
+      };
+      const duration = 8000;
+      const p = new Player(looped, {}, { name: `player-rate-${rate}`, duration });
+      const m = mixOf(p);
+      let t = 0;
+      let way = 1;
+      const frame = () => {
+        t += FRAME * way;
+        if (t >= duration) {
+          way = -1;
+          t = 2 * duration - t;
+        }
+        t = p.at(Math.max(0, t)).t;
+      };
+      for (let i = 0; i < 60; i++) frame();
+      const lead = m.now - t;
+      m.rate = rate;
+      for (let i = 0; i < 150; i++) frame();
+      expect(m.now - t - lead).toBeGreaterThanOrEqual(-1e-6);
+      expect(m.now - t - lead).toBeLessThan(FRAME);
+      m.rate = 1;
+      // Out past the boomerang and back to the start, which seeks to the run's first frames.
+      while (way === 1) frame();
+      while (t > 0) frame();
+      expect(m.now - t - lead).toBeLessThan(FRAME);
+      p.close();
+    },
+  );
 });
