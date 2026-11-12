@@ -226,8 +226,10 @@ function ExplainerBody<I, O, C>({
 
   useEffect(() => {
     const f = player.at(t);
-    // The mix was elsewhere, held or moved by a debugger, and the player followed it.
-    if (Math.abs(f.t - Math.floor(t / FRAME + 1e-6) * FRAME) > 1e-6) setT(f.t);
+    // The mix was elsewhere, held or moved by a debugger, and the player followed it. The time into
+    // the frame stays, or a mix followed every frame (a rate a debugger set) syncs only on some.
+    const on = Math.floor(t / FRAME + 1e-6) * FRAME;
+    if (Math.abs(f.t - on) > 1e-6) setT(f.t + Math.min(Math.max(0, t - on), FRAME * 0.99));
     setFrame(f);
     const el = canvas.current;
     if (!el || size.w === 0) return;
