@@ -1,0 +1,164 @@
+# teitou, 2026-11-12, onto do --kind bench --solo, at 642be8e1 with the diff uncommitted:
+#   bench/abdirty.sh 10 glowbn glowb
+# head is main; dirty is plot on 1-3 axes (grid, places, around and bound read `axes` numbers a
+# subject), with 2-axis fast paths in the grid's query and around's read. Before those paths:
+# glowb 1.026 (U 2, 6 rounds, msb-uai), then glowbn 1.030 (U 17, 8 rounds, msb-uai).
+  waiting for room
+teitou  chosen: 14.8 cores free, 37.1G available (bash: 5 past runs, worst 10.8 cores / 15.2G)
+  msb-uai  scored 0.83 against teitou's 1.17
+  keiei    scored 0.08 against teitou's 1.17
+  orochi   has 0.0 of its 12 cores free, too few to start on
+  studio   queued jobs already hold 2.3 of this node's 9.0 cores
+  fleet    31.8 cores spare: 33.8 free on 5 nodes, 2 held back for quick jobs
+  cost     up to 1591 core-min (10.8 cores for 2h27m), displaces 0 core-min of other work
+  base   642be8e1
+  delta  20 file(s), 0 deleted
+  sent   12 new file(s), 8 already there
+  updated blits on teitou at 642be8e1 + 20 uncommitted file(s)
+  loaded 1.8s: sync blits apply 0.6s, sync blits check 0.6s, sync blits diff 0.1s, sync blits upload 0.1s, start 0.1s, gate 0.0s
+  job    c825d6b2 on teitou
+
+onto: agent-ae1ae409f4bfccaf8 is already set up
+onto: playwright-browsers-790bd7c0596f is already set up
+built head
+built dirty
+== round 1/10 head
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  glowbn     N= 10000 V=2     1.200 ms/frame     60 ns/subject·voice  p50    1.132  p99    2.240  worst    4.493  first    17.5 ms  gc   13    3.9 ms    1248.8 kB/frame
+== round 1/10 head
+ 1/1  glowb      N= 10000 V=2     1.198 ms/frame     60 ns/subject·voice  p50    1.120  p99    2.267  worst    4.871  first    19.4 ms  gc   13    3.9 ms    1254.3 kB/frame
+== round 1/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn     N= 10000 V=2     1.083 ms/frame     54 ns/subject·voice  p50    1.037  p99    1.838  worst    4.186  first    17.2 ms  gc   13    3.7 ms    1247.8 kB/frame
+== round 1/10 dirty
+ 1/1  glowb      N= 10000 V=2     1.079 ms/frame     54 ns/subject·voice  p50    1.042  p99    2.291  worst    4.126  first    16.5 ms  gc   13    3.6 ms    1257.6 kB/frame
+== round 2/10 dirty
+ 1/1  glowbn     N= 10000 V=2     1.150 ms/frame     58 ns/subject·voice  p50    1.087  p99    2.243  worst    4.620  first    17.3 ms  gc   13    4.1 ms    1240.1 kB/frame
+== round 2/10 dirty
+ 1/1  glowb      N= 10000 V=2     1.132 ms/frame     57 ns/subject·voice  p50    1.081  p99    1.999  worst    4.574  first    17.6 ms  gc   19    7.3 ms    1254.5 kB/frame
+== round 2/10 head
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  glowbn     N= 10000 V=2     1.115 ms/frame     56 ns/subject·voice  p50    1.071  p99    2.092  worst    4.332  first    17.2 ms  gc   13    3.5 ms    1242.7 kB/frame
+== round 2/10 head
+ 1/1  glowb      N= 10000 V=2     1.082 ms/frame     54 ns/subject·voice  p50    1.044  p99    2.109  worst    4.266  first    16.6 ms  gc   13    3.4 ms    1249.0 kB/frame
+== round 3/10 head
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn     N= 10000 V=2     1.140 ms/frame     57 ns/subject·voice  p50    1.084  p99    2.169  worst    4.474  first    17.1 ms  gc   13    4.1 ms    1252.9 kB/frame
+== round 3/10 head
+ 1/1  glowb      N= 10000 V=2     1.093 ms/frame     55 ns/subject·voice  p50    1.039  p99    2.048  worst    4.742  first    17.8 ms  gc   13    3.4 ms    1250.0 kB/frame
+== round 3/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn     N= 10000 V=2     1.083 ms/frame     54 ns/subject·voice  p50    1.046  p99    1.992  worst    4.043  first    17.6 ms  gc   13    3.8 ms    1239.1 kB/frame
+== round 3/10 dirty
+ 1/1  glowb      N= 10000 V=2     1.119 ms/frame     56 ns/subject·voice  p50    1.063  p99    2.136  worst    4.291  first    17.5 ms  gc   13    3.9 ms    1258.3 kB/frame
+== round 4/10 dirty
+ 1/1  glowbn     N= 10000 V=2     1.154 ms/frame     58 ns/subject·voice  p50    1.112  p99    2.070  worst    4.287  first    18.1 ms  gc   13    3.9 ms    1248.0 kB/frame
+== round 4/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  glowb      N= 10000 V=2     1.097 ms/frame     55 ns/subject·voice  p50    1.043  p99    2.041  worst    4.487  first    18.2 ms  gc   13    3.7 ms    1259.0 kB/frame
+== round 4/10 head
+ 1/1  glowbn     N= 10000 V=2     1.076 ms/frame     54 ns/subject·voice  p50    1.030  p99    2.069  worst    4.271  first    17.5 ms  gc   13    3.5 ms    1240.9 kB/frame
+== round 4/10 head
+ 1/1  glowb      N= 10000 V=2     1.190 ms/frame     59 ns/subject·voice  p50    1.138  p99    2.285  worst    4.290  first    16.9 ms  gc   20    7.3 ms    1254.4 kB/frame
+== round 5/10 head
+ 1/1  glowbn     N= 10000 V=2     1.047 ms/frame     52 ns/subject·voice  p50    1.003  p99    2.012  worst    4.329  first    16.8 ms  gc   13    3.4 ms    1250.0 kB/frame
+== round 5/10 head
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  glowb      N= 10000 V=2     1.149 ms/frame     57 ns/subject·voice  p50    1.093  p99    2.256  worst    5.116  first    16.7 ms  gc   13    3.7 ms    1242.3 kB/frame
+== round 5/10 dirty
+ 1/1  glowbn     N= 10000 V=2     1.091 ms/frame     55 ns/subject·voice  p50    1.046  p99    1.923  worst    4.309  first    17.6 ms  gc   13    3.7 ms    1251.9 kB/frame
+== round 5/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb      N= 10000 V=2     1.126 ms/frame     56 ns/subject·voice  p50    1.092  p99    2.051  worst    4.026  first    17.1 ms  gc   13    3.4 ms    1259.0 kB/frame
+== round 6/10 dirty
+ 1/1  glowbn     N= 10000 V=2     1.099 ms/frame     55 ns/subject·voice  p50    1.060  p99    1.920  worst    4.247  first    16.6 ms  gc   13    3.5 ms    1246.6 kB/frame
+== round 6/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  glowb      N= 10000 V=2     1.129 ms/frame     56 ns/subject·voice  p50    1.066  p99    2.053  worst    5.043  first    17.0 ms  gc   13    3.8 ms    1249.4 kB/frame
+== round 6/10 head
+ 1/1  glowbn     N= 10000 V=2     1.100 ms/frame     55 ns/subject·voice  p50    1.035  p99    2.150  worst    4.646  first    18.2 ms  gc   13    3.8 ms    1239.3 kB/frame
+== round 6/10 head
+ 1/1  glowb      N= 10000 V=2     1.072 ms/frame     54 ns/subject·voice  p50    1.029  p99    1.789  worst    4.460  first    16.4 ms  gc   13    3.5 ms    1245.3 kB/frame
+== round 7/10 head
+ 1/1  glowbn     N= 10000 V=2     1.092 ms/frame     55 ns/subject·voice  p50    1.043  p99    2.102  worst    4.232  first    16.9 ms  gc   13    3.8 ms    1245.9 kB/frame
+== round 7/10 head
+ 1/1  glowb      N= 10000 V=2     1.136 ms/frame     57 ns/subject·voice  p50    1.088  p99    2.024  worst    4.489  first    17.3 ms  gc   14    3.9 ms    1251.9 kB/frame
+== round 7/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn     N= 10000 V=2     1.127 ms/frame     56 ns/subject·voice  p50    1.074  p99    2.066  worst    4.322  first    18.2 ms  gc   13    3.6 ms    1245.8 kB/frame
+== round 7/10 dirty
+ 1/1  glowb      N= 10000 V=2     1.086 ms/frame     54 ns/subject·voice  p50    1.041  p99    1.907  worst    4.402  first    17.7 ms  gc   13    3.5 ms    1255.0 kB/frame
+== round 8/10 dirty
+ 1/1  glowbn     N= 10000 V=2     1.102 ms/frame     55 ns/subject·voice  p50    1.058  p99    2.032  worst    4.300  first    16.8 ms  gc   13    3.9 ms    1249.3 kB/frame
+== round 8/10 dirty
+ 1/1  glowb      N= 10000 V=2     1.130 ms/frame     56 ns/subject·voice  p50    1.088  p99    2.095  worst    4.401  first    16.8 ms  gc   13    3.8 ms    1248.1 kB/frame
+== round 8/10 head
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  glowbn     N= 10000 V=2     1.210 ms/frame     61 ns/subject·voice  p50    1.150  p99    2.076  worst    4.490  first    19.3 ms  gc   13    4.1 ms    1242.5 kB/frame
+== round 8/10 head
+ 1/1  glowb      N= 10000 V=2     1.136 ms/frame     57 ns/subject·voice  p50    1.092  p99    2.108  worst    4.841  first    17.7 ms  gc   13    3.7 ms    1253.3 kB/frame
+== round 9/10 head
+ 1/1  glowbn     N= 10000 V=2     1.070 ms/frame     53 ns/subject·voice  p50    1.025  p99    1.876  worst    4.393  first    17.0 ms  gc   13    3.5 ms    1247.8 kB/frame
+== round 9/10 head
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb      N= 10000 V=2     1.085 ms/frame     54 ns/subject·voice  p50    1.045  p99    1.838  worst    4.643  first    16.7 ms  gc   13    3.3 ms    1251.2 kB/frame
+== round 9/10 dirty
+ 1/1  glowbn     N= 10000 V=2     1.128 ms/frame     56 ns/subject·voice  p50    1.083  p99    1.978  worst    4.083  first    17.0 ms  gc   13    3.8 ms    1239.6 kB/frame
+== round 9/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb      N= 10000 V=2     1.195 ms/frame     60 ns/subject·voice  p50    1.143  p99    2.147  worst    4.479  first    17.9 ms  gc   13    3.9 ms    1249.9 kB/frame
+== round 10/10 dirty
+ 1/1  glowbn     N= 10000 V=2     1.129 ms/frame     56 ns/subject·voice  p50    1.069  p99    2.116  worst    4.642  first    18.6 ms  gc   19    7.4 ms    1239.0 kB/frame
+== round 10/10 dirty
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  glowb      N= 10000 V=2     1.086 ms/frame     54 ns/subject·voice  p50    1.040  p99    2.030  worst    4.431  first    16.9 ms  gc   13    3.6 ms    1250.1 kB/frame
+== round 10/10 head
+ 1/1  glowbn     N= 10000 V=2     1.112 ms/frame     56 ns/subject·voice  p50    1.068  p99    2.023  worst    4.138  first    17.1 ms  gc   13    3.9 ms    1246.9 kB/frame
+== round 10/10 head
+ 1/1  glowb      N= 10000 V=2     1.127 ms/frame     56 ns/subject·voice  p50    1.068  p99    1.959  worst    4.775  first    18.1 ms  gc   13    3.5 ms    1257.0 kB/frame

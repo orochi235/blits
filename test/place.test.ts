@@ -45,7 +45,7 @@ describe('place', () => {
   it('numbers after plot from the end of its list, and a reused index reads what xy holds there', () => {
     const m = mix<string, Pose>(K);
     const xy = new Float64Array([0, 0, 5, 5]);
-    m.plot(['a', 'b'], xy, 1);
+    m.plot(['a', 'b'], xy, { cell: 1 });
     m.drop('b');
     expect(m.place('c')).toBe(1);
     expect(m.place('d')).toBe(2);

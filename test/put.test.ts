@@ -50,7 +50,7 @@ function play(way: Way, byPut: boolean, frames = 60): unknown[] {
     y: Math.floor(j / SIDE),
   }));
   const xy = new Float64Array(dots.flatMap((d) => [d.x, d.y]));
-  m.plot(dots, xy, 2);
+  m.plot(dots, xy, { cell: 2 });
   const area = { x: 0, y: 0, r: 4 };
   const close: Signal<Dot> = (s) => Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / 4);
   m.cue({ patch: flicker(), loop: true });
@@ -106,7 +106,7 @@ describe('put', () => {
   it('writes into the array plot was given, and mixes with moved', () => {
     const m = plain<string, Pose>(K);
     const xy = new Float64Array([0, 0, 5, 5]);
-    m.plot(['a', 'b'], xy, 1);
+    m.plot(['a', 'b'], xy, { cell: 1 });
     const glow = m.cue({
       patch: glowPatch() as never,
       weight: m.around({ x: 0, y: 0, r: 2 }),

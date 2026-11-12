@@ -37,8 +37,11 @@ export class Places<I> extends Grid {
     this.refs = keepRefs ? [] : null;
   }
 
-  /** Takes the host's subjects and positions; `xy` is read in place, so a move needs only `moved`. */
-  set(list: readonly I[], xy: Float64Array, cell: number): void {
+  /**
+   * Takes the host's subjects and positions, `axes` numbers a subject; `xy` is read in place, so a
+   * move needs only `moved`.
+   */
+  set(list: readonly I[], xy: Float64Array, cell: number, axes: number): void {
     const n = list.length;
     this.at = new Store<I, number>();
     for (let i = 0; i < n; i++) this.at.set(list[i] as I, i);
@@ -54,6 +57,7 @@ export class Places<I> extends Grid {
       this.hold(subject, i);
     }
     this.n = n;
+    this.axes = axes;
     this.xy = xy;
     this.owned = false;
     this.cell = cell;
@@ -68,7 +72,7 @@ export class Places<I> extends Grid {
     this.room(i + 1);
     this.at.set(subject, i);
     this.hold(subject, i);
-    if (this.owned) this.put(i, Number.NaN, Number.NaN);
+    if (this.owned) this.put(i, Number.NaN, Number.NaN, Number.NaN);
     return i;
   }
 
@@ -93,8 +97,9 @@ export class Places<I> extends Grid {
       slots.set(this.slots);
       this.slots = slots;
     }
-    if (this.owned && this.xy.length < 2 * n) {
-      const xy = new Float64Array(Math.max(2 * n, this.xy.length * 2, 32)).fill(Number.NaN);
+    const a = this.axes;
+    if (this.owned && this.xy.length < a * n) {
+      const xy = new Float64Array(Math.max(a * n, this.xy.length * 2, 32)).fill(Number.NaN);
       xy.set(this.xy);
       this.xy = xy;
     }
@@ -143,7 +148,7 @@ export class Places<I> extends Grid {
     if (slot >= 0) this.placeOf[slot] = -1;
     this.slots[i] = -1;
     // The host's own array is the host's: a reused index reads whatever it holds there.
-    if (this.owned) this.put(i, Number.NaN, Number.NaN);
+    if (this.owned) this.put(i, Number.NaN, Number.NaN, Number.NaN);
     this.free.push(i);
   }
 
@@ -154,12 +159,15 @@ export class Places<I> extends Grid {
     return s !== undefined && this.at.get(s) === i ? s : undefined;
   }
 
-  /** Whether `subject` is within `r` of (`cx`, `cy`), by the same test `query` makes. */
-  inside(subject: I, cx: number, cy: number, r2: number): boolean {
+  /** Whether `subject` is within `r` of (`x`, `y`, `z`), by the same test `query` makes. */
+  inside(subject: I, x: number, y: number, z: number, r2: number): boolean {
     const i = this.at.get(subject);
-    if (i === undefined || 2 * i + 1 >= this.xy.length) return false;
-    const dx = (this.xy[2 * i] as number) - cx;
-    const dy = (this.xy[2 * i + 1] as number) - cy;
-    return dx * dx + dy * dy <= r2;
+    if (i === undefined || !this.has(i)) return false;
+    return this.d2(i, x, y, z) <= r2;
+  }
+
+  /** Whether the positions have room for index `i`. */
+  has(i: number): boolean {
+    return this.axes * (i + 1) <= this.xy.length;
   }
 }

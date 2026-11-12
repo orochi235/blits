@@ -7,8 +7,8 @@ import type { Booker, BookOptions, Marked } from './place.js';
 import type { Trace, TraceOptions } from './trace.js';
 import type { Transport } from './transport.js';
 import type {
+  Ball,
   BlendMember,
-  Circle,
   Handle,
   OwnerSpec,
   SpanHandle,
@@ -461,35 +461,37 @@ export interface Mix<I, O, H = unknown> {
    */
   place(subject: I): number;
   /**
-   * Gives the mix each subject's index and position at once, for voices cued {@link VoiceSpec.within | `within`} a circle. The
-   * index is the subject's place in `subjects`, and `xy` holds two numbers a subject, `x` then `y`,
-   * in that order. It is read in place, so a host moving its subjects writes into it and calls
-   * `moved`. `cell` sizes the grid the mix finds subjects in, best near the radius the circles use;
-   * by default, about two subjects a cell. Another call replaces the list and every index. A
-   * subject `place`d after it takes an index freed by `drop`, which reads whatever `xy` holds
-   * there, or one past the list, which has no position. Throws for an `xy` shorter than two numbers
-   * a subject.
+   * Gives the mix each subject's index and position at once, for voices cued {@link VoiceSpec.within | `within`} a ball. The
+   * index is the subject's place in `subjects`, and `xy` holds {@link PlotOptions.axes | `axes`} numbers a subject, 2 by
+   * default, `x`, then `y` and `z` where there are, in that order. It is read in place, so a host
+   * moving its subjects writes into it and calls `moved`. Another call replaces the list and every
+   * index. A subject `place`d after it takes an index freed by `drop`, which reads whatever `xy`
+   * holds there, or one past the list, which has no position. Throws for an `xy` shorter than
+   * `axes` numbers a subject.
    */
-  plot(subjects: readonly I[], xy: Float64Array, cell?: number): void;
+  plot(subjects: readonly I[], xy: Float64Array, opts?: PlotOptions): void;
+  /** @deprecated `cell` is an option now: `plot(subjects, xy, { cell })`. */
+  plot(subjects: readonly I[], xy: Float64Array, cell: number): void;
   /** Says the host wrote new positions into the array it gave `plot`. The next frame reads them. */
   moved(): void;
   /**
-   * Moves one subject to (`x`, `y`), for a host where few move at once. It writes into the array
+   * Moves one subject to (`x`, `y`, `z`), for a host where few move at once. It writes as many
+   * numbers as `plot` gave axes, 2 with no `plot`, an axis left out as 0. It writes into the array
    * `plot` was given, so the host's array holds the move too, or with no `plot`, into the mix's
    * own, and the grid is built again only once many subjects have left their cells. The same as
    * writing the array and calling `moved`; the two mix freely. Throws for a subject with no index,
    * and for one whose index is past the array `plot` was given.
    */
-  put(subject: I, x: number, y: number): void;
+  put(subject: I, x: number, y?: number, z?: number): void;
   /**
-   * A weight signal over the positions `plot` or `put` gave, highest at a circle's center. It is 1
-   * at the center, falling with distance to 0 at {@link Circle.r | `r`} and beyond, along `ease` read from the edge
-   * (0) to the center (1), linear by default. The host moves or resizes the circle by writing to
-   * it. A voice it weighs is bounded to the circle as if cued {@link VoiceSpec.within | `within`} it, with no check, since the
-   * circle is the signal's own edge, from the first `place` or `plot` for one cued before it. A
+   * A weight signal over the positions `plot` or `put` gave, highest at a ball's center. It is 1
+   * at the center, falling with distance to 0 at {@link Ball.r | `r`} and beyond, along `ease` read from the edge
+   * (0) to the center (1), linear by default. The host moves or resizes the ball by writing to
+   * it. A voice it weighs is bounded to the ball as if cued {@link VoiceSpec.within | `within`} it, with no check, since the
+   * ball is the signal's own edge, from the first `place` or `plot` for one cued before it. A
    * subject with no position reads 0.
    */
-  around(circle: Circle, opts?: { ease?: Easing }): Signal<I, H>;
+  around(ball: Ball, opts?: { ease?: Easing }): Signal<I, H>;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks. A voice
    * placed `{ with: 'reply' }` waits until the host announces `reply`. {@link AnnounceOptions.at | `at`} is a timestamp on the
@@ -525,6 +527,21 @@ export interface Mix<I, O, H = unknown> {
    * nothing for it.
    */
   book<E = unknown>(opts: BookOptions<E, I>): Booker;
+}
+
+/**
+ * What `plot` takes beside its subjects and positions.
+ *
+ * @category mix
+ */
+export interface PlotOptions {
+  /** How many numbers each subject's position is: 1, 2 or 3. Default 2. */
+  axes?: 1 | 2 | 3;
+  /**
+   * The size of the grid cells the mix finds subjects in, best near the radius the balls use. By
+   * default, about two subjects a cell.
+   */
+  cell?: number;
 }
 
 /**

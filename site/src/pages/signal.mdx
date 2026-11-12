@@ -65,9 +65,17 @@ window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y
 
 Where only a few subjects move at a time, `put` moves one: `bars.put(bar, x, y)`. It writes into the array `plot` was given, so it mixes freely with writing the array yourself and calling `moved`, and it takes only a subject that array holds. The mix's grid stays as built until many subjects have left their cells: with 100 of 10,000 subjects moving each frame, `put` takes 0.679 ms a frame against 0.705 for `moved`.
 
-The circle declares where the signal is 0; it does not shape it. A signal of your own still above 0 at [`r`](Circle.r) is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. [`within`](VoiceSpec.within) needs a signal [`weight`](VoiceSpec.weight). A patch that keeps state still steps outside the circle, as it does at weight 0, so bounding it saves the signal's calls but not its steps.
+Positions can be on 1 or 3 axes as well: `plot(all, xs, { axes: 1 })` takes one number a subject, and `{ axes: 3 }` takes `x`, `y` and `z`. The array is still called `xy`, and `put` takes as many numbers as there are axes. The circle is then a [`Ball`](Ball), `{ x, y?, z?, r }`, read by field: a field it leaves out is 0, and one past the axes `plot` gave is not read, so `{ x, r }` is a span on a line.
 
-`around` is that glow built in: 1 at the circle's center, falling to 0 at [`r`](Circle.r) over the plotted positions, so the host writes neither the signal nor [`within`](VoiceSpec.within). It carries its circle, and a voice it weighs is bounded to it with no check; one cued before `plot` reads 0 everywhere until then and is bounded once `plot` is called. `ease` shapes the fall, read from the edge to the center: `'ease-out'` gives a broad top, and `{ steps: 1, jump: 'start' }` a hard-edged disk.
+```ts
+const xs = Float64Array.from(all.map((b) => b.x));
+bars.plot(all, xs, { axes: 1, cell: 120 }); // cell sizes the grid the mix finds subjects in, best near r
+const pointer = { x: 0, r: 120 };
+```
+
+The circle declares where the signal is 0; it does not shape it. A signal of your own still above 0 at [`r`](Ball.r) is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. [`within`](VoiceSpec.within) needs a signal [`weight`](VoiceSpec.weight). A patch that keeps state still steps outside the circle, as it does at weight 0, so bounding it saves the signal's calls but not its steps.
+
+`around` is that glow built in: 1 at the circle's center, falling to 0 at [`r`](Ball.r) over the plotted positions, so the host writes neither the signal nor [`within`](VoiceSpec.within). It carries its circle, and a voice it weighs is bounded to it with no check; one cued before `plot` reads 0 everywhere until then and is bounded once `plot` is called. `ease` shapes the fall, read from the edge to the center: `'ease-out'` gives a broad top, and `{ steps: 1, jump: 'start' }` a hard-edged disk.
 
 ```ts
 const pointer = { x: 0, y: 0, r: 120 };

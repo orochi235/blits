@@ -48,15 +48,26 @@ export interface SpanHints {
 }
 
 /**
- * A circle by its center, `x` and `y`, and radius `r`. It is in the units of the positions `plot`
- * gave.
+ * A ball by its center, `x`, `y` and `z`, and radius `r`, in the units of the positions `plot` gave.
+ * It is read by field over the axes `plot` gave: a field it leaves out is 0, and one past those axes
+ * is not read, so `{ x, r }` is a span on 1 axis and `{ x, y, r }` a circle on 2.
  *
  * @category voice
  */
-export interface Circle {
+export interface Ball {
   x: number;
-  y: number;
+  y?: number;
+  z?: number;
   r: number;
+}
+
+/**
+ * A {@link Ball} on 2 axes, by its center, `x` and `y`, and radius `r`.
+ *
+ * @category voice
+ */
+export interface Circle extends Ball {
+  y: number;
 }
 
 /**
@@ -179,7 +190,7 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    */
   axes?: { readonly [K in keyof O]?: readonly number[] };
   /**
-   * Where the `weight` signal can be above 0. It is a circle the host moves by writing to it, read
+   * Where the `weight` signal can be above 0. It is a ball the host moves by writing to it, read
    * once a frame, over the positions `plot` or `put` gave, or a `Finder` the host answers by index.
    * Outside
    * it the voice gives a subject nothing and the signal is not read, so a frame visits only the
@@ -189,7 +200,7 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * A patch that steps still steps outside, and a `from: 'current'` voice still takes its base,
    * as each does at weight 0. Needs `place` or `plot` first, and a signal `weight`.
    */
-  within?: Circle | Finder;
+  within?: Ball | Finder;
   /** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */
   fade?: FadeSpec;
   /**

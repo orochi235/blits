@@ -62,7 +62,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       name: string | null;
       tags: string[];
       track: string | null;
-      within: Readonly<Omit<Ring, 'voice'>> | Finder | undefined;
+      within: { readonly x: number; readonly y?: number; readonly r: number } | Finder | undefined;
     }
   >();
   const circles = new Circles();
@@ -138,7 +138,8 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     for (const h of e.mix.voices()) {
       const c = named.get(h.id)?.within;
       // A finder's bound has no shape to draw.
-      if (c !== undefined && !('find' in c)) rings.push({ voice: h.id, x: c.x, y: c.y, r: c.r });
+      if (c !== undefined && !('find' in c))
+        rings.push({ voice: h.id, x: c.x, y: c.y ?? 0, r: c.r });
     }
     circles.draw(rings, opts.screen ?? offered().screen);
   };

@@ -4,24 +4,24 @@ import { keepProbed, type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Places } from './places.js';
-import type { Circle, Finder, Setting, VoiceSpec } from './types.js';
+import type { Ball, Finder, Setting, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
 import { production, warnOnce } from './warn.js';
 
 /**
- * A voice's signal declared 0 outside a bound (`within` on the cue): a circle around a point the host
+ * A voice's signal declared 0 outside a bound (`within` on the cue): a ball around a point the host
  * moves, over positions the host gives the mix (`plot`, `put`), or a finder the host answers with the
  * indices `place` gave. Outside it the voice is not read at all, which is what lets a lane fill visit
  * only the subjects within it.
  */
 
-/** How many frames apart, outside production, a bound reads its signal just beyond the circle. */
+/** How many frames apart, outside production, a bound reads its signal just beyond the ball. */
 const CHECK_EVERY = 8;
-/** How many subjects beyond the circle each such check reads. */
+/** How many subjects beyond the ball each such check reads. */
 const CHECK_SUBJECTS = 4;
 
 export class Bound<I, O> {
-  /** The host's finder, or null for a circle. */
+  /** The host's finder, or null for a ball. */
   readonly finder: Finder | null;
   /** By index, the `marks` stamp of the last time the general path found it within: see `marked`. */
   hitAt = new Float64Array(0);
@@ -32,10 +32,11 @@ export class Bound<I, O> {
   missed = new Int32Array(CHECK_SUBJECTS);
   /** Outside production, until it has warned: whether it checks a finder's indices. */
   vets: boolean;
-  /** The frame `x`, `y` and `r` were read from `area` in. */
+  /** The frame `x`, `y`, `z` and `r` were read from `area` in, a field it leaves out as 0. */
   frame = Number.NaN;
   x = 0;
   y = 0;
+  z = 0;
   r = 0;
   r2 = 0;
   /**
@@ -59,7 +60,7 @@ export class Bound<I, O> {
   constructor(
     readonly mix: Mixer<I, O>,
     readonly voice: Voice<I, O>,
-    readonly area: Circle | Finder,
+    readonly area: Ball | Finder,
   ) {
     this.finder = isFinder(area) ? area : null;
     this.checks = !production();
@@ -67,7 +68,7 @@ export class Bound<I, O> {
   }
 }
 
-const isFinder = (area: Circle | Finder): area is Finder =>
+const isFinder = (area: Ball | Finder): area is Finder =>
   typeof (area as Finder).find === 'function';
 
 /** Refuses a cue's `within` where the mix has handed out no indices, or on a voice with no signal. */
@@ -75,18 +76,18 @@ export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void
   const area = spec.within;
   if (area === undefined) return;
   if (typeof area !== 'object' || area === null)
-    throw new TypeError('blits: within takes a circle, { x, y, r }, or a finder, { find(out) }');
+    throw new TypeError('blits: within takes a ball, { x, y?, z?, r }, or a finder, { find(out) }');
   if (mix.places === null)
     throw new Error('blits: within needs indices: call mix.place or mix.plot first');
   if (typeof spec.weight !== 'function')
     throw new Error(
-      "blits: within needs a signal weight; for a hard-edged disk use weight: mix.around(circle, { steps: 1, jump: 'start' })",
+      "blits: within needs a signal weight; for a hard-edged disk use weight: mix.around(ball, { steps: 1, jump: 'start' })",
     );
 }
 
 /**
- * Bounds a voice just made to its cue's `within`, or to the circle its `around` weight carries once
- * the mix has indices. A carried circle is the signal's own edge, so it is not checked.
+ * Bounds a voice just made to its cue's `within`, or to the ball its `around` weight carries once
+ * the mix has indices. A carried ball is the signal's own edge, so it is not checked.
  */
 export function confine<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   const spec = voice.spec;
@@ -102,27 +103,28 @@ function snap<I, O>(b: Bound<I, O>, mix: Mixer<I, O>): void {
   b.frame = mix.frame;
   if (b.checks) b.frames++;
   if (b.finder === null) {
-    const a = b.area as Circle;
+    const a = b.area as Ball;
     b.x = a.x;
-    b.y = a.y;
+    b.y = a.y ?? 0;
+    b.z = a.z ?? 0;
     b.r = a.r;
     b.r2 = a.r * a.r;
     if (b.checks && b.frames % CHECK_EVERY === 0) {
       const places = mix.places as Places<I>;
-      check(b, places.found, places.ring(b.x, b.y, b.r));
+      check(b, places.found, places.ring(b.x, b.y, b.z, b.r));
     }
   }
 }
 
 /**
  * Leaves in `places.found` the indices the bound finds this frame, and returns how many: the grid's
- * for a circle, the host's for a finder. An index no subject holds reads as no lane number.
+ * for a ball, the host's for a finder. An index no subject holds reads as no lane number.
  */
 function findAll<I, O>(b: Bound<I, O>): number {
   const places = b.mix.places as Places<I>;
   snap(b, b.mix);
   const finder = b.finder;
-  if (finder === null) return places.query(b.x, b.y, b.r, b.r2);
+  if (finder === null) return places.query(b.x, b.y, b.z, b.r, b.r2);
   if (places.found.length < places.n)
     places.found = new Int32Array(Math.max(places.n, places.found.length * 2));
   const out = places.found;
@@ -158,7 +160,7 @@ function vet<I, O>(b: Bound<I, O>, out: Int32Array, count: number, n: number): v
 
 /**
  * Reads the signal, as at a first sight, for a few subjects just outside the bound, and warns once
- * if any is above 0: the bound is cutting off part of the signal. Just beyond a circle's edge; for a
+ * if any is above 0: the bound is cutting off part of the signal. Just beyond a ball's edge; for a
  * finder, a few indices it did not find, taken in turn.
  */
 function check<I, O>(b: Bound<I, O>, list: Int32Array, n: number): void {
@@ -191,7 +193,7 @@ function check<I, O>(b: Bound<I, O>, list: Int32Array, n: number): void {
       warnOnce(
         voice,
         b.finder === null
-          ? `${voice.spec.name ?? `voice ${voice.id}`}'s weight signal reads ${w} just outside its within circle (r ${b.r}), which cuts it off there: widen r to where the signal falls to 0`
+          ? `${voice.spec.name ?? `voice ${voice.id}`}'s weight signal reads ${w} just outside its within ball (r ${b.r}), which cuts it off there: widen r to where the signal falls to 0`
           : `${voice.spec.name ?? `voice ${voice.id}`}'s weight signal reads ${w} for a subject its within finder did not find, which cuts it off there: find every subject the signal is above 0 for`,
       );
       return;
@@ -249,11 +251,11 @@ export function inBound<I, O>(mix: Mixer<I, O>, b: Bound<I, O>, subject: I): boo
     return b.hitAt[i] === stamp;
   }
   if (mix.projecting) {
-    const a = b.area as Circle;
-    return places.inside(subject, a.x, a.y, a.r * a.r);
+    const a = b.area as Ball;
+    return places.inside(subject, a.x, a.y ?? 0, a.z ?? 0, a.r * a.r);
   }
   snap(b, mix);
-  return places.inside(subject, b.x, b.y, b.r2);
+  return places.inside(subject, b.x, b.y, b.z, b.r2);
 }
 
 /** Notes that the subject at `slot` may hold a weight other than 0 on the voice's lane. */

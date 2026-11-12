@@ -30,10 +30,10 @@ Owner tags:
   first subject's last frame from 100 to 300); backward the mirror case shows nothing ("waits for a
   subject staggered ahead of it" in `test/backward.test.ts`). Either hold both ways, or show
   nothing both ways, which would snap each subject of a staggered entrance back as it finishes.
-- **[maintainer] Positions on 1–3 axes** (asked 2026-10-28). Decided: `Ball` `{ x, y?, z?, r }`
-  read by field, `Circle` kept as the 2D alias, `plot`'s array keeps the name `xy`,
-  `put(subject, x, y?, z?)`. Not decided: how `plot` learns the axis count (proposed
-  `plot(subjects, xy, { axes, cell })`).
+- **[agent] `plot(subjects, xy, cell)`, `cell` as a third argument, is deprecated** (2026-11-12):
+  remove it in the release after the one that ships `{ axes, cell }`. `bench/frame.mjs`,
+  `bench/recaddr.mjs` and `bench/plotleak.mjs` still call the old shape, since older builds an A/B
+  runs them against throw for `{ cell }`; move them to `{ cell }` with the removal.
 - **[agent] A read ahead asks `stagger` again for a subject dropped on the way**, where the live
   mix did not (seen 2026-11-12: a saw waiting to start, `m.drop(b)`, then `project()` past the
   drop). Only a `stagger` that answers differently on a second ask shows it.
