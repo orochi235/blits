@@ -866,17 +866,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       a `Hold`; the teardown verbs (tone's `cancel`, the panel's `dispose`, quarks' driver with none);
       rapier's `Body.drop` and `Body.drive` meaning other things than quarks' and tone's; the
       panel's `Source` and `wire` colliding with quarks'.
-    - Multiplying `handle.weight` into a weight signal (2026-11-09) left `signal` and `blend` at
-      10,000 subjects 1.2% and 3.0% slower than its base on a noisy node, within spread (U 8 and 7
-      of 25), with kB a frame unchanged (`bench/runs/2026-11-09-handle-weight-ab-fix.txt`).
-      Unconfirmed on a quiet node.
+    - Multiplying `handle.weight` into a weight signal (2026-11-09) costs nothing measurable: on a
+      quiet node `signal` read +0.3%, `blend` −0.6% and `glow` −2.9% against its base (studio, 7
+      rounds, 2026-11-11, `bench/runs/2026-11-11-handle-weight-quiet.txt`).
     - Decided against (2026-11-10): letting `gpu/eligible.ts` skip a signal voice whose handle
       weight is 0. Nothing would then read a signal that keeps state per subject, so after the
       weight rose it could read otherwise than on a CPU mix, which reads it at weight 0 too. The
       matching check in `bound.ts` runs only outside production, every few frames.
-    - `redo` at 1,000 subjects and 32 voices read 2.4% slower after the audit on a quiet node
-      (145.4 → 148.9 ms, ranges overlapping; `bench/runs/2026-11-09-audit-merged-check.txt`), and
-      4.8% on a noisy one. Open measurement; every other row matched main.
+    - **`redo` at 1,000 subjects and 32 voices reads 3.7% slower after the audit** (149.5 → 155.1
+      ms, studio, 7 rounds, 2026-11-11, `bench/runs/2026-11-11-audit-redo-quiet.txt`; V=8 +1.3%).
+      Three readings agree (+2.4% quiet and +4.8% noisy on 2026-11-09). Not yet bisected across
+      the audit's 56 commits, `efc4950..41628a3b`.
     - quarks, tone, and rapier call the engine's `bind` (named 2026-11-09), so their peer ranges
       must rise to the engine release that carries it; each package's Unreleased changelog says so.
 
