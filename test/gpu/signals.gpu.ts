@@ -9,6 +9,7 @@ const TIMES = [1, 250, 450, 999, 1300, 2100, 4100];
 type Case = [string, boolean, () => Script];
 
 const sine = (c: C, s: { elapsed: number }) => 0.5 + 0.5 * Math.sin(c.id + s.elapsed / 300);
+const gap = (_c: C, s: { dt: number }) => Math.min(1, s.dt / 4000);
 
 const CASES: Case[] = [
   [
@@ -71,6 +72,32 @@ const CASES: Case[] = [
         times: TIMES,
       };
     },
+  ],
+  [
+    'a signal reading dt per subject, across a handle seek, a touch and a reorder',
+    true,
+    () => ({
+      cues: [{ stagger: STAGGER, weight: gap }],
+      acts: [
+        { at: 450, act: (h) => h[0]?.seek(100) },
+        { at: 999, act: (_h, _p, m) => m.touch() },
+      ],
+      reorder: 1300,
+      times: TIMES,
+    }),
+  ],
+  [
+    'a signal reading dt per subject, across mix seeks back',
+    false,
+    () => ({
+      cues: [{ weight: gap }],
+      history: true,
+      acts: [
+        { at: 999, act: (_h, _p, m) => m.seek(300) },
+        { at: 2100, act: (_h, _p, m) => m.seek(1200) },
+      ],
+      times: TIMES,
+    }),
   ],
   [
     'a slew stays on the CPU',

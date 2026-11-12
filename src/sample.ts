@@ -85,10 +85,15 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       arg[Arg.ELAPSED] = elapsed;
       arg[Arg.PASS] = passAt(elapsed, voice.duration, voice.passes);
       arg[Arg.FADE] = lane.fade;
-      if (!lanes.signalled(voice, slot, records[p] as Subject<unknown>)) {
+      const rec = records[p] as Subject<unknown>;
+      if (!lanes.signalled(voice, slot, rec)) {
         data[o + Row.WEIGHT] = 0;
         continue;
       }
+      // As a keys lane's: this read is where the next one's dt counts from, and a probe reads again.
+      rec.probed = lanes.now;
+      rec.seeks = seeks;
+      rec.delta = null;
       w = arg[Arg.WEIGHT] as number;
     } else if (parts) w = weighed(voice.weight, lane.fade, lanes.parting(voice, slot));
     else if (flat) w = whole;

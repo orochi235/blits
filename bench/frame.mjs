@@ -246,6 +246,8 @@ const rows = [
   ['tweens', 10000, 1],
   ['tweens', 100000, 1],
   ['tweenfn', 10000, 1],
+  // The tween voice weighted by a signal, which its lane reads per subject.
+  ['tweensig', 10000, 1],
   ['keyses', 10000, 1],
   ['frozen', 10000, 1],
   // A tween voice per subject, with one stopped, its subject dropped, and a new one cued on it
@@ -647,7 +649,9 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
           ? [sway, veer, swing][v]()
           : kind === 'spring'
             ? settle()
-            : kind === 'tween' || ((kind === 'rest' || kind === 'probed') && v === 0)
+            : kind === 'tween' ||
+                kind === 'tweensig' ||
+                ((kind === 'rest' || kind === 'probed') && v === 0)
               ? glideTo()
               : kind === 'tweenfn'
                 ? tweenFn()
@@ -664,7 +668,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       patch: p,
       fade: { in: 100 },
       role: kind === 'role' ? 'one' : undefined,
-      weight: kind === 'signal' ? by : undefined,
+      weight: kind === 'signal' || kind === 'tweensig' ? by : undefined,
       loop: true,
     });
   }

@@ -216,6 +216,8 @@ export async function agree(device: GpuDevice, kind: Kind, script: Script, named
   let list = CELLS;
   side.subjects(list, fieldsOf);
   side.channel(kind.channel);
+  // The GPU folded at 0, so the CPU sees that frame too.
+  for (const s of list) c.m.probe(s);
   await side.ready;
   const acts = script.acts ?? [];
   const all = [...new Set([...script.times, ...acts.map((a) => a.at)])].sort((a, b) => a - b);

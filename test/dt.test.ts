@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
+import { tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 
 interface Pose {
@@ -110,4 +111,28 @@ describe.each([
     expect(on).toEqual(off);
     expect(off?.at(-1)).toBeCloseTo(0.16);
   });
+});
+
+it('hands a motion voice signal the same gap on lanes as off them', () => {
+  const [off, on] = [false, true].map((lanes) => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const seen: number[] = [];
+    m.cue({
+      patch: tween<Part, Pose>('x', { from: 0, to: 10, ms: 300 }),
+      subjects: [a, b],
+      weight: (p, s) => {
+        if (p === a) seen.push(s.dt);
+        return 1;
+      },
+    });
+    for (const t of [16, 250, 450, 999]) {
+      m.sync(t);
+      m.probe(a);
+      m.probe(b);
+    }
+    return seen;
+  });
+  expect(on).toEqual(off);
+  expect(off).toEqual([16, 234, 200, 549]);
 });
