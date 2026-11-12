@@ -65,6 +65,8 @@ export class Player<I, O, C> {
   private closed = false;
   /** True while this player is the one calling the mix, so a wake it causes is not a debugger's. */
   private own = false;
+  /** Set where something else sought the main mix, so the next frame follows it there. */
+  private sought = false;
   /**
    * Explainer ms from the first frame to where the run ends, which the main mix announces then as
    * `end`; null once announced, and for an unlisted run.
@@ -102,6 +104,14 @@ export class Player<I, O, C> {
     this.attached = listed ? (scene.attach?.(this.main.mix, config) ?? null) : null;
     this.solos = scene.ledger ? this.voices.map((v) => play([v])) : [];
     for (const solo of this.solos) solo.mix.close();
+    for (const p of [this.main, ...this.solos])
+      p.mix.onSeek((s) => {
+        if (p === this.main && !this.own) this.sought = true;
+        // A seek back lets go of every later frame, so their numbers name nothing now.
+        if (!s.back) return;
+        const i = p.seqs.findIndex((seq) => seq > s.frame);
+        if (i >= 0) p.seqs.length = i;
+      });
     if (!listed) this.main.mix.close();
     this.events = [...(scene.events?.(config) ?? [])].sort((a, b) => a.at - b.at);
     this.poses = this.subjects.map(() => ({}) as O);
@@ -121,6 +131,13 @@ export class Player<I, O, C> {
    * where a debugger moved the mix and the player followed.
    */
   at(t: number): Frame<I, O> {
+    if (this.sought) {
+      const now = this.main.mix.now;
+      if (!Number.isNaN(now)) {
+        this.follow(now);
+        return this.frame();
+      }
+    }
     const target = Math.max(0, Math.floor(t / FRAME + 1e-6));
     this.own = true;
     // Played on in time is a frame or a few ahead; anything else is a jump. Asked for the frame it
@@ -219,11 +236,15 @@ export class Player<I, O, C> {
     return true;
   }
 
-  /** The last frame at or before `k` that synced, and where the mix's clock stood then. */
-  private lastNow(k: number): ({ k: number } & Nows[number]) | undefined {
+  /**
+   * The last frame at or before `k` that synced, and where the mix's clock stood then; `held`, the
+   * last a seek can still go to.
+   */
+  private lastNow(k: number, held = false): ({ k: number } & Nows[number]) | undefined {
     for (let j = k; j >= 0; j--) {
       const kept = this.nows[j];
-      if (kept !== undefined) return { k: j, ...kept };
+      if (kept !== undefined && (!held || this.main.seqs[j] !== undefined))
+        return { k: j, ...kept };
     }
     return undefined;
   }
@@ -243,6 +264,7 @@ export class Player<I, O, C> {
       }
     }
     const k = Math.max(0, frameOf(now - lead));
+    this.sought = false;
     this.forget(k);
     this.k = k;
     this.nows[k] = { now, lead };
@@ -254,10 +276,10 @@ export class Player<I, O, C> {
     return false;
   }
 
-  /** Seeks every mix back to frame `k`, or to the last one before it that synced. */
+  /** Seeks every mix back to frame `k`, or to the last one before it that synced and is still held. */
   private back(k: number): void {
-    const last = this.lastNow(k);
-    if (last === undefined || this.main.seqs[last.k] === undefined) return;
+    const last = this.lastNow(k, true);
+    if (last === undefined) return;
     for (const p of [this.main, ...this.solos]) {
       const s = p.seqs[last.k];
       if (s !== undefined) p.mix.seek({ frame: s });

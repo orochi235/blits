@@ -1,4 +1,4 @@
-import { kit, type Mix, patch, sum } from '@msb235/blits';
+import { kit, type Mix, patch, sum, watched } from '@msb235/blits';
 import { describe, expect, it } from 'vitest';
 import { Player } from './player';
 import { FRAME, type Scene } from './scene';
@@ -131,4 +131,26 @@ describe('the explainer player', () => {
       p.close();
     },
   );
+
+  it("plays back through a debugger's hold that sought back past where it was going", () => {
+    const duration = 1000;
+    const p = new Player(scene, {}, { name: 'player-held-back', duration });
+    const m = mixOf(p);
+    for (let t = 0; t <= 600; t += FRAME) p.at(t);
+    const entry = watched()
+      .entries()
+      .find((e) => e.mix === (m as unknown));
+    const h = (entry as NonNullable<typeof entry>).hold();
+    h.step(30);
+    p.at(500);
+    h.seek(h.now - 300);
+    expect(() => h.free()).not.toThrow();
+    // The next frame follows the mix to where the hold's free left it, rather than moving it on.
+    const now = m.now;
+    p.at(450);
+    expect(m.now).toBe(now);
+    for (let t = 450; t > 0; t -= FRAME) p.at(t);
+    expect(p.at(0).t).toBe(0);
+    p.close();
+  });
 });

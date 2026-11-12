@@ -4,6 +4,17 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A hold's `free` no longer throws for a host's seek to a frame the hold's own `seek` let go
+  meanwhile: it seeks that frame's mix time instead. A host seek naming a frame history does not
+  hold is refused when the host makes it, not at `free`.
+- A sync after a `rebase` plays on from exactly where the mix stood. Worked out through the host
+  offset, it could land an ulp early, before the mix's first frame, where a seek to the mix's own
+  `now` then threw.
+
 ## 1.3.0
 
 ### Added

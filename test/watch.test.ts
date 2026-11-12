@@ -389,6 +389,44 @@ describe('holding', () => {
     h.free();
   });
 
+  it("seeks the host's frame by its time once freed, where the hold's seek let it go", () => {
+    const { m, e } = setup();
+    m.sync(200);
+    const frame = m.seq;
+    m.sync(300);
+    const h = e.hold();
+    m.seek({ frame });
+    h.seek(50);
+    h.free();
+    expect(m.now).toBe(200);
+    expect(m.probe(a).x).toBe(200);
+  });
+
+  it("seeks the host's frame by its number once freed, where the hold's seek kept it", () => {
+    const { m, e } = setup();
+    m.sync(200);
+    const frame = m.seq;
+    m.sync(300);
+    m.sync(400);
+    const h = e.hold();
+    m.seek({ frame });
+    h.seek(350);
+    h.free();
+    expect(m.now).toBe(200);
+    expect(m.probe(a).x).toBe(200);
+  });
+
+  it("refuses the host's seek to a frame the hold's seek let go at once", () => {
+    const { m, e } = setup();
+    m.sync(200);
+    const frame = m.seq;
+    m.sync(300);
+    const h = e.hold();
+    h.seek(50);
+    expect(() => m.seek({ frame })).toThrow(/not one this mix's history holds/);
+    expect(() => h.free()).not.toThrow();
+  });
+
   it('seeks ahead while paused', () => {
     const { m, e } = setup();
     const h = e.hold();

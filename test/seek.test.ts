@@ -595,6 +595,21 @@ describe('sync', () => {
     m.sync(20);
     m.sync(40);
   });
+
+  it('plays on from exactly where a seek left the mix, across a rebase', () => {
+    const frame = 1000 / 60;
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, tape } });
+    let wall = frame;
+    m.sync(wall);
+    const first = m.seq;
+    for (let i = 0; i < 3000; i++) m.sync((wall += frame));
+    m.sync(wall + 30);
+    m.rebase();
+    m.seek({ frame: first });
+    m.sync(wall + frame);
+    expect(m.now).toBe(frame);
+    m.seek(m.now);
+  });
 });
 
 describe('project', () => {
