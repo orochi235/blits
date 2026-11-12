@@ -566,10 +566,12 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   time(timestamp: number): number {
+    if (this.transport.drive !== null) return this.transport.time(timestamp);
     return readingAt(this, timestamp - this.offset);
   }
 
   when(time: number): number {
+    if (this.transport.drive !== null) return this.transport.when(time);
     return hostOf(this, time);
   }
 

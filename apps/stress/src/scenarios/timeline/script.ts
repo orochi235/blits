@@ -18,8 +18,9 @@ type Op =
 
 /**
  * A video editor at the timeline, one action every 30 to 90 frames, drawn from the seed as play
- * reaches it. It plays at speed `|s|` on the mix and in the direction of `s` on the reel, since the
- * mix's own rate cannot go below 0.
+ * reaches it. It plays at speed `|s|` on the mix and in the direction of `s` on the reel: a mix rate
+ * below 0 replays what the mix showed, only as far back as history reaches, where turning the reel
+ * back plays the sequences backward from anywhere.
  */
 export function editor(seed: number, t: Timeline) {
   const r = rng(seed ^ 0x5bd1e995);
@@ -27,7 +28,6 @@ export function editor(seed: number, t: Timeline) {
   const found: Finding[] = [];
   let next = 30 + r.int(61);
   let scrub: { left: number; per: number } | undefined;
-  let tried = false;
   let seeks = 0;
   let reversals = 0;
 
@@ -69,18 +69,7 @@ export function editor(seed: number, t: Timeline) {
   }
 
   function direction(s: number): void {
-    const { m, reel } = t;
-    if (s < 0 && !tried) {
-      tried = true;
-      try {
-        m.rate = s;
-      } catch {
-        found.push({
-          kind: 'gap',
-          what: 'the mix’s rate cannot go below 0, so the editor plays in reverse by turning back the owner every sequence plays under',
-        });
-      }
-    }
+    const { reel } = t;
     if (Math.sign(s) !== Math.sign(reel.rate)) {
       reel.rate = Math.sign(s);
       if (s < 0) reversals++;

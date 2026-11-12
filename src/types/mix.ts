@@ -214,7 +214,13 @@ export interface Mix<I, O, H = unknown> {
   rebase(): void;
   /**
    * The mix's own playback rate, multiplied into every voice's. 1 is real time and 0 pauses the
-   * whole mix. A negative rate throws: the mix plays only forward, and `seek` moves it back.
+   * whole mix. Below 0 the mix replays backward what it showed: each sync seeks back to where the
+   * clock now reads, so everything history keeps comes back exactly. That needs `history` with a
+   * tape, and throws without it or before the first sync. Running back stops at the earliest moment
+   * history reaches, where the rate reads 0. A host call made meanwhile branches the tape there, as
+   * after any seek back; turning forward again plays the tape on rather than cutting it, and once
+   * no recorded call is left ahead the mix is live and the rate is its own again. `onSeek` hears
+   * each sync running back as a seek.
    * Setting it changes speed at once; `ramp` eases into a new one. It scales mix time, which
    * everything a voice owns runs on: its clock, its fades and a handle's ramp, {@link VoiceSpec.stagger | `stagger`}, an
    * anchor's `by`, {@link MixOptions.stepMs | `stepMs`}, {@link MixOptions.maxDt | `maxDt`}, `history.ms`, every {@link Setting.dt | `dt`}, and `setting.timestamp`. Timestamps

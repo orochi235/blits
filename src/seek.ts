@@ -280,6 +280,7 @@ export function seek(transport: Transport, to: number | { readonly frame: number
     const bookers = m.bookers;
     if (bookers !== null) for (const b of bookers) b.sought();
   }
+  transport.sought(t);
   told(transport, { at: t, frame: frame?.seq ?? transport.seq, back: frame !== undefined });
 }
 

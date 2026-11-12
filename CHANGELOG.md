@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Added
 
+- A mix's or transport's `rate` and `ramp` go below 0 under `history` with a tape: the mix
+  replays backward what it showed, each sync a seek back, and stops at the earliest moment history
+  reaches. Turning forward plays the tape on, and the mix is live again past its last recorded call.
 - A mix takes `retargets: true` from a host that probes into its own object and will cue a voice
   `from: 'current'`. Its probes then keep each subject's last two poses, so the first such voice
   starts where the subject was and leaves at its speed, where it started from standing, and from

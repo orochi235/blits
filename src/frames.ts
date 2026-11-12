@@ -16,6 +16,11 @@ export class Frames {
     return this.list.length - this.head;
   }
 
+  /** The oldest frame still held. */
+  get first(): Frame | undefined {
+    return this.list[this.head];
+  }
+
   push(frame: Frame): void {
     this.list.push(frame);
   }

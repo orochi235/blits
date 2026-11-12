@@ -1,3 +1,4 @@
+import { type Clock, elapsedWith, rateWith, rebaseWith, retime, timeWith } from './clock.js';
 import { Frames } from './frames.js';
 import { hostOf, listedAll, readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -115,6 +116,14 @@ export class Transport implements TransportApi {
    * `reading.ahead` hands the motion patches while it reads.
    */
   ahead = new Map<object, Map<unknown, unknown[]>>();
+  /**
+   * While the host runs the mix by a rate below 0, or back toward the live edge from one: mix time
+   * as a function of `wall`, the host ms counted since, less what `rebase` took out. Each sync
+   * seeks there, so the mixes show what they showed when they played through it. Null otherwise.
+   */
+  drive: { clock: Clock; wall: number } | null = null;
+  /** True while a sync seeks by `drive`, so the seek leaves the drive's clock where it is. */
+  driving = false;
   /** True while the tape makes a recorded call again, so it is not recorded twice. */
   replaying = false;
   announced: Announced[] = [];
@@ -241,6 +250,10 @@ export class Transport implements TransportApi {
       throw new RangeError(
         `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
       );
+    if (this.drive !== null) {
+      this.driven(timestamp);
+      return;
+    }
     const before = this.now;
     if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
     this.rebasing = false;
@@ -299,6 +312,83 @@ export class Transport implements TransportApi {
     }
   }
 
+  /**
+   * A sync under `drive`: seeks to where its clock reads, held at the earliest moment history
+   * reaches. Once the clock runs forward at a steady rate with no recorded call left ahead, the
+   * drive ends there and that rate becomes the mix's own, so syncs play on live.
+   */
+  private driven(timestamp: number): void {
+    const drive = this.drive as { clock: Clock; wall: number };
+    if (!this.rebasing && !Number.isNaN(this.last)) drive.wall += timestamp - this.last;
+    this.rebasing = false;
+    this.last = timestamp;
+    const clock = drive.clock;
+    let t = elapsedWith(clock, drive.wall);
+    const first = this.pager === null ? (this.frames.first?.at ?? this.born) : this.born;
+    const floor = Math.max(this.born, this.floor, first);
+    if (t < floor) {
+      t = floor;
+      drive.clock = { anchorNow: drive.wall, anchorElapsed: floor, rate: 0, ramp: null };
+    }
+    if (t !== this.now) {
+      this.driving = true;
+      try {
+        seek(this, t);
+      } finally {
+        this.driving = false;
+      }
+    } else
+      for (const m of this.members) {
+        m.frame = nextFrame();
+        m.lanes?.refill();
+      }
+    const c = drive.clock;
+    const steady = c.ramp === null || drive.wall >= c.anchorNow + c.ramp.over;
+    const rate = rateWith(c, drive.wall);
+    const tape = this.tape as Tape;
+    if (steady && rate >= 0 && tape.timestampAt(tape.undoDepth()) === undefined) {
+      this.drive = null;
+      if (rate !== this.paced) this.ramp(rate, 0);
+    }
+    for (const m of this.members) {
+      const bookers = m.bookers;
+      if (bookers !== null) for (const b of bookers) b.sync();
+    }
+  }
+
+  /** The rate the mix's own clock plays at, apart from any drive. */
+  private get paced(): number {
+    return this.pace === null ? 1 : this.pace.rateAt(this.u);
+  }
+
+  /** Runs the mix by `drive` from now, at `rate`, reached over `over` host ms. */
+  private steer(rate: number, over: number): void {
+    if (this.history === undefined || this.tape === undefined)
+      throw new RangeError(
+        `blits: a mix's rate goes below 0 only under history with a tape, since running back replays what it showed; ${rate} was given`,
+      );
+    if (Number.isNaN(this.now))
+      throw new Error('blits: a mix that has never synced has nothing to run back through');
+    let drive = this.drive;
+    if (drive === null) {
+      const clock = { anchorNow: 0, anchorElapsed: this.now, rate: this.paced, ramp: null };
+      drive = { clock, wall: 0 };
+      this.drive = drive;
+    }
+    retime(drive.clock, drive.wall, rate, over);
+    for (const m of this.members) m.stir();
+    this.woke();
+  }
+
+  /** A seek the host made while a drive runs: the drive runs on from where it landed. */
+  sought(t: number): void {
+    const drive = this.drive;
+    if (drive === null || this.driving) return;
+    const rate = rateWith(drive.clock, drive.wall);
+    drive.clock = { ...drive.clock, anchorNow: drive.wall, anchorElapsed: t };
+    retime(drive.clock, drive.wall, rate, 0);
+  }
+
   /** Begins a frame at mix time `at` and the host time the transport stands at. */
   tick(at: number): void {
     const seq = ++this.seq;
@@ -342,15 +432,24 @@ export class Transport implements TransportApi {
   }
 
   time(timestamp: number): number {
+    const drive = this.drive;
+    if (drive !== null) return elapsedWith(drive.clock, drive.wall + timestamp - this.last);
     return readingAt(this, timestamp - this.offset);
   }
 
   when(time: number): number {
-    return hostOf(this, time);
+    const drive = this.drive;
+    if (drive === null) return hostOf(this, time);
+    const c = { ...drive.clock };
+    rebaseWith(c, drive.wall);
+    // Behind, the clock is read as its mirror, which runs forward wherever it runs back.
+    const at = time < c.anchorElapsed ? timeWith(mirror(c), -time) : timeWith(c, time);
+    return at + this.last - drive.wall;
   }
 
   get rate(): number {
-    return this.pace === null ? 1 : this.pace.rateAt(this.u);
+    const drive = this.drive;
+    return drive === null ? this.paced : rateWith(drive.clock, drive.wall);
   }
 
   set rate(r: number) {
@@ -358,8 +457,13 @@ export class Transport implements TransportApi {
   }
 
   ramp(rate: number, over: number): void {
-    if (!(rate >= 0 && rate < Number.POSITIVE_INFINITY))
-      throw new RangeError(`blits: a mix's rate is a finite number, 0 or more, not ${rate}`);
+    if (!Number.isFinite(rate))
+      throw new RangeError(`blits: a mix's rate is a finite number, not ${rate}`);
+    // A call the tape plays again sets the rate it recorded; a drive is the host's, never taped.
+    if (!this.replaying && (rate < 0 || this.drive !== null)) {
+      this.steer(rate, over);
+      return;
+    }
     if (this.pace === null) {
       // A read ahead keeps every clock too: it moves once across calls a mix met frame by frame.
       this.pace = new Pace(this.history !== undefined || this.projecting);
@@ -375,6 +479,17 @@ export class Transport implements TransportApi {
     for (const m of this.members) m.stir();
     record(this, 'rate', (stage) => stage.transport(this).ramp(rate, over));
   }
+}
+
+/** A clock reading the negative of `c` at every moment. */
+function mirror(c: Clock): Clock {
+  const r = c.ramp;
+  return {
+    anchorNow: c.anchorNow,
+    anchorElapsed: -c.anchorElapsed,
+    rate: -c.rate,
+    ramp: r === null ? null : { from: -r.from, to: -r.to, over: r.over },
+  };
 }
 
 /** Puts a mark on a score: one the transport announced, or a mix on it, `slot`. */

@@ -445,8 +445,8 @@ function hold(t: Transport): Hold {
   }
   puts.push(
     swap(t, 'ramp', (r: number, over: number) => {
-      if (!(r >= 0 && r < Number.POSITIVE_INFINITY))
-        throw new RangeError(`blits: a mix's rate is a finite number, 0 or more, not ${r}`);
+      if (!Number.isFinite(r))
+        throw new RangeError(`blits: a mix's rate is a finite number, not ${r}`);
       later(() => ramp.call(t, r, over));
     }),
     swap(t, 'rebase', () => later(() => rebase.call(t))),

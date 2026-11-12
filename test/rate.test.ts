@@ -62,7 +62,7 @@ function play(
 }
 
 describe('mix rate', () => {
-  it('is 1 until set, and refuses a negative or endless rate', () => {
+  it('is 1 until set, and refuses an endless rate, or a negative one without history', () => {
     const m = mix<Part, Pose>(K);
     expect(m.rate).toBe(1);
     m.rate = 0.5;
