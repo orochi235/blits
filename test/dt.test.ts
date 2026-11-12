@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -135,4 +136,97 @@ it('hands a motion voice signal the same gap on lanes as off them', () => {
   });
   expect(on).toEqual(off);
   expect(off).toEqual([16, 234, 200, 549]);
+});
+
+// A subject's first `dt` counts from its `since`, where its delay runs out or its voice starts, not
+// from when it was first probed: the same start a stateful patch steps from.
+describe.each([false, true])('a first dt, lanes %s', (lanes) => {
+  const flat = () => patch<Part, Pose>(10_000, () => ({ x: 1 }), { writes: ['x'] });
+  /** Each probe's dt the voice's signal was handed, as `subject@time:dt`, probing both every frame. */
+  const run = (spec: object, frames: number[], seek?: [number, number]) => {
+    const m = mix<Part, Pose>(K, { lanes, history: { ms: 5000, tape } });
+    m.sync(0);
+    const seen: string[] = [];
+    const weight = (p: Part, s: { timestamp: number; dt: number }) => {
+      seen.push(`${p.id}@${s.timestamp}:${s.dt}`);
+      return 1;
+    };
+    m.cue({ patch: flat(), weight, ...spec });
+    for (const t of frames) {
+      m.sync(t);
+      if (seek !== undefined && t === seek[0]) m.seek(seek[1]);
+      m.probe(a);
+      m.probe(b);
+    }
+    return seen;
+  };
+  const stagger = (p: Part) => p.id * 40;
+
+  it('of a staggered subject counts from where its delay runs out', () => {
+    expect(run({ stagger }, [10, 26, 42, 58])).toEqual([
+      '0@10:10',
+      '0@26:16',
+      '0@42:16',
+      '1@42:2',
+      '0@58:16',
+      '1@58:16',
+    ]);
+  });
+
+  it('of a voice started ahead counts from its start', () => {
+    expect(run({ start: 40 }, [10, 26, 42, 58])).toEqual([
+      '0@42:2',
+      '1@42:2',
+      '0@58:16',
+      '1@58:16',
+    ]);
+  });
+
+  it('of a staggered subject counts from where its delay runs out after a seek back', () => {
+    expect(run({ stagger }, [10, 26, 42, 58], [26, 20])).toEqual([
+      '0@10:10',
+      '0@20:20',
+      '0@36:16',
+      '0@52:16',
+      '1@52:12',
+    ]);
+  });
+
+  it('of a subject frozen before its delay runs out is 0', () => {
+    expect(run({ stagger, freeze: 'before' }, [10, 26])).toEqual([
+      '0@10:10',
+      '1@10:0',
+      '0@26:16',
+      '1@26:16',
+    ]);
+  });
+
+  it('of a stateful patch matches what its step is handed', () => {
+    const steps: number[] = [];
+    const stepping = patch<Part, Pose>(10_000, () => ({ x: 1 }), {
+      writes: ['x'],
+      state: () => 0,
+      step: (_: unknown, dt: number, p: Part) => {
+        if (p === b) steps.push(dt);
+      },
+    } as never);
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const reads: number[] = [];
+    m.cue({
+      patch: stepping,
+      stagger,
+      weight: (p, s) => {
+        if (p === b) reads.push(s.dt);
+        return 1;
+      },
+    });
+    for (const t of [10, 26, 42, 58]) {
+      m.sync(t);
+      m.probe(a);
+      m.probe(b);
+    }
+    expect(reads).toEqual([2, 16]);
+    expect(steps).toEqual(reads);
+  });
 });

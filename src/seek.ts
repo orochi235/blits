@@ -46,7 +46,7 @@ function restore<I, O>(
     // Nothing a step or `setting.keep` holds: what it keeps does not move with time. One record
     // stands for every subject a voice does not reach, so that one is copied.
     const h = mine && live.reaches ? unread(live) : copyHeld(voice, live);
-    if (h.stepped > t) h.stepped = t;
+    if (h.stepped > t) h.stepped = h.since > t && !voice.freezesBefore ? h.since : t;
     restedBy(h, live, t);
     h.weight = 0;
     h.inputs = inputs;

@@ -143,9 +143,10 @@ function leaving<I, O>(voice: Voice<I, O>, now: number): boolean {
 }
 
 /**
- * Where a new record met at `now` starts stepping: from its `since`, or from `now` for a voice that
- * catches up `fresh`, on the `stepMs` grid. True where that skipped steps, so the state depends on
- * when the subject was first probed.
+ * Where a new record met at `now` starts stepping, and its first `dt` counts from: its `since`,
+ * still ahead or not, or from `now` for one shown frozen before it, and for a voice that catches up
+ * `fresh`, on the `stepMs` grid. True where that skipped steps, so the state depends on when the
+ * subject was first probed.
  */
 export function meet<I, O>(
   mix: Mixer<I, O>,
@@ -155,7 +156,7 @@ export function meet<I, O>(
 ): boolean {
   const since = held.since;
   if (!(since < now)) {
-    held.stepped = now;
+    held.stepped = since > now && !voice.freezesBefore ? since : now;
     return false;
   }
   if (voice.spec.catchUp !== 'fresh' || voice.patch.step === undefined) {
@@ -255,7 +256,9 @@ export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject
   originate(mix, voice, held);
   // Sent back before a start it had passed: its next read starts it afresh.
   if (held.since !== was && (held.ticks > 0 || held.stepped > was)) held.rebuilt = -1;
-  if (held.ticks === 0 && held.stepped > held.since) held.stepped = held.since;
+  // One that has not stepped since its `since` counts from where that moved to.
+  if (held.ticks === 0 && (held.stepped > held.since || held.stepped === was))
+    held.stepped = held.since;
 }
 
 /**

@@ -32,7 +32,7 @@ function both(opts: MixOptions, spec: Partial<VoiceSpec<C, P>> = {}, at = 0) {
   answers.register(FOUR);
   const voice = mixer.cued.find((v) => v.holding === null) as Voice<C, unknown>;
   const reads = new Reads<C>();
-  reads.follow(mixer);
+  reads.follow(mixer, () => answers);
   let list = FOUR;
   const frame = (read = true) => {
     seen.cpu.clear();
@@ -75,6 +75,70 @@ describe.each([true, false])('a gpu read hands its signal the CPU dt, lanes %s',
     agree(frames);
     // Staggered, the subjects first show in different frames, so their dts part.
     expect(new Set(frames[2]?.cpu).size).toBeGreaterThan(1);
+  });
+
+  it("first counting from a subject's since, where its delay runs out", () => {
+    const { m, frame } = both({ lanes }, { stagger: (c: C) => c.x * 20 });
+    const frames = [10, 26, 42, 58, 74].map((t) => {
+      m.sync(t);
+      return frame();
+    });
+    agree(frames);
+    expect(frames.map((f) => f?.cpu)).toEqual([
+      [10, null, null, null],
+      [16, 6, null, null],
+      [16, 16, 2, null],
+      [16, 16, 16, null],
+      [16, 16, 16, 14],
+    ]);
+  });
+
+  it("first counting from a voice's start ahead", () => {
+    const { m, frame } = both({ lanes }, { start: 40 });
+    const frames = [10, 26, 42, 58].map((t) => {
+      m.sync(t);
+      return frame();
+    });
+    agree(frames);
+    expect(frames[2]?.cpu).toEqual([2, 2, 2, 2]);
+  });
+
+  it("first counting from a subject's since after a seek back before it", () => {
+    const { m, frame } = both(
+      { lanes, history: { ms: 5000, tape } },
+      { stagger: (c: C) => c.x * 20 },
+    );
+    const frames = [10, 26, 42].map((t) => {
+      m.sync(t);
+      return frame();
+    });
+    m.seek(15);
+    frames.push(frame());
+    for (const host of [58, 74]) {
+      m.sync(host);
+      frames.push(frame());
+    }
+    agree(frames);
+    expect(frames.at(-1)?.cpu).toEqual([16, 16, 7, null]);
+  });
+
+  it('from its first read for a subject frozen before its since, across a seek back', () => {
+    const { m, frame } = both(
+      { lanes, history: { ms: 5000, tape } },
+      { stagger: (c: C) => c.x * 20, freeze: 'before' },
+    );
+    const frames = [10, 26, 42].map((t) => {
+      m.sync(t);
+      return frame();
+    });
+    m.seek(15);
+    frames.push(frame());
+    for (const host of [58, 74]) {
+      m.sync(host);
+      frames.push(frame());
+    }
+    agree(frames);
+    expect(frames[0]?.cpu).toEqual([10, 0, 0, 0]);
   });
 
   it('across a frame where the voice was not read', () => {
