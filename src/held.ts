@@ -122,17 +122,24 @@ export function held<I, O>(
   if (voice.sighted !== null && this.share?.sighted(voice, slot))
     this.share.inherit(voice, held, slot);
   else voice.seen++;
-  if (delay > voice.latest) {
+  // A voice already fading out at its end keeps that end, so a seek back replays it unread.
+  if (delay > voice.latest && !leaving(voice, now)) {
     voice.latest = delay;
     // A later end can take a frozen voice live again.
     if (voice.state === 'frozen') schedule(this, voice);
   }
-  if (delay < voice.soonest) {
+  if (delay < voice.soonest && !leaving(voice, now)) {
     voice.soonest = delay;
     // An earlier start moves where a voice running back ends.
     schedule(this, voice);
   }
   return held;
+}
+
+/** Whether the voice is fading out because its passes ran out by `now`, not by a handle's fade. */
+function leaving<I, O>(voice: Voice<I, O>, now: number): boolean {
+  if (voice.state !== 'fading' || voice.out?.stays === true) return false;
+  return voice.endsAt() <= now;
 }
 
 /**
