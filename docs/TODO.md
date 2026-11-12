@@ -155,7 +155,10 @@ built and what is deliberately not offered.
   label, `.clearable()` takes only a fixed placeholder, `DiagramView` never reports its first
   layout, no file picker, no editable code pane, no `aria-expanded` on `Button`, the `Transport`
   loop switch drawn as a `⟲` character.
-- **[agent] Intermittent "Maximum update depth exceeded" from `Explainer`'s tick** (seen
-  2026-11-11 on `/mix/?panel`, headless). Logged a few times at rate 1 while a script scanned the
-  whole DOM every frame, after the page had been run backward; never on a fresh page and not
-  reproduced on demand. Next step: catch it with a stack on a page under load.
+- **[agent] Freeing a debugger's hold throws when the explainer was playing backward** (found
+  2026-11-12 on `/mix/?panel`, headless, on the code before and after the update-depth fix). Pause
+  the explainer while its boomerang runs back, `hold()` the main mix from its `Watched` entry,
+  `step(30)` (which wakes the explainer), `seek(now - 300)`, then `free()`: the free throws
+  `frame N is not one this mix's history holds` from `coverFrame` in `src/unpage.ts`. Played
+  forward instead, the same steps free cleanly. Likely the woken player's `back()` seeks the held
+  mix, and the hold's free then restores a frame that seek let go.

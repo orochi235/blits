@@ -1,7 +1,7 @@
 import { ControlPanel, interstellarTheme, resolveConfigSchema } from '@weasel-js/labkit';
 import { ThemeProvider } from '@weasel-js/theme/react';
 import '@weasel-js/labkit/styles.css';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocused, useReducedMotion, useVisible, useWidth } from './hooks';
 import { type Ink, readInk } from './ink';
 import { Ledger } from './Ledger';
@@ -182,6 +182,24 @@ function ExplainerBody<I, O, C>({
   // Leaving the window, it settles to rest over the frame it stopped on, and rises from it.
   const shown = useSettle(`${name}: settle`, playing && visible && !focused);
 
+  // Set by whatever chose the time, never from an effect: a per-frame setState in an effect chains
+  // each commit into the next, which React logs under load as "Maximum update depth exceeded".
+  const show = useCallback(
+    (to: number) => {
+      const f = player.at(to);
+      // The mix was elsewhere, held or moved by a debugger, and the player followed it. The time into
+      // the frame stays, or a mix followed every frame (a rate a debugger set) syncs only on some.
+      const on = Math.floor(to / FRAME + 1e-6) * FRAME;
+      const next =
+        Math.abs(f.t - on) > 1e-6 ? f.t + Math.min(Math.max(0, to - on), FRAME * 0.99) : to;
+      at.current = next;
+      setT(next);
+      setFrame(f);
+    },
+    [player],
+  );
+  useEffect(() => show(at.current), [show]);
+
   useEffect(() => {
     if (!playing || !visible || !focused) return;
     let last = performance.now();
@@ -191,8 +209,7 @@ function ExplainerBody<I, O, C>({
       if (repeat !== 'boomerang') way.current = 1;
       let next = at.current + dt * way.current;
       if (next >= duration && repeat === 'once') {
-        at.current = duration;
-        setT(duration);
+        show(duration);
         setPlaying(false);
         return;
       }
@@ -204,12 +221,11 @@ function ExplainerBody<I, O, C>({
         way.current = 1;
         next = Math.min(duration, -next);
       }
-      at.current = next;
-      setT(next);
+      show(next);
       id = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(id);
-  }, [playing, visible, focused, duration, repeat]);
+  }, [playing, visible, focused, duration, repeat, show]);
 
   useEffect(() => player.onWoken(() => setPlaying(true)), [player]);
 
@@ -218,21 +234,20 @@ function ExplainerBody<I, O, C>({
     if (playing || !visible) return;
     let id = requestAnimationFrame(function look() {
       const f = player.moved();
-      if (f) setT(f.t);
+      if (f) {
+        at.current = f.t;
+        setT(f.t);
+        setFrame(f);
+      }
       id = requestAnimationFrame(look);
     });
     return () => cancelAnimationFrame(id);
   }, [player, playing, visible]);
 
   useEffect(() => {
-    const f = player.at(t);
-    // The mix was elsewhere, held or moved by a debugger, and the player followed it. The time into
-    // the frame stays, or a mix followed every frame (a rate a debugger set) syncs only on some.
-    const on = Math.floor(t / FRAME + 1e-6) * FRAME;
-    if (Math.abs(f.t - on) > 1e-6) setT(f.t + Math.min(Math.max(0, t - on), FRAME * 0.99));
-    setFrame(f);
+    const f = frame;
     const el = canvas.current;
-    if (!el || size.w === 0) return;
+    if (!f || !el || size.w === 0) return;
     const ratio = window.devicePixelRatio || 1;
     el.width = Math.round(size.w * ratio);
     el.height = Math.round(size.h * ratio);
@@ -249,13 +264,13 @@ function ExplainerBody<I, O, C>({
       config,
       other && settled(built.kit, other, shown),
     );
-  }, [player, second, t, size, draw, config, built, shown]);
+  }, [frame, second, size, draw, config, built, shown]);
 
   // Paused by the window losing focus reads as paused, though it plays again on its own when focus returns.
   const running = playing && focused;
   const playPause = () => {
     // Played once to the end, Play starts it over.
-    if (!running && repeat === 'once' && at.current >= duration) setT(0);
+    if (!running && repeat === 'once' && at.current >= duration) show(0);
     setPlaying(!running);
   };
   const latest = useRef(playPause);
@@ -299,7 +314,7 @@ function ExplainerBody<I, O, C>({
         tracks={tracks}
         seek={(to) => {
           setPlaying(false);
-          setT(to);
+          show(to(at.current));
         }}
       />
       <div className="explainer-transport">
