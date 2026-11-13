@@ -1,0 +1,101 @@
+# msb-uai: PROF=prof/t node bench/start.mjs 10000 9 tweens; PROF=prof/f ... fns; TOP=8 node bench/lines.mjs prof/t requalify regroup join newRow fresh grow take number relink linkAll held linkable (shares are of all samples, the profiler's own stop included)
+requalify  qualify.js
+  1.0%     64  const whys = present.map((v) => whyOff(lanes, v));
+  1.0%     72  let { channels, voices } = qualify(numeric, candidates());
+  0.9%    110  if (!voices.has(v.id))
+  0.6%     77  present.forEach((v, i) => {
+  0.6%    109  for (const v of present) {
+  0.5%    166  const members = present.filter((v) => voices.has(v.id) && crowdable(v));
+  0.4%    101  present.forEach((v, i) => {
+  0.3%     52  for (const v of host.voices) {
+regroup  rows.js
+  1.2%     59  const keep = new Set(members.map((v) => v.id));
+  0.5%     73  for (const v of members) {
+  0.1%     75  join(lanes, v, from?.crowd, from?.row, old);
+  0.0%     74  const from = was.get(v.id);
+join  rows.js
+  1.7%    110  lanes.seats.set(v.id, seat);
+  0.5%     88  const chans = v.slots.map((s) => lanes.bySlot[s]);
+  0.4%     89  let c = lanes.crowds.find((o) => same(o.chans, chans));
+  0.4%    106  newRow(lanes, c, p, v);
+  0.3%    109  const seat = new Seat(lanes, c, p, from === undefined ? lanes.probes : 0);
+  0.2%     87  export function join(lanes, v, from, at, old) {
+  0.2%    108  c.hot[p * c.stride + 6 /* Hot.EPOCH */] = open(lanes, v);
+  0.1%    104  copyRow(from, at, c, p);
+newRow  rows.js
+  0.4%    232  c.data.fill(0, o, o + 8 /* Row.STRIDE */);
+  0.4%    218  c.hot.fill(0, h, h + c.stride);
+  0.3%    238  c.motions[p] = run;
+  0.2%    231  const o = p * 8 /* Row.STRIDE */;
+  0.2%    237  c.voices[p] = v;
+  0.2%    230  c.list[p] = -1;
+  0.1%    251  run.watcher = lanes;
+  0.0%    216  const run = motionOf(v.patch);
+fresh  motions.js
+  0.1%    138  return { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to };
+  0.1%    132  if (this.holdsNumber !== undefined && scalar !== this.holdsNumber)
+  0.0%    124  const x = this.shape.from(subject);
+  0.0%    131  const scalar = this.shape.scalar(subject);
+  0.0%    136  this.grow(1);
+  0.0%    125  const v = this.shape.velocity(subject, x);
+  0.0%    135  this.size(n);
+grow  lanes.js
+  0.0%    465  if (size <= this.cap)
+  0.0%    469  this.owed.grow(cap);
+grow  owed.js
+grow  motions.js
+  4.3%    418  const runs = new Float64Array(HEAD + cap * this.stride);
+  0.7%    419  runs.set(this.cap === 0 ? this.shape.law : this.runs);
+  0.0%    417  const cap = Math.max(size, this.cap * 2);
+  0.0%    421  this.cap = cap;
+grow  placed.js
+  0.0%     14  one.set(this.one);
+take  numbers.js
+  2.9%     44  const ref = new WeakRef(subject);
+  2.4%     61  this.registry.register(subject, slot, ref);
+  0.1%     45  this.refs[slot] = ref;
+  0.1%     40  take(subject) {
+  0.1%     52  this.registry = new FinalizationRegistry((slot) => this.release(slot));
+  0.0%     64  this.refs[slot] = subject === undefined ? unit : subject;
+  0.0%     41  const slot = this.free?.pop() ?? this.next++;
+  0.0%     48  this.lone = ref;
+take  motions.js
+  0.1%    170  if (this.numbers.size > 1)
+  0.0%    172  this.grow(s + 1);
+number  lanes.js
+  0.1%    208  this.grow(slot + 1);
+  0.1%    206  const slot = this.numbers.take(subject);
+  0.1%    213  this.per[slot * 6 /* Per.SLOT */ + 4 /* Per.GENERAL_PROBE */] = 0;
+  0.0%    209  this.per[slot * 6 /* Per.SLOT */ + 0 /* Per.FILLED */] = this.fills;
+  0.0%    205  number(subject) {
+  0.0%    215  if (this.filling)
+  0.0%    211  this.per[slot * 6 /* Per.SLOT */ + 2 /* Per.IDLE */] = 0;
+  0.0%    214  this.per[slot * 6 /* Per.SLOT */ + 5 /* Per.LANE_FILL */] = 0;
+relink  chain.js
+  0.1%     30  first = linkAll(this, subject, slot, was ?? null);
+  0.1%     20  const slot = was !== undefined ? was.slot : lanes !== null ? lanes.number(subject) : -1;
+  0.0%     33  if (was !== undefined && was !== head) {
+  0.0%     43  if (was !== head) {
+  0.0%     32  head.version = this.version;
+  0.0%     18  export function relink(subject, was) {
+linkAll  chain.js
+  0.1%     75  for (let i = 0; i <= general.length; i++) {
+  0.1%     89  const held = mix.linkable(next, subject, slot, guess);
+  0.1%     68  function linkAll(mix, subject, slot, was) {
+  0.0%     79  const mine = named !== undefined && j < named.length ? named[j] : null;
+  0.0%     91  held.voice = next;
+  0.0%     72  const named = mix.naming === 0 ? undefined : mix.named.get(subject);
+  0.0%     90  if (held !== null) {
+  0.0%     76  const voice = i < general.length ? general[i] : null;
+held  held.js
+  0.5%     47  if (unreached(voice, slot))
+  0.1%     73  originate(this, voice, held);
+  0.0%     49  let held = (guess === null ? voice.subjects.get(subject) : voice.subjects.find(subject, guess));
+  0.0%     79  voice.subjects.set(subject, held);
+  0.0%     98  if (delay < voice.soonest && !leaving(voice, now)) {
+  0.0%     74  const fresh = meet(this, voice, held, now);
+  0.0%     52  const now = this.now;
+  0.0%     72  held.delay = delay;
+linkable  chain.js
+  0.1%    117  return held.reaches ? held : null;
+  0.0%    116  const held = this.held(voice, subject, slot, guess);

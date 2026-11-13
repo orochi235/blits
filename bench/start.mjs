@@ -1,6 +1,10 @@
 // What starting many voices at once costs: cueing N voices of one subject each, the first frame
 // that meets them (sync and a read of every subject), and the second, in a fresh mix each round.
 //   node bench/start.mjs [N] [rounds] [forms...]   forms: tweens springs fns keyses named
+// PROF=<dir> CPU-profiles the first frame alone, one .cpuprofile per form and round. ALLOC=1
+// samples what the first frame allocates, garbage included, and prints it by function.
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { Session } from 'node:inspector/promises';
 import { keys, kit, max, mix, mul, patch, spring, sum, tween, vec } from '../dist/index.js';
 
 const N = Number(process.argv[2] ?? 10000);
@@ -37,6 +41,26 @@ const make = {
     ),
 };
 
+const profDir = process.env.PROF;
+const alloc = Boolean(process.env.ALLOC);
+const session = profDir === undefined && !alloc ? null : new Session();
+session?.connect();
+if (profDir !== undefined) {
+  mkdirSync(profDir, { recursive: true });
+  await session.post('Profiler.enable');
+  await session.post('Profiler.setSamplingInterval', { interval: 50 });
+}
+if (alloc) await session.post('HeapProfiler.enable');
+const allocated = new Map();
+// A builtin's allocation is told by its caller too.
+const tally = (node, caller = '') => {
+  const f = node.callFrame;
+  const where = f.url === '' ? ` < ${caller}` : `  ${f.url.split('/').pop()}:${f.lineNumber + 1}`;
+  const at = `${f.functionName || '(anon)'}${where}`;
+  if (node.selfSize > 0) allocated.set(at, (allocated.get(at) ?? 0) + node.selfSize);
+  for (const c of node.children) tally(c, f.url === '' ? caller : at);
+};
+
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 const ms = (x) => x.toFixed(1).padStart(7);
 for (const [i, form] of forms.entries()) {
@@ -49,10 +73,22 @@ for (const [i, form] of forms.entries()) {
     const out = {};
     const t0 = performance.now();
     for (const s of subjects) m.cue({ patch: make[form](s), subjects: [s], loop: true });
+    if (profDir !== undefined) await session.post('Profiler.start');
+    if (alloc)
+      await session.post('HeapProfiler.startSampling', {
+        samplingInterval: 512,
+        includeObjectsCollectedByMajorGC: true,
+        includeObjectsCollectedByMinorGC: true,
+      });
     const t1 = performance.now();
     m.sync(16);
     for (const s of subjects) m.probe(s, out);
     const t2 = performance.now();
+    if (profDir !== undefined) {
+      const { profile } = await session.post('Profiler.stop');
+      writeFileSync(`${profDir}/${form}-${r}.cpuprofile`, JSON.stringify(profile));
+    }
+    if (alloc) tally((await session.post('HeapProfiler.stopSampling')).profile.head);
     m.sync(32);
     for (const s of subjects) m.probe(s, out);
     const t3 = performance.now();
@@ -64,4 +100,10 @@ for (const [i, form] of forms.entries()) {
   console.log(
     `${i + 1}/${forms.length}  ${form.padEnd(8)} N=${N}  cue ${ms(median(cue))} ms  first frame ${ms(median(first))} ms  second ${ms(median(second))} ms  (medians of ${rounds})`,
   );
+  if (!alloc) continue;
+  const total = [...allocated.values()].reduce((a, b) => a + b, 0);
+  console.log(`  first frame allocates ${(total / rounds / 1024).toFixed(0)} kB a round`);
+  for (const [at, bytes] of [...allocated].sort((a, b) => b[1] - a[1]).slice(0, 25))
+    console.log(`  ${(bytes / rounds / 1024).toFixed(0).padStart(7)} kB  ${at}`);
+  allocated.clear();
 }

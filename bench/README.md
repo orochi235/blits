@@ -16,6 +16,10 @@ the machine being used.
   `OUT=blank` to probe into a pose of the mix's own (`mix.pose()`) rather than a host's `{}`.
 - `node bench/medians.mjs <output>` reduces a run to medians; `node bench/allocs.mjs <row>` lists
   the functions that allocate.
+- `bench/start.mjs` times cueing N one-subject voices and the first two frames; `LINEAGE_BENCH=start.mjs
+  bench/lineage.sh` compares builds on it, and `medians.mjs` reads it as `<form>-first` rows.
+  `PROF=<dir>` profiles the first frame alone, read with `bench/profsum.mjs` (`INCL=1` for
+  inclusive time), `bench/proftree.mjs` and `bench/lines.mjs`; `ALLOC=1` samples what it allocates.
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
   releases included, and `bench/lineage.mjs` tables it.
 
@@ -103,6 +107,7 @@ rows where one was timed.
 | On `swap`: linking a voice stepped twice once; handing `foldNow` its met lanes; skipping the chain walk for a never-linked voice; presizing a lane's `records`/`deltas` (2026-10-26) | no change (`bench/runs/2026-10-26-{dedupe-steps,met-lanes,unchained-walk,presize-records}.txt`) |
 | On roles: clearing `taken` once before inline members; priming a signalled setting once a lane call; clearing once before a member-at-a-time gather (2026-10-26) | short of significance (`bench/runs/2026-10-26-role-*.txt`, `-locus-*.txt`) |
 | Carving motion buffers from a shared slab; keeping a named subject's record out of the WeakMap (2026-10-25) | no change to starting tweens |
+| Finding a voice's crowd without mapping its channels, building `regroup`'s keep set and seat copy only over existing crowds, walking `qualify`'s lists by index (2026-11-12) | `tweens-first` 28.7 against 28.3 ms, U 26.5 at 8 rounds (`runs/2026-11-12-crowd-join-start-ab.txt`) |
 | One `Seat` per crowd voice (`eed156c`); skipping the due-queue push of a voice retiring at once (2026-10-29) | no change to a stop |
 | Pooling everything per voice (2026-10-05); cutting churned-voice garbage from 21.5 to 11.7 KB (2026-10-24) | no row moved; weasel's lever is blits' per-frame work, not bytes per voice |
 | A motion patch's `runs` as a plain array | `tweens^` 6% slower; copying into a Float64Array first made `weasel^` 15% slower |

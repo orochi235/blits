@@ -3,8 +3,9 @@
 // the geometric mean of the ratios. `U` is the Mann-Whitney rank statistic over the two sides' runs,
 // the smaller of the two; at 7 rounds a side it is under 9 for p < 0.05, at 9 under 18.
 //   node bench/medians.mjs <file holding ab.sh's output>
-// It reads bench/restart.mjs's output too, run by ab.sh with AB_BENCH, and bench/lineage.sh's, the
-// first two revisions unless REVS says which.
+// It reads bench/restart.mjs's output too, run by ab.sh with AB_BENCH, bench/start.mjs's (each form
+// as rows `<form>-cue`, `<form>-first` and `<form>-second`), and bench/lineage.sh's, the first two
+// revisions unless REVS says which.
 // LEDGER="<what the change does>" also appends each row to bench/ledger.tsv, the record of what
 // each change measured; LEDGER_NODE names the node, LEDGER_REV the commit standing for `.`, and
 // LEDGER_FRAMES the FRAMES the run used (300 unset). Keep the output itself in bench/runs/ first,
@@ -21,6 +22,11 @@ const restartRows = [
   ['after', 3],
   ['after2', 4],
   ['steady', 5],
+];
+const startRows = [
+  ['cue', 3],
+  ['first', 4],
+  ['second', 5],
 ];
 const revs = [];
 const rows = new Map();
@@ -44,6 +50,21 @@ for (const line of readFileSync(file, 'utf8').split('\n')) {
       const got = at.get(rev) ?? { ms: [], kb: [] };
       at.set(rev, got);
       got.ms.push(Number(restart[i]));
+    }
+    continue;
+  }
+  const start =
+    /^\s*\d+\/\d+\s+(\S+)\s+N=(\d+)\s+cue\s+([\d.]+) ms\s+first frame\s+([\d.]+) ms\s+second\s+([\d.]+) ms/.exec(
+      line,
+    );
+  if (start !== null) {
+    for (const [name, i] of startRows) {
+      const key = `${start[1]}-${name} N=${start[2]} V=1`;
+      const at = rows.get(key) ?? new Map();
+      rows.set(key, at);
+      const got = at.get(rev) ?? { ms: [], kb: [] };
+      at.set(rev, got);
+      got.ms.push(Number(start[i]));
     }
     continue;
   }

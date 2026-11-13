@@ -1,7 +1,7 @@
 // Prints the lines with the most self time inside the named functions of a V8 CPU profile.
 //   d=$(mktemp -d); node --cpu-prof --cpu-prof-dir=$d bench/frame.mjs blend; node bench/lines.mjs $d gatherRole one; rm -rf $d
 // Lines are of the compiled `dist/` file. TOP (default 12) is how many lines to print a function.
-// Name a function `fn@file.js` to keep only the one in that file.
+// Name a function `fn@file.js` to keep only the one in that file. Every profile in the directory is summed.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -9,18 +9,15 @@ const [dir, ...names] = process.argv.slice(2);
 if (dir === undefined || names.length === 0)
   throw new Error('usage: node bench/lines.mjs <profile dir> <function>...');
 const top = Number(process.env.TOP ?? 12);
-const file = readdirSync(dir)
-  .filter((f) => f.endsWith('.cpuprofile'))
-  .sort()
-  .at(-1);
-if (file === undefined) throw new Error(`no .cpuprofile in ${dir}`);
-const profile = JSON.parse(readFileSync(join(dir, file), 'utf8'));
-const total = profile.samples.length;
+const files = readdirSync(dir).filter((f) => f.endsWith('.cpuprofile'));
+if (files.length === 0) throw new Error(`no .cpuprofile in ${dir}`);
+const profiles = files.map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')));
+const total = profiles.reduce((n, p) => n + p.samples.length, 0);
 // `fn@file.js` keeps only the function of that name in that file; each file a name matches prints apart.
 for (const arg of names) {
   const [name, only] = arg.split('@');
   const byUrl = new Map();
-  for (const node of profile.nodes) {
+  for (const node of profiles.flatMap((p) => p.nodes)) {
     const { functionName, url } = node.callFrame;
     if (functionName !== name || (only !== undefined && !url.endsWith(`/${only}`))) continue;
     const lines = byUrl.get(url) ?? new Map();
