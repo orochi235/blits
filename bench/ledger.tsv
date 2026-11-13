@@ -578,3 +578,9 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-11-13	studio	head	dirty	3	300	churn N=10000 V=1	1.098	1.112	1.013	3.0	52.1	58.0	qualify records why a voice is off its lane, for describe	bench/runs/2026-11-12-describe-lane-ab.txt
 2026-11-13	studio	head	dirty	3	300	keys N=10000 V=3	1.683	1.676	0.996	4.0	181.9	174.9	qualify records why a voice is off its lane, for describe	bench/runs/2026-11-12-describe-lane-ab.txt
 2026-11-13	studio	head	dirty	3	300	fn N=1000 V=3	0.412	0.408	0.990	4.0	279.8	279.2	qualify records why a voice is off its lane, for describe	bench/runs/2026-11-12-describe-lane-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	named N=100 V=1	0.020	0.021	1.050	11.5	37.4	38.6	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	named N=1000 V=1	0.114	0.116	1.018	13.0	112.4	110.9	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	named N=10000 V=1	1.959	1.734	0.885	15.0	1019.4	1019.9	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	turnover^ N=10000 V=1	0.249	0.250	1.004	15.0	179.8	188.0	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	churn^ N=10000 V=1	0.231	0.227	0.983	12.5	62.2	60.6	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-12	teitou	bc84242b	.	2	300	gpu regions N=1000000 max sync	5.790	0.010	0.002	-	-	-	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked.txt

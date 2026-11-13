@@ -1,0 +1,48 @@
+# teitou (Apple M5 Max), 2026-11-12, headless Chromium, load 3.9-4.6. Base bc84242b (main), b the tree.
+#   onto do --kind bench --gui --solo --node teitou -- npm ci && \
+#     MIX=regions ROWS=gpu:1000000,gpu:100000 FRAMES=300 WARM=30 bench/gpu-ab.sh bc84242b bench/gpu-reach.mjs bench/runs/2026-11-12-filed-asked/regions
+#     MIX=owned   (same rows and frames)                                                        .../owned
+#   Raw records: 2026-11-12-filed-asked/{regions,owned}-{a1,b1,b2,a2}.jsonl
+#
+# What changed: `Filed` (src/filed.ts) no longer lists a group of more than 4,096 subjects under its
+# subjects a share each sync once 8 such groups are found by `has` alone. Every such group is listed
+# under a subject only when `get` first asks for it, asking only the long groups made since it last
+# asked for that subject. A dead long group `get` never listed is forgotten at once; one it listed
+# somewhere is swept off as before. A dead long group is never joined again.
+#
+# MIX=regions (new in bench/gpu-reach.mjs): 16 slices of the subjects, each named by a looping keys
+# voice, so 16 groups of long lists: at 1M, base lists 8 groups of 62,500 under their subjects, 4,096
+# a sync, from the first sync to about frame 122.
+#
+# Each side's sync, ms (frames 31-330, the timed ones):
+#               n        median   max     at frame  syncs over 1 ms  sync in all
+#   regions-a1  1000000  0.005    5.060   84        2                22.0
+#   regions-b1  1000000  0.000    0.010   63        0                 0.5
+#   regions-b2  1000000  0.000    0.010   128       0                 0.5
+#   regions-a2  1000000  0.005    6.520   84        2                26.1
+#   regions-a1   100000  0.000    0.010   84        0                 0.5   (its 50,000 listed in warm-up)
+#   regions-b1   100000  0.000    0.015   129       0                 0.6
+#   regions-b2   100000  0.000    0.010   64        0                 0.5
+#   regions-a2   100000  0.000    0.010   131       0                 0.4
+#   owned, every side and row: max 0.470-0.505 at frame 75, sync in all 2.3-2.6 (one group: unchanged)
+# Frame 84's 5-6.5 ms is the WeakMap doubling past 262,144 entries; at 1M listed it was 22-40 ms
+# (2026-11-11-gone-sighted.txt, `listed`). The gpu engine never calls `get` per subject here, so
+# nothing is listed and no sync spends time on the index.
+#
+# Harness lines (whole frame, ms):
+# == a1   regions 1000000  median 0.450  p95 0.700  max 6.160 at frame  84
+#         regions  100000  median 0.335  p95 0.430  max 0.625 at frame  31
+# == b1   regions 1000000  median 0.420  p95 0.550  max 0.670 at frame  31
+#         regions  100000  median 0.205  p95 0.345  max 0.550 at frame  64
+# == b2   regions 1000000  median 0.435  p95 0.530  max 0.725 at frame 109
+#         regions  100000  median 0.310  p95 0.430  max 0.710 at frame 178
+# == a2   regions 1000000  median 0.465  p95 0.985  max 7.355 at frame  84
+#         regions  100000  median 0.235  p95 0.430  max 1.105 at frame 169
+# == a1   owned   1000000  median 0.395  p95 0.520  max 5.230 at frame  75
+#         owned    100000  median 0.265  p95 0.400  max 1.400 at frame  75
+# == b1   owned   1000000  median 0.380  p95 0.505  max 5.185 at frame  75
+#         owned    100000  median 0.295  p95 0.415  max 1.440 at frame  75
+# == b2   owned   1000000  median 0.390  p95 0.590  max 4.675 at frame  75
+#         owned    100000  median 0.305  p95 0.420  max 1.345 at frame  75
+# == a2   owned   1000000  median 0.545  p95 0.765  max 5.415 at frame  75
+#         owned    100000  median 0.235  p95 0.340  max 1.395 at frame  75

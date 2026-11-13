@@ -22,6 +22,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A mix whose voices name more than 8 different lists of over 4,096 subjects no longer stalls a
+  sync while the named index grows: such a list is filed under a subject only once the mix asks
+  for that subject's voices, which the gpu engine never does. At 1M subjects in 16 slices, the
+  worst sync on teitou fell from 5–6.5 ms to 0.01 ms.
 - A hold's `free` no longer throws for a host's seek to a frame the hold's own `seek` let go
   meanwhile: it seeks that frame's mix time instead. A host seek naming a frame history does not
   hold is refused when the host makes it, not at `free`.

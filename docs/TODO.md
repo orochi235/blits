@@ -98,8 +98,7 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
 ## gpu engine
 
 - **[agent] A frame where voices naming 1M subjects start costs 3–5 ms**, mostly `levelsOf`
-  hashing each delay and uploading the codes; one where a voice ends 0.3–4.7 ms. Listing past 8
-  groups of 4,096+ subjects still costs a 22–40 ms sync when the WeakMap doubles.
+  hashing each delay and uploading the codes; one where a voice ends 0.3–4.7 ms.
 - **[agent] A channel a new stock kind or a staggered shader patch writes is null while its
   kernel compiles.** A compiled kernel stands in for everything else (`src/gpu/stand-in.ts`), and a
   shader patch playing at one time for every subject folds from its `at`; a staggered one would need
