@@ -89,7 +89,12 @@ export function contribution<I, O>(
   const raw = voice.rawAt(now, held.delay);
   const early = voice.before(raw, now);
   const elapsed = voice.shownTime(raw, early);
-  if (Number.isNaN(elapsed)) return null;
+  if (Number.isNaN(elapsed)) {
+    // Kept as made, so a seek back into its wait puts it back rather than meeting it again later.
+    if (held.snaps === undefined && this.opts.history !== undefined)
+      remember(this, voice, subject, held);
+    return null;
+  }
   // A frozen subject's clock stands still at the edge it freezes at: -1 before, 1 after, 0 playing.
   const still = early ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
 

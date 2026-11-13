@@ -47,6 +47,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   asked, whether the replay meets it afresh or after a `drop` it plays again: under history each
   voice keeps its answers, in the order given, for as long as history reaches the moment each was
   given. A subject brought back by a motion patch is asked once, where it was asked twice.
+- A stateful voice with `catchUp: 'fresh'` replays where the live mix stepped after a seek back into
+  a subject's wait out its `stagger` or `start`. History kept no copy of a record until it first
+  stepped, so the replay met the subject again past its start and skipped to the step grid, one
+  step behind the live run; a waiting record is now copied when first probed.
 
 ## 1.3.0
 
