@@ -85,9 +85,12 @@ export class GpuSide<I> {
       if (s.back) this.answers.back();
     });
     const reading = this.reads.follow(mix, () => this.answers);
+    const delayed = (voice: Voice<I, unknown>) => this.timings.stage(device, voice);
+    mix.delayed = delayed;
     this.unfollow = () => {
       answering();
       reading();
+      if (mix.delayed === delayed) mix.delayed = null;
     };
     void device.lost.then(() => {
       this.readback.close(false);
@@ -106,7 +109,7 @@ export class GpuSide<I> {
     this.kernels.clear();
   }
 
-  /** Stops folding, and lets go of every mirror's watch and the mix's `reorigined`. */
+  /** Stops folding, and lets go of every mirror's watch and the mix's hooks. */
   private release(): void {
     this.off = true;
     this.outputs.clear();

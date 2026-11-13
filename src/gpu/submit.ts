@@ -53,13 +53,13 @@ export function submit<I>(s: Submission<I>, outputs: Map<string, GpuChannel>): G
   if (s.stale || v !== had) {
     if (regions.length > 0) dev.queue.writeBuffer(v, 0, data.subarray(0, regions.length));
   } else writeRanges(dev, v, 0, data, s.placed.changed);
+  const enc = dev.createCommandEncoder();
   s.mirrors.upload(dev, persub, persub !== hadSub);
-  s.timings.upload(dev, persub, persub !== hadSub);
+  s.timings.upload(dev, enc, persub, persub !== hadSub);
   s.reads.upload(dev, persub);
   s.hosted.upload(dev, persub);
   dev.queue.writeBuffer(f, 0, new Uint32Array([table.count, n, 0, 0]));
   const group = buf.bind(s.pipeline, layoutOf(dev));
-  const enc = dev.createCommandEncoder();
   const pass = enc.beginComputePass();
   pass.setPipeline(s.pipeline);
   pass.setBindGroup(0, group);

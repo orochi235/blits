@@ -6,7 +6,7 @@ import { type Laid, lay, moved } from './lay.js';
 import { type Levels, levelsOf } from './levels.js';
 import { Origins } from './origins.js';
 import type { Entry } from './region.js';
-import type { GpuBuffer, GpuDevice } from './webgpu.js';
+import { type GpuBuffer, type GpuCommandEncoder, type GpuDevice, Usage } from './webgpu.js';
 import { NONE } from './wgsl/timing.js';
 
 /** Where a voice's timing block sits in `persub`, in f32s; NONE for a part it has none of. */
@@ -39,6 +39,12 @@ export function sizeOf(answer: Answer, fades: boolean): number {
 const codeWords = (levels: Levels | null): number =>
   levels?.codes == null ? 0 : levels.codes.length >>> 1;
 
+/**
+ * Bytes of level codes past which a block's codes go up once into a buffer of their own, copied
+ * into `persub` on the GPU wherever the block is laid.
+ */
+const OWN = 1 << 16;
+
 enum Dirty {
   NONE = 0,
   SHOWN = 1,
@@ -54,7 +60,7 @@ class Block {
   readonly data: Float32Array;
   /** Where the origins start in `data`; -1 for none. */
   private readonly at: number;
-  private readonly levels: Levels | null;
+  readonly levels: Levels | null;
   /** Per level, 1 where its subjects' records would be on the voice's `early` list. */
   private readonly early: Uint8Array | null;
   /** How many levels' records would be on `early`. */
@@ -75,7 +81,7 @@ class Block {
 
   constructor(
     mix: Mixer<unknown, unknown>,
-    private readonly voice: Voice<unknown, unknown>,
+    readonly voice: Voice<unknown, unknown>,
     readonly answer: Answer,
     now: number,
   ) {
@@ -182,13 +188,24 @@ class Block {
     return [this.at, this.data.length];
   }
 
-  /** Writes all of the block at `offset` in f32s: `data`, then the codes, which never change. */
-  write(device: GpuDevice, buffer: GpuBuffer, offset: number): void {
+  /**
+   * Writes all of the block at `offset` in f32s: `data`, then the codes, which never change,
+   * copied from `sent` where they have a buffer of their own.
+   */
+  write(
+    device: GpuDevice,
+    enc: GpuCommandEncoder,
+    buffer: GpuBuffer,
+    offset: number,
+    sent: GpuBuffer | null,
+  ): void {
     const { data } = this;
     if (data.length > 0) device.queue.writeBuffer(buffer, offset * 4, data);
     const codes = this.levels?.codes;
-    if (codes != null && codes.length > 0)
-      device.queue.writeBuffer(buffer, (offset + data.length) * 4, codes);
+    if (codes == null || codes.length === 0) return;
+    const at = (offset + data.length) * 4;
+    if (sent !== null) enc.copyBufferToBuffer(sent, 0, buffer, at, codes.byteLength);
+    else device.queue.writeBuffer(buffer, at, codes);
   }
 
   private lay(now: number): void {
@@ -219,6 +236,11 @@ export class Timings {
   /** The mix whose clock changes this hears, and the `reorigined` hook it set there. */
   private hooked: Mixer<unknown, unknown> | null = null;
   private hook: Mixer<unknown, unknown>['reorigined'] = null;
+  /**
+   * Level codes past `OWN` bytes in a buffer of their own, each kept until its voice is done or
+   * its block lays other levels.
+   */
+  private readonly sent = new Map<Levels, { buffer: GpuBuffer; voice: Voice<unknown, unknown> }>();
   /** f32s the blocks take. */
   length = 0;
 
@@ -230,13 +252,47 @@ export class Timings {
     this.length = 0;
   }
 
-  /** Lets go of every block and stops hearing the mix's clock changes. */
+  /** Lets go of every block and codes buffer, and stops hearing the mix's clock changes. */
   close(): void {
     this.clear();
+    for (const s of this.sent.values()) s.buffer.destroy();
+    this.sent.clear();
     const m = this.hooked;
     if (m !== null && m.reorigined === this.hook) m.reorigined = null;
     this.hooked = null;
     this.hook = null;
+  }
+
+  /**
+   * Works out the levels of a voice cued with a named stagger, and sends its codes up where they
+   * take a buffer of their own, so the frame it starts in does neither.
+   */
+  stage<I>(device: GpuDevice, voice: Voice<I, unknown>): void {
+    const ordered = voice.named?.ordered;
+    if (ordered != null) this.sentOf(device, levelsOf(ordered), voice as Voice<unknown, unknown>);
+  }
+
+  private sentOf(
+    device: GpuDevice,
+    levels: Levels | null,
+    voice: Voice<unknown, unknown>,
+  ): GpuBuffer | null {
+    const codes = levels?.codes;
+    if (levels == null || codes == null || codes.byteLength < OWN) return null;
+    let s = this.sent.get(levels);
+    if (s === undefined) {
+      const buffer = device.createBuffer({
+        size: codes.byteLength,
+        usage: Usage.COPY_SRC,
+        mappedAtCreation: true,
+        label: 'blits gpu codes',
+      });
+      new Uint16Array(buffer.getMappedRange()).set(codes);
+      buffer.unmap();
+      s = { buffer, voice };
+      this.sent.set(levels, s);
+    }
+    return s.buffer;
   }
 
   /** `voice`'s block for this frame, made where it has none for `answer`; undefined where it needs none. */
@@ -286,6 +342,11 @@ export class Timings {
       return b;
     });
     for (const v of this.by.keys()) if (!live.has(v)) this.by.delete(v);
+    for (const [levels, s] of this.sent)
+      if (s.voice.state === 'done' || (this.by.get(s.voice)?.levels ?? levels) !== levels) {
+        s.buffer.destroy();
+        this.sent.delete(levels);
+      }
     const { placed, offsets, end } = lay(blocks, from, (b) => b.size);
     if (moved(this.placed, placed)) this.moved = true;
     this.placed = placed;
@@ -300,10 +361,11 @@ export class Timings {
   }
 
   /** Writes blocks that changed since the last upload, or all where `full`. */
-  upload(device: GpuDevice, buffer: GpuBuffer, full: boolean): void {
+  upload(device: GpuDevice, enc: GpuCommandEncoder, buffer: GpuBuffer, full: boolean): void {
     const all = full || this.moved;
     for (const { item: block, offset } of this.placed) {
-      if (all || block.dirty === Dirty.ALL) block.write(device, buffer, offset);
+      if (all || block.dirty === Dirty.ALL)
+        block.write(device, enc, buffer, offset, this.sentOf(device, block.levels, block.voice));
       else if (block.dirty === Dirty.SHOWN) {
         const [from, to] = block.range;
         device.queue.writeBuffer(buffer, (offset + from) * 4, block.data.subarray(from, to));

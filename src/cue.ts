@@ -68,6 +68,7 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
     owner,
   );
   voice.offset = mix.offset;
+  if (voice.named?.ordered != null) mix.delayed?.(voice);
   if (patch === ownerPatch && mix.fitting !== null) voice.fitting = mix.fitting;
   if (patch === ownerPatch && mix.arcing !== null) {
     voice.arc = mix.arcing;

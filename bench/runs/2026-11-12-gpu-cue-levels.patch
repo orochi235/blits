@@ -1,0 +1,51 @@
+diff -ru a/src/cue.ts b/src/cue.ts
+--- a/src/cue.ts	2026-11-12 19:49:42
++++ b/src/cue.ts	2026-11-12 21:52:22
+@@ -68,6 +68,8 @@
+     owner,
+   );
+   voice.offset = mix.offset;
++  const ordered = voice.named?.ordered;
++  if (ordered != null) mix.delayed?.(ordered);
+   if (patch === ownerPatch && mix.fitting !== null) voice.fitting = mix.fitting;
+   if (patch === ownerPatch && mix.arcing !== null) {
+     voice.arc = mix.arcing;
+diff -ru a/src/gpu/side.ts b/src/gpu/side.ts
+--- a/src/gpu/side.ts	2026-11-12 19:49:42
++++ b/src/gpu/side.ts	2026-11-12 21:52:22
+@@ -8,6 +8,7 @@
+ import { Hosted, hostable } from './hosted.js';
+ import { MAX_ROLES } from './kernel.js';
+ import { Kernels } from './kernels.js';
++import { levelsOf } from './levels.js';
+ import { Met } from './met.js';
+ import { Mirrors } from './mirrors.js';
+ import { prepare, roomOf } from './prepare.js';
+@@ -85,9 +86,12 @@
+       if (s.back) this.answers.back();
+     });
+     const reading = this.reads.follow(mix, () => this.answers);
++    const delayed = (delays: Float64Array) => void levelsOf(delays);
++    mix.delayed = delayed;
+     this.unfollow = () => {
+       answering();
+       reading();
++      if (mix.delayed === delayed) mix.delayed = null;
+     };
+     void device.lost.then(() => {
+       this.readback.close(false);
+diff -ru a/src/mixer.ts b/src/mixer.ts
+--- a/src/mixer.ts	2026-11-12 19:49:42
++++ b/src/mixer.ts	2026-11-12 21:52:22
+@@ -199,6 +199,11 @@
+    * holding no record of the subject, times a change by. Null with no gpu engine attached.
+    */
+   unheld: ((voice: Voice<I, O>, subject: I) => number | undefined) | null = null;
++  /**
++   * The gpu side's: handed each named voice's delays as it is cued, to work out their levels ahead
++   * of the frame it starts. Null with no gpu engine attached.
++   */
++  delayed: ((delays: Float64Array) => void) | null = null;
+   /** The gpu side's: told of each subject `drop` lets go of. Null with no gpu engine attached. */
+   unmet: ((subject: I) => void) | null = null;
+   /** Whether history records each input signal's reads, which `record` keeps. */

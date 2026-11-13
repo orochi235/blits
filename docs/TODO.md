@@ -97,9 +97,11 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
 
 ## gpu engine
 
-- **[agent] A frame where voices naming 1M subjects start costs 3–5 ms**, mostly `levelsOf`
-  hashing each delay and uploading the codes; one where a voice ends 0.3–4.7 ms. Listing past 8
-  groups of 4,096+ subjects still costs a 22–40 ms sync when the WeakMap doubles.
+- **[agent] Listing past 8 groups of 4,096+ subjects still costs a 22–40 ms sync when the
+  WeakMap doubles** (`src/filed.ts`, the mix's named index). A scene of voices naming 1M subjects
+  now starts in 0.13–0.19 ms of sync and fold on the gpu engine, 0.6–0.7 the first time, and a
+  staggered one ends in 0.10–0.17 (`bench/runs/2026-11-12-gpu-codes-copy.txt`); the cue of such a
+  voice, which now pays the level hash and its codes buffer, is untimed.
 - **[agent] A channel a new stock kind or a staggered shader patch writes is null while its
   kernel compiles.** A compiled kernel stands in for everything else (`src/gpu/stand-in.ts`), and a
   shader patch playing at one time for every subject folds from its `at`; a staggered one would need

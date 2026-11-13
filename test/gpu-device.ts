@@ -86,7 +86,12 @@ export function fakeDevice(opts: { compile?: 'held' } = {}) {
       onSubmittedWorkDone: async () => {},
     },
     lost,
-    createBuffer(desc: { size: number; usage: number; label?: string }): GpuBuffer {
+    createBuffer(desc: {
+      size: number;
+      usage: number;
+      label?: string;
+      mappedAtCreation?: boolean;
+    }): GpuBuffer {
       const label = nameOf(desc.label);
       count.set(label, (count.get(label) ?? 0) + 1);
       const made: Fake = {
@@ -94,7 +99,7 @@ export function fakeDevice(opts: { compile?: 'held' } = {}) {
         data: new ArrayBuffer(desc.size),
         size: desc.size,
         mapping: false,
-        mapped: false,
+        mapped: desc.mappedAtCreation === true,
         destroyed: false,
         mapAsync() {
           log.push(`map ${label}`);
