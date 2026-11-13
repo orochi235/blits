@@ -67,17 +67,18 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   out, which boxes every number into a host's `{}` out; `mix.pose()` gives the unboxed shape.
 - **[agent] A role costs about 20% over its voices played apart, a blend about 33%** (teitou,
   2026-10-26); `runRole` covers the inline case, everything else gathers then folds.
-- **[agent] Starting 10k one-subject tweens** takes a 28.7 ms first frame against 12.9 for fn
+- **[agent] Starting 10k one-subject tweens** takes a 27.6 ms first frame against 12.6 for fn
   voices (msb-uai, 2026-11-12, `node bench/start.mjs 10000 9 tweens fns`), and no one cost leads.
-  A round's profile: building the crowd (`regroup`, `join`) 4.3 ms, a motion patch's first stretch
-  and buffer (`Motions.slot`) 4.6, collection 5.4 against 3.2 for fns, and the lanes numbering each
-  subject (a `WeakRef` and a finalization registration) 2.0 for both forms
-  (`bench/runs/2026-11-12-tween-start-tree.txt`). Cutting `join`'s and `regroup`'s allocation did
-  not move it, and a 64 MB young generation did not cut collection
-  (`runs/2026-11-12-tween-start-semispace.txt`). The first frame allocates 36 MB against 17. What
-  is left is per row: each crowd row's arrays, seat and `seats` entry, and a buffer per motion
-  patch that duplicates the stretch its crowd row holds. `Voice`'s boxed doubles are made at cue,
-  outside this frame.
+  A crowded motion keeping its run in its crowd row (`Motions.lodge`) took it from 29.2
+  (`bench/runs/2026-11-12-motion-lodge-start-ab.txt`). Before that, a round's profile: building the
+  crowd (`regroup`, `join`) 4.3 ms, a motion patch's first stretch and buffer (`Motions.slot`) 4.6,
+  collection 5.4 against 3.2 for fns, and the lanes numbering each subject (a `WeakRef` and a
+  finalization registration) 2.0 for both forms (`bench/runs/2026-11-12-tween-start-tree.txt`).
+  Cutting `join`'s and `regroup`'s allocation did not move it, and a 64 MB young generation did
+  not cut collection (`runs/2026-11-12-tween-start-semispace.txt`). The first frame allocates 34 MB
+  against 17. What is left is per row: each crowd row's arrays, seat and `seats` entry, and the
+  first stretch `Motions.fresh` builds as objects before writing it into the row. `Voice`'s boxed
+  doubles are made at cue, outside this frame.
 - **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
   more; inferred to be first touches of each object of the voice and each array of its crowd row.
 - **[agent] A read ahead across many events of a stateful mix** costs a lookup per voice copy's

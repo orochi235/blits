@@ -32,10 +32,15 @@ export const enum Hot {
    * stands; Infinity until `bareRows` sees it land at a positive rate. Unread on any other row.
    */
   LANDED = 8,
+  /**
+   * From here a motion row's run as its patch lays one out (`RunField`), so the patch can keep its
+   * one run here rather than in a buffer of its own (`Motions.lodge`).
+   */
   AT = 9,
-  MS = 10,
+  RUN_FLAGS = 10,
+  MS = 11,
   /** `x0`, `v0` and `to`, `axes` numbers each. */
-  X0 = 11,
+  X0 = 12,
 }
 
 /** A crowd row's flags, at `Hot.FLAGS`. */
@@ -197,8 +202,14 @@ export class Crowd<I, O> implements Positions<I, O> {
     if (rows * Row.STRIDE <= this.data.length) return;
     const cap = Math.max(rows, (this.data.length / Row.STRIDE) * 2, 16);
     this.data = grown(this.data, cap * Row.STRIDE);
-    this.hot = grown(this.hot, cap * this.stride);
+    const old = this.hot;
+    this.hot = grown(old, cap * this.stride);
     this.samples = grown(this.samples, cap * this.axes);
+    for (let p = 0; p < this.list.length; p++) {
+      const m = this.motions[p];
+      const at = p * this.stride + Hot.AT;
+      if (m?.lodgedIn(old, at)) m.relodge(this.hot, at);
+    }
   }
 }
 

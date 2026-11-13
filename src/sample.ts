@@ -4,7 +4,7 @@ import { clampWeight, passAt, same, weighed } from './clock.js';
 import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { owableAlone } from './meet.js';
-import { Law, type Motions, RunField } from './motions.js';
+import { type Motions, RunField } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { RunFlag } from './stretch.js';
@@ -121,7 +121,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     let b = -1;
     let scalar = false;
     if (ms >= 0) {
-      b = Law.HEAD + ms * run.stride;
+      b = run.origin + ms * run.stride;
       const f = run.runs[b + RunField.FLAGS] as number;
       if ((f & (RunFlag.PENDING | RunFlag.OLDER)) !== 0) b = -1;
       scalar = (f & RunFlag.SCALAR) !== 0;
