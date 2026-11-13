@@ -3,8 +3,8 @@
 // the geometric mean of the ratios. `U` is the Mann-Whitney rank statistic over the two sides' runs,
 // the smaller of the two; at 7 rounds a side it is under 9 for p < 0.05, at 9 under 18.
 //   node bench/medians.mjs <file holding ab.sh's output>
-// It reads bench/restart.mjs's output too, run by ab.sh with AB_BENCH, and bench/lineage.sh's, the
-// first two revisions unless REVS says which.
+// It reads bench/restart.mjs's and bench/heatmap.mjs's output too, run by ab.sh with AB_BENCH, and
+// bench/lineage.sh's, the first two revisions unless REVS says which.
 // LEDGER="<what the change does>" also appends each row to bench/ledger.tsv, the record of what
 // each change measured; LEDGER_NODE names the node, LEDGER_REV the commit standing for `.`, and
 // LEDGER_FRAMES the FRAMES the run used (300 unset). Keep the output itself in bench/runs/ first,
@@ -45,6 +45,17 @@ for (const line of readFileSync(file, 'utf8').split('\n')) {
       at.set(rev, got);
       got.ms.push(Number(restart[i]));
     }
+    continue;
+  }
+  // bench/heatmap.mjs's lines, run by ab.sh with AB_BENCH: a setting's `pull` p50, as `heatmap <setting>`.
+  const heat = /^\s*\d+\/\d+\s+(\S+\/\S+)\s+read p50\s+([\d.]+) ms/.exec(line);
+  if (heat !== null) {
+    const key = `heatmap ${heat[1]}`;
+    const at = rows.get(key) ?? new Map();
+    rows.set(key, at);
+    const got = at.get(rev) ?? { ms: [], kb: [] };
+    at.set(rev, got);
+    got.ms.push(Number(heat[2]));
     continue;
   }
   const row = /^\s*\d+\/\d+\s+(\S+)\s+N=\s*(\d+) V=(\d+)\s+([\d.]+) ms\/frame/.exec(line);
