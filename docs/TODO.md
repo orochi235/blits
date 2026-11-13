@@ -34,10 +34,6 @@ Owner tags:
   remove it in the release after the one that ships `{ axes, cell }`. `bench/frame.mjs`,
   `bench/recaddr.mjs` and `bench/plotleak.mjs` still call the old shape, since older builds an A/B
   runs them against throw for `{ cell }`; move them to `{ cell }` with the removal.
-- **[agent] The `gpu` engine's table of `stagger` answers asks again after a drop**
-  (`Answers.forget` in `src/gpu/answers.ts`), outside the per-voice store the CPU takes answers
-  from (`src/staggers.ts`), so a replayed `drop` likely has it ask where the live mix did not.
-  Inferred from the code, not run: WebGPU tests need a real browser.
 - **[agent] Two copies of blits loaded together** share what each knows of its patches and
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the

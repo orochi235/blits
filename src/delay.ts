@@ -10,9 +10,24 @@ import type { Voice } from './voice.js';
 export function delayOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): number {
   const known = voice.named?.delays?.get(subject);
   if (known !== undefined) return known;
+  return meet(mix, voice, subject, asked);
+}
+
+/**
+ * A subject's answer as a voice over no named list meets it: under history, the one the live mix
+ * gave here before a seek back, else `had`, else `ask`'s, kept for a seek back to give again. The
+ * one pathway for both the CPU's meetings and a gpu side's table.
+ */
+export function meet<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  ask: (voice: Voice<I, O>, subject: I) => number,
+  had?: number,
+): number {
   const kept = staggersOf(mix, voice);
-  if (kept === null) return asked(voice, subject);
-  const delay = kept.take(subject) ?? asked(voice, subject);
+  if (kept === null) return had ?? ask(voice, subject);
+  const delay = kept.take(subject) ?? had ?? ask(voice, subject);
   kept.give(subject, mix.now, mix.transport.seq, delay, mix.transport.keepsFrom());
   return delay;
 }

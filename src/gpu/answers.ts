@@ -1,5 +1,6 @@
 import type { Asked } from '../asked.js';
 import { headOf } from '../chain.js';
+import { meet } from '../delay.js';
 import type { Mixer } from '../mixer.js';
 import type { Named } from '../named.js';
 import { Store } from '../store.js';
@@ -37,6 +38,9 @@ export class Answers<I> {
   private inOrders = new WeakMap<readonly unknown[], boolean>();
   /** Per voice over no named list, each subject answered: its delay where reached, else null. */
   private readonly known = new WeakMap<Voice<I, unknown>, Store<I, number | null>>();
+  /** Seeks back the mix has made, and per voice, how many when its answers were last made. */
+  private backs = 0;
+  private readonly madeAt = new WeakMap<Voice<I, unknown>, number>();
 
   constructor(private readonly mix: Mixer<I, unknown>) {}
 
@@ -54,6 +58,15 @@ export class Answers<I> {
     this.at = at;
     this.made = new WeakMap();
     this.inOrders = new WeakMap();
+  }
+
+  /**
+   * A seek back: each voice's arrays are made again at its next `of`, its delays taken as the
+   * voice's kept answers give them where it stood, so a replay asks nothing the live mix did not.
+   */
+  back(): void {
+    this.backs++;
+    this.made = new WeakMap();
   }
 
   /** Forgets `voice`'s answer for `subject`, so its next `of` asks for it afresh. */
@@ -109,11 +122,13 @@ export class Answers<I> {
       known = new Store();
       this.known.set(voice, known);
     }
+    const sought = voice.staggers !== null && (this.madeAt.get(voice) ?? this.backs) < this.backs;
+    this.madeAt.set(voice, this.backs);
     for (let i = 0; i < n; i++) {
       const s = list[i] as I;
       let delay: number | null;
       if (named !== null) delay = named.has(s) ? (named.delays?.get(s) ?? 0) : null;
-      else delay = this.unnamed(voice, s, known as Store<I, number | null>);
+      else delay = this.unnamed(voice, s, known as Store<I, number | null>, sought);
       if (delay === null) {
         all = false;
         continue;
@@ -129,11 +144,23 @@ export class Answers<I> {
 
   /**
    * A subject's answer for a voice over no named list, its delay where `target` reaches it and
-   * null where not: from what the voice already holds, else asked, and kept either way.
+   * null where not: from what the voice already holds, else asked, and kept either way. After a
+   * seek back (`sought`), a delay held is met again, as the voice's kept answers give it.
    */
-  private unnamed(voice: Voice<I, unknown>, s: I, known: Store<I, number | null>): number | null {
+  private unnamed(
+    voice: Voice<I, unknown>,
+    s: I,
+    known: Store<I, number | null>,
+    sought: boolean,
+  ): number | null {
     const k = known.get(s);
-    if (k !== undefined) return k;
+    if (k === null || (k !== undefined && !sought)) return k;
+    if (k !== undefined) {
+      const held = voice.subjects.get(s);
+      const met = held?.reaches ? held.delay : meet(this.mix, voice, s, staggerOf, k);
+      known.set(s, met);
+      return met;
+    }
     // A subject faded out is held unreached, which says nothing of what `target` answered.
     const parted = voice.parted?.has(s) === true;
     const held = voice.subjects.get(s);
@@ -143,11 +170,16 @@ export class Answers<I> {
     else {
       const { target, stagger } = voice.spec;
       const reaches = target ? target(s) : true;
-      answer = !reaches ? null : stagger ? stagger(s) : 0;
+      answer = !reaches ? null : stagger ? meet(this.mix, voice, s, staggerOf) : 0;
     }
     known.set(s, answer);
     return answer;
   }
+}
+
+/** The voice's `stagger` asked, never a gpu side's table, which may still hold an answer let go. */
+function staggerOf<I>(voice: Voice<I, unknown>, s: I): number {
+  return (voice.spec.stagger as (s: I) => number)(s);
 }
 
 /** Whether `named` is `list`, subject for subject, as a host naming every subject it registered has it. */

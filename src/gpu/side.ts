@@ -80,7 +80,15 @@ export class GpuSide<I> {
     this.met = new Met(mix, () => this.answers);
     this.buffers = new Buffers(device);
     this.readback = new Readback(device);
-    this.unfollow = this.reads.follow(mix, () => this.answers);
+    // Before `reads` follows a seek back, as it reads the answers made again.
+    const answering = mix.onSeek((s) => {
+      if (s.back) this.answers.back();
+    });
+    const reading = this.reads.follow(mix, () => this.answers);
+    this.unfollow = () => {
+      answering();
+      reading();
+    };
     void device.lost.then(() => {
       this.readback.close(false);
       this.release();
