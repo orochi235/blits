@@ -5,6 +5,7 @@ import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import { level, slew } from '../src/signals.js';
+import type { Spring, Tween } from '../src/types/motion.js';
 import type { Handle, Mix, MixOptions, Setting } from '../src/types.js';
 
 interface Pose {
@@ -2114,6 +2115,50 @@ describe('crowds take voices on and off as they come and go', () => {
     };
     agree(play, { times: frames, parts: 70 });
     agree(play, { times: frames, parts: 70, probe: (t, p) => p.id % 4 === 0 || t % 64 === 0 });
+  }, 30_000);
+
+  it('with tweens and springs retargeted as their rows move, empty, regroup and take a patch again', () => {
+    // A crowded motion keeps its run in its crowd row: retargets land there, and compacting,
+    // rebuilding and leaving the crowd carry it along or hand it back.
+    const play: Play = (m, parts) => {
+      const n = parts.length;
+      type Moved = Tween<Part, Pose, number[]> | Spring<Part, Pose, number[]>;
+      const make = (p: Part, i: number): Moved =>
+        i % 2 === 0
+          ? tween<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [p.id, i, 1], ms: 400 })
+          : spring<Part, Pose, number[]>('position', { from: [0, 1, 0], to: [i, p.id, -1] });
+      const patches = parts.map((p, i) => make(p, i));
+      const hs = parts.map((p, i) =>
+        m.cue({ patch: patches[i] as Moved, subjects: [p], loop: true }),
+      );
+      let shared: Handle<Part> | null = null;
+      return {
+        handles: hs,
+        at: (t) => {
+          const f = t / 16;
+          for (let k = f % 3; k < n; k += 3) {
+            const p = parts[k] as Part;
+            const pt = patches[k] as Moved;
+            if ('push' in pt) pt.push(p, [1, -1, f % 5]);
+            else pt.to(p, [f, k, -f]);
+          }
+          // Most voices stop at once, past 64 empty rows, then come back on the patch they had.
+          if (f === 20)
+            for (let k = 0; k < n; k++) if (k % 4 !== 0) (hs[k] as Handle<Part>).fade({ over: 0 });
+          if (f === 30)
+            for (let k = 0; k < n; k++)
+              if (k % 4 !== 0)
+                hs[k] = m.cue({
+                  patch: patches[k] as Moved,
+                  subjects: [parts[k] as Part],
+                  loop: true,
+                });
+          if (f === 40) shared = m.cue({ patch: tween('crawl', { from: 0, to: 2, ms: 300 }) });
+          if (f === 50) shared?.fade({ over: 0 });
+        },
+      };
+    };
+    agree(play, { times: Array.from({ length: 60 }, (_, f) => f * 16), parts: 120 });
   }, 30_000);
 
   it('with a crowd voice starting in the frame a voice over every subject leaves', () => {

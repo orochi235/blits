@@ -99,9 +99,16 @@ export class Motions<I> {
   stride = 0;
   /**
    * The law, then each subject's run; empty until the first subject, the law read from `shape`.
-   * Read outside, at `bareAt`, and written only here.
+   * While a crowd row holds the patch's one run, the crowd's `hot`, the run at `origin`. Read
+   * outside, at `base`, and written only here.
    */
-  runs = unsized;
+  runs: Float64Array = unsized;
+  /** Where subject 0's run starts in `runs`. */
+  origin: number = HEAD;
+  /** What the law is read from, its first `HEAD` numbers: `runs`, but while a crowd row holds the run. */
+  lawBuf: Float64Array = unsized;
+  /** The axes of the crowd row holding the run, while one does. */
+  private lodgedAxes = -1;
   /**
    * Where `sample` leaves a subject's position and velocity, per axis. Shared by every patch, so
    * read it before the next sample.
@@ -212,6 +219,7 @@ export class Motions<I> {
   /** Sets the axes every subject moves on, at the first. */
   size(n: number): void {
     if (this.round && n !== 4) throw notOklab(this.channel);
+    if (this.lawBuf !== this.runs && n !== this.lodgedAxes) this.unlodge();
     this.n = n;
     this.stride = RunField.X0 + 3 * n;
     if (shared.xs.length < n) shared = { xs: new Float64Array(n), vs: new Float64Array(n) };
@@ -282,29 +290,28 @@ export class Motions<I> {
 
   /** A copy of the patch's law, `[form, settle, k1, k2, k3]`. */
   law(): Float64Array {
-    return this.cap === 0 ? Float64Array.from(this.shape.law) : this.runs.slice(0, HEAD);
+    return this.cap === 0 ? Float64Array.from(this.shape.law) : this.lawBuf.slice(0, HEAD);
   }
 
   /** Whether `law` holds this patch's law, number for number, as `Object.is` compares them. */
   hasLaw(law: Float64Array): boolean {
-    const own = this.cap === 0 ? this.shape.law : this.runs;
+    const own = this.cap === 0 ? this.shape.law : this.lawBuf;
     for (let i = 0; i < HEAD; i++) if (!Object.is(law[i], own[i])) return false;
     return true;
   }
 
   /**
-   * Copies subject `s`'s current stretch into `out` from `o` as its release time, its ms, then
-   * `x0`, `v0` and `to` per axis; false, copying nothing, while it has a change pending or an
+   * Copies subject `s`'s current run into `out` from `o` as its release time, its flags, its ms,
+   * then `x0`, `v0` and `to` per axis, unless `out` holds it there already; false, copying nothing, while it has a change pending or an
    * earlier stretch kept, which only `sample` handles.
    */
   stretchInto(s: number, out: Float64Array, o: number): boolean {
     const runs = this.runs;
     const b = this.base(s);
     if (((runs[b + RunField.FLAGS] as number) & (PENDING | OLDER)) !== 0) return false;
-    out[o] = runs[b + RunField.AT] as number;
-    out[o + 1] = runs[b + RunField.MS] as number;
-    const n3 = 3 * this.n;
-    for (let i = 0; i < n3; i++) out[o + 2 + i] = runs[b + RunField.X0 + i] as number;
+    if (out === runs && o === b) return true;
+    const end = RunField.X0 + 3 * this.n;
+    for (let i = 0; i < end; i++) out[o + i] = runs[b + i] as number;
     return true;
   }
 
@@ -483,16 +490,72 @@ export class Motions<I> {
 
   /** Where subject `s`'s run starts in `runs`. */
   base(s: number): number {
-    return HEAD + s * this.stride;
+    return this.origin + s * this.stride;
   }
 
   private grow(size: number): void {
     if (size <= this.cap) return;
     const cap = Math.max(size, this.cap * 2);
     const runs = new Float64Array(HEAD + cap * this.stride);
-    runs.set(this.cap === 0 ? this.shape.law : this.runs);
+    if (this.cap === 0) runs.set(this.shape.law);
+    else if (this.lawBuf === this.runs) runs.set(this.runs);
+    else {
+      for (let i = 0; i < HEAD; i++) runs[i] = this.lawBuf[i] as number;
+      for (let i = 0; i < this.stride; i++) runs[HEAD + i] = this.runs[this.origin + i] as number;
+    }
     this.runs = runs;
+    this.lawBuf = runs;
+    this.origin = HEAD;
     this.cap = cap;
+    this.lodgedAxes = -1;
+  }
+
+  /**
+   * Keeps the patch's one run in a crowd row's `hot` at `at`, its law read from `law`, rather than
+   * in a buffer of its own; false, changing nothing, where the patch numbers more than one subject
+   * or moves on other axes than the row's `axes`.
+   */
+  lodge(hot: Float64Array, at: number, law: Float64Array, axes: number): boolean {
+    if (this.numbers.size > 1 || (this.n >= 0 && this.n !== axes)) return false;
+    if (this.cap > 0 && this.numbers.size === 1) {
+      const b = this.base(0);
+      for (let i = 0; i < this.stride; i++) hot[at + i] = this.runs[b + i] as number;
+    }
+    this.runs = hot;
+    this.lawBuf = law;
+    this.origin = at;
+    this.cap = 1;
+    this.lodgedAxes = axes;
+    return true;
+  }
+
+  /** Whether the run is lodged in `hot` at `at`. */
+  lodgedIn(hot: Float64Array, at: number): boolean {
+    return this.runs === hot && this.origin === at && this.lawBuf !== hot;
+  }
+
+  /** The lodged run moved, as its crowd row did, to `hot` at `at`. */
+  relodge(hot: Float64Array, at: number): void {
+    this.runs = hot;
+    this.origin = at;
+  }
+
+  /** Gives a lodged run a buffer of its own again, as its crowd row is let go of. */
+  unlodge(): void {
+    if (this.lawBuf === this.runs) return;
+    const had = this.cap > 0 && this.numbers.size > 0 && this.stride > 0;
+    const from = this.runs;
+    const at = this.origin;
+    const law = this.lawBuf;
+    this.runs = unsized;
+    this.lawBuf = unsized;
+    this.origin = HEAD;
+    this.cap = 0;
+    this.lodgedAxes = -1;
+    if (!had) return;
+    this.grow(1);
+    for (let i = 0; i < HEAD; i++) this.runs[i] = law[i] as number;
+    for (let i = 0; i < this.stride; i++) this.runs[HEAD + i] = from[at + i] as number;
   }
 
   write(s: number, seg: Segment): void {
@@ -578,8 +641,8 @@ export class Motions<I> {
     vo: Float64Array,
   ): boolean {
     if (this.round)
-      return closedLch(this.runs, this.shape.ease, at, ms, x0, x, v0, v, to, g, t, xo, vo);
-    return closed(this.runs, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
+      return closedLch(this.lawBuf, this.shape.ease, at, ms, x0, x, v0, v, to, g, t, xo, vo);
+    return closed(this.lawBuf, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
   }
 }
 

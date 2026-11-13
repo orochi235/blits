@@ -1,0 +1,55 @@
+# msb-uai: ALLOC=1 node bench/start.mjs 10000 5 tweens fns
+1/2  tweens   N=10000  cue    11.2 ms  first frame    88.8 ms  second    35.1 ms  (medians of 5)
+  first frame allocates 36147 kB a round
+     4483 kB  next  :0
+     3628 kB  fresh  motions.js:123
+     2739 kB  moved  moved.js:10
+     2148 kB  join  rows.js:87
+     1922 kB  wholeRecord  record.js:10
+     1843 kB  newRow  rows.js:215
+     1763 kB  qualify  qualify.js:17
+     1651 kB  held  held.js:41
+     1427 kB  set  :0
+     1313 kB  WeakMap  :0
+     1280 kB  add  :0
+     1262 kB  WeakRef  :0
+     1223 kB  register  :0
+      857 kB  map  :0
+      627 kB  take  numbers.js:40
+      626 kB  Float64Array  :0
+      625 kB  (anon)  qualify.js:263
+      610 kB  unfit  hosts.js:132
+      606 kB  meet  meet.js:70
+      573 kB  (anon)  qualify.js:71
+      523 kB  prime  weigh.js:7
+      445 kB  values  :0
+      403 kB  whyOff  qualify.js:230
+      400 kB  number  lanes.js:205
+      380 kB  open  qualify.js:296
+2/2  fns      N=10000  cue     4.6 ms  first frame    41.7 ms  second    17.7 ms  (medians of 5)
+  first frame allocates 17440 kB a round
+     2432 kB  wholeRecord  record.js:10
+     1996 kB  next  :0
+     1749 kB  calls  qualify.js:244
+     1329 kB  WeakMap  :0
+     1231 kB  register  :0
+     1148 kB  held  held.js:41
+      952 kB  WeakRef  :0
+      710 kB  contribution  contribution.js:48
+      688 kB  (anon)  qualify.js:277
+      611 kB  unfit  hosts.js:132
+      591 kB  (anon)  qualify.js:71
+      513 kB  set  :0
+      473 kB  requalify  qualify.js:43
+      444 kB  qualify  qualify.js:17
+      434 kB  patch.writes  start.mjs:23
+      433 kB  push  :0
+      400 kB  whyOff  qualify.js:230
+      395 kB  number  lanes.js:205
+      235 kB  map  :0
+      231 kB  take  numbers.js:40
+      154 kB  dueOf  due.js:185
+       94 kB  slice  :0
+       61 kB  phaseOf  contribution.js:40
+       35 kB  schedule  due.js:231
+       25 kB  values  :0

@@ -74,6 +74,7 @@ export function regroup<I, O>(lanes: Lanes<I, O>, members: Voice<I, O>[]): void 
     const from = was.get(v.id);
     join(lanes, v, from?.crowd, from?.row, old);
   }
+  for (const c of old) for (let p = 0; p < c.size; p++) unlodgeRow(c, p);
   if (lanes.crowds.length === 0) {
     lanes.lawsByKey.clear();
     lanes.lastLaw = null;
@@ -148,6 +149,7 @@ function compact<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>): void {
     const v = c.voices[p] as Voice<I, O>;
     const s = seatOf(lanes, v);
     if (s === null || s.crowd !== c || s.row !== p) {
+      unlodgeRow(c, p);
       c.odd?.delete(p);
       continue;
     }
@@ -211,7 +213,10 @@ function copyRow<I, O>(
   to.deltas[q] = from.deltas[p] ?? null;
   to.records[q] = from.records[p];
   to.voices[q] = from.voices[p] as Voice<I, O>;
-  to.motions[q] = from.motions[p];
+  const run = from.motions[p];
+  to.motions[q] = run;
+  if (run?.lodgedIn(from.hot, p * from.stride + Hot.AT))
+    run.relodge(to.hot, q * to.stride + Hot.AT);
   to.eases[q] = from.eases[p];
   to.laws[q] = from.laws[p] as Float64Array;
   const odd = from.odd?.get(p);
@@ -261,6 +266,7 @@ function newRow<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, v: Voice<I,
     return;
   }
   c.laws[p] = lawOf(lanes, run);
+  run.lodge(c.hot, h + Hot.AT, c.laws[p] as Float64Array, c.axes);
   c.eases[p] = run.ease;
   // A lane sharing the patch keeps no samples while it watches it: have it keep them first.
   const watching = run.watcher === lanes ? lanes.byId.get(run.watchId) : undefined;
@@ -303,7 +309,14 @@ function leaveCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): void {
   const run = c.motions[p];
   const v = c.voices[p] as Voice<I, O>;
   if (run !== undefined && run.watcher === lanes && run.watchId === v.id) run.watcher = null;
+  unlodgeRow(c, p);
   v.laned = false;
+}
+
+/** Gives the patch lodged in row `p` of `c`, if one is, a buffer of its own again. */
+function unlodgeRow<I, O>(c: Crowd<I, O>, p: number): void {
+  const run = c.motions[p];
+  if (run?.lodgedIn(c.hot, p * c.stride + Hot.AT)) run.unlodge();
 }
 
 /** A crowd row's weight as `reported` reads a lane position's. */

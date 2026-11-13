@@ -1,0 +1,51 @@
+# msb-uai: LINEAGE_BENCH=start.mjs bench/lineage.sh 8 bc84242b . -- "10000 9 tweens fns" (. is bc84242b plus the crowd join cut, uncommitted)
+built bc84242b
+built .
+== round 1/8 bc84242b
+1/2  tweens   N=10000  cue     7.3 ms  first frame    29.1 ms  second     4.1 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.4 ms  first frame    12.4 ms  second     1.9 ms  (medians of 9)
+== round 1/8 .
+1/2  tweens   N=10000  cue     8.4 ms  first frame    28.3 ms  second     4.3 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.9 ms  first frame    14.0 ms  second     2.3 ms  (medians of 9)
+== round 2/8 .
+1/2  tweens   N=10000  cue     8.5 ms  first frame    29.9 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.0 ms  first frame    11.6 ms  second     2.1 ms  (medians of 9)
+== round 2/8 bc84242b
+1/2  tweens   N=10000  cue     7.2 ms  first frame    28.2 ms  second     4.0 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.7 ms  first frame    13.6 ms  second     2.1 ms  (medians of 9)
+== round 3/8 bc84242b
+1/2  tweens   N=10000  cue     7.7 ms  first frame    31.7 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.8 ms  first frame    12.8 ms  second     1.9 ms  (medians of 9)
+== round 3/8 .
+1/2  tweens   N=10000  cue     7.6 ms  first frame    27.4 ms  second     4.0 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.7 ms  first frame    12.4 ms  second     1.8 ms  (medians of 9)
+== round 4/8 .
+1/2  tweens   N=10000  cue     8.3 ms  first frame    29.2 ms  second     4.3 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.0 ms  first frame    13.8 ms  second     2.2 ms  (medians of 9)
+== round 4/8 bc84242b
+1/2  tweens   N=10000  cue     9.4 ms  first frame    28.2 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.3 ms  first frame    13.2 ms  second     2.2 ms  (medians of 9)
+== round 5/8 bc84242b
+1/2  tweens   N=10000  cue     9.6 ms  first frame    29.2 ms  second     4.3 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.8 ms  first frame    13.3 ms  second     2.2 ms  (medians of 9)
+== round 5/8 .
+1/2  tweens   N=10000  cue     8.3 ms  first frame    31.3 ms  second     4.5 ms  (medians of 9)
+2/2  fns      N=10000  cue     6.5 ms  first frame    12.5 ms  second     2.3 ms  (medians of 9)
+== round 6/8 .
+1/2  tweens   N=10000  cue     7.6 ms  first frame    28.9 ms  second     3.9 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.8 ms  first frame    12.6 ms  second     1.8 ms  (medians of 9)
+== round 6/8 bc84242b
+1/2  tweens   N=10000  cue     7.2 ms  first frame    28.7 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.5 ms  first frame    13.2 ms  second     2.1 ms  (medians of 9)
+== round 7/8 bc84242b
+1/2  tweens   N=10000  cue    11.5 ms  first frame    33.7 ms  second     4.3 ms  (medians of 9)
+2/2  fns      N=10000  cue     6.3 ms  first frame    12.6 ms  second     2.2 ms  (medians of 9)
+== round 7/8 .
+1/2  tweens   N=10000  cue     7.4 ms  first frame    28.3 ms  second     4.4 ms  (medians of 9)
+2/2  fns      N=10000  cue     6.3 ms  first frame    11.4 ms  second     2.0 ms  (medians of 9)
+== round 8/8 .
+1/2  tweens   N=10000  cue     7.6 ms  first frame    27.8 ms  second     3.8 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.8 ms  first frame    12.7 ms  second     2.3 ms  (medians of 9)
+== round 8/8 bc84242b
+1/2  tweens   N=10000  cue     8.0 ms  first frame    28.3 ms  second     4.1 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.1 ms  first frame    12.9 ms  second     2.0 ms  (medians of 9)

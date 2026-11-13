@@ -1,0 +1,28 @@
+# msb-uai: ALLOC=1 node bench/start.mjs 10000 5 tweens (the lodged run)
+1/1  tweens   N=10000  cue    11.1 ms  first frame    81.6 ms  second    32.5 ms  (medians of 5)
+  first frame allocates 34210 kB a round
+     2730 kB  moved  moved.js:10
+     2349 kB  fresh  motions.js:130
+     2112 kB  join  rows.js:90
+     1940 kB  wholeRecord  record.js:10
+     1848 kB  newRow  rows.js:222
+     1778 kB  qualify  qualify.js:17
+     1665 kB  held  held.js:41
+     1313 kB  WeakMap < set  store.js:25
+     1007 kB  next < qualify  qualify.js:17
+     1004 kB  next < requalify  qualify.js:43
+      897 kB  set < join  rows.js:90
+      790 kB  register < number  lanes.js:205
+      651 kB  WeakRef < number  lanes.js:205
+      641 kB  (anon)  qualify.js:263
+      640 kB  add < regroup  rows.js:58
+      640 kB  add < qualify  qualify.js:17
+      624 kB  take  numbers.js:40
+      619 kB  WeakRef < take  numbers.js:40
+      615 kB  meet  meet.js:70
+      598 kB  unfit  hosts.js:132
+      581 kB  (anon)  qualify.js:71
+      551 kB  map < join  rows.js:90
+      522 kB  prime  weigh.js:7
+      495 kB  next < (anon)  qualify.js:263
+      444 kB  register < take  numbers.js:40

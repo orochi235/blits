@@ -69,6 +69,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   ones, and a `drop` it played again had it ask `stagger` once more, so a `stagger` answering
   differently on a second ask placed the subject elsewhere than the live mix had. It now takes its
   answers from the voice's kept ones, as the CPU does.
+- Starting 10,000 one-subject tween, spring or glide voices at once takes a 27.6 ms first frame
+  where it took 29.2: a motion the mix plays on its lanes keeps its stretch there, with no buffer
+  of its own.
 
 ## 1.3.0
 
