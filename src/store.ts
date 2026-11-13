@@ -119,3 +119,100 @@ export class Filled<K, V> extends Store<K, V> {
     this.gone.set(key, true);
   }
 }
+
+/** Where a line of copies stands on one key. */
+export interface Stand<V> {
+  /** What the copy at `at` holds, or held before deleting it. */
+  value: V | undefined;
+  /** The latest copy in the line to take the key, by its place there. */
+  at: number;
+  /** The first copy holding this same value; every copy from here to `at` holds it too. */
+  since: number;
+  /** Whether the copy at `at` deleted the key. */
+  gone: boolean;
+}
+
+/**
+ * One copy's view of a store kept once for a line of copies, each made from the one before. The
+ * copy at `at` takes a key on from the copy before through `make`, given what that copy holds
+ * where it is known, so a line read forward keeps one entry a key rather than one a copy. A copy
+ * asked about a key a later copy has taken answers what that key's run of copies holds, or from a
+ * store of its own.
+ */
+export class Along<K, V> extends Store<K, V> {
+  private back: Store<K, V> | null = null;
+  private backGone: Store<K, true> | null = null;
+
+  constructor(
+    readonly line: Store<K, Stand<V>>,
+    readonly at: number,
+    private readonly make: (key: K, before: V | undefined, known: boolean) => V | undefined,
+  ) {
+    super();
+  }
+
+  override get(key: K): V | undefined {
+    const e = this.line.get(key);
+    const at = this.at;
+    if (e !== undefined) {
+      if (e.at === at) return e.gone ? undefined : e.value;
+      if (e.at > at) return this.behind(key, e);
+      if (e.at === at - 1) {
+        const v = this.make(key, e.gone ? undefined : e.value, true);
+        if (v !== undefined) take(e, v, at);
+        return v;
+      }
+    }
+    const v = this.make(key, undefined, false);
+    if (v !== undefined) this.set(key, v);
+    return v;
+  }
+
+  override set(key: K, value: V): void {
+    const e = this.line.get(key);
+    if (e === undefined) this.line.set(key, { value, at: this.at, since: this.at, gone: false });
+    else if (e.at > this.at) {
+      this.backGone?.delete(key);
+      this.own().set(key, value);
+    } else take(e, value, this.at);
+  }
+
+  override delete(key: K): void {
+    const e = this.line.get(key);
+    const at = this.at;
+    if (e === undefined) this.line.set(key, { value: undefined, at, since: at, gone: true });
+    else if (e.at > at) {
+      this.back?.delete(key);
+      this.ownGone().set(key, true);
+    } else {
+      e.at = at;
+      e.gone = true;
+    }
+  }
+
+  private own(): Store<K, V> {
+    this.back ??= new Store();
+    return this.back;
+  }
+
+  private ownGone(): Store<K, true> {
+    this.backGone ??= new Store();
+    return this.backGone;
+  }
+
+  private behind(key: K, e: Stand<V>): V | undefined {
+    if (this.backGone?.get(key) === true) return undefined;
+    let v = this.back?.get(key);
+    if (v !== undefined || this.at >= e.since) return v ?? e.value;
+    v = this.make(key, undefined, false);
+    if (v !== undefined) this.own().set(key, v);
+    return v;
+  }
+}
+
+function take<V>(e: Stand<V>, value: V, at: number): void {
+  if (value !== e.value) e.since = at;
+  e.value = value;
+  e.at = at;
+  e.gone = false;
+}

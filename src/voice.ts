@@ -825,12 +825,12 @@ export class Voice<I, O> {
 
   /**
    * A copy for a projection: its own setting, which sends nothing, and its own per-subject records,
-   * filled from `fill`. With `controls` it takes those, as the voice stood at an earlier time. With
+   * filled from `fill`, or `fill` itself where it is a store. With `controls` it takes those, as the voice stood at an earlier time. With
    * `share`, a voice keeping one record for every subject gives its copy a copy of that one, which
    * a read ahead starts every subject from; `fill` then serves only a copy that shares no more.
    */
   copy(
-    fill: (subject: I) => Subject<unknown> | undefined,
+    fill: ((subject: I) => Subject<unknown> | undefined) | Store<I, Subject<unknown>>,
     controls?: Controls,
     share = false,
   ): Voice<I, O> {
@@ -838,7 +838,7 @@ export class Voice<I, O> {
     // read in a projection looked up by name.
     const v = { __proto__: Voice.prototype, ...this } as unknown as Voice<I, O>;
     const w = v as unknown as Record<string, unknown>;
-    w.subjects = new Filled<I, Subject<unknown>>(fill);
+    w.subjects = typeof fill === 'function' ? new Filled<I, Subject<unknown>>(fill) : fill;
     w.setting = { ...this.setting, keep: keeping(v), send: noSend };
     v.keepOn = null;
     v.ownKept = null;

@@ -10,6 +10,7 @@ import { move } from './move.js';
 import { rewire } from './owner.js';
 import { pin, place } from './place.js';
 import { recount } from './roster.js';
+import { Along, type Stand, Store } from './store.js';
 import type { Subject } from './subject.js';
 import { hostAhead, replay } from './tape.js';
 import { Transport } from './transport.js';
@@ -170,7 +171,12 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
     mix.cued.filter((v) => v.state !== 'done'),
     (v) => {
       const link = new Link(mix as Mixer<unknown, unknown>, v as Voice<unknown, unknown>);
-      const copy: Voice<I, O> = v.copy((subject) => carry(link, subject, c, copy), undefined, true);
+      const store = new Along<I, Subject<unknown>>(
+        link.line as Store<I, Stand<Subject<unknown>>>,
+        link.at,
+        (subject, before, known) => carry(link, subject, c, copy, before, known),
+      );
+      const copy: Voice<I, O> = v.copy(store, undefined, true);
       link.made = copy.made;
       link.shared = copy.sharing;
       links.set(copy, link);
@@ -231,7 +237,16 @@ export function recordOf<I, O>(
     all.weight = share.weightAt(voice, slot);
     return all;
   }
-  const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+  return standing(mix, voice, subject, voice.subjects.get(subject) as Subject<unknown> | undefined);
+}
+
+/** As `recordOf`, for a voice sharing no record whose store holds `held` for `subject`. */
+function standing<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown> | undefined,
+): Subject<unknown> | undefined {
   if (held !== undefined || voice.unreachedBits === null) return held;
   return unreached(voice, slotOf(mix, subject)) ? (voice.unreached as Subject<unknown>) : undefined;
 }
@@ -252,6 +267,9 @@ class Link implements Asked<unknown> {
   shared = false;
   /** Whether the copy has taken a record from `voice`. */
   filled = false;
+  /** The store the copies descending from one live voice share, and this copy's place along it. */
+  readonly line: Store<unknown, Stand<Subject<unknown>>>;
+  readonly at: number;
 
   constructor(
     readonly mix: Mixer<unknown, unknown>,
@@ -259,6 +277,8 @@ class Link implements Asked<unknown> {
   ) {
     this.up = links.get(voice);
     this.live = this.up?.live ?? voice;
+    this.line = this.up?.line ?? new Store();
+    this.at = this.up === undefined ? 0 : this.up.at + 1;
   }
 
   delay(subject: unknown): number | undefined {
@@ -310,23 +330,30 @@ function handOn(h: Subject<unknown>): Subject<unknown> {
 
 /**
  * A projection ahead starts each subject from where the live mix holds it, its `since` worked out
- * again where it was still ahead, since the copy's clock may have moved it.
+ * again where it was still ahead, since the copy's clock may have moved it. Where `known`, `before`
+ * is what the store of the voice copied from holds.
  */
 function carry<I, O>(
   link: Link,
   subject: I,
   c: Mixer<I, O>,
   copy: Voice<I, O>,
+  before: Subject<unknown> | undefined,
+  known: boolean,
 ): Subject<unknown> | undefined {
   const mix = link.mix as unknown as Mixer<I, O>;
   const voice = link.voice as unknown as Voice<I, O>;
-  // A voice starting many stops on would otherwise ask every copy before it, one by one. Where
-  // the first copy that may hold one has none, each copy after it has none, dropped or not.
-  let from = link;
-  while (from.up !== undefined && empty(from.voice, from.up)) from = from.up;
-  if (from !== link && recordOf(from.mix, from.voice, subject as unknown) === undefined)
-    return undefined;
-  const live = recordOf(mix, voice, subject);
+  let live: Subject<unknown> | undefined;
+  if (known && !voice.sharing) live = standing(mix, voice, subject, before);
+  else {
+    // A voice starting many stops on would otherwise ask every copy before it, one by one. Where
+    // the first copy that may hold one has none, each copy after it has none, dropped or not.
+    let from = link;
+    while (from.up !== undefined && empty(from.voice, from.up)) from = from.up;
+    if (from !== link && recordOf(from.mix, from.voice, subject as unknown) === undefined)
+      return undefined;
+    live = recordOf(mix, voice, subject);
+  }
   if (live === undefined) return undefined;
   const h = handable(mix, voice, live) ? handOn(live) : copyHeld(voice, live);
   if (h.reaches && !(h.since <= mix.now)) originate(c, copy, h);

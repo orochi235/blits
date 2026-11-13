@@ -72,10 +72,10 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   fields, 12 of them boxed doubles.
 - **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
   more; inferred to be first touches of each object of the voice and each array of its crowd row.
-- **[agent] A read ahead across many events of a stateful mix** costs a lookup per voice copy's
-  store per stop; one store shared along a voice's copies (`Filled` in `src/store.ts`) would cut it.
-  `carry` walks back only past copies that never read the voice, so it was still waiting there:
-  answering none in place of its fallback still passed `test/readahead.test.ts` (2026-11-12).
+- **[agent] `carry`'s walk past read-ahead copies that never read a voice is untested:** answering
+  none in place of its fallback still passed `test/readahead.test.ts` (2026-11-12). Since the
+  copies share one store (`Along` in `src/store.ts`), it runs only where the copy just before has not
+  read the subject, so a test needs a voice first met many stops on.
 - **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
   it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
   the benches still cue the deprecated `lerp: 'oklch'`.
