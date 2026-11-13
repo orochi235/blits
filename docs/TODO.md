@@ -51,11 +51,17 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   merge on main, read within spread of the base, so no commit carries it. Any real effect is under
   about 2%, less than one build's run-to-run spread on this row (7–11 ms). Reopen only if a new
   run reads it above 3% again.
-- **[agent] Heatmap `pull` reads 5.4 ms with lanes, 3.8 without** (5,000 retargeted springs and
-  three `ink` voices weighted by `input` signals). By line, `one`'s calls into `base`, `signal`,
-  `primeLaned` and `signalled` are about 14% together, each spread thin; folding the four into one
-  call layer is what is left. Profile with `bench/heatprof.sh`, not the stress demo, which plays a
-  lanes twin.
+- **[agent] Heatmap `pull` reads 5.2 ms with lanes, 3.9 without** (5,000 retargeted springs and
+  three `ink` voices weighted by `input` signals; studio, 7 rounds,
+  `bench/runs/2026-11-12-heatmap-signal-fold-ab.txt`). The 14% `one` spends on its lines calling
+  `signalled` is not call overhead: folding the layers under it (no second `primeLaned` in `call`,
+  the signal called without `base`) read 5.216 against 5.248 ms, within spread, and that self time
+  moved onto the next line, `data[o + Row.WEIGHT] = w` (8.9% and 5.4% on the call lines before,
+  7.7% on the store after; `bench/runs/2026-11-12-heatmap-lanes-profile.txt`) (2026-11-12). It
+  looks like a stall, perhaps a cache miss on a subject's record or on the signal's own reads, that
+  lands on whatever runs next (inferred, not measured). Next: hardware counters or a per-load split
+  of `one`'s signal branch, not another fold. Profile with `bench/heatprof.sh`, not the stress
+  demo, which plays a lanes twin.
 - **[agent] A host probing into its own object under `retargets: true`** keeps two poses a
   subject in `Probes` (`src/trail.ts`), costing a 10,000-subject probe frame 35–70%, spread with no
   hot spot (`bench/runs/2026-11-08-probes-ab.txt`).

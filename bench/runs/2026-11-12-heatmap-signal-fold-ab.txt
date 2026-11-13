@@ -1,0 +1,169 @@
+# studio, onto task blits-heatlanes-ab1 (--solo, --ref bc84242b, the fold uncommitted): AB_EACH=1 AB_BENCH=bench/heatmap.mjs bench/ab.sh bc84242b . 7 spring/input/ink/on spring/input/ink/off; then FRAMES=3000 LINES="one signalled" TOP=25 bench/heatprof.sh on the folded tree. The fold: call skips primeLaned where host.signal just filled the setting for the record, and host.signal calls the signal itself, not through base, where there is no replay, blend or input to record. Backed out.
+built bc84242b (bc84242b039cb5d7e698305c95ef3f703dfaa053)
+built the working tree
+== round 1/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.167 ms  p90   6.708  step p50   1.108  load 4.18
+onto: progress 1/1
+== round 1/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.736 ms  p90   4.665  step p50   0.890  load 4.18
+onto: progress 1/1
+== round 1/7 .
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.166 ms  p90   6.365  step p50   0.999  load 4.16
+onto: progress 1/1
+== round 1/7 .
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.826 ms  p90   4.715  step p50   0.915  load 3.99
+onto: progress 1/1
+== round 2/7 .
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.216 ms  p90   6.428  step p50   1.114  load 3.83
+onto: progress 1/1
+== round 2/7 .
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.931 ms  p90   4.821  step p50   0.963  load 3.83
+onto: progress 1/1
+== round 2/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.281 ms  p90   6.251  step p50   1.067  load 3.68
+onto: progress 1/1
+== round 2/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   4.031 ms  p90   5.067  step p50   0.922  load 3.63
+onto: progress 1/1
+== round 3/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.260 ms  p90   6.385  step p50   1.202  load 3.42
+onto: progress 1/1
+== round 3/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.952 ms  p90   4.899  step p50   0.976  load 3.22
+onto: progress 1/1
+== round 3/7 .
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.274 ms  p90   6.419  step p50   1.112  load 3.22
+onto: progress 1/1
+== round 3/7 .
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.892 ms  p90   4.714  step p50   0.950  load 3.29
+onto: progress 1/1
+== round 4/7 .
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.258 ms  p90   6.476  step p50   1.124  load 3.90
+onto: progress 1/1
+== round 4/7 .
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.961 ms  p90   4.908  step p50   0.945  load 3.83
+onto: progress 1/1
+== round 4/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.379 ms  p90   6.584  step p50   1.031  load 3.60
+onto: progress 1/1
+== round 4/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.916 ms  p90   4.740  step p50   1.074  load 3.60
+onto: progress 1/1
+== round 5/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.228 ms  p90   6.572  step p50   1.100  load 3.72
+onto: progress 1/1
+== round 5/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.710 ms  p90   4.562  step p50   0.959  load 3.50
+onto: progress 1/1
+== round 5/7 .
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.264 ms  p90   6.578  step p50   1.078  load 3.38
+onto: progress 1/1
+== round 5/7 .
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.898 ms  p90   4.731  step p50   0.888  load 3.38
+onto: progress 1/1
+== round 6/7 .
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.126 ms  p90   6.520  step p50   1.081  load 3.27
+onto: progress 1/1
+== round 6/7 .
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.874 ms  p90   4.646  step p50   0.940  load 3.33
+onto: progress 1/1
+== round 6/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.193 ms  p90   6.577  step p50   1.016  load 3.30
+onto: progress 1/1
+== round 6/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.970 ms  p90   4.855  step p50   1.106  load 3.11
+onto: progress 1/1
+== round 7/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.248 ms  p90   6.495  step p50   1.020  load 3.11
+onto: progress 1/1
+== round 7/7 bc84242b
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.955 ms  p90   4.865  step p50   0.860  load 3.03
+onto: progress 1/1
+== round 7/7 .
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.154 ms  p90   6.340  step p50   1.033  load 2.94
+onto: progress 1/1
+== round 7/7 .
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   4.220 ms  p90   5.093  step p50   1.020  load 2.87
+onto: progress 1/1
+=== profile dirty
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   5.845 ms  p90   7.308  step p50   1.223  load 3.18
+onto: progress 1/1
+total 21930.7 ms
+   3681.4 ms  16.8%  one fill.js:305
+   1537.4 ms   7.0%  numbers stretch.js:4
+    965.7 ms   4.4%  subject numbers.js:73
+    722.3 ms   3.3%  call fill.js:456
+    568.8 ms   2.6%  runMotion sample.js:13
+    534.6 ms   2.4%  commit changes.js:155
+    526.1 ms   2.4%  (garbage collector)
+    478.6 ms   2.2%  readAll pull.js:143
+    470.8 ms   2.1%  stretchChanged lanes.js:482
+    421.2 ms   1.9%  next heatmap.mjs:48
+    419.8 ms   1.9%  prepare closed.js:25
+    415.9 ms   1.9%  change changes.js:12
+    409.6 ms   1.9%  get store.js:20
+    365.1 ms   1.7%  closed closed.js:165
+    355.8 ms   1.6%  signalled fill.js:191
+    352.0 ms   1.6%  latest motions.js:442
+    342.2 ms   1.6%  has named.js:54
+    319.1 ms   1.5%  (program)
+    302.7 ms   1.4%  flag motions.js:393
+    302.6 ms   1.4%  prune lives.js:159
+    285.9 ms   1.3%  foldWith fold.js:160
+    275.0 ms   1.3%  contribution contribution.js:48
+    260.8 ms   1.2%  pullRun columns.js:9
+    228.5 ms   1.0%  primeLaned weigh.js:28
+    223.5 ms   1.0%  evaluate motions.js:491
+one  fill.js
+  7.7%    362  data[o + 2 /* Row.WEIGHT */] = w;
+  2.2%    365  this.folding = lane;
+  1.6%    364  unband(lane.records[p]);
+  1.0%    353  if (!this.signalled(voice, slot, lane.records[p])) {
+  0.9%    405  return this.call(voice, lane.chans, rec, slot);
+  0.3%    334  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  0.3%    312  keepProbed(data, o, this.per, slot * 6 /* Per.SLOT */, this.fills);
+  0.3%    366  this.rec = lane.records[p] ?? null;
+  0.2%    401  return true;
+  0.2%    358  w = arg[0 /* Arg.WEIGHT */];
+  0.2%    363  if (!(w > 0))
+  0.2%    403  arg[2 /* Arg.PHASE */] = lane.phase;
+signalled  fill.js
+  0.5%    204  this.host.signal(voice, subject, rec, slot);
+  0.3%    205  arg[0 /* Arg.WEIGHT */] = weighed(arg[0 /* Arg.WEIGHT */], fade, voice.parts === null ? 1 : this.hos
+  0.2%    194  if (Number.isNaN(rec.probed)) {
+  0.2%    206  return true;
+  0.2%    199  if (subject === absent) {
+  0.1%    191  export function signalled(voice, slot, rec) {
+  0.1%    193  const fade = arg[5 /* Arg.FADE */];
+  0.1%    192  const arg = this.arg;
+  0.0%    195  this.late.push(slot);
+  0.0%    203  this.primed = null;
