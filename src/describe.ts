@@ -1,5 +1,5 @@
 import type { Mixer } from './mixer.js';
-import type { Outline, OutlineVoice, Placement } from './types.js';
+import type { Outline, OutlineLane, OutlineVoice, Placement } from './types.js';
 import type { Voice } from './voice.js';
 
 const PARTS = ['enter', 'active', 'exit'] as const;
@@ -15,6 +15,12 @@ function kindOf<I, O>(voice: Voice<I, O>): OutlineVoice['kind'] {
   if (voice.holding === null) return 'voice';
   if (voice.fitting !== null) return 'span';
   return voice.arc !== null ? 'arc' : 'owner';
+}
+
+/** Whether the voice runs on a lane, as the lanes last decided it. */
+function laneOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): OutlineLane {
+  if (mix.lanes === null) return { on: false, why: 'mix' };
+  return voice.laned ? { on: true } : { on: false, why: voice.offLane ?? 'new' };
 }
 
 function outlineOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): OutlineVoice {
@@ -37,6 +43,7 @@ function outlineOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): OutlineVoice {
     tags: [...(spec.tags ?? [])],
     anchor: spec.anchor === undefined ? undefined : copy<Placement>(spec.anchor),
     marks: spec.marks === undefined ? undefined : { ...spec.marks },
+    lane: laneOf(mix, voice),
   };
 }
 

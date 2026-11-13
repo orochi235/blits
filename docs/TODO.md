@@ -38,9 +38,6 @@ Owner tags:
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
   release carrying it.
-- **[agent] Nothing public says whether a voice runs on a lane.** A consumer checking that its
-  voices got their lanes back (klieg's `level()` hinges, 2026-11-12) has to read the private
-  `mix.lanes.byId`. `Mix.describe()`'s voices could carry it, with the reason one is off.
 
 ## Speed
 

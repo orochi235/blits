@@ -38,7 +38,16 @@ import { type Fitting, lingers } from './spans.js';
 import type { Staggers } from './staggers.js';
 import { Filled, Store } from './store.js';
 import type { Parted, Parting, Snap, Subject } from './subject.js';
-import type { Anchor, Channel, FadeSpec, FitResult, Handle, Patch, VoiceSpec } from './types.js';
+import type {
+  Anchor,
+  Channel,
+  FadeSpec,
+  FitResult,
+  Handle,
+  OffLane,
+  Patch,
+  VoiceSpec,
+} from './types.js';
 import { warnOnce } from './warn.js';
 
 export const none: readonly string[] = Object.freeze([]);
@@ -200,6 +209,8 @@ export class Voice<I, O> {
   holder: Subject<unknown> | null = null;
   /** Whether its channels run as lanes this frame, so the general fold passes it by. */
   laned = false;
+  /** Why the lanes last left it off, for `describe`; undefined until they decide it. */
+  offLane: OffLane | undefined = undefined;
   /** Its crowd row, while its channels run in a crowd. */
   seat: Seat<I, O> | null = null;
   /**

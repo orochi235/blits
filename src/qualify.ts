@@ -11,7 +11,7 @@ import { settle } from './sample.js';
 import { seated, seatOf } from './seat.js';
 import { byId } from './sorted.js';
 import type { Subject } from './subject.js';
-import type { Channel } from './types.js';
+import type { Channel, OffLane } from './types.js';
 import type { Voice } from './voice.js';
 
 /** What qualifying needs of one voice: whether its patch and spec can run on a lane, and its channels. */
@@ -61,12 +61,21 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
   const touched = lanes.touched.slice();
   lanes.touched.length = 0;
   // An owner writes nothing and no fold meets it, so it neither takes a lane nor keeps one whole.
-  const present = host.voices.filter((v) => v.state !== 'done' && v.holding === null);
+  const present: Voice<I, O>[] = [];
+  for (const v of host.voices) {
+    if (v.state === 'done') continue;
+    if (v.holding === null) present.push(v);
+    else v.offLane = 'none';
+  }
   for (const v of present) if (v.id > lanes.known) lanes.known = v.id;
   const numeric = host.channels.map((c) => numericOf(c) !== undefined);
-  // A voice writing nothing has no lane to fill, so it stays where its calls are made.
-  const fits = present.map((v) => v.slots.length > 0 && host.fits(v));
+  const whys = present.map((v) => whyOff(lanes, v));
+  const fits = whys.map((w) => w === undefined);
   if (callsOff) keepCallsOff(present, fits, host.channels);
+  // Why a voice qualifying left off is: its own reason, `keepCallsOff`'s, or, fitting, that it
+  // writes a channel that is not numeric or that an unfitting voice closed.
+  const off = (v: Voice<I, O>, i: number): OffLane =>
+    whys[i] ?? (!fits[i] ? 'calls' : v.slots.some((s) => !numeric[s]) ? 'kind' : 'shared');
   const candidates = () =>
     present.map((v, i) => ({ id: v.id, fits: fits[i] as boolean, slots: v.slots }));
   let { channels, voices } = qualify(numeric, candidates());
@@ -84,11 +93,18 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     for (const at of roles.values()) {
       const on = at.filter((i) => voices.has((present[i] as Voice<I, O>).id)).length;
       if (on === 0 || on === at.length) continue;
-      for (const i of at) fits[i] = false;
+      for (const i of at) {
+        const v = present[i] as Voice<I, O>;
+        whys[i] = voices.has(v.id) ? 'role' : off(v, i);
+        fits[i] = false;
+      }
       split = true;
     }
     if (split) ({ channels, voices } = qualify(numeric, candidates()));
   }
+  present.forEach((v, i) => {
+    v.offLane = voices.has(v.id) ? undefined : off(v, i);
+  });
   for (const lane of lanes.lanes) if (!voices.has(lane.voice.id)) leave(lanes, lane);
   const kept: Lane<I, O>[] = [];
   let crowded = 0;
@@ -200,6 +216,12 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     lane.values = lane.chans.map(() => undefined);
   }
   regroup(lanes, members);
+}
+
+/** Why a voice cannot run on a lane, its channels aside; undefined where it can. */
+function whyOff<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): OffLane | undefined {
+  // A voice writing nothing has no lane to fill, so it stays where its calls are made.
+  return v.slots.length > 0 ? lanes.host.unfit(v) : 'none';
 }
 
 /** Whether `keepCallsOff` applies; settable for bench/frame.mjs. */
@@ -326,9 +348,11 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     // A role's members are on lanes together or not at all, so one joining may move the others.
     if (v.spec.role !== undefined) return qualify();
     const laned = v.slots.some((slot) => lanes.bySlot[slot] !== undefined);
-    const fits = v.slots.length > 0 && lanes.host.fits(v);
+    const why = whyOff(lanes, v);
+    const fits = why === undefined;
     // As `keepCallsOff`: with none of its channels laned, no fitting voice but its like writes them.
     if (!laned && (!fits || (callsOff && crowdable(v) && calls(v, lanes.host.channels)))) {
+      v.offLane = why ?? 'calls';
       lanes.whole = false;
       continue;
     }

@@ -66,4 +66,66 @@ export interface OutlineVoice {
   readonly anchor: Placement | undefined;
   /** The marks it places inside itself, voice ms into a pass, which anchors can name. */
   readonly marks: Readonly<Record<string, number>> | undefined;
+  /**
+   * Whether it runs on a lane, a crowd's row counting as one, and why not where it does not, as the
+   * lanes last decided it: at the latest probe or `pull`, not at `describe`. A voice cued, or
+   * changed in a way that moves it on or off, since that probe shows as it was then, or `'new'`.
+   */
+  readonly lane: OutlineLane;
 }
+
+/**
+ * Whether a voice runs on a lane, as {@link OutlineVoice.lane} reports it.
+ *
+ * @category mix
+ */
+export type OutlineLane = { readonly on: true } | { readonly on: false; readonly why: OffLane };
+
+/**
+ * Why a voice runs off lanes, on the general path. Each names the first rule the lanes found it
+ * breaking:
+ *
+ * - `'mix'`: the mix runs no lanes, under `lanes: false` or from `@msb235/blits/lean`.
+ * - `'new'`: no probe or `pull` has met it since it was cued, so the lanes have not decided.
+ * - `'none'`: it writes no channel, as an owner, span or arc does.
+ * - `'state'`: its patch keeps state, declared or through `setting.keep`, or its weight signal
+ *   does.
+ * - `'input'`: its weight is an input signal whose changes the lanes cannot hear: flagged `input`
+ *   by hand rather than made by `input()`, or any input under history's `inputs`.
+ * - `'reads'`: its patch `reads` host fields.
+ * - `'owner'`: an owner above it weighs by a signal.
+ * - `'wait'`: it waits to start under `freeze: 'before'`, or is fading before it started.
+ * - `'back'`: it runs backward with no end, or fades out from where it ran back to its start.
+ * - `'from'`: it is cued `from: 'current'`.
+ * - `'rest'`: it fades out to rest, `fade({ at: 'rest' })`.
+ * - `'axes'`: it weighs a vec's axes apart, by `axes`.
+ * - `'lerp'`: a `keys` patch whose `lerpBy` is not the channel's own lerp.
+ * - `'last'`: it writes a `last` channel while playing a motion, in a role (a blend's members
+ *   among them), or naming one subject.
+ * - `'role'`: another member of its role is off, which takes every member with it.
+ * - `'calls'`: an `fn` voice writing only vecs, where no voice but its like writes them, which
+ *   runs faster off lanes than on, where a fill walks its subjects a second time.
+ * - `'kind'`: it writes a channel no lane folds, such as a custom one.
+ * - `'shared'`: it writes a channel that a voice off lanes also writes, which closes the channel.
+ *
+ * @category mix
+ */
+export type OffLane =
+  | 'mix'
+  | 'new'
+  | 'none'
+  | 'state'
+  | 'input'
+  | 'reads'
+  | 'owner'
+  | 'wait'
+  | 'back'
+  | 'from'
+  | 'rest'
+  | 'axes'
+  | 'lerp'
+  | 'last'
+  | 'role'
+  | 'calls'
+  | 'kind'
+  | 'shared';
