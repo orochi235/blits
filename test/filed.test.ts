@@ -7,9 +7,22 @@ interface V extends Filer<number> {
   readonly named: { readonly list: readonly number[]; has(subject: number): boolean };
 }
 
+/** How many times any voice's `has` has been asked. */
+let asked = 0;
+
 const voice = (id: number, list: readonly number[]): V => {
   const set = new Set(list);
-  return { id, named: { list, has: (s: number) => set.has(s) }, group: null };
+  return {
+    id,
+    named: {
+      list,
+      has: (s: number) => {
+        asked++;
+        return set.has(s);
+      },
+    },
+    group: null,
+  };
 };
 
 const range = (n: number, from = 0) => Array.from({ length: n }, (_, i) => from + i);
@@ -17,12 +30,9 @@ const range = (n: number, from = 0) => Array.from({ length: n }, (_, i) => from 
 /** Dead groups still listed. */
 const dead = (f: Filed<number, V>) => (f as unknown as { dead: unknown[] }).dead.length;
 
-/** How many subjects groups have left to be listed under. */
-const filing = (f: Filed<number, V>) => (f as unknown as { unfiled: number }).unfiled;
-
-/** Sweeps until no group is left to list or take off. */
+/** Sweeps until no dead group is left to take off. */
 const settle = (f: Filed<number, V>) => {
-  for (let i = 0; filing(f) > 0 || dead(f) > 0; i++) {
+  for (let i = 0; dead(f) > 0; i++) {
     f.sweep();
     expect(i).toBeLessThan(100);
   }
@@ -67,12 +77,12 @@ describe('Filed', () => {
   });
 
   it('takes a dead group off its subjects a share at a time, sync by sync', () => {
-    const f = new Filed<number, V>('group', 0);
+    const f = new Filed<number, V>();
     const a = voice(1, range(100_000));
     const b = voice(2, [7]);
     f.file(a);
     f.file(b);
-    settle(f);
+    for (let s = 0; s < 100_000; s++) f.get(s);
     f.unfile(a);
     expect(f.get(7)).toEqual([b]);
     expect(f.get(8)).toBeUndefined();
@@ -88,8 +98,8 @@ describe('Filed', () => {
   });
 
   it('lets a voice naming a dead group’s list join it before the sweep begins, and not after', () => {
-    const f = new Filed<number, V>('group', 0);
-    const list = range(50_000);
+    const f = new Filed<number, V>();
+    const list = range(3000);
     const a = voice(1, list);
     f.file(a);
     f.unfile(a);
@@ -98,7 +108,6 @@ describe('Filed', () => {
     const g = b.group;
     expect(g).not.toBeNull();
     expect(dead(f)).toBe(0);
-    settle(f);
     f.unfile(b);
     f.sweep();
     const c = voice(3, list);
@@ -106,87 +115,58 @@ describe('Filed', () => {
     expect(c.group).not.toBe(g);
     settle(f);
     expect(f.get(0)).toEqual([c]);
-    expect(f.get(49_999)).toEqual([c]);
-    expect(raw(f, 49_999)).toEqual([c.group]);
+    expect(f.get(2999)).toEqual([c]);
+    expect(raw(f, 2999)).toEqual([c.group]);
   });
 });
 
-describe('Filed listing a long list sync by sync', () => {
-  it('finds its voices under every subject before they are listed, in voice order', () => {
-    const f = new Filed<number, V>('group', 0);
+describe('Filed listing a long list where get asks', () => {
+  it('lists a long group under a subject only once get asks for it, in voice order', () => {
+    const f = new Filed<number, V>();
     const a = voice(2, range(20_000));
     const b = voice(1, [5]);
     const c = voice(3, [5]);
     for (const v of [a, b, c]) f.file(v);
+    f.sweep();
     expect(raw(f, 19_999)).toBeUndefined();
     expect(f.get(5)).toEqual([b, a, c]);
+    expect(raw(f, 5)).toEqual([b, c, a.group]);
     expect(f.get(19_999)).toEqual([a]);
+    expect(raw(f, 19_999)).toEqual([a.group]);
+    expect(raw(f, 0)).toBeUndefined();
     expect(f.get(20_000)).toBeUndefined();
-    f.sweep();
-    expect(raw(f, 0)).toEqual([a.group]);
-    expect(raw(f, 19_999)).toBeUndefined();
-    expect(f.get(0)).toEqual([a]);
-    expect(f.get(19_999)).toEqual([a]);
+    expect(raw(f, 20_000)).toBeUndefined();
     const d = voice(4, range(20_000));
     f.file(d);
     expect(d.group).toBe(a.group);
     expect(f.get(19_999)).toEqual([a, d]);
-    settle(f);
-    expect(raw(f, 19_999)).toEqual([a.group]);
     expect(f.get(5)).toEqual([b, a, c, d]);
+    expect(raw(f, 19_999)).toEqual([a.group]);
   });
 
-  it('stops listing a group its last voice leaves, and takes off what it listed', () => {
-    const f = new Filed<number, V>('group', 0);
-    const a = voice(1, range(20_000));
-    f.file(a);
-    f.sweep();
-    f.unfile(a);
-    expect(f.get(0)).toBeUndefined();
-    expect(f.get(19_999)).toBeUndefined();
-    settle(f);
-    expect(raw(f, 0)).toBeUndefined();
-    expect(raw(f, 19_999)).toBeUndefined();
+  it('asks a subject’s long groups once, and later only those made since', () => {
+    const f = new Filed<number, V>();
+    const many = range(12, 1).map((id) => voice(id, range(10_000, (id - 1) * 5000)));
+    for (const v of many) f.file(v);
+    asked = 0;
+    expect(f.get(12_000)).toEqual([many[1], many[2]]);
+    expect(asked).toBe(12);
+    asked = 0;
+    expect(f.get(12_000)).toEqual([many[1], many[2]]);
+    expect(f.get(12_000)).toEqual([many[1], many[2]]);
+    expect(asked).toBe(0);
+    const late = voice(20, range(9000, 10_000));
+    f.file(late);
+    expect(f.get(12_000)).toEqual([many[1], many[2], late]);
+    expect(asked).toBe(1);
+    expect(raw(f, 12_000)).toEqual([many[1]?.group, many[2]?.group, late.group]);
+    f.unfile(many[1] as V);
+    asked = 0;
+    expect(f.get(12_000)).toEqual([many[2], late]);
+    expect(asked).toBe(0);
   });
 
-  it('carries on listing a dead group a voice joins before its sweep', () => {
-    const f = new Filed<number, V>('group', 0);
-    const list = range(20_000);
-    const a = voice(1, list);
-    f.file(a);
-    f.sweep();
-    const g = a.group;
-    f.unfile(a);
-    const b = voice(2, list);
-    f.file(b);
-    expect(b.group).toBe(g);
-    expect(f.get(19_999)).toEqual([b]);
-    expect(f.get(0)).toEqual([b]);
-    settle(f);
-    expect(raw(f, 0)).toEqual([b.group]);
-    expect(raw(f, 19_999)).toEqual([b.group]);
-  });
-});
-
-describe('Filed finding a few groups by their sets alone', () => {
-  it('lists the first groups of long lists nowhere, and those past them under their subjects', () => {
-    const f = new Filed<number, V>('group', 2);
-    const a = voice(1, range(10_000));
-    const b = voice(2, range(10_000, 5000));
-    const c = voice(3, range(10_000, 20_000));
-    const d = voice(4, [7]);
-    for (const v of [a, b, c, d]) f.file(v);
-    settle(f);
-    expect(raw(f, 6000)).toBeUndefined();
-    expect(raw(f, 20_000)).toEqual([c.group]);
-    expect(raw(f, 7)).toEqual([d]);
-    expect(f.get(7)).toEqual([a, d]);
-    expect(f.get(6000)).toEqual([a, b]);
-    expect(f.get(20_000)).toEqual([c]);
-    expect(f.get(30_000)).toBeUndefined();
-  });
-
-  it('forgets a group found by its set the moment its last voice leaves', () => {
+  it('forgets a long group get never listed the moment its last voice leaves', () => {
     const f = new Filed<number, V>();
     const list = range(10_000);
     const a = voice(1, list);
@@ -194,15 +174,30 @@ describe('Filed finding a few groups by their sets alone', () => {
     f.file(a);
     f.file(b);
     expect(b.group).toBe(a.group);
-    expect(f.get(9999)).toEqual([a, b]);
     f.unfile(a);
     f.unfile(b);
     expect(dead(f)).toBe(0);
     expect(f.get(9999)).toBeUndefined();
-    const c = voice(3, list);
-    f.file(c);
-    expect(c.group).not.toBe(a.group);
-    expect(f.get(0)).toEqual([c]);
+  });
+
+  it('takes a dead long group off where get listed it, and never lets a voice join it again', () => {
+    const f = new Filed<number, V>();
+    const list = range(20_000);
+    const a = voice(1, list);
+    f.file(a);
+    expect(f.get(0)).toEqual([a]);
+    const g = a.group;
+    f.unfile(a);
+    expect(f.get(0)).toBeUndefined();
+    expect(dead(f)).toBe(1);
+    const b = voice(2, list);
+    f.file(b);
+    expect(b.group).not.toBe(g);
+    expect(f.get(0)).toEqual([b]);
+    expect(f.get(19_999)).toEqual([b]);
+    settle(f);
+    expect(raw(f, 0)).toEqual([b.group]);
+    expect(raw(f, 1)).toBeUndefined();
   });
 });
 

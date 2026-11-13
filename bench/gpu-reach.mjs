@@ -12,7 +12,9 @@
 // `(c) => 0.5 + 0.5 * Math.sin(c.i * 0.37)`. MIX=owned is blinken's shape: a program owner holding four
 // scene owners 1250 ms apart, each scene's voices cued on it over every subject before frame 1: a
 // faded keys move on x and y, a wave on y looping for the scene's length, and a keys layer on x
-// staggered by `(c.i % 256) * 4` that fades in. Rows `mixer` and `gpu` only.
+// staggered by `(c.i % 256) * 4` that fades in. MIX=regions splits the subjects into 16 slices, each
+// named by a looping keys voice of its own, so the named index holds 16 groups of long lists. Rows
+// `mixer` and `gpu` only.
 // One line per row as it finishes; one JSON line per row, every frame's time and parts and the
 // conditions it ran under, appended to <out>.jsonl as the row finishes.
 import { digest, digested, run } from './gpu-harness.mjs';
@@ -96,6 +98,21 @@ const mixes = {
         m.cue({ patch: bob, owner: scene, subjects: cells, loop: SCENE / 250 });
         m.cue({ patch: nudge, owner: scene, subjects: cells, stagger: (c) => (c.i % 256) * 4, fade: { in: 300 } });
       }
+    },
+  },
+  regions: {
+    names: ['x', 'y'],
+    cpu: null,
+    cue(m, cells) {
+      const REGIONS = 16;
+      const sway = keys(1000, [
+        { at: 0, delta: { x: 0, y: 0 } },
+        { at: 0.5, delta: { x: 6, y: -3 }, ease: 'ease-in-out' },
+        { at: 1, delta: { x: 0, y: 0 } },
+      ]);
+      const size = Math.ceil(cells.length / REGIONS);
+      for (let k = 0; k < REGIONS; k++)
+        m.cue({ patch: sway, subjects: cells.slice(k * size, (k + 1) * size), loop: true, fade: { in: 200 } });
     },
   },
 };

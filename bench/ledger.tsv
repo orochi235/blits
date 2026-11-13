@@ -609,3 +609,9 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-11-13	msb-uai	a15d2c04	.	8	300	fns-second N=10000 V=1	2.100	2.000	0.952	29.5			a crowded tween keeps its one run in its crowd row, not a buffer of its own	bench/runs/2026-11-12-motion-lodge-start-ab.txt
 2026-11-13	msb-uai	a15d2c04	.	7	300	tweens^ N=10000 V=1	0.267	0.267	1.000	21.0	15.1	13.4	a crowded tween keeps its one run in its crowd row, not a buffer of its own	bench/runs/2026-11-12-motion-lodge-frame-ab.txt
 2026-11-13	msb-uai	a15d2c04	.	7	300	fns N=10000 V=1	1.429	1.418	0.992	20.0	1492.0	1491.6	a crowded tween keeps its one run in its crowd row, not a buffer of its own	bench/runs/2026-11-12-motion-lodge-frame-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	named N=100 V=1	0.020	0.021	1.050	11.5	37.4	38.6	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	named N=1000 V=1	0.114	0.116	1.018	13.0	112.4	110.9	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	named N=10000 V=1	1.959	1.734	0.885	15.0	1019.4	1019.9	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	turnover^ N=10000 V=1	0.249	0.250	1.004	15.0	179.8	188.0	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-13	teitou	bc84242b	.	6	300	churn^ N=10000 V=1	0.231	0.227	0.983	12.5	62.2	60.6	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked-cpu-ab.txt
+2026-11-12	teitou	bc84242b	.	2	300	gpu regions N=1000000 max sync	5.790	0.010	0.002	-	-	-	Filed lists a group of over 4,096 subjects only where get asks for a subject	bench/runs/2026-11-12-filed-asked.txt

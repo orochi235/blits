@@ -22,12 +22,15 @@ export type GroupSlot = 'group' | 'goneGroup';
  */
 export class Group<V> {
   voices: V[] = [];
-  /** Whether it is listed under its subjects, or found by `has` alone. */
-  listing = true;
-  /** How far down `list` the group is listed: a sync's sweep files a long one a share at a time. */
+  /**
+   * How far down `list` the group is listed; for a long one, under how many subjects `get` has
+   * listed it, and once it is dead, all of `list`, which the sweep walks.
+   */
   filed = 0;
   /** How far down `list` the sweep has taken a dead group off; -1 before it begins. */
   at = -1;
+  /** A long group's place in the order long groups were made; -1 for a shorter one. */
+  seq = -1;
 
   constructor(
     readonly list: readonly unknown[],
@@ -44,22 +47,20 @@ const TRIED = 4;
 const FLOOR = 4096;
 /** The share of the subjects dead groups are still listed under that a sync's sweep looks at, at least. */
 const SHARE = 1 / 256;
-/** The most subjects a new group is listed under as it is made; a longer list is filed by the sweep. */
-const AT_ONCE = FLOOR;
 /**
- * The most groups of longer lists found by `has` alone, never listed under their subjects: `get`
- * asks each. Listing a million subjects grows the store's WeakMap past 25 ms a doubling, and holds
- * a million small lists for the collector to walk, where the voices' own sets already hold them.
+ * The most subjects a new group is listed under as it is made. A longer list's group is listed
+ * under a subject only when `get` first asks for it: listing a million at once grows the store's
+ * WeakMap, and one doubling stalls a sync 22-40 ms however small a share each sync lists.
  */
-const SIGHTED = 8;
+const AT_ONCE = FLOOR;
 
 /**
  * Per subject, the voices naming it, in voice order. A voice naming few subjects is filed under
  * each, and taken off each as it leaves. Voices naming many are filed by group, so a voice naming
- * a million subjects joins or leaves in no time where another names the same list. A few groups of
- * long lists are found through their voices' own sets and listed nowhere; past those, a group is
- * listed under its subjects a bounded share each sync, and taken off them the same way once its
- * last voice leaves.
+ * a million subjects joins or leaves in no time where another names the same list. A group of a
+ * long list is listed under no subject until `get` asks for one, when every long group made since
+ * it last asked for that subject is asked whether it names it. Once its last voice leaves, a group
+ * is taken off its subjects a bounded share each sync.
  */
 export class Filed<I, V extends Filer<I>> {
   private readonly lists = new Store<I, (V | Group<V>)[]>();
@@ -70,26 +71,18 @@ export class Filed<I, V extends Filer<I>> {
   /** Dead groups still listed, oldest first, and how many subjects they are still listed under. */
   private readonly dead: Group<V>[] = [];
   private pending = 0;
-  /**
-   * Live groups `get` asks by `has`: those listed nowhere, then those not yet listed under all
-   * their subjects, oldest first; and how many subjects the latter have left to list.
-   */
-  private readonly sighted: Group<V>[] = [];
-  private unfiled = 0;
+  /** Live groups of long lists, in the order made, and how many long groups have been made. */
+  private readonly long: Group<V>[] = [];
+  private made = 0;
+  /** Per subject, how many long groups had been made when `get` last asked them about it. */
+  private seen = new Store<I, number>();
 
-  constructor(
-    private readonly slot: GroupSlot = 'group',
-    /** How many groups of long lists are found by `has` alone. */
-    private readonly unlisted = SIGHTED,
-  ) {}
+  constructor(private readonly slot: GroupSlot = 'group') {}
 
   /** The voices naming `subject`, in voice order; undefined where none do. Not to be changed. */
   get(subject: I): V[] | undefined {
-    const raw = this.lists.get(subject);
-    if (this.sighted.length > 0) {
-      const out = this.bySight(subject, raw);
-      if (out !== null) return out;
-    }
+    let raw = this.lists.get(subject);
+    if (this.long.length > 0) raw = this.ask(subject, raw);
     if (raw === undefined || raw.length === 0) return undefined;
     if (this.wide === 0) return raw as V[];
     if (raw.length === 1) {
@@ -122,25 +115,17 @@ export class Filed<I, V extends Filer<I>> {
       const same = this.groups.get(list.length);
       if (same === undefined) this.groups.set(list.length, [g]);
       else same.push(g);
+      this.wide++;
       if (list.length <= AT_ONCE) {
-        this.wide++;
         this.under(list, g);
         g.filed = list.length;
-      } else if (this.sightedOnly() < this.unlisted) {
-        g.listing = false;
-        this.sighted.push(g);
       } else {
-        this.wide++;
-        this.sighted.push(g);
-        this.unfiled += list.length;
+        g.seq = this.made++;
+        this.long.push(g);
       }
     } else if (g.voices.length === 0) {
       this.dead.splice(this.dead.indexOf(g), 1);
       this.pending -= g.filed;
-      if (g.filed < list.length) {
-        this.sighted.push(g);
-        this.unfiled += list.length - g.filed;
-      }
     }
     insertById(g.voices, voice);
     voice[this.slot] = g as Group<unknown>;
@@ -156,13 +141,19 @@ export class Filed<I, V extends Filer<I>> {
     const i = g.voices.indexOf(voice);
     if (i >= 0) g.voices.splice(i, 1);
     if (g.voices.length > 0) return;
-    const f = this.sighted.indexOf(g);
-    if (f >= 0) this.sighted.splice(f, 1);
-    if (!g.listing) {
+    if (g.seq >= 0) {
+      // Never joined again: a subject already asked about would not ask it a second time.
+      const long = this.long;
+      long.splice(long.indexOf(g), 1);
+      if (long.length === 0) this.seen = new Store();
       this.ungroup(g);
-      return;
+      if (g.filed === 0) {
+        this.wide--;
+        return;
+      }
+      g.filed = g.list.length;
+      g.at = 0;
     }
-    if (f >= 0) this.unfiled -= g.list.length - g.filed;
     this.dead.push(g);
     this.pending += g.filed;
   }
@@ -172,7 +163,6 @@ export class Filed<I, V extends Filer<I>> {
    * listed under, each as many as this sync's share.
    */
   sweep(): void {
-    this.fill();
     const dead = this.dead;
     if (dead.length === 0) return;
     let budget = Math.max(FLOOR, Math.ceil(this.pending * SHARE));
@@ -201,61 +191,24 @@ export class Filed<I, V extends Filer<I>> {
     if (same.length === 0) this.groups.delete(g.list.length);
   }
 
-  /** How many groups are found by `has` alone. */
-  private sightedOnly(): number {
-    let n = 0;
-    for (const g of this.sighted) if (!g.listing) n++;
-    return n;
-  }
-
-  private fill(): void {
-    if (this.unfiled === 0) return;
-    const sighted = this.sighted;
-    let budget = Math.max(FLOOR, Math.ceil(this.unfiled * SHARE));
-    for (let k = 0; k < sighted.length && budget > 0; ) {
-      const g = sighted[k] as Group<V>;
-      const list = g.list as readonly I[];
-      if (!g.listing) {
-        k++;
-        continue;
-      }
-      const end = Math.min(list.length, g.filed + budget);
-      this.under(list, g, g.filed, end);
-      budget -= end - g.filed;
-      this.unfiled -= end - g.filed;
-      g.filed = end;
-      if (end < list.length) break;
-      sighted.splice(k, 1);
-    }
-  }
-
-  /**
-   * A subject's voices where a group `get` asks by `has` names it and is not listed under it, in
-   * voice order; null where none is.
-   */
-  private bySight(subject: I, raw: (V | Group<V>)[] | undefined): V[] | null {
-    let only: Group<V> | null = null;
-    let out: V[] | null = null;
-    for (const g of this.sighted) {
-      if (g.listing && raw !== undefined && raw.includes(g)) continue;
+  /** `subject`'s list once each long group made since `get` last asked about it, naming it, is in it. */
+  private ask(subject: I, raw: (V | Group<V>)[] | undefined): (V | Group<V>)[] | undefined {
+    const seen = this.seen.get(subject) ?? 0;
+    if (seen === this.made) return raw;
+    const long = this.long;
+    let k = long.length;
+    while (k > 0 && (long[k - 1] as Group<V>).seq >= seen) k--;
+    for (; k < long.length; k++) {
+      const g = long[k] as Group<V>;
       if (!(g.has as (s: I) => boolean)(subject)) continue;
-      if (only === null && out === null) {
-        only = g;
-        continue;
-      }
-      out ??= (only as Group<V>).voices.slice();
-      for (const v of g.voices) out.push(v);
+      if (raw === undefined || raw === EMPTIED) {
+        raw = [g];
+        this.lists.set(subject, raw);
+      } else raw.push(g);
+      g.filed++;
     }
-    if (only === null) return null;
-    // One group and nothing listed: its own voices, as `get` hands a listed group's.
-    if (out === null && (raw === undefined || raw.length === 0)) return only.voices;
-    out ??= only.voices.slice();
-    if (raw !== undefined)
-      for (const e of raw) {
-        if (e instanceof Group) for (const v of e.voices) out.push(v);
-        else out.push(e);
-      }
-    return byId(out);
+    this.seen.set(subject, this.made);
+    return raw;
   }
 
   /** A group `list` may join: one naming the same subjects in the same order that is not being swept. */
@@ -290,7 +243,10 @@ export class Filed<I, V extends Filer<I>> {
       // Shifted by hand: `splice` makes an array of what it took, once a subject.
       for (let k = i + 1; k < list.length; k++) list[k - 1] = list[k] as V | Group<V>;
       list.pop();
-      if (list.length === 0) emptied(lists, subject);
+      if (list.length > 0) continue;
+      emptied(lists, subject);
+      // A value's answer goes with its list, as a host keying by value would otherwise leak it.
+      if (typeof subject !== 'object' || subject === null) this.seen.delete(subject);
     }
   }
 }
