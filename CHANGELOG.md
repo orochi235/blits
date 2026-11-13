@@ -51,6 +51,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   a subject's wait out its `stagger` or `start`. History kept no copy of a record until it first
   stepped, so the replay met the subject again past its start and skipped to the step grid, one
   step behind the live run; a waiting record is now copied when first probed.
+- The `gpu` engine does the same. After a seek back its table of `stagger` answers held the latest
+  ones, and a `drop` it played again had it ask `stagger` once more, so a `stagger` answering
+  differently on a second ask placed the subject elsewhere than the live mix had. It now takes its
+  answers from the voice's kept ones, as the CPU does.
 
 ## 1.3.0
 
