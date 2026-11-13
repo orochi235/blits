@@ -1,6 +1,6 @@
 import type { Asked } from '../asked.js';
 import { headOf } from '../chain.js';
-import { meet } from '../delay.js';
+import { staggerMet } from '../delay.js';
 import type { Mixer } from '../mixer.js';
 import type { Named } from '../named.js';
 import { Store } from '../store.js';
@@ -157,7 +157,7 @@ export class Answers<I> {
     if (k === null || (k !== undefined && !sought)) return k;
     if (k !== undefined) {
       const held = voice.subjects.get(s);
-      const met = held?.reaches ? held.delay : meet(this.mix, voice, s, staggerOf, k);
+      const met = held?.reaches ? held.delay : staggerMet(this.mix, voice, s, staggerOf, k);
       known.set(s, met);
       return met;
     }
@@ -170,7 +170,7 @@ export class Answers<I> {
     else {
       const { target, stagger } = voice.spec;
       const reaches = target ? target(s) : true;
-      answer = !reaches ? null : stagger ? meet(this.mix, voice, s, staggerOf) : 0;
+      answer = !reaches ? null : stagger ? staggerMet(this.mix, voice, s, staggerOf) : 0;
     }
     known.set(s, answer);
     return answer;

@@ -10,7 +10,7 @@ import type { Voice } from './voice.js';
 export function delayOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): number {
   const known = voice.named?.delays?.get(subject);
   if (known !== undefined) return known;
-  return meet(mix, voice, subject, asked);
+  return staggerMet(mix, voice, subject, asked);
 }
 
 /**
@@ -18,7 +18,7 @@ export function delayOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I):
  * gave here before a seek back, else `had`, else `ask`'s, kept for a seek back to give again. The
  * one pathway for both the CPU's meetings and a gpu side's table.
  */
-export function meet<I, O>(
+export function staggerMet<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
