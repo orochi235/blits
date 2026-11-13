@@ -1,0 +1,36 @@
+# teitou (Apple M5 Max, apple metal-3), 2026-11-12, headless Chromium, node v26.13.0
+# onto do --kind bench --node teitou --gui --solo -- A_PATCH=bench/runs/2026-11-12-gpu-cue-levels.patch \
+#   MIX=owned ROWS=gpu:1000000,gpu:100000 FRAMES=300 WARM=30 bench/gpu-ab.sh bc84242b bench/gpu-reach.mjs bench/runs/2026-11-12-gpu-codes-copy/start
+# Follows 2026-11-12-gpu-cue-levels.txt. A timing block's level codes past 64 KB (32,768 subjects)
+# go up once into a GPU buffer of their own, and wherever the block is laid in `persub` they are
+# copied there by the frame's command encoder (`copyBufferToBuffer`), not sent from the CPU. For a
+# voice cued with a named stagger the buffer is made at cue, through the same `delayed` hook, so
+# the frame it starts in sends nothing per subject; for any other the first write makes it. A
+# block moved by another ending is copied again on the GPU. Each buffer is destroyed once its voice
+# is done or its block lays other levels, and all of them at `close`.
+# a is bc84242b with 2026-11-12-gpu-cue-levels.patch (the levels at cue alone), b the tree.
+# Raw records: 2026-11-12-gpu-codes-copy/start-{a1,b1,b2,a2}.jsonl.
+#
+# Start frames (75, 150, 225) and the frames a scene's staggered voice ends (122, 197, 272), ms:
+# sync + fold / the whole frame with its GPU wait.
+#              75             150            225            122            197            272
+# a1  1M     2.00/ 2.64     1.12/ 1.53     1.01/ 1.46     0.58/ 0.97     0.58/ 0.96     0.53/ 0.93
+# a1  100k   0.83/ 1.24     0.27/ 0.47     0.26/ 0.48     0.21/ 0.39     0.21/ 0.41     0.13/ 0.33
+# b1  1M     0.60/ 1.15     0.19/ 0.58     0.13/ 0.54     0.17/ 0.56     0.15/ 0.55     0.10/ 0.47
+# b1  100k   0.60/ 0.91     0.17/ 0.59     0.13/ 0.35     0.17/ 0.38     0.17/ 0.37     0.09/ 0.27
+# b2  1M     0.73/ 1.47     0.19/ 0.57     0.14/ 0.56     0.17/ 0.58     0.15/ 0.55     0.10/ 0.48
+# b2  100k   0.62/ 0.90     0.18/ 0.43     0.13/ 0.37     0.18/ 0.41     0.17/ 0.41     0.10/ 0.39
+# a2  1M     1.77/ 2.69     1.17/ 1.62     1.11/ 1.60     0.68/ 1.18     0.63/ 1.03     0.57/ 0.98
+# a2  100k   0.72/ 1.07     0.27/ 0.49     0.22/ 0.44     0.19/ 0.41     0.19/ 0.40     0.12/ 0.31
+#
+# Medians of sync + fold over both runs a side (6 frames), U as bench/medians.mjs gives it:
+#   start 1M     a 1.115  b 0.190  ratio 0.170  U 0.0
+#   start 100k   a 0.270  b 0.175  ratio 0.648  U 8.0
+#   end   1M     a 0.575  b 0.150  ratio 0.261  U 0.0
+#   end   100k   a 0.195  b 0.170  ratio 0.872  U 8.0
+# Against bc84242b (2026-11-12-gpu-cue-levels.txt's a), the two changes together: start at 1M
+# 3.065 to 0.190 ms, end 0.580 to 0.150. Frame medians 0.385-0.430 ms at 1M and 0.215-0.245 at 100k
+# on both sides. Frame 75 is the first start, where `persub` is made again at its new size and
+# every mirror written into it: 0.60-0.73 ms on b.
+# What a cue of such a voice now pays instead is not timed here: the hash, about 2 ms at 1M
+# (2026-11-11-levels-hash.txt), and a 2 MB buffer mapped, filled and unmapped.

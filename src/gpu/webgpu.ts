@@ -59,7 +59,12 @@ export interface GpuDevice {
   };
   readonly lost: Promise<unknown>;
   readonly limits?: { readonly maxStorageBufferBindingSize?: number };
-  createBuffer(desc: { size: number; usage: number; label?: string }): GpuBuffer;
+  createBuffer(desc: {
+    size: number;
+    usage: number;
+    label?: string;
+    mappedAtCreation?: boolean;
+  }): GpuBuffer;
   createShaderModule(desc: { code: string; label?: string }): GpuShaderModule;
   createBindGroupLayout(desc: {
     entries: readonly { binding: number; visibility: number; buffer: { type: string } }[];

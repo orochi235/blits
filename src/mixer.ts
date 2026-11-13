@@ -199,6 +199,11 @@ export class Mixer<I, O> implements Mix<I, O> {
    * holding no record of the subject, times a change by. Null with no gpu engine attached.
    */
   unheld: ((voice: Voice<I, O>, subject: I) => number | undefined) | null = null;
+  /**
+   * The gpu side's: handed each voice cued with a named stagger, to work out its delays' levels
+   * ahead of the frame it starts. Null with no gpu engine attached.
+   */
+  delayed: ((voice: Voice<I, O>) => void) | null = null;
   /** The gpu side's: told of each subject `drop` lets go of. Null with no gpu engine attached. */
   unmet: ((subject: I) => void) | null = null;
   /** Whether history records each input signal's reads, which `record` keeps. */

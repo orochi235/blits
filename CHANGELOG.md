@@ -22,6 +22,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A frame where staggered voices naming many subjects start or end costs far less on the gpu
+  engine: at 1M subjects, 0.13–0.19 ms of sync and fold where a scene starts, from 2.8–3.2 (0.6–0.7
+  for the first, from 3.6–4.0), and 0.10–0.17 where its staggered voice ends, from 0.53–0.67
+  (teitou). A voice's distinct delays are
+  worked out as it is cued, and its codes past 64 KB sent once into a buffer of their own and
+  copied on the GPU wherever they are laid.
 - A hold's `free` no longer throws for a host's seek to a frame the hold's own `seek` let go
   meanwhile: it seeks that frame's mix time instead. A host seek naming a frame history does not
   hold is refused when the host makes it, not at `free`.
