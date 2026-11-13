@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { OutlineVoice } from '../src/index.js';
-import { kit, level, max, mix, patch, sum } from '../src/index.js';
+import type { Channel, OutlineVoice } from '../src/index.js';
+import { color, kit, last, level, max, mix, patch, sum, vec } from '../src/index.js';
 
 interface Pose {
   a: number;
@@ -48,6 +48,7 @@ describe('describe', () => {
       tags: ['x'],
       anchor: undefined,
       marks: undefined,
+      lane: { on: false, why: 'new' },
     });
     expect(m.describe().voices.map((x) => x.id)).toEqual(m.voices().map((x) => x.id));
   });
@@ -138,5 +139,161 @@ describe('describe', () => {
     m.sync(0);
     m.sync(500);
     expect(m.describe().voices.map((v) => v.name)).toEqual(['long']);
+  });
+});
+
+interface LanePose {
+  a: number;
+  b: number;
+  v: [number, number];
+  t: number[];
+  odd: number;
+}
+// Not a stock channel, so never laned.
+const odd: Channel<number> = {
+  rest: 0,
+  merge: (x, y) => x + y,
+  scale: (x, w) => x * w,
+  lerp: (x, y, u) => x + (y - x) * u,
+};
+const LK = kit<LanePose>({ a: sum(), b: sum(), v: vec(2, sum()), t: color(last()), odd });
+const writes = (...w: (keyof LanePose)[]) => patch<Row, LanePose>(1000, () => ({}), { writes: w });
+const kept = (...w: (keyof LanePose)[]) =>
+  patch<Row, LanePose, number>(1000, () => ({}), { writes: w, state: () => 0 });
+
+type LaneMix = ReturnType<typeof mix<Row, LanePose>>;
+
+/** Cues on a fresh mix, then syncs and probes one subject so the lanes decide. */
+function laneOf(cue: (m: LaneMix) => void, opts: { lanes?: boolean } = {}) {
+  const m = mix<Row, LanePose>(LK, opts);
+  cue(m);
+  m.sync(0);
+  m.probe({ id: 'x' });
+  return (name: string) => byName(m.describe().voices, name).lane;
+}
+
+describe('describe: whether a voice runs on a lane', () => {
+  it('says a voice that qualifies is on its lane', () => {
+    const lane = laneOf((m) => m.cue({ name: 'on', patch: writes('a') }));
+    expect(lane('on')).toEqual({ on: true });
+  });
+
+  it('says new for a voice the lanes have not met since it was cued', () => {
+    const m = mix<Row, LanePose>(LK);
+    m.cue({ name: 'fresh', patch: writes('a') });
+    expect(byName(m.describe().voices, 'fresh').lane).toEqual({ on: false, why: 'new' });
+  });
+
+  it('says mix for every voice of a mix with lanes off', () => {
+    const lane = laneOf((m) => m.cue({ name: 'v', patch: writes('a') }), { lanes: false });
+    expect(lane('v')).toEqual({ on: false, why: 'mix' });
+  });
+
+  it("keeps a level()'s voice on its lane, and a signal no input() made off it", () => {
+    const flagged = Object.assign(() => 1, { input: true as const });
+    const lane = laneOf((m) => {
+      m.cue({ name: 'level', patch: writes('a'), weight: level(1) });
+      m.cue({ name: 'plain', patch: writes('b'), weight: () => 1 });
+      m.cue({ name: 'flagged', patch: writes('t'), weight: flagged });
+    });
+    expect(lane('level')).toEqual({ on: true });
+    expect(lane('plain')).toEqual({ on: true });
+    expect(lane('flagged')).toEqual({ on: false, why: 'input' });
+  });
+
+  it('says last for each member of a blend writing a last channel', () => {
+    const m = mix<Row, LanePose>(LK);
+    m.blend([writes('t'), writes('t')], level(0), { name: 'bl' });
+    m.sync(0);
+    m.probe({ id: 'x' });
+    const lanes = m
+      .describe()
+      .voices.filter((v) => v.name === 'bl')
+      .map((v) => v.lane);
+    expect(lanes).toEqual([
+      { on: false, why: 'last' },
+      { on: false, why: 'last' },
+    ]);
+  });
+
+  it('says state for a patch keeping state, and shared for a voice on a channel it closed', () => {
+    const lane = laneOf((m) => {
+      m.cue({ name: 'kept', patch: kept('a') });
+      m.cue({ name: 'beside', patch: writes('a', 'b') });
+    });
+    expect(lane('kept')).toEqual({ on: false, why: 'state' });
+    expect(lane('beside')).toEqual({ on: false, why: 'shared' });
+  });
+
+  it('says kind for a voice writing a channel no lane folds', () => {
+    const lane = laneOf((m) => m.cue({ name: 'odd', patch: writes('a', 'odd') }));
+    expect(lane('odd')).toEqual({ on: false, why: 'kind' });
+  });
+
+  it('says role for a member kept off by another, which gives its own reason', () => {
+    const lane = laneOf((m) => {
+      m.cue({ name: 'kept', role: 'r', patch: kept('a') });
+      m.cue({ name: 'other', role: 'r', patch: writes('b') });
+    });
+    expect(lane('kept')).toEqual({ on: false, why: 'state' });
+    expect(lane('other')).toEqual({ on: false, why: 'role' });
+    const closed = laneOf((m) => {
+      m.cue({ name: 'odd', role: 'r', patch: writes('odd') });
+      m.cue({ name: 'other', role: 'r', patch: writes('b') });
+    });
+    expect(closed('odd')).toEqual({ on: false, why: 'kind' });
+    expect(closed('other')).toEqual({ on: false, why: 'role' });
+  });
+
+  it('says none for an owner, and owner for a voice under one weighted by a signal', () => {
+    const lane = laneOf((m) => {
+      const o = m.owns({ name: 'own', weight: level(1) });
+      m.cue({ name: 'kid', patch: writes('a'), owner: o });
+    });
+    expect(lane('own')).toEqual({ on: false, why: 'none' });
+    expect(lane('kid')).toEqual({ on: false, why: 'owner' });
+  });
+
+  it('says calls for a lone fn voice on a vec, which a fill would walk twice', () => {
+    const lane = laneOf((m) => m.cue({ name: 'fn', patch: writes('v') }));
+    expect(lane('fn')).toEqual({ on: false, why: 'calls' });
+  });
+
+  it('says wait for a voice frozen before a start still to come', () => {
+    const lane = laneOf((m) =>
+      m.cue({ name: 'later', patch: writes('a'), start: 500, freeze: 'before' }),
+    );
+    expect(lane('later')).toEqual({ on: false, why: 'wait' });
+  });
+
+  it('takes up voices cued between probes', () => {
+    const m = mix<Row, LanePose>(LK);
+    m.cue({ name: 'first', patch: writes('a') });
+    m.sync(0);
+    m.probe({ id: 'x' });
+    m.cue({ name: 'kept', patch: kept('b') });
+    m.cue({ name: 'more', patch: writes('a') });
+    m.sync(16);
+    m.probe({ id: 'x' });
+    m.cue({ name: 'odd', patch: writes('odd') });
+    m.sync(32);
+    m.probe({ id: 'x' });
+    const { voices } = m.describe();
+    expect(byName(voices, 'kept').lane).toEqual({ on: false, why: 'state' });
+    expect(byName(voices, 'more').lane).toEqual({ on: true });
+    expect(byName(voices, 'odd').lane).toEqual({ on: false, why: 'kind' });
+  });
+
+  it('reports a voice moving off its lane as of the last probe', () => {
+    const m = mix<Row, LanePose>(LK);
+    m.cue({ name: 'lead', patch: writes('a') });
+    m.sync(0);
+    m.probe({ id: 'x' });
+    expect(byName(m.describe().voices, 'lead').lane).toEqual({ on: true });
+    m.cue({ name: 'kept', patch: kept('a') });
+    m.sync(16);
+    expect(byName(m.describe().voices, 'lead').lane).toEqual({ on: true });
+    m.probe({ id: 'x' });
+    expect(byName(m.describe().voices, 'lead').lane).toEqual({ on: false, why: 'shared' });
   });
 });

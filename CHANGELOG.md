@@ -14,6 +14,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   `{ x, r }` is a span on a line; `Circle` stays as the ball on 2 axes. Deprecated: `cell` as
   `plot`'s third argument, `plot(subjects, xy, cell)`, which is still taken for this release with a
   warning once a mix outside production.
+- `mix.describe()` says whether each voice runs on a lane: its `lane` is `{ on: true }`, or
+  `{ on: false, why }`, where `why` names the rule that kept it off, such as `'state'` for a patch
+  keeping state, `'input'` for an input signal no `input()` made, or `'shared'` for a channel a voice
+  off lanes also writes (`OffLane` lists them). It reads what the lanes decided at the last probe or
+  `pull`, so a voice cued since reads `'new'`.
 
 ### Fixed
 

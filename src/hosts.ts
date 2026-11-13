@@ -22,7 +22,7 @@ import { heard } from './signals.js';
 import { cuedById } from './strays.js';
 import type { Subject } from './subject.js';
 import { record, taping } from './tape.js';
-import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
+import type { Booker, BookOptions, Channel, Doubt, Handle, OffLane } from './types.js';
 import { unreach } from './unreached.js';
 import type { Voice } from './voice.js';
 
@@ -60,7 +60,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     channels: mix.channels,
     names: mix.names,
     clock: mix,
-    fits: (voice) => fits(mix, voice),
+    unfit: (voice) => unfit(mix, voice),
     meet: (voice, subject, head, slot) => {
       for (let held = head; held !== null; held = held.next) if (held.voice === voice) return held;
       return mix.held(voice, subject, slot);
@@ -129,45 +129,44 @@ export function crowdable<I, O>(v: Voice<I, O>): boolean {
 }
 
 /**
- * Whether a voice's patch and spec can run on a lane, its channels aside. A voice whose patch has
- * kept state on a record through `setting.keep` is stateful from then on, and leaves its lane;
- * one that starts keeping partway through may advance that state once for one subject probed the
- * frame before it starts and not on that frame, which declaring `state` avoids.
+ * Why a voice's patch and spec cannot run on a lane, its channels aside; undefined where they
+ * can. A voice whose patch has kept state on a record through `setting.keep` is stateful from
+ * then on, and leaves its lane; one that starts keeping partway through may advance that state
+ * once for one subject probed the frame before it starts and not on that frame, which declaring
+ * `state` avoids.
  */
-export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
+export function unfit<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): OffLane | undefined {
   const spec = voice.spec;
   const patch = voice.patch;
-  if (voice.keeping) return false;
+  if (voice.keeping) return 'state';
   // Waiting to start, a voice shows the frame it will start on, which no fill reads its clock for.
-  if ((voice.freezesBefore || voice.state === 'fading') && voice.unstarted(mix.now)) return false;
+  if ((voice.freezesBefore || voice.state === 'fading') && voice.unstarted(mix.now)) return 'wait';
   // A fill takes a time before 0 as before a subject's start, which no time is for this voice.
-  if (voice.beginless || voice.out?.back === true) return false;
+  if (voice.beginless || voice.out?.back === true) return 'back';
   // A fill weighs a voice's owners once for every subject, which a signal on one would not be.
-  if (voice.owner !== null && signalled(voice)) return false;
+  if (voice.owner !== null && signalled(voice)) return 'owner';
   // What can change between two probes without `Lanes.current` hearing of it keeps a voice off:
   // an input signal that does not report its changes, one that history records per probe, and a
   // host field.
   const w = spec.weight;
-  if (typeof w === 'function' && w.input && (mix.opts.history?.inputs || !heard(w))) return false;
-  if (patch.reads !== undefined && patch.reads.length > 0) return false;
+  if (typeof w === 'function' && w.input && (mix.opts.history?.inputs || !heard(w))) return 'input';
+  if (patch.reads !== undefined && patch.reads.length > 0) return 'reads';
   // A role on lanes gathers keys and fn members; a motion member keeps it on the general path.
-  if (spec.role !== undefined && voice.motion !== undefined) return false;
-  if (spec.from === 'current') return false;
+  if (spec.role !== undefined && voice.motion !== undefined) return 'role';
+  if (spec.from === 'current') return 'from';
   // A lane folds every axis of a channel at one weight.
-  if (voice.axes !== null) return false;
+  if (voice.axes !== null) return 'axes';
   // A rest-less channel's band is read on the record `one` folds; crowds, motions and roles fold elsewhere.
   if (
     (voice.motion !== undefined || spec.role !== undefined || crowdable(voice)) &&
     voice.slots.some((s) => numericOf(mix.channels[s] as Channel<unknown>)?.op === 'last')
   )
-    return false;
-  if (voice.out?.rest) return false;
-  if (patchKeeps(patch)) return false;
-  const built = voice.built;
-  return (
-    built === null ||
-    built.tracks.every((t, i) => t.lerp === undefined || t.lerp === voice.lerps[i])
-  );
+    return 'last';
+  if (voice.out?.rest) return 'rest';
+  if (patchKeeps(patch)) return 'state';
+  if (voice.built?.tracks.some((t, i) => t.lerp !== undefined && t.lerp !== voice.lerps[i]))
+    return 'lerp';
+  return undefined;
 }
 
 const RANK = { exact: 0, stepped: 1, held: 2 } as const;

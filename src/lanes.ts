@@ -31,7 +31,7 @@ import { reportedRow, unplace } from './rows.js';
 import { type Seat, seatOf } from './seat.js';
 import type { Watcher } from './stretch.js';
 import type { Subject } from './subject.js';
-import type { Channel } from './types.js';
+import type { Channel, OffLane } from './types.js';
 import type { Voice } from './voice.js';
 
 /** What a lane fill asks of the mix it belongs to. */
@@ -41,8 +41,8 @@ export interface LaneHost<I, O> {
   readonly names: readonly string[];
   /** The mix itself, for its clock: a getter V8 does not inline would box `now` on return. */
   readonly clock: { readonly now: number };
-  /** Whether a voice's patch and spec can run on a lane, its channels aside. */
-  fits(voice: Voice<I, O>): boolean;
+  /** Why a voice's patch and spec cannot run on a lane, its channels aside; undefined where they can. */
+  unfit(voice: Voice<I, O>): OffLane | undefined;
   /** The voice's record for a subject this probe has already linked it to, from `head` if there. */
   meet(
     voice: Voice<I, O>,
@@ -397,7 +397,7 @@ export class Lanes<I, O> implements Watcher {
    * Whether the last fill still stands: everything a fill reads that can change between two probes,
    * each stamped by `fillAll`. The clock; the mix's version, which voices coming, going, starting
    * and stopping move; a motion's retargets and pushes; and a `level` set. Whatever else can change
-   * between probes keeps its voice off lanes in `fits`.
+   * between probes keeps its voice off lanes in `unfit`.
    */
   current(now: number, version: number): boolean {
     return (

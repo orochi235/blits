@@ -389,8 +389,9 @@ export interface Mix<I, O, H = unknown> {
   voices(tag?: string): Handle<I>[];
   /**
    * What the mix holds now, as plain data: its kit's channels, and each voice `voices` lists with
-   * what it plays under, writes, plays in and is anchored to. A tool draws the mix's graph from it
-   * without reaching into the mix; it copies everything, so nothing in it changes with the mix.
+   * what it plays under, writes, plays in and is anchored to, and whether it runs on a lane. A tool
+   * draws the mix's graph from it without reaching into the mix; it copies everything, so nothing
+   * in it changes with the mix.
    */
   describe(): Outline;
   /** Anything still contributing, fading, or pending. */

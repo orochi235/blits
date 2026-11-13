@@ -575,3 +575,6 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-11-12	studio	head	dirty	6	300	tweensig N=10000 V=1	2.324	2.169	0.933	12.0	166.0	169.4	a motion lane stamps a subject's record when it reads its weight signal, so dt counts from it	bench/runs/2026-11-12-motion-signal-lane-ab.txt
 2026-11-12	teitou	head	dirty	10	300	glowbn N=10000 V=2	1.100	1.102	1.002	45.0	1245.9	1245.8	plot takes positions on 1, 2 or 3 axes; the grid and around keep a 2-axis fast path	bench/runs/2026-11-12-plot-axes-ab.txt
 2026-11-12	teitou	head	dirty	10	300	glowb N=10000 V=2	1.127	1.119	0.993	43.0	1251.2	1254.5	plot takes positions on 1, 2 or 3 axes; the grid and around keep a 2-axis fast path	bench/runs/2026-11-12-plot-axes-ab.txt
+2026-11-13	studio	head	dirty	3	300	churn N=10000 V=1	1.098	1.112	1.013	3.0	52.1	58.0	qualify records why a voice is off its lane, for describe	bench/runs/2026-11-12-describe-lane-ab.txt
+2026-11-13	studio	head	dirty	3	300	keys N=10000 V=3	1.683	1.676	0.996	4.0	181.9	174.9	qualify records why a voice is off its lane, for describe	bench/runs/2026-11-12-describe-lane-ab.txt
+2026-11-13	studio	head	dirty	3	300	fn N=1000 V=3	0.412	0.408	0.990	4.0	279.8	279.2	qualify records why a voice is off its lane, for describe	bench/runs/2026-11-12-describe-lane-ab.txt
