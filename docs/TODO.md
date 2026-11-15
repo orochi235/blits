@@ -38,6 +38,14 @@ Owner tags:
   channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
   widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
   release carrying it.
+- **[maintainer] A ticker has no single teardown** (filed 2026-11-15 from automated review).
+  `ticker()` (`src/ticker.ts`) gives a remover per `add`, `after` and `hold`, and `stop()` only
+  cancels the waiting frame: every mix's `onWake` subscription stays, so a mix waking restarts the
+  loop. A component that unmounts has to collect every remover itself. And `add` of a mix already
+  held shares the one registration, so either caller's remover takes it away from both. Wanted: an
+  idempotent `dispose()` that cancels the frame and drops every subscription, or a scoped owner
+  that collects removers, and a call on whether a second `add` counts. Either is a public addition,
+  so it ships in a minor.
 
 ## Speed
 
