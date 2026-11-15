@@ -1,4 +1,4 @@
-import { retime } from './clock.js';
+import { rampTime, retime } from './clock.js';
 import { type Motion, motionOf, type Value } from './motion.js';
 import { leave } from './origin.js';
 import { rewriting } from './spans.js';
@@ -148,6 +148,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
 
   ramp(r: number, over: number): void {
     finiteRate(r);
+    rampTime(over);
     const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;

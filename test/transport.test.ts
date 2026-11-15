@@ -17,6 +17,29 @@ describe('a timestamp that is not a number', () => {
   });
 });
 
+describe('a ramp over a time that is not one', () => {
+  it.each([Number.NaN, -1, Number.POSITIVE_INFINITY])('refuses %s, and keeps the rate', (over) => {
+    const m = mix<string, { x: number }>(kit<{ x: number }>({ x: sum() }));
+    m.sync(0);
+    expect(() => m.ramp(2, over)).toThrow(RangeError);
+    expect(m.rate).toBe(1);
+  });
+});
+
+describe('a timestamp that is not finite', () => {
+  it.each([Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'refuses %s, and leaves the clock able to go on',
+    (bad) => {
+      const m = mix<string, { x: number }>(kit<{ x: number }>({ x: sum() }));
+      m.sync(1000);
+      expect(() => m.sync(bad)).toThrow(RangeError);
+      expect(m.now).toBe(1000);
+      m.sync(1016);
+      expect(m.now).toBe(1016);
+    },
+  );
+});
+
 // Two kits that never fold together, as astv's flights and text runs.
 interface Flight {
   u: number;

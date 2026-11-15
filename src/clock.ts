@@ -1,5 +1,11 @@
 import type { Curve } from './easing.js';
 
+/** Refuses a ramp's length that is not a finite time of 0 or more, which would poison the clock. */
+export function rampTime(over: number): void {
+  if (!(over >= 0 && over < Number.POSITIVE_INFINITY))
+    throw new RangeError(`blits: a ramp takes a finite time of 0 or more, not ${over}`);
+}
+
 /** How many passes a voice's `loop` plays. */
 export function passesOf(loop: boolean | number | undefined): number {
   const l = loop ?? false;

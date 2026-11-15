@@ -1,4 +1,12 @@
-import { type Clock, elapsedWith, rateWith, rebaseWith, retime, timeWith } from './clock.js';
+import {
+  type Clock,
+  elapsedWith,
+  rampTime,
+  rateWith,
+  rebaseWith,
+  retime,
+  timeWith,
+} from './clock.js';
 import { Frames } from './frames.js';
 import { hostOf, listedAll, readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -244,8 +252,10 @@ export class Transport implements TransportApi {
   }
 
   private syncAt(timestamp: number): void {
-    if (Number.isNaN(timestamp))
-      throw new RangeError('blits: sync was given NaN; it takes the host clock as a number');
+    if (!Number.isFinite(timestamp))
+      throw new RangeError(
+        `blits: sync was given ${timestamp}; it takes the host clock as a finite number`,
+      );
     if (timestamp < this.last && !this.rebasing)
       throw new RangeError(
         `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
@@ -462,6 +472,7 @@ export class Transport implements TransportApi {
   ramp(rate: number, over: number): void {
     if (!Number.isFinite(rate))
       throw new RangeError(`blits: a mix's rate is a finite number, not ${rate}`);
+    rampTime(over);
     // A call the tape plays again sets the rate it recorded; a drive is the host's, never taped.
     if (!this.replaying && (rate < 0 || this.drive !== null)) {
       this.steer(rate, over);
