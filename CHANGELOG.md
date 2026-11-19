@@ -82,6 +82,7 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   of its own.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied: it is copied as a `DataView` over its own bytes.
 - `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so `lerp` between it and itself, and `matrix(partsOf(m))`, give it back where they collapsed it to a point.
+- A subject plotted or put at an infinity no longer hides every other subject from `within` and `around`: like one at NaN, it is in no cell.
 
 ## 1.3.0
 

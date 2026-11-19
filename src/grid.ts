@@ -73,6 +73,7 @@ export class Grid {
     for (let i = 0; i < n; i++) {
       const x = xy[a * i] as number;
       const y = a > 1 ? (xy[a * i + 1] as number) : 0;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
       if (x < x0) x0 = x;
       if (x > x1) x1 = x;
       if (y < y0) y0 = y;
@@ -110,7 +111,7 @@ export class Grid {
     }
     const starts = this.starts;
     const order = this.order;
-    // A position that is not a number is in no cell, and no ball finds it.
+    // A position that is not a finite number is in no cell, and no ball finds it.
     for (let i = 0; i < n; i++) {
       const c = cellOf(xy, a, i, x0, y0, size, cols);
       this.home[i] = c;
@@ -252,7 +253,8 @@ function cellOf(
 ): number {
   const x = xy[a * i] as number;
   const y = a > 1 ? (xy[a * i + 1] as number) : 0;
-  if (!(x >= x0) || !(y >= y0)) return -1;
+  if (!(x >= x0) || !(y >= y0) || x === Number.POSITIVE_INFINITY || y === Number.POSITIVE_INFINITY)
+    return -1;
   return Math.floor((x - x0) / size) + Math.floor((y - y0) / size) * cols;
 }
 
