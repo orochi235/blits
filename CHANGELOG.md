@@ -4,6 +4,10 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
 ## 1.4.0
 
 ### Added
@@ -76,6 +80,7 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - Starting 10,000 one-subject tween, spring or glide voices at once takes a 27.6 ms first frame
   where it took 29.2: a motion the mix plays on its lanes keeps its stretch there, with no buffer
   of its own.
+- A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied: it is copied as a `DataView` over its own bytes.
 
 ## 1.3.0
 

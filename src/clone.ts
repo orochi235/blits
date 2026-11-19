@@ -63,15 +63,21 @@ export function copy(v: unknown): unknown {
   if (typeof v !== 'object' || v === null) return v;
   // Written out rather than through `arrayCopy`: `pull` calls this per key per subject per frame.
   if (Array.isArray(v)) return [...v];
-  if (ArrayBuffer.isView(v)) return (v as unknown as { slice(): unknown }).slice();
+  if (ArrayBuffer.isView(v)) return viewCopy(v);
   return plainObject(v) ? clone(v) : v;
 }
 
 /** `v` with an array or a typed array copied, one level deep; anything else as is. */
 export function arrayCopy(v: unknown): unknown {
   if (Array.isArray(v)) return [...v];
-  if (ArrayBuffer.isView(v)) return (v as unknown as { slice(): unknown }).slice();
+  if (ArrayBuffer.isView(v)) return viewCopy(v);
   return v;
+}
+
+function viewCopy(v: ArrayBufferView): unknown {
+  if (v instanceof DataView)
+    return new DataView(v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength));
+  return (v as unknown as { slice(): unknown }).slice();
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clone } from '../src/clone.js';
+import { arrayCopy, clone, copy } from '../src/clone.js';
 
 describe('clone copies what structuredClone copies', () => {
   const shared = [1, 2];
@@ -58,5 +58,17 @@ describe('clone copies what structuredClone copies', () => {
   it('refuses what structuredClone refuses', () => {
     expect(() => clone({ f: () => 1 })).toThrow();
     expect(() => clone(Symbol('s'))).toThrow();
+  });
+});
+
+describe('copy and arrayCopy', () => {
+  it('copy a DataView as a DataView over its own bytes', () => {
+    const bytes = new Uint8Array([1, 2, 3, 4, 5, 6]);
+    const v = new DataView(bytes.buffer, 1, 4);
+    for (const c of [copy(v), arrayCopy(v)] as DataView[]) {
+      expect(c).toBeInstanceOf(DataView);
+      expect(c.buffer).not.toBe(v.buffer);
+      expect([...new Uint8Array(c.buffer, c.byteOffset, c.byteLength)]).toEqual([2, 3, 4, 5]);
+    }
   });
 });
