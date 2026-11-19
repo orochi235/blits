@@ -8,6 +8,17 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied:
+  it is copied as a `DataView` over its own bytes.
+- `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so
+  `lerp` between it and itself, and `matrix(partsOf(m))`, give it back where they collapsed it to
+  a point.
+- A subject plotted or put at an infinity no longer hides every other subject from `within` and
+  `around`: like one at NaN, it is in no cell.
+- `fling` places the subject at the release point and counts it in the launch velocity, and lets
+  go at rest when it loses the pointer capture, where the drag stayed stuck and refused the next
+  press.
+
 ## 1.4.0
 
 ### Added
@@ -80,10 +91,6 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - Starting 10,000 one-subject tween, spring or glide voices at once takes a 27.6 ms first frame
   where it took 29.2: a motion the mix plays on its lanes keeps its stretch there, with no buffer
   of its own.
-- A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied: it is copied as a `DataView` over its own bytes.
-- `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so `lerp` between it and itself, and `matrix(partsOf(m))`, give it back where they collapsed it to a point.
-- A subject plotted or put at an infinity no longer hides every other subject from `within` and `around`: like one at NaN, it is in no cell.
-- `fling` places the subject at the release point and counts it in the launch velocity, and lets go at rest when it loses the pointer capture, where the drag stayed stuck and refused the next press.
 
 ## 1.3.0
 

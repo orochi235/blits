@@ -8,12 +8,14 @@ section here.
 
 ### Fixed
 
+- `attach` on a cancelled driver throws, as `wire` does, where it kept the subject and never
+  played it.
+
 ## 0.12.5
 
 ### Changed
 
 - Built and tested against engine 1.4.0.
-- `attach` on a cancelled driver throws, as `wire` does, where it kept the subject and never played it.
 
 ## 0.12.4
 
