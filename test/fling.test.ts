@@ -132,6 +132,42 @@ describe('fling', () => {
     expect(m.probe(page).y).toBe(40);
   });
 
+  it('places the subject at the release point and counts it in the velocity', () => {
+    const g = glide<typeof page, Pose>('y', { from: 0, ms: 325, settle: 0 });
+    const m = mix<typeof page, Pose>(K);
+    m.cue({ patch: g });
+    m.sync(0);
+    m.probe(page);
+    const { target, fire } = stage();
+    fling(target, g, page);
+    fire('pointerdown', 0, 0);
+    m.sync(10);
+    fire('pointermove', 10, 10);
+    m.sync(20);
+    fire('pointerup', 20, 30);
+    m.sync(20);
+    expect(m.probe(page).y).toBe(30);
+    m.sync(10_000);
+    expect(m.probe(page).y).toBeCloseTo(30 + 1500 * 0.325, 6);
+  });
+
+  it('lets go at rest when it loses the pointer capture, and takes the next press', () => {
+    const g = glide<typeof page, Pose>('y', { from: 0, settle: 0 });
+    const m = mix<typeof page, Pose>(K);
+    m.cue({ patch: g });
+    m.sync(0);
+    m.probe(page);
+    const { target, fire, captured } = stage();
+    fling(target, g, page);
+    fire('pointerdown', 0, 0);
+    fire('pointermove', 16, 40);
+    fire('lostpointercapture', 20, 40);
+    m.sync(10_000);
+    expect(m.probe(page).y).toBe(40);
+    fire('pointerdown', 10_000, 0, 0, 2);
+    expect(captured).toEqual([1, 2]);
+  });
+
   it('moves a subject on both axes with xy', () => {
     const g = glide<typeof page, Pose, number[]>('p', { from: [0, 0], ms: 200, settle: 0 });
     const m = mix<typeof page, Pose>(K);

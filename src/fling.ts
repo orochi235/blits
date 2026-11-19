@@ -197,6 +197,7 @@ export function fling<I, O, V extends Value = number>(
   };
   const up = (e: PointerLike) => {
     if (e.pointerId !== id) return;
+    move(e);
     id = undefined;
     motion.push(subject, value(path.velocity(e.timeStamp)));
   };
@@ -210,6 +211,8 @@ export function fling<I, O, V extends Value = number>(
     ['pointermove', move],
     ['pointerup', up],
     ['pointercancel', cancel],
+    // Another element can take the capture with no cancel, and the release then lands elsewhere.
+    ['lostpointercapture', cancel],
   ];
   for (const [type, fn] of on) target.addEventListener(type, fn);
   return () => {
