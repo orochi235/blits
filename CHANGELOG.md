@@ -81,6 +81,7 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   where it took 29.2: a motion the mix plays on its lanes keeps its stretch there, with no buffer
   of its own.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied: it is copied as a `DataView` over its own bytes.
+- `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so `lerp` between it and itself, and `matrix(partsOf(m))`, give it back where they collapsed it to a point.
 
 ## 1.3.0
 

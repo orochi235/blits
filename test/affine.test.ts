@@ -143,3 +143,15 @@ describe('partsOf', () => {
     closeAll(matrix(p), matrix(given));
   });
 });
+
+describe('a transform with no extent along x', () => {
+  const flat: [number, number, number, number, number, number] = [0, 0, 1, 0, 5, 6];
+
+  it('lerps to itself unchanged', () => {
+    closeAll(affine().lerp(flat, flat, 0.5), flat);
+  });
+
+  it('reads its rotation from the y axis, so matrix(partsOf(m)) is m', () => {
+    closeAll(matrix(partsOf(flat)), flat);
+  });
+});

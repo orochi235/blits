@@ -20,12 +20,12 @@ function multiply(out: number[], a: ArrayLike<number>, b: ArrayLike<number>): nu
 /**
  * A matrix's parts, `[x, y, rotate, shear, scaleX, scaleY]`: it is the translation, times the
  * rotation, times a horizontal shear by the factor `shear`, times the scale. A flip lands in
- * `scaleY`, and a matrix with no extent along x reads as unrotated.
+ * `scaleY`, and a matrix with no extent along x takes its rotation from its y axis.
  */
 function parts(out: number[], m: ArrayLike<number>): number[] {
   const [a, b, c, d, e, f] = m as M;
   const sx = Math.hypot(a, b);
-  const angle = sx === 0 ? 0 : Math.atan2(b, a);
+  const angle = sx === 0 ? Math.atan2(-c, d) : Math.atan2(b, a);
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const sy = -sin * c + cos * d;
@@ -145,7 +145,7 @@ export function matrix(p: MatrixParts): Vec<6> {
 
 /**
  * The parts of an `affine` transform, as `matrix` takes them: `matrix(partsOf(m))` gives `m` back.
- * A flip lands in `scaleY`, and a transform with no extent along x reads as unrotated.
+ * A flip lands in `scaleY`, and a transform with no extent along x takes its rotation from its y axis.
  *
  * @category channel
  */
