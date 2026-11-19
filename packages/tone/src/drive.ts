@@ -144,6 +144,7 @@ export function drive<I, O, E = unknown>(
     noise: (options) => wire(host, new Noise(options)),
 
     attach(subject, targets) {
+      if (done) throw new Error('blits-tone: that driver is cancelled');
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
       bound.set(subject, {
         targets: (Object.entries(targets) as [keyof O, Target][]).map(([k, t]) => [k, t, null]),

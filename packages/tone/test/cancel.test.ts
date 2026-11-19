@@ -30,3 +30,25 @@ describe('cancel', () => {
     expect(error).toBeUndefined();
   });
 });
+
+describe('a cancelled driver', () => {
+  it('refuses an attach, as it refuses a wire', async () => {
+    let error: unknown;
+    await Tone.Offline(
+      () => {
+        const m = mix<unknown, Pose>(K);
+        const d = drive<unknown, Pose>(m, { kit: K, clock: () => 0 });
+        d.cancel();
+        try {
+          d.attach({}, { gain: new Tone.Gain().gain });
+        } catch (e) {
+          error = e;
+        }
+      },
+      0.1,
+      1,
+      48000,
+    );
+    expect(String(error)).toMatch(/cancelled/);
+  });
+});

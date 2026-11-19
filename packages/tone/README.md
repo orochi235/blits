@@ -165,8 +165,9 @@ tone.write();
   channel name to a Tone `Param` or `Signal`, or a native `AudioParam`; anything else needs
   `cancelAndHoldAtTime`, `linearRampToValueAtTime`, and `setValueAtTime`. Values are scheduled in
   the target's own units. Only a channel holding one number takes a target. Attaching a subject
-  twice throws. The driver builds no synths: a subject that should sound on its own needs a
-  synth of its own, which the host builds and attaches.
+  twice throws, and so does attaching to a cancelled driver. The driver builds no synths: a
+  subject that should sound on its own needs a synth of its own, which the host builds and
+  attaches.
 - **`detach(subject)`** unbinds it and cancels what was scheduled ahead, so its targets hold the
   value they had reached. A sound detached frees its node to be wired again, by this driver or
   another; a `drop` of the old sound afterward leaves alone a node another sound wires.

@@ -4,11 +4,16 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
 ## 0.12.5
 
 ### Changed
 
 - Built and tested against engine 1.4.0.
+- `attach` on a cancelled driver throws, as `wire` does, where it kept the subject and never played it.
 
 ## 0.12.4
 
