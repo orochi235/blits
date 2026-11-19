@@ -155,3 +155,17 @@ describe('a transform with no extent along x', () => {
     closeAll(matrix(partsOf(flat)), flat);
   });
 });
+
+describe('a transform with its y axis along its x axis', () => {
+  const line: [number, number, number, number, number, number] = [1, 0, 1, 0, 5, 6];
+
+  it('lerps to itself unchanged', () => {
+    closeAll(affine().lerp(line, line, 0.5), line);
+  });
+});
+
+describe('shear', () => {
+  it('goes between transforms as an amount, not as CSS skew’s angle', () => {
+    closeAll(affine().lerp([1, 0, 0, 1, 0, 0], [1, 0, 1, 2, 0, 0], 0.5), [1, 0, 0.5, 1.5, 0, 0]);
+  });
+});

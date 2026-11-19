@@ -18,9 +18,10 @@ function multiply(out: number[], a: ArrayLike<number>, b: ArrayLike<number>): nu
 }
 
 /**
- * A matrix's parts, `[x, y, rotate, shear, scaleX, scaleY]`: it is the translation, times the
- * rotation, times a horizontal shear by the factor `shear`, times the scale. A flip lands in
- * `scaleY`, and a matrix with no extent along x takes its rotation from its y axis.
+ * A matrix's parts, `[x, y, rotate, shear, scaleX, scaleY]`: the translation, the rotation, then
+ * the scaled axes, x along `scaleX` and y `shear` along x and `scaleY` across it. `shear` is an
+ * amount, not CSS's ratio to `scaleY`, so a y axis lying along x survives where `scaleY` is 0. A
+ * flip lands in `scaleY`, and a matrix with no extent along x takes its rotation from its y axis.
  */
 function parts(out: number[], m: ArrayLike<number>): number[] {
   const [a, b, c, d, e, f] = m as M;
@@ -32,7 +33,7 @@ function parts(out: number[], m: ArrayLike<number>): number[] {
   out[0] = e;
   out[1] = f;
   out[2] = angle;
-  out[3] = sy === 0 ? 0 : (cos * c + sin * d) / sy;
+  out[3] = cos * c + sin * d;
   out[4] = sx;
   out[5] = sy;
   return out;
@@ -45,8 +46,8 @@ function compose(out: number[], p: ArrayLike<number>): number[] {
   const sin = Math.sin(angle);
   out[0] = cos * sx;
   out[1] = sin * sx;
-  out[2] = (cos * k - sin) * sy;
-  out[3] = (sin * k + cos) * sy;
+  out[2] = cos * k - sin * sy;
+  out[3] = sin * k + cos * sy;
   out[4] = x;
   out[5] = y;
   return out;
@@ -85,7 +86,9 @@ function copy(out: number[], v: ArrayLike<number>): number[] {
  * transform list reads left to right: a voice that rotates, cued before one that moves, swings the
  * moved subject round the origin. A weight takes a contribution part of the way from no transform,
  * and `lerp` goes between two transforms by their parts, the rotation the short way round, as CSS
- * interpolates matrices.
+ * interpolates matrices but for the shear: it goes as an amount, where CSS goes by an angle, so
+ * between transforms whose shear and y scale both change the frames between differ from CSS's,
+ * and a transform flattened onto a line keeps its shape.
  *
  * @category channel
  */
@@ -132,24 +135,27 @@ export interface MatrixParts {
  */
 export function matrix(p: MatrixParts): Vec<6> {
   const s = p.scale ?? 1;
+  const sy = s * (p.scaleY ?? 1);
   const parts = [
     p.x ?? 0,
     p.y ?? 0,
     p.rotate ?? 0,
-    Math.tan(p.skew ?? 0),
+    Math.tan(p.skew ?? 0) * sy,
     s * (p.scaleX ?? 1),
-    s * (p.scaleY ?? 1),
+    sy,
   ];
   return compose(doubles(6, 0), parts) as M;
 }
 
 /**
- * The parts of an `affine` transform, as `matrix` takes them: `matrix(partsOf(m))` gives `m` back.
- * A flip lands in `scaleY`, and a transform with no extent along x takes its rotation from its y axis.
+ * The parts of an `affine` transform, as `matrix` takes them: `matrix(partsOf(m))` gives `m` back,
+ * but for a transform whose y axis lies along a nonzero x axis, which no skew can give. A flip lands
+ * in `scaleY`, and a transform with no extent along x takes its rotation from its y axis.
  *
  * @category channel
  */
 export function partsOf(m: ArrayLike<number>): Required<Omit<MatrixParts, 'scale'>> {
   const [x, y, rotate, shear, scaleX, scaleY] = parts(doubles(6, 0), m) as M;
-  return { x, y, rotate, skew: Math.atan(shear), scaleX, scaleY };
+  const skew = scaleY === 0 ? (Math.sign(shear) * Math.PI) / 2 : Math.atan(shear / scaleY);
+  return { x, y, rotate, skew, scaleX, scaleY };
 }

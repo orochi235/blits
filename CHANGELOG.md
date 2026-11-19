@@ -13,6 +13,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so
   `lerp` between it and itself, and `matrix(partsOf(m))`, give it back where they collapsed it to
   a point.
+- `affine` blends shear as an amount along the x axis, not as CSS's angle, so a transform whose y
+  axis lies along its x axis keeps it under a weight or a lerp instead of losing it. Between
+  transforms whose shear and y scale both change, the frames in between now differ from CSS's.
 - A subject plotted or put at an infinity no longer hides every other subject from `within` and
   `around`: like one at NaN, it is in no cell.
 - `fling` places the subject at the release point and counts it in the launch velocity, and lets
