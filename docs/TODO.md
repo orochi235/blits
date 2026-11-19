@@ -46,6 +46,13 @@ Owner tags:
   idempotent `dispose()` that cancels the frame and drops every subscription, or a scoped owner
   that collects removers, and a call on whether a second `add` counts. Either is a public addition,
   so it ships in a minor.
+- **[maintainer] `affine` loses a y axis that lies along a nonzero x axis** (filed from external
+  review, 2026-11-18). `affine().lerp(m, m, 0.5)` for `m = [1, 0, 1, 0, 0, 0]` gives
+  `[1, 0, 0, 0, 0, 0]`, and `partsOf` cannot give `m` back: `parts` (`src/affine.ts`) keeps shear
+  as a ratio to `scaleY`, which is 0 here, so the y axis is dropped. The case with no x extent
+  is fixed. Keeping shear as an absolute amount (the y axis's component along x) would cover this
+  one, but changes the path between ordinary matrices whose shear and `scaleY` both change, away
+  from how CSS interpolates; the call is which matters more.
 
 ## Speed
 
