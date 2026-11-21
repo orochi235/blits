@@ -102,9 +102,7 @@ export function pair(chrome: Chrome, panel: Port, tab: number): void {
           [MARK, ms] as [string, number | null],
         )
         .then(() => chrome.reload(tab))
-        .catch((e) =>
-          tell({ ctl: 'unreachable', why: e instanceof Error ? e.message : String(e) }),
-        );
+        .catch((e) => tell({ ctl: 'refused', why: e instanceof Error ? e.message : String(e) }));
       return;
     }
     if (m.ctl === 'ping') return;

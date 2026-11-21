@@ -43,15 +43,18 @@ const source = wireSource(wire);
 function App() {
   const [history, setHistory] = useState<number | null>(null);
   const [down, setDown] = useState<string | null>(null);
+  const [refused, setRefused] = useState<string | null>(null);
   useEffect(
     () =>
       wire.listen((text) => {
         const m = decode<Partial<Control>>(text);
         if (m.ctl === 'attached') {
           setDown(null);
+          setRefused(null);
           setHistory(m.history ?? null);
           source.refresh();
         } else if (m.ctl === 'unreachable') setDown(m.why ?? 'the page could not be reached');
+        else if (m.ctl === 'refused') setRefused(m.why ?? 'the page refused it');
       }),
     [],
   );
@@ -73,6 +76,9 @@ function App() {
   return (
     <ThemeProvider selection={{ mode: 'auto' }} className="bp-root dt-root">
       {down !== null && <p className="dt-down">This page can't be inspected: {down}</p>}
+      {down === null && refused !== null && (
+        <p className="dt-down">History could not be changed: {refused}</p>
+      )}
       <Panel docked source={source} bar={bar} />
     </ThemeProvider>
   );

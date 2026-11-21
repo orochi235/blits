@@ -16,5 +16,7 @@ export const PING_MS = 20_000;
 export type Control =
   | { ctl: 'attached'; history: number | null }
   | { ctl: 'unreachable'; why: string }
+  /** The history a `history` request asked for could not be set; the page stays attached. */
+  | { ctl: 'refused'; why: string }
   | { ctl: 'history'; ms: number | null }
   | { ctl: 'ping' };

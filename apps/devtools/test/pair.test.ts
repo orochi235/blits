@@ -173,4 +173,21 @@ describe('pairing a panel with its tab', () => {
     expect(decode(panel.sent[0] as string)).toMatchObject({ ctl: 'unreachable' });
     expect(ended).toHaveLength(1);
   });
+
+  it('says history could not be set, not that the tab is unreachable, when marking it fails', async () => {
+    const f = fake();
+    const panel = new FakePort();
+    pair(f.chrome, panel, 8);
+    await settle();
+    f.chrome.run = async () => {
+      throw new Error('sessionStorage is not available');
+    };
+    panel.deliver(encode({ ctl: 'history', ms: 10_000 }));
+    await settle();
+    expect(decode(panel.sent.at(-1) as string)).toEqual({
+      ctl: 'refused',
+      why: 'sessionStorage is not available',
+    });
+    expect(f.pages[0]?.closed).toBe(false);
+  });
 });
