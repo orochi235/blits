@@ -63,7 +63,7 @@ const at = (gain: number) => patch<Light, { gain: number }>(0, () => ({ gain }),
 
 const k = level<Light>();
 lights.blend([at(1), at(0.3), at(0.06)], k);
-k.set(0.5); // halfway between the middle stop and the last
+k.set(0.75); // halfway between the middle stop and the last
 ```
 
 ## Formerly locus
