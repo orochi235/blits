@@ -49,6 +49,32 @@ export function withLength(c: Composition, ms: number): Composition {
   return length === c.length ? c : { ...c, length };
 }
 
+/** The composition on `stage`; a stage the same as the current one changes nothing. */
+export function withStage(c: Composition, stage: StageSpec): Composition {
+  const now = c.stage;
+  const same =
+    now.kind === 'dots' && stage.kind === 'dots'
+      ? now.cols === stage.cols && now.rows === stage.rows
+      : now.kind === 'letters' && stage.kind === 'letters' && now.text === stage.text;
+  return same ? c : { ...c, stage };
+}
+
+/** The composition with `levels`; levels the same as the current ones, as a refused edit leaves them, change nothing. */
+export function withLevels(c: Composition, levels: readonly Level[]): Composition {
+  const now = c.levels;
+  const same =
+    levels.length === now.length &&
+    levels.every((l, i) => {
+      const o = now[i];
+      return o?.name === l.name && o.value === l.value && o.min === l.min && o.max === l.max;
+    });
+  return same ? c : { ...c, levels: [...levels] };
+}
+
+/** The composition titled `title`; the same title changes nothing. */
+export const withTitle = (c: Composition, title: string): Composition =>
+  title === c.title ? c : { ...c, title };
+
 /**
  * The composition with the booker reading `ms` ahead, in whole ms held to 0..MAX_AHEAD; undefined
  * goes back to the default, and a non-number changes nothing.

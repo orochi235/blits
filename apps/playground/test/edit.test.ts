@@ -24,6 +24,9 @@ import {
   tuneLevel,
   withAhead,
   withLength,
+  withLevels,
+  withStage,
+  withTitle,
 } from '@pg/blits/edit';
 import { load } from '@pg/blits/load';
 import { DEFAULT } from '@pg/blits/presets';
@@ -119,6 +122,27 @@ describe('level edits', () => {
       expect(built.errors).toEqual([]);
       expect(built.levels.has('k')).toBe(false);
     }
+  });
+});
+
+describe('an edit that changes nothing', () => {
+  it('keeps the composition itself, so it is not an undo step', () => {
+    const c: Composition = { ...DEFAULT, levels: [k, { ...k, name: 'j' }] };
+    expect(withLevels(c, renameLevel(c.levels, 0, 'j'))).toBe(c);
+    expect(withLevels(c, tuneLevel(c.levels, 0, { min: 1 }))).toBe(c);
+    expect(withLevels(c, tuneLevel(c.levels, 0, { value: k.value }))).toBe(c);
+    expect(withLevels(c, renameLevel(c.levels, 0, 'm')).levels[0]?.name).toBe('m');
+    const dots: Composition = { ...DEFAULT, stage: { kind: 'dots', cols: 3, rows: 4 } };
+    expect(withStage(dots, sizeDots({ cols: 3, rows: 4 }, Number.NaN, 4))).toBe(dots);
+    expect(withStage(dots, sizeDots({ cols: 3, rows: 4 }, 5, 4)).stage).toEqual({
+      kind: 'dots',
+      cols: 5,
+      rows: 4,
+    });
+    const letters: Composition = { ...DEFAULT, stage: lettersOf('hi') };
+    expect(withStage(letters, lettersOf('hi'))).toBe(letters);
+    expect(withTitle(c, c.title)).toBe(c);
+    expect(withTitle(c, 'other').title).toBe('other');
   });
 });
 
