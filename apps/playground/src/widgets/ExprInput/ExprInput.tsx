@@ -1,5 +1,6 @@
 import { Input, useIdleSettle } from '@weasel-js/ui';
-import { type KeyboardEvent, useEffect, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import { useDraft } from '../draft';
 import s from './ExprInput.module.css';
 
 export interface ExprInputProps {
@@ -20,11 +21,10 @@ export function ExprInput({
   label,
   hideLabel = false,
 }: ExprInputProps) {
-  const [draft, setDraft] = useState(value);
-  useEffect(() => setDraft(value), [value]);
+  const { draft, setDraft, commit: send } = useDraft(value, onCommit);
   const commit = () => {
     idle.stop();
-    if (draft !== value) onCommit(draft);
+    send();
   };
   const idle = useIdleSettle(commit);
   const key = (e: KeyboardEvent) => {
