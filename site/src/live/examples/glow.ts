@@ -1,4 +1,5 @@
 import { input, kit, lag, mix, patch, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 interface Card {
@@ -42,7 +43,10 @@ export default function run(root: HTMLElement): () => void {
   // Quick to rise, slow to settle: lag eases each card's weight toward the pointer's 0 or 1.
   // `floor` ends the settle within a hundredth; below that, a card left at a sub-pixel offset
   // and shadow shimmers at its edges for seconds.
-  const m = mix<Card, CardPose>(CARD, { name: 'glow' });
+  const m = mix<Card, CardPose>(CARD, {
+    name: 'glow',
+    history: { ms: 10_000, tape: createHistory },
+  });
   m.cue({ patch: raised, weight: lag(over, { riseMs: 80, fallMs: 350, floor: 0.01 }) });
 
   const pose = { lift: 0, glow: 0 };

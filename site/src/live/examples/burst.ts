@@ -1,4 +1,5 @@
 import { type Handle, kit, mix, mul, patch, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 interface Spark {
@@ -16,6 +17,8 @@ interface SparkPose {
 const SPARK = kit<SparkPose>({ dx: sum(), dy: sum(), alpha: mul() });
 
 const HEIGHT = 260;
+/** How often a burst goes off by itself, ms of mix time. */
+const EVERY = 1400;
 
 // Out along its angle, pulled down, fading as it goes.
 const fly = patch<Spark, SparkPose>(
@@ -35,7 +38,10 @@ export default function run(root: HTMLElement): () => void {
   const ctx = canvas.getContext('2d');
   if (ctx === null) return () => {};
 
-  const m = mix<Spark, SparkPose>(SPARK, { name: 'burst' });
+  const m = mix<Spark, SparkPose>(SPARK, {
+    name: 'burst',
+    history: { ms: 10_000, tape: createHistory },
+  });
   const bursts = new Set<{ sparks: Spark[]; handle: Handle<Spark> }>();
 
   // One voice per burst, for one pass: when it ends the voice leaves the mix, and its sparks go.
@@ -56,14 +62,16 @@ export default function run(root: HTMLElement): () => void {
     burst(e.clientX - box.left, e.clientY - box.top);
   };
   canvas.addEventListener('click', onClick);
-  const auto = window.setInterval(() => {
-    if (!document.hasFocus()) return;
-    burst(canvas.clientWidth * (0.2 + 0.6 * Math.random()), HEIGHT * (0.3 + 0.3 * Math.random()));
-  }, 1400);
 
   const pose = { dx: 0, dy: 0, alpha: 1 };
+  let last = Number.NaN;
   const stop = loop(m, root, (now) => {
     m.sync(now);
+    if (Number.isNaN(last)) last = m.now;
+    if (document.hasFocus() && m.now - last >= EVERY) {
+      last = m.now;
+      burst(canvas.clientWidth * (0.2 + 0.6 * Math.random()), HEIGHT * (0.3 + 0.3 * Math.random()));
+    }
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = HEIGHT * devicePixelRatio;
     ctx.scale(devicePixelRatio, devicePixelRatio);
@@ -77,7 +85,6 @@ export default function run(root: HTMLElement): () => void {
   });
 
   return () => {
-    clearInterval(auto);
     stop();
     canvas.removeEventListener('click', onClick);
     m.close();

@@ -1,4 +1,4 @@
-import { level, patch, slew } from '@msb235/blits';
+import { type Handle, level, patch, slew } from '@msb235/blits';
 import {
   createMarquee,
   type EffectSpec,
@@ -74,9 +74,14 @@ const REACH = 5;
 export function playLogo(canvas: HTMLCanvasElement): () => void {
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
   const dark = matchMedia('(prefers-color-scheme: dark)');
-  /** How far into a pass of its hues the logo is, ms, kept across a remake of the sign. */
+  /** The hue voice of the sign now standing, and how far into its pass the last one stopped. */
+  let turning: Handle<Subject> | undefined;
   let place = 0;
-  followLogo(() => place);
+  const at = () => {
+    const elapsed = turning?.elapsed ?? Number.NaN;
+    return Number.isFinite(elapsed) ? ((elapsed % CYCLE) + CYCLE) % CYCLE : place;
+  };
+  followLogo(at);
   let stop = start();
 
   function start(): () => void {
@@ -102,17 +107,17 @@ export function playLogo(canvas: HTMLCanvasElement): () => void {
     const m = sign.mix;
     const { cols, rows, dots } = sign.board;
     // A sign made again, on a change of theme, takes up its hues where the last one left them.
-    const turning = m.cue({
+    const hue = m.cue({
       name: 'hues',
       patch: hues(cols, rows),
       subjects: dots,
       loop: true,
       seek: place,
     });
-    let then = Number.NaN;
+    turning = hue;
     const recolor = () => {
       sign.setProgram(program(calm.matches));
-      turning.weight = calm.matches ? 0 : 1;
+      hue.weight = calm.matches ? 0 : 1;
     };
     recolor();
     calm.addEventListener('change', recolor);
@@ -157,17 +162,14 @@ export function playLogo(canvas: HTMLCanvasElement): () => void {
       canvas,
       (now) => {
         const to = steered();
-        if (to !== null) {
-          place = ((to % CYCLE) + CYCLE) % CYCLE;
-          turning.seek(place);
-        }
+        if (to !== null) hue.seek(((to % CYCLE) + CYCLE) % CYCLE);
         for (const fn of fns) fn(now);
-        if (to === null && !Number.isNaN(then)) place = (place + m.now - then) % CYCLE;
-        then = m.now;
       },
       { focus: false },
     );
     return () => {
+      place = at();
+      turning = undefined;
       halt();
       calm.removeEventListener('change', recolor);
       for (const [type, fn] of hovers) host.removeEventListener(type, fn);
