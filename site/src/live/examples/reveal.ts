@@ -37,6 +37,9 @@ export default function run(root: HTMLElement): () => void {
     name: 'reveal',
     history: { ms: 10_000, tape: createHistory },
   });
+  // Synced once before the first cue: a voice cued earlier starts at 0, and its one pass would be
+  // over by the first frame.
+  m.sync(performance.now());
   let timer = 0;
   let stopped = false;
 
