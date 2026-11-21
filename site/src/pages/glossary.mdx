@@ -71,7 +71,7 @@ In depth: [Blending](../blending/#blend-between-alternatives), [Role](../role/#b
 
 ## channel
 
-A channel is one field of a [pose](#pose), together with its arithmetic: how two voices writing it [`merge`](#merge), and its [rest](#rest), the value that changes nothing. Because the channel owns the arithmetic, two voices can write the same field without knowing about each other. blits ships `sum`, `mul` (multiply), `max`, `last` (the later value wins), `vec` for a list of numbers, and `color` for colors. A channel of your own is four functions, of which only `merge` and `lerp` are required.
+A channel is one field of a [pose](#pose), together with its arithmetic: how two voices writing it [`merge`](#merge), and its [rest](#rest), the value that changes nothing. Because the channel owns the arithmetic, two voices can write the same field without knowing about each other. blits ships `sum`, `mul` (multiply), `max`, `min`, `norm`, `last` (the later value wins), `vec` for a list of numbers, `angle`, `quat` and `affine` for rotations and transforms, and `color` and `ink` for colors. A channel of your own is four functions, of which only `merge` and `lerp` are required.
 
 ```ts
 import type { Channel } from '@msb235/blits';
@@ -108,7 +108,7 @@ In depth: [Blending](../blending/), [Role](../role/).
 
 ## `cue`
 
-`mix.cue(spec)` starts a [voice](#voice) and returns its [handle](#handle). The spec is a plain object: the [patch](#patch) to play, plus options for its clock, its [weight](#weight), and which subjects it reaches. The voice starts at the next [`sync`](#sync) unless you give it a [`start`](VoiceSpec.start). A cue the mix can't play, such as a patch writing a field the [kit](#kit) lacks, throws at the call rather than a frame later.
+`mix.cue(spec)` starts a [voice](#voice) and returns its [handle](#handle). The spec is a plain object: the [patch](#patch) to play, plus options for its clock, its [weight](#weight), and which subjects it reaches. The voice starts at the time the mix last synced to unless you give it a [`start`](VoiceSpec.start). A cue the mix can't play, such as a patch writing a field the [kit](#kit) lacks, throws at the call rather than a frame later.
 
 ```ts
 dots.cue({ patch: bob, rate: 2, loop: 3, fade: { in: 300 } });
@@ -208,7 +208,7 @@ In depth: [Time](../time/). Reference: [`Setting`](../state/#api-Setting).
 
 ## engine
 
-The engine is the code behind a [mix](#mix) that works out each pose. One ships, `mixer`, and every mix uses it unless you pass another. A later engine, such as one that hands keyframes to the browser to play, could replace it without changing any code that uses the mix.
+The engine is the code behind a [mix](#mix) that works out each pose. Every mix uses `mixer` unless you pass another; `gpu`, from `@msb235/blits/gpu`, folds on the GPU instead. Another engine, such as one that hands keyframes to the browser to play, could replace it without changing any code that uses the mix.
 
 ```ts
 import { mixer } from '@msb235/blits';
@@ -273,7 +273,7 @@ In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## handle
 
-A handle is what [`cue`](#cue) returns: the live controls for one [voice](#voice). Through it you change the voice's [weight](#weight) and [rate](#rate), [`seek`](#seek) its clock, and [`fade`](#fade) it out, and each change lands at the next [`sync`](#sync). [`done`](Handle.done) is a promise that resolves once the voice has left the mix, however it left.
+A handle is what [`cue`](#cue) returns: the live controls for one [voice](#voice). Through it you change the voice's [weight](#weight) and [rate](#rate), [`seek`](#seek) its clock, and [`fade`](#fade) it out, and each change shows at the next [`probe`](#probe). [`done`](Handle.done) is a promise that resolves once the voice has left the mix, however it left.
 
 ```ts
 const h = dots.cue({ patch: bob, loop: true });
@@ -366,7 +366,7 @@ In depth: [Voice](../voice/#the-clock). Reference: [`VoiceSpec`](../voice/#api-V
 
 ## mark
 
-A mark is a named moment on the mix's clock that an [anchor](#anchor) can wait for. Every voice has five: `start`, when its fade in begins; `in`, when it reaches full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. A voice that loops for good never coasts, and one that freezes on its last frame has no `end` until it is faded. The [host](#host) adds its own with `mix.announce(name)`, for a moment only it knows about, such as a reply from a server. `mix.marks(from, to)` lists every mark due between two times.
+A mark is a named moment on the mix's clock that an [anchor](#anchor) can wait for. Every voice has five: `start`, when its fade in begins; `in`, when it reaches full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. A voice that loops for good never coasts, and one that freezes on its last frame has no `end` until it is faded. The [host](#host) adds its own with `mix.announce(name)`, for a moment only it knows about, such as a reply from a server. `mix.marks(from, to)` lists every mark due between two timestamps on the host's clock.
 
 ```ts
 dots.cue({ patch: rise, anchor: { start: { with: 'reply' } } }); // waits
@@ -672,7 +672,7 @@ In depth: [Mix](../mix/#reach-and-rest). Reference: [`VoiceSpec`](../voice/#api-
 
 ## timestamp
 
-The timestamp is the time the [host](#host) passes to [`sync`](#sync): milliseconds on any clock that only goes forward. A `requestAnimationFrame` timestamp and `performance.now()` count from the same moment, so they can be used together; `Date.now()` counts from 1970 and can't. A voice's [`start`](VoiceSpec.start) must be on the same clock. A patch reads the current timestamp as `setting.timestamp`.
+The timestamp is the time the [host](#host) passes to [`sync`](#sync): milliseconds on any clock that only goes forward. A `requestAnimationFrame` timestamp and `performance.now()` count from the same moment, so they can be used together; `Date.now()` counts from 1970 and can't. A voice's [`start`](VoiceSpec.start) must be on the same clock. A patch reads the mix's clock as `setting.timestamp`, which is the host's timestamp until a [`rate`](#rate), a `rebase` or a [`seek`](#seek) moves the mix's clock away from it.
 
 ```ts
 dots.cue({ patch: bob, loop: true, start: now + 500 }); // starts in half a second

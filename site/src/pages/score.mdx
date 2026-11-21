@@ -90,7 +90,7 @@ With history, the mix keeps what it cued, every change a handle made and when, t
 
 ## Seeking
 
-`mix.seek(time)` moves the live mix to a mix time, back or forward, and it plays on from there. It needs [`history`](MixOptions.history) with a [`tape`](HistoryOptions.tape): weasel-history's `createHistory`, from `@weasel-js/history`, or anything of the `Tape` shape. The mix records on the tape every call you make on it, its handles and its spring and glide patches, at the mix time you made it.
+`mix.seek(time)` moves the live mix to a mix time, back or forward, and it plays on from there. It needs [`history`](MixOptions.history) with a [`tape`](HistoryOptions.tape): weasel-history's `createHistory`, from `@weasel-js/history`, or anything of the `Tape` shape. The mix records on the tape every call you make on it, its handles and its spring and glide patches, and when you made it.
 
 ```ts
 import { createHistory } from '@weasel-js/history';
