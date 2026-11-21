@@ -1,4 +1,5 @@
 import { keys, kit, mix, mul, patch, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from './loop';
 import { type Dot, row } from './start/row';
 
@@ -36,8 +37,12 @@ const pop = keys<Dot, DotPose>(
 export default function run(root: HTMLElement): () => void {
   const dots = row(root, 9);
 
-  // A mix plays voices: each one a patch on its own clock. These two run for good.
-  const m = mix<Dot, DotPose>(DOT, { name: 'get started' });
+  // A mix plays voices: each one a patch on its own clock. These two run for good. Its history
+  // keeps the last 10 s, so it can seek back.
+  const m = mix<Dot, DotPose>(DOT, {
+    name: 'get started',
+    history: { ms: 10_000, tape: createHistory },
+  });
   m.cue({ patch: breathe, loop: true });
   m.cue({ patch: hop, loop: true, stagger: (dot) => dot.index * 80, fade: { in: 600 } });
 

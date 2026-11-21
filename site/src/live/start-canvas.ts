@@ -1,4 +1,5 @@
 import { input, kit, mix, patch, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from './loop';
 import { COLS, type Dot, field, ROWS } from './start/field';
 
@@ -26,7 +27,10 @@ export default function run(root: HTMLElement): () => void {
   });
   stage.onPointer(() => near.touch());
 
-  const m = mix<Dot, DotPose>(DOT, { name: 'get started: canvas' });
+  const m = mix<Dot, DotPose>(DOT, {
+    name: 'get started: canvas',
+    history: { ms: 10_000, tape: createHistory },
+  });
   // One voice reaches all 480 dots, each delayed by its distance from the middle.
   m.cue({ patch: ripple, loop: true, stagger: (dot) => dot.r * 1200 });
   // A voice's weight can be a signal, read per subject: the swell is as strong as the pointer is near.
