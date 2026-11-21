@@ -1,5 +1,5 @@
 import { changed, headOf, slotOf, unlink } from './chain.js';
-import { clampWeight, envelope, fadeInAt } from './clock.js';
+import { clampWeight, envelope, fadeInAt, rampTime } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
@@ -24,6 +24,7 @@ export function fadeVoice<I, O>(
 ): void {
   if (voice.holding !== null && opts !== undefined && ('subject' in opts || opts.at === 'rest'))
     throw new Error('blits: an owner fades as a whole, not by subject or at rest');
+  if (opts?.over !== undefined) rampTime(opts.over);
   if (opts !== undefined && 'subject' in opts)
     fadeSubject(mix, voice, opts.subject as I, opts.over);
   else if (typeof opts?.at === 'number') fadeAt(mix, voice, opts.at, opts.over);
@@ -275,6 +276,7 @@ export function beginRise<I, O>(
   voice: Voice<I, O>,
   opts: { over?: number },
 ): void {
+  if (opts.over !== undefined) rampTime(opts.over);
   const out = voice.out;
   if (voice.state !== 'fading' && voice.outSet) {
     // A fade set ahead and not begun is taken back, and the weight never moved.

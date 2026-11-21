@@ -151,6 +151,22 @@ describe('fling', () => {
     expect(m.probe(page).y).toBeCloseTo(30 + 1500 * 0.325, 6);
   });
 
+  it('lets go at rest when the pointer sat still longer than stop before the release', () => {
+    const g = glide<typeof page, Pose>('y', { from: 0, ms: 325, settle: 0 });
+    const m = mix<typeof page, Pose>(K);
+    m.cue({ patch: g });
+    m.sync(0);
+    m.probe(page);
+    const { target, fire } = stage();
+    fling(target, g, page);
+    fire('pointerdown', 0, 0);
+    for (let t = 10; t <= 40; t += 10) fire('pointermove', t, t * 2);
+    m.sync(100);
+    fire('pointerup', 100, 80);
+    m.sync(10_000);
+    expect(m.probe(page).y).toBe(80);
+  });
+
   it('lets go at rest when it loses the pointer capture, and takes the next press', () => {
     const g = glide<typeof page, Pose>('y', { from: 0, settle: 0 });
     const m = mix<typeof page, Pose>(K);

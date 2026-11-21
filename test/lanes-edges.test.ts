@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
@@ -84,4 +84,32 @@ test('pull right after two cues folds them in voice order', () => {
   expect({ onPull: run(true, true), onProbe: run(true, false), offPull: run(false, true) }).toEqual(
     { onPull: off, onProbe: off, offPull: off },
   );
+});
+
+// `contribution` warns of a key a patch returns outside its `writes`, which the mix drops; a lane
+// that takes every subject makes the voice's first call itself, and warns the same.
+test('a voice first called on a lane warns of a key outside its writes', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    const m = mix<P, { x: number }>(kit<{ x: number }>({ x: sum() }), { lanes: true });
+    const subjects = [1, 2, 3].map((id) => ({ id }));
+    m.cue({ patch: patch<P, { x: number }>(0, () => ({ x: 0 }), { writes: ['x'] }), loop: true });
+    for (let t = 0; t <= 32; t += 16) {
+      m.sync(t);
+      for (const s of subjects) m.probe(s);
+    }
+    m.cue({
+      name: 'typo',
+      patch: patch<P, { x: number }>(1000, () => ({ x: 1, opacty: 1 }) as { x: number }, {
+        writes: ['x'],
+      }),
+    });
+    m.sync(48);
+    for (const s of subjects) expect(m.probe(s).x).toBe(1);
+    expect(warn.mock.calls.some(([msg]) => /typo's patch returns opacty/.test(String(msg)))).toBe(
+      true,
+    );
+  } finally {
+    warn.mockRestore();
+  }
 });

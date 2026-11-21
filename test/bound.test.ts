@@ -268,7 +268,7 @@ describe('within is refused', () => {
     const dot = { seed: 0, x: 0, y: 0 };
     m.plot([dot], new Float64Array(2), { cell: 1 });
     const recipe =
-      /needs a signal weight; for a hard-edged disk use weight: mix\.around\(ball, \{ steps: 1, jump: 'start' \}\)/;
+      /needs a signal weight; for a hard-edged disk use weight: mix\.around\(ball, \{ ease: \{ steps: 1, jump: 'start' \} \}\)/;
     expect(cue(m, {})).toThrow(recipe);
     expect(cue(m, { weight: 0.5 })).toThrow(recipe);
     expect(cue(m, { weight: () => 1, subjects: [dot] })).not.toThrow();
@@ -450,5 +450,32 @@ describe('positions hold their subjects as the mix does', () => {
       expect(glow.weightOf('a')).toBe(0);
       m.plot(ids, xy, { cell: 1 });
       expect(read(32)).toEqual([1.5, 1.5, 1]);
+    });
+});
+
+describe('a dry read of a bounded voice', () => {
+  for (const lanes of [true, false])
+    it(`weighs a subject outside the bound at 0, as its probe did, lanes ${lanes ? 'on' : 'off'}`, () => {
+      const m = mix<string, Pose>(K, { lanes });
+      m.plot(['in', 'out'], new Float64Array([0, 0, 9, 9]), { cell: 1 });
+      // Outside the bound, a `from: 'current'` voice is still read, and in a role at weight 0 too.
+      const glow = m.cue({
+        patch: keys<string, Pose>(1000, [
+          { at: 0, delta: { gain: 1.5 } },
+          { at: 1, delta: { gain: 1.5 } },
+        ]),
+        role: 'glow',
+        from: 'current',
+        weight: () => 1,
+        loop: true,
+        within: { x: 0, y: 0, r: 2 },
+      });
+      m.sync(0);
+      expect(m.probe('out').gain).toBe(1);
+      expect(m.atRest('out')).toBe(true);
+      expect(glow.weightOf('out')).toBe(0);
+      m.probe('in');
+      m.atRest('in');
+      expect(glow.weightOf('in')).toBe(1);
     });
 });

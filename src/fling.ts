@@ -166,6 +166,7 @@ export function fling<I, O, V extends Value = number>(
   let id: number | undefined;
   let from: number[] = [];
   let p0: number[] = [];
+  let sampled: number[] = [];
   const at = (e: PointerLike): number[] =>
     axis === 'x' ? [e.clientX] : axis === 'y' ? [e.clientY] : [e.clientX, e.clientY];
   const value = (x: number[]): V => (axis === 'xy' ? x : x[0]) as V;
@@ -188,16 +189,23 @@ export function fling<I, O, V extends Value = number>(
     motion.set(subject, value(here));
     path.clear();
     path.add(e.timeStamp, here);
+    sampled = here;
+  };
+  const place = (e: PointerLike): number[] => {
+    const x = held(at(e).map((p, k) => (from[k] as number) + (p - (p0[k] as number)) * scale));
+    motion.set(subject, value(x));
+    return x;
   };
   const move = (e: PointerLike) => {
     if (e.pointerId !== id) return;
-    const x = held(at(e).map((p, k) => (from[k] as number) + (p - (p0[k] as number)) * scale));
-    motion.set(subject, value(x));
-    path.add(e.timeStamp, x);
+    sampled = place(e);
+    path.add(e.timeStamp, sampled);
   };
   const up = (e: PointerLike) => {
     if (e.pointerId !== id) return;
-    move(e);
+    const x = place(e);
+    // A release where the pointer already sat adds no sample, which would hide the stillness from `stop`.
+    if (x.some((xi, k) => xi !== sampled[k])) path.add(e.timeStamp, x);
     id = undefined;
     motion.push(subject, value(path.velocity(e.timeStamp)));
   };

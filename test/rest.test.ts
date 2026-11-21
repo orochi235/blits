@@ -149,6 +149,36 @@ describe("a channel's rest", () => {
     expect(poses[0]?.o).not.toBe(poses[1]?.o);
   });
 
+  it('finds a typed-array value at its rest, so a fade at rest ends', () => {
+    type P = { f: Float32Array };
+    const m = mix<Part, P>(kit<P>({ f: typed() }));
+    const settling = patch<Part, P>(
+      0,
+      (_phase, _p, setting) => ({
+        f: new Float32Array(setting.timestamp >= 100 ? [0, 0] : [1, 2]),
+      }),
+      { writes: ['f'] },
+    );
+    const h = m.cue({ patch: settling });
+    m.sync(0);
+    m.probe(part);
+    h.fade({ at: 'rest' });
+    m.sync(100);
+    expect([...m.probe(part).f]).toEqual([0, 0]);
+    m.sync(116);
+    expect(m.live).toBe(false);
+  });
+
+  it('clamps a typed-array value to its channel bounds', () => {
+    type P = { f: Float32Array };
+    const m = mix<Part, P>(kit<P>({ f: { ...typed(), bounds: [0, 1] } }));
+    m.cue({
+      patch: patch<Part, P>(0, () => ({ f: new Float32Array([2, -1]) }), { writes: ['f'] }),
+    });
+    m.sync(0);
+    expect([...m.probe(part).f]).toEqual([1, 0]);
+  });
+
   it('copies through the channel when it says how', () => {
     const copies: Box[] = [];
     const box: Channel<Box> = {

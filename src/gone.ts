@@ -117,13 +117,18 @@ export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
     if (done > seen) seen = done;
   }
   if (!any) return;
-  const kept: Voice<I, O>[] = [];
+  // Compacted in place: a spread into `splice` throws past the engine's argument limit.
   const out: Voice<I, O>[] = [];
+  let w = 0;
   for (let i = 0; i < end; i++) {
     const v = list[i] as Voice<I, O>;
-    (v.reachedTo < reach ? out : kept).push(v);
+    if (v.reachedTo < reach) out.push(v);
+    else list[w++] = v;
   }
-  list.splice(0, end, ...kept);
+  if (w < end) {
+    for (let i = end; i < list.length; i++) list[w + i - end] = list[i] as Voice<I, O>;
+    list.length -= end - w;
+  }
   remove(ix, out);
   forgot(mix, out);
   scoredCut(mix, list, out);

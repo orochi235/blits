@@ -8,6 +8,26 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A patch whose first call is made on lanes warns, outside production, of a key it returns that is
+  not in its `writes`, as one first called on the general path does; the mix drops that key either way.
+- The error for a `within` voice with no signal weight names the hard-edged disk it suggests as
+  `mix.around(ball, { ease: { steps: 1, jump: 'start' } })`; the call it gave before, with `steps` and
+  `jump` outside `ease`, made a linear falloff.
+- A sync under `history` no longer throws `RangeError: Maximum call stack size exceeded` when it
+  lets go of old voices while keeping hundreds of thousands of others finished out of order.
+- An easing of `{ steps }` refuses a count that is not a whole number of 1 or more, and one of
+  `{ bezier }` an x outside 0 to 1 or a y that is not finite, with a `RangeError`, as CSS does. A
+  count of 0 gave NaN, a fraction stopped short of 1, and an x outside 0 to 1 was solved at an
+  arbitrary point.
+- A voice cued `within` a bound weighs a subject outside it at 0 when `atRest` reads it after a
+  probe, as the probe did, instead of reading its signal there.
+- A channel whose values are typed arrays is found at its rest, so a fade `at: 'rest'` on it ends
+  instead of fading forever, and its `bounds` clamp it as they clamp a plain array.
+- A fade, `rise`, `mute`, and a cue's `fade: { in, out }` refuse a time that is not finite and 0 or
+  more, as a rate ramp does, with a `RangeError`. A NaN `over` used to leave the voice fading forever
+  at a NaN weight, and a negative one cut it off at full weight.
+- `fling` lets go at rest when the pointer sat still for longer than `stop` before the release: the
+  release itself no longer counts as a fresh sample when the pointer did not move to it.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied:
   it is copied as a `DataView` over its own bytes.
 - `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so

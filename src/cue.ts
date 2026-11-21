@@ -2,6 +2,7 @@ import { type Blend, blendOf } from './blend.js';
 import { checkHits } from './book.js';
 import { checkWithin, confine } from './bound.js';
 import { changed } from './chain.js';
+import { rampTime } from './clock.js';
 import { copyable } from './clone.js';
 import { roundsHue } from './color.js';
 import { schedule } from './due.js';
@@ -37,6 +38,8 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
   if (spec.hits !== undefined) checkHits(spec.hits, patch.duration);
   if (spec.marks !== undefined) checkMarks(spec.marks, patch.duration);
   checkWithin(mix, spec);
+  if (spec.fade?.in !== undefined) rampTime(spec.fade.in);
+  if (spec.fade?.out !== undefined) rampTime(spec.fade.out);
 
   const anchored = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
   // A voice an owner holds is placed on the owner's clock: ms from when it starts.

@@ -72,8 +72,7 @@ export function contribution<I, O>(
   // Outside its bound the signal reads 0 unread. What a read at weight 0 still does is done there:
   // a patch that steps steps, a `from: 'current'` voice takes its base, and an input is recorded.
   // A read back of recorded inputs reads them, not the bound as it stands now.
-  const outside =
-    voice.bound !== null && held.replay === undefined && !inBound(this, voice.bound, subject);
+  const outside = outsideBound(this, voice, subject, held);
   const recorded =
     outside && (voice.spec.weight as Signal<I>).input === true && !!this.opts.history?.inputs;
   if (outside && !recorded && voice.patch.step === undefined && voice.spec.from !== 'current')
@@ -455,6 +454,16 @@ export function isRest<I, O>(this: Mixer<I, O>, delta: Record<string, unknown>):
   return true;
 }
 
+/** Whether the voice's bound leaves `subject` out, where its signal reads 0 unread. */
+function outsideBound<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+): boolean {
+  return voice.bound !== null && held.replay === undefined && !inBound(mix, voice.bound, subject);
+}
+
 /** `contribution`, or for a dry fold a subject already probed this frame, without advancing it. */
 export function read<I, O>(
   this: Mixer<I, O>,
@@ -477,7 +486,7 @@ export function read<I, O>(
       setting.state = held.state;
       setting.mark = 0;
       voice.keepOn = held;
-      this.w = this.weigh(voice, subject, now, held);
+      this.w = outsideBound(this, voice, subject, held) ? 0 : this.weigh(voice, subject, now, held);
       held.weight = this.w;
       if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
       return held.delta;
