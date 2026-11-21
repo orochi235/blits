@@ -1,4 +1,4 @@
-import { glide, keys, mix, patch, spring, toHex, tween, wave } from '@msb235/blits';
+import { glide, keys, mix, patch, spring, toHex, tween, watched, wave } from '@msb235/blits';
 import { compile, mixOptionsOf } from '@pg/blits/compile';
 import type { PatchSource, Voice } from '@pg/blits/composition';
 import { FRAME } from '@pg/blits/frame';
@@ -596,5 +596,25 @@ describe('compile', () => {
     built.solos.get('w')?.sync(FRAME);
     expect(built.mix.probe(subjects[0] as never).glow).toBe(1);
     expect(built.solos.get('w')?.probe(subjects[0] as never).glow).toBe(1);
+  });
+});
+
+describe('compile, unlisted', () => {
+  const c = comp([voice({ id: 'a', patch: { kind: 'keys', period: 1000, stops: [] } })]);
+  const listed = (m: unknown) =>
+    watched()
+      .entries()
+      .some((e) => e.mix === m);
+
+  it('keeps a compile that is only read off the debug panel, solos too', () => {
+    const b = compile(c, subjects, { solos: true, listed: false });
+    expect(listed(b.mix)).toBe(false);
+    for (const m of b.solos.values()) expect(listed(m)).toBe(false);
+    b.mix.sync(0);
+    expect(b.mix.probe(subjects[0])).toBeDefined();
+  });
+
+  it('lists one by default', () => {
+    expect(listed(compile(c, subjects).mix)).toBe(true);
   });
 });
