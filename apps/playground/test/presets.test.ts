@@ -1,5 +1,10 @@
-import type { SpanHandle } from '@msb235/blits';
+import { readFileSync } from 'node:fs';
+import { compose } from '@brand/glyphs.js';
+import { logoHues } from '@brand/hues.js';
+import { input, type SpanHandle } from '@msb235/blits';
 import { compile } from '@pg/blits/compile';
+import type { Expr } from '@pg/blits/composition';
+import { compileExpr, scopeOf } from '@pg/blits/expr';
 import { FRAME } from '@pg/blits/frame';
 import { load } from '@pg/blits/load';
 import { Player } from '@pg/blits/player';
@@ -117,4 +122,69 @@ it('bounded glow: the glow follows the pointer, and a replay starts it where the
   p.seek(0);
   expect(p.built.handles.get('glow')?.weightOf(subjects[corner] as Subject)).toBe(1);
   expect(p.columns.glow[at(1, 0)]).toBeGreaterThan(0);
+});
+
+it('every weight and blend built on a level stays an input, so a history records it', () => {
+  for (const { name, comp } of PRESETS) {
+    const scope = { ...scopeOf(comp.levels), around: () => input<Subject>(() => 1) };
+    const exprs = [
+      ...comp.voices.map((v) => v.weight),
+      ...(comp.groups ?? []).map((g) => g.weight),
+      ...Object.values(comp.blends ?? {}),
+    ].filter((w): w is Expr => typeof w === 'object' && w.code.includes('level('));
+    for (const expr of exprs) {
+      const r = compileExpr(expr, scope, 0);
+      if ('error' in r) throw new Error(`${name}: ${r.error}`);
+      expect([name, (r.fn as { input?: boolean }).input]).toEqual([name, true]);
+    }
+  }
+});
+
+describe('logo', () => {
+  const comp = PRESETS.find((x) => x.name === 'logo')?.comp;
+  if (!comp) throw new Error('no logo');
+  const play = (hover: number) => {
+    const subjects = subjectsOf(comp.stage);
+    const p = new Player(() => compile(comp, subjects), subjects, { levels: comp.levels });
+    p.setLevel('hover', hover);
+    p.seek(1000);
+    p.point(10, 5);
+    return { p, subjects };
+  };
+
+  it("turns its hues on the rail sign's whole board, the rows below the word included", () => {
+    const voice = comp.voices.find((v) => v.id === 'hues');
+    if (voice?.patch.kind !== 'fn') throw new Error('no hues');
+    const at = new Function(`return ${voice.patch.at}`)() as (
+      phase: number,
+      s: { col: number; row: number },
+    ) => { color: number };
+    const { CYCLE, hueAt, turnedHex } = logoHues();
+    const word = compose('blits');
+    // The rail's sign: a dot of padding, the word a column in, 3 rows above it and 13 below.
+    const cols = word.cols + 4;
+    const rows = 1 + 3 + word.rows + 13 + 1;
+    for (let phase = 0; phase < 1; phase += 0.01)
+      for (const s of [
+        { col: 3, row: 4 },
+        { col: 10, row: 9 },
+      ])
+        expect(at(phase, s).color).toBe(turnedHex(hueAt(phase * CYCLE, s.col, s.row, cols, rows)));
+  });
+
+  it('lights its halo only while hovered, as the rail does', () => {
+    const at = (p: Player, subjects: readonly Subject[]) =>
+      p.columns.glow[subjects.findIndex((s) => s.col === 10 && s.row === 5)];
+    const off = play(0);
+    expect(at(off.p, off.subjects)).toBe(0);
+    const on = play(1);
+    expect(at(on.p, on.subjects)).toBeGreaterThan(0);
+  });
+});
+
+it("the README's preset table has a row for every preset, in order", () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const table = readme.slice(readme.indexOf('## Presets'), readme.indexOf('## Widgets'));
+  const rows = [...table.matchAll(/^\| (.+?) +\|/gm)].map((m) => m[1]).slice(1);
+  expect(rows).toEqual(PRESETS.map((p) => p.name));
 });

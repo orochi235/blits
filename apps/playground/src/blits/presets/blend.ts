@@ -27,7 +27,11 @@ const c: Composition = {
   stage: { kind: 'dots', cols: 12, rows: 4 },
   length: 6000,
   levels: [{ name: 'slide', value: 0, min: -1, max: 1 }],
-  blends: { tone: { code: '(s, set) => Math.min(1, Math.max(0, s.x + level("slide")(s, set)))' } },
+  blends: {
+    tone: {
+      code: '(() => {\n  const slide = level("slide");\n  return input((s, set) => Math.min(1, Math.max(0, s.x + slide(s, set))), [slide]);\n})()',
+    },
+  },
   voices: [
     stop('warm', 25, 0xff8f3f, 1.5, 0),
     stop('green', 130, 0x5fd38a, 0.6, 90),

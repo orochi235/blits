@@ -4,17 +4,24 @@ import type { Composition } from '../composition';
 
 /**
  * The site's rail logo as voices: the word lit on its sign, its hues turning on a clock of their
- * own, a halo following the pointer, and the rainbow that hovering runs. bree's moves (swarm, fall
- * and the rest) are its own effects and are left out.
+ * own, and the rainbow and the halo round the pointer that pointing at it brings up. The `hover`
+ * level stands in for pointing at it, since the stage's pointer moves only `around` circles. bree's
+ * moves (swarm, fall and the rest) are its own effects and are left out.
  */
 const WORD = compose('blits');
 const { CYCLE } = logoHues();
 
-/** The sign: the word with a column each side and 3 blank rows above it, as the rail stands it. */
-const LEFT = 2;
-const TOP = 4;
+/**
+ * The rail's sign (site/src/live/sign.ts): a dot of padding round the word, a blank column each
+ * side of it, 3 blank rows above it and 13 below. The stage stops 2 rows under the word, but the
+ * hues turn over the whole sign, as on the rail.
+ */
+const PAD = 1;
+const LEFT = PAD + 1;
+const TOP = PAD + 3;
 const COLS = WORD.cols + 2 * LEFT;
 const ROWS = TOP + WORD.rows + 2;
+const SIGN_ROWS = TOP + WORD.rows + 13 + PAD;
 const lit = JSON.stringify(WORD.lit.map(([c, r]) => `${c + LEFT},${r + TOP}`));
 
 const c: Composition = {
@@ -24,6 +31,18 @@ const c: Composition = {
   length: CYCLE,
   levels: [{ name: 'hover', value: 0, min: 0, max: 1 }],
   rules: { opacity: { rule: 'max', bounds: [0, 1] } },
+  groups: [
+    {
+      id: 'near',
+      name: 'near',
+      hue: 50,
+      kind: 'owner',
+      start: 0,
+      rate: 1,
+      weight: { code: "slew(level('hover'), { riseMs: 150, fallMs: 500 })" },
+      fade: {},
+    },
+  ],
   voices: [
     {
       id: 'word',
@@ -54,7 +73,7 @@ const c: Composition = {
         kind: 'fn',
         period: CYCLE,
         writes: ['color'],
-        at: `(() => {\n  const { CYCLE, hueAt, turnedHex } = (${logoHues.toString()})();\n  return (phase, s) => ({ color: turnedHex(hueAt(phase * CYCLE, s.col, s.row, ${COLS}, ${ROWS})) });\n})()`,
+        at: `(() => {\n  const { CYCLE, hueAt, turnedHex } = (${logoHues.toString()})();\n  return (phase, s) => ({ color: turnedHex(hueAt(phase * CYCLE, s.col, s.row, ${COLS}, ${SIGN_ROWS})) });\n})()`,
       },
     },
     {
@@ -81,6 +100,7 @@ const c: Composition = {
       rate: 1,
       loop: true,
       fade: {},
+      owner: 'near',
       weight: { code: "around(5, { ease: 'ease-out' })" },
       patch: {
         kind: 'keys',
