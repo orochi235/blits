@@ -1,12 +1,12 @@
 ---
 layout: ../layouts/Page.astro
 title: Glossary
-description: The words blits uses, from anchor to weight, each with a short explanation, an example, and a link to the page that covers it.
+description: The words blits uses, from anchor to within, each with a short explanation, an example, and a link to the page that covers it.
 ---
 
 # Glossary
 
-[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [color](#color) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [ink](#ink) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [role](#role) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight) · [`within`](#within)
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [color](#color) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [ink](#ink) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [role](#role) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [`track`](#track) · [voice](#voice) · [weight](#weight) · [`within`](#within)
 
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
@@ -71,7 +71,7 @@ In depth: [Blending](../blending/#blend-between-alternatives), [Role](../role/#b
 
 ## channel
 
-A channel is one field of a [pose](#pose), together with its arithmetic: how two voices writing it [`merge`](#merge), and its [rest](#rest), the value that changes nothing. Because the channel owns the arithmetic, two voices can write the same field without knowing about each other. blits ships `sum`, `mul` (multiply), `max`, `min`, `norm`, `last` (the later value wins), `vec` for a list of numbers, `angle`, `quat` and `affine` for rotations and transforms, and `color` and `ink` for colors. A channel of your own is four functions, of which only `merge` and `lerp` are required.
+A channel is one field of a [pose](#pose), together with its arithmetic: how two voices writing it [`merge`](#merge), and its [rest](#rest), the value that changes nothing. Because the channel owns the arithmetic, two voices can write the same field without knowing about each other. blits ships `sum`, `mul` (multiply), `max`, `min`, `norm`, `last` (the later value wins), `vec` for a list of numbers, `angle`, `quat` and `affine` for rotations and transforms, and `color` and `ink` for colors. A channel of your own needs `merge` and `lerp`, and `scale` too when it has a `rest`.
 
 ```ts
 import type { Channel } from '@msb235/blits';
@@ -213,7 +213,7 @@ The engine is the code behind a [mix](#mix) that works out each pose. Every mix 
 ```ts
 import { mixer } from '@msb235/blits';
 
-const same = mix<Dot, DotPose>(DOT, { engine: mixer }); // what every mix gets anyway
+const same = mix<Dot, DotPose>(DOT, { name: 'same', engine: mixer }); // what every mix gets anyway
 ```
 
 In depth: [Engine](../engine/). Reference: [`Engine`](../engine/#api-Engine), [`mixer`](../engine/#api-mixer).
@@ -337,14 +337,14 @@ In depth: [Channel and kit](../channel/). Reference: [`kit`](../channel/#api-kit
 A lane is a [channel](#channel) that the default [engine](#engine) works out for every subject at once, in flat arrays, rather than one subject at a time. The mix moves a channel onto a lane by itself when every voice writing it can be worked out that way, and the pose comes out the same. Turn lanes off with `lanes: false` to rule them out while debugging, or to compare speed with and without them.
 
 ```ts
-const plain = mix<Dot, DotPose>(DOT, { lanes: false });
+const plain = mix<Dot, DotPose>(DOT, { name: 'plain', lanes: false });
 ```
 
 In depth: [Engine](../engine/). Reference: [`MixOptions`](../mix/#api-MixOptions).
 
 ## `lerp`
 
-A [channel](#channel)'s `lerp(a, b, u)` finds the value a fraction `u` of the way from `a` to `b`. The mix uses it wherever it moves between two values instead of stacking them: a [retarget](#retarget), the voices in a [role](#role), and [`blend`](#blend). It is also the only way a channel with no [rest](#rest), such as a color, changes smoothly.
+A [channel](#channel)'s `lerp(a, b, u)` finds the value a fraction `u` of the way from `a` to `b`. The mix uses it wherever it moves between two values instead of stacking them: a [retarget](#retarget), the voices in a [role](#role), and [`blend`](#blend). It is also the only way a channel with no [rest](#rest), such as `color(last())`, changes smoothly.
 
 ```ts
 sum().lerp(0, 10, 0.25); // 2.5
@@ -459,7 +459,7 @@ In depth: [Patch](../patch/), [Time](../time/).
 
 ## pose
 
-A pose is what one [subject](#subject) looks like at one frame, with every voice [folded](#fold) in. A [delta](#delta) holds only what one patch writes; a pose holds every channel of the [kit](#kit), at [rest](#rest) where nothing moved it. The one exception is a channel with no rest, such as a color nothing has set, which is left out. The pose is what the [host](#host) puts on screen.
+A pose is what one [subject](#subject) looks like at one frame, with every voice [folded](#fold) in. A [delta](#delta) holds only what one patch writes; a pose holds every channel of the [kit](#kit), at [rest](#rest) where nothing moved it. The one exception is a channel with no rest, such as a `last` channel nothing has set, which is left out. The pose is what the [host](#host) puts on screen.
 
 With `bob` a quarter of the way through its pass and `dim` at full weight, a dot's pose is `{ y: 1, glow: 0.5 }`.
 
