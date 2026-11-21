@@ -31,6 +31,11 @@ export interface ExplainerProps<I, O, C> {
   ): void;
   /** A second scene played on the same clock, for a side-by-side; its frame reaches `draw` as `twin`. */
   twin?: (config: C) => Scene<I, O, C>;
+  /**
+   * What a debugger lists the mix as, after the page's title; by default the names of its voices.
+   * `twin` names the twin's mix.
+   */
+  names?: { main?: string; twin?: string };
   /** How the ledger prints one channel's value. Numbers default to three decimals. */
   format?: Partial<Record<string, (v: unknown) => ReactNode>>;
   /** A line under the stage saying what to look at. */
@@ -87,17 +92,19 @@ function ExplainerBody<I, O, C>({
   pick,
   toggles,
   twin,
+  names,
 }: ExplainerProps<I, O, C>) {
   const s = (schema ?? noConfig) as Schema<C>;
   const resolved = useMemo(() => (schema ? resolveConfigSchema(schema) : null), [schema]);
   const [config, setConfig] = useState<C>(() => s.defaults());
   const built = useMemo(() => scene(config), [scene, config]);
   const duration = typeof length === 'function' ? length(config) : length;
+  const page = document.title.replace(/^blits: /, '');
   const name = useMemo(() => {
-    const page = document.title.replace(/^blits: /, '');
     const voices = built.voices(config).map((v) => v.name);
-    return voices.length > 0 ? `${page}: ${voices.join(', ')}` : page;
-  }, [built, config]);
+    const own = names?.main ?? voices.join(', ');
+    return own ? `${page}: ${own}` : page;
+  }, [page, names?.main, built, config]);
   const player = useMemo(
     () => new Player(built, config, { name, duration }),
     [built, config, name, duration],
@@ -105,9 +112,11 @@ function ExplainerBody<I, O, C>({
   useEffect(() => () => player.close(), [player]);
   const second = useMemo(() => {
     if (!twin) return null;
-    const page = document.title.replace(/^blits: /, '');
-    return new Player(twin(config), config, { name: `${page}: twin`, duration });
-  }, [twin, config, duration]);
+    return new Player(twin(config), config, {
+      name: `${page}: ${names?.twin ?? 'twin'}`,
+      duration,
+    });
+  }, [page, names?.twin, twin, config, duration]);
   useEffect(() => () => second?.close(), [second]);
   const tracks = useMemo(() => {
     const courses = coursesOver(built, config, duration);

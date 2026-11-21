@@ -334,6 +334,7 @@ export default function HideTab() {
     <Explainer
       scene={plain}
       twin={rebased}
+      names={{ main: 'without rebase()', twin: 'with rebase()' }}
       schema={hiding}
       duration={HIDE}
       aspect={0.8}
