@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A channel whose values are typed arrays is found at its rest, so a fade `at: 'rest'` on it ends
+  instead of fading forever, and its `bounds` clamp it as they clamp a plain array.
 - A fade, `rise`, `mute`, and a cue's `fade: { in, out }` refuse a time that is not finite and 0 or
   more, as a rate ramp does, with a `RangeError`. A NaN `over` used to leave the voice fading forever
   at a NaN weight, and a negative one cut it off at full weight.

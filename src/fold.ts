@@ -21,10 +21,20 @@ function bandsFor(held: Subject<unknown>, n: number): Uint8Array {
   return bands;
 }
 
+/** An array of numbers a fold can read and write by index: a plain array or a typed one. */
+type Indexed = ArrayLike<unknown> & { [i: number]: unknown };
+
+function indexed(v: unknown): v is Indexed {
+  return Array.isArray(v) || (ArrayBuffer.isView(v) && !(v instanceof DataView));
+}
+
 export function near(a: unknown, b: unknown): boolean {
   if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) < 1e-9;
-  if (Array.isArray(a) && Array.isArray(b))
-    return a.length === b.length && a.every((v, i) => near(v, b[i]));
+  if (indexed(a) && indexed(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!near(a[i], b[i])) return false;
+    return true;
+  }
   return a === b;
 }
 
@@ -119,7 +129,7 @@ export function clamp<I, O>(
 export function bound(channel: Channel<unknown>, v: unknown): unknown {
   const [lo, hi] = channel.bounds as readonly [number, number];
   if (typeof v === 'number') return v < lo ? lo : v > hi ? hi : v;
-  if (Array.isArray(v))
+  if (indexed(v) && !(v instanceof BigInt64Array || v instanceof BigUint64Array))
     for (let i = 0; i < v.length; i++) {
       const x = v[i] as number;
       v[i] = x < lo ? lo : x > hi ? hi : x;
