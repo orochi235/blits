@@ -40,7 +40,7 @@ function App() {
       type="button"
       title={
         history === null
-          ? 'reload the page, giving its mixes 10 s of history to scrub'
+          ? `reload the page, giving its mixes ${HISTORY_MS / 1000} s of history to scrub`
           : 'reload without history'
       }
       onClick={toggle}
