@@ -1,7 +1,9 @@
 # A second naming, from the definitions alone
 
 **For:** whoever calls the blits vocabulary. **Answers:** what each role would be called by someone
-working from its definition and nothing else.
+working from its definition and nothing else. These are not the names blits uses, which are in
+`docs/vocabulary.picks.json`; there, a **lane** is a channel the mix works out for every subject
+at once, not a channel.
 
 Every name here was chosen from the gloss in `vocabulary.json` with that file's
 candidate lists and consistent-set columns unread, so where a pick matches the sheet it is
