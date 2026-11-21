@@ -2,7 +2,16 @@ import { hueColor } from '@msb235/blits-panel';
 import { type KeyboardEvent, type PointerEvent, useId, useMemo, useRef, useState } from 'react';
 import { ClipLane } from './ClipLane';
 import { dragEdit, groupDrop, type Handle } from './drag';
-import { blockEnd, groupBrackets, laneCount, RULER, scaleOf, shownEnd, WIDTH } from './geometry';
+import {
+  blockEnd,
+  groupBrackets,
+  laneCount,
+  RULER,
+  scaleOf,
+  shownEnd,
+  timeAt,
+  WIDTH,
+} from './geometry';
 import { HeaderLane } from './HeaderLane';
 import type { Clip, ClipEdit, Edge, ScoreLanesProps } from './index';
 import { activates, nudge } from './keys';
@@ -53,10 +62,7 @@ function Lanes(props: ScoreLanesProps) {
     if (preview.kind === 'fadeOut') return { ...c, fadeOut: preview.ms };
     return c;
   };
-  const scrubTo = (x: number) => {
-    const t = scale.t(x);
-    if (t >= 0) onScrub(Math.min(duration, t));
-  };
+  const scrubTo = (x: number) => onScrub(timeAt(scale, x, duration));
 
   // The score holds the pointer, not the handle pressed: a drag can unmount that handle.
   const capture = (e: PointerEvent) => svg.current?.setPointerCapture(e.pointerId);

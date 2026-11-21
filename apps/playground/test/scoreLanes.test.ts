@@ -81,4 +81,13 @@ describe('ScoreLanes', () => {
     pointer(svg, 'pointerup', 700);
     expect(onEdit).not.toHaveBeenCalled();
   });
+
+  it('scrubs to 0 when the pointer runs left of the time axis', () => {
+    vi.spyOn(Element.prototype, 'setPointerCapture').mockImplementation(() => {});
+    const onScrub = vi.fn();
+    const svg = mount({ onScrub });
+    pointer(svg.querySelector('[aria-label="playhead"]') as Element, 'pointerdown', 500);
+    pointer(svg, 'pointermove', 10);
+    expect(onScrub).toHaveBeenLastCalledWith(0);
+  });
 });

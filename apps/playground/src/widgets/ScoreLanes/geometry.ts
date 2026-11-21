@@ -24,6 +24,10 @@ export function scaleOf(duration: number, width: number, labelWidth: number): Sc
   };
 }
 
+/** The score time under `x`, held to the score. */
+export const timeAt = (s: Scale, x: number, duration: number): number =>
+  Math.min(duration, Math.max(0, s.t(x)));
+
 export function clipEnd(c: Clip): number {
   if (!Number.isFinite(c.passes)) return Number.POSITIVE_INFINITY;
   return c.start + (c.pass > 0 ? c.pass * c.passes : 0);
