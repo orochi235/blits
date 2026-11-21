@@ -9,6 +9,7 @@ const slot = globalThis as unknown as Record<symbol, (() => void) | undefined>;
 interface Data {
   source?: unknown;
   down?: unknown;
+  hi?: unknown;
   bye?: unknown;
 }
 
@@ -27,8 +28,13 @@ function start(): void {
     },
   };
   const stop = serve(a, wire);
+  // The relay numbers its ports: a bye ends this agent only if it is for the port that served it,
+  // since the port of the agent this one replaced can close after this one starts.
+  let port: unknown = null;
   const bye = (ev: MessageEvent<Data>) => {
-    if (ev.source === window && ev.data?.source === TAG && ev.data.bye === true) end();
+    if (ev.source !== window || ev.data?.source !== TAG) return;
+    if (typeof ev.data.hi === 'number') port = ev.data.hi;
+    else if (ev.data.bye !== undefined && ev.data.bye === port) end();
   };
   const end = () => {
     stop();
