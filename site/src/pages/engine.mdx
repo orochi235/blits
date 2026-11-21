@@ -33,7 +33,7 @@ It folds blits' own patches as they are written for `mixer`: `keys`, `wave`, `tw
 import { gpu, gpuOf } from '@msb235/blits/gpu';
 
 const device = await (await navigator.gpu.requestAdapter())!.requestDevice();
-const m = mix<Cell, Glow>(K, { engine: gpu({ device }) });
+const m = mix<Cell, Glow>(K, { name: 'cells', engine: gpu({ device }) });
 gpuOf(m).subjects(cells, () => ({}));
 m.cue({ patch: keys(2000, PULSE, { ease: 'ease-in-out' }), subjects: cells, loop: true });
 

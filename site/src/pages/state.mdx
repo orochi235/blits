@@ -44,7 +44,7 @@ const spring = patch<Dot, { x: number }, { x: number; v: number }>(
 An integrator doesn't. The spring above takes one Euler step per call, and one step as long as the gap (1.2 s to start with) lands it far off the scale, where it rings for a second before it settles. [`maxDt`](MixOptions.maxDt) caps the [`dt`](Setting.dt) any step is handed, however long the gap:
 
 ```ts
-const m = mix<Dot, { x: number }>(kit({ x: sum() }), { maxDt: 64 });
+const m = mix<Dot, { x: number }>(kit({ x: sum() }), { name: 'dots', maxDt: 64 });
 ```
 
 With the cap set near a frame, the subject that sat out takes one short step and carries on from where it stopped. It doesn't catch up on the time it missed, which for a spring is the right trade. The cap is off by default because a closed form wants the whole gap.

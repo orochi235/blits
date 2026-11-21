@@ -23,7 +23,7 @@ interface DotPose {
 }
 
 const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: color() });
-const dots = mix<Dot, DotPose>(DOT);
+const dots = mix<Dot, DotPose>(DOT, { name: 'dots' });
 
 const bob = patch<Dot, DotPose>(1000, (phase) => ({ y: Math.sin(2 * Math.PI * phase) }), {
   writes: ['y'],
@@ -289,7 +289,7 @@ In depth: [Voice](../voice/). Reference: [`Handle`](../voice/#api-Handle).
 With the [`history`](MixOptions.history) option, a mix remembers its recent past so a [projection](#projection) can read it at an earlier time. [`ms`](HistoryOptions.ms) is how far back it reaches. Within that, it keeps what was cued, every change made through a [handle](#handle), and a copy of each patch's own state every [`every`](HistoryOptions.every) milliseconds (200 by default). A read back starts from the nearest copy and steps forward. A mix without history keeps nothing, and can only read ahead.
 
 ```ts
-const scrubbable = mix<Dot, DotPose>(DOT, { history: { ms: 10_000 } });
+const scrubbable = mix<Dot, DotPose>(DOT, { name: 'scrubbable', history: { ms: 10_000 } });
 scrubbable.project(scrubbable.now - 3000).probe(dot); // the dot as it was 3 s ago
 ```
 
@@ -393,7 +393,7 @@ Reference: [`Channel`](../channel/#api-Channel).
 A mix holds every [voice](#voice) playing over one [kit](#kit), and [folds](#fold) them into one [pose](#pose) per subject each frame. Once a frame the [host](#host) tells it the time with [`sync`](#sync), then asks for each subject's pose with [`probe`](#probe). An app can keep several mixes, one for each kind of thing it animates: [klieg](https://github.com/orochi235/klieg) runs its motion, its effects, and its lighting on three.
 
 ```ts
-const dots = mix<Dot, DotPose>(DOT);
+const dots = mix<Dot, DotPose>(DOT, { name: 'dots' });
 dots.live; // true while any voice is playing, fading, or waiting to start
 ```
 
@@ -470,7 +470,7 @@ In depth: [Mix](../mix/).
 `mix.probe(subject)` returns a subject's [pose](#pose) at the last [`sync`](#sync). Probing the same subject twice in a frame gives the same answer and advances any state once. Pass an `out` object to have the pose written into it, so a loop over many subjects allocates nothing. `mix.pull(subjects, arrays)` reads many subjects at once, writing each channel into a `Float64Array`.
 
 ```ts
-const pose = { y: 0, glow: 1, color: 0 };
+const pose = dots.pose(); // one object, made once, in the shape the mix writes
 for (const dot of all) draw(dot, dots.probe(dot, pose));
 ```
 
@@ -583,7 +583,9 @@ h.seek(250); // a quarter of the way through a bob
 `mix.seek(time)` moves the whole mix to a mix time, back or forward, and it plays on from there. It needs [`history`](#history) with a [`tape`](HistoryOptions.tape), where the mix records every call you make on it, so that going back and playing on makes those calls again. Unlike a voice's seek, it puts each patch's own state back as it was at that time.
 
 ```ts
-const dots = mix<Dot, DotPose>(DOT, { history: { ms: 10_000, tape: createHistory } });
+import { createHistory } from '@weasel-js/history';
+
+const dots = mix<Dot, DotPose>(DOT, { name: 'dots', history: { ms: 10_000, tape: createHistory } });
 dots.seek(dots.now - 2000); // two seconds back; what you did since plays again
 ```
 

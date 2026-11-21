@@ -22,7 +22,7 @@ With both voices in one **role**, the mix treats them as alternatives. It first 
 ```ts
 import { kit, mix, mul, patch } from '@msb235/blits';
 
-const lights = mix<Light, { gain: number }>(kit({ gain: mul() }));
+const lights = mix<Light, { gain: number }>(kit({ gain: mul() }), { name: 'lights' });
 const dim = patch<Light, { gain: number }>(0, () => ({ gain: 0.06 }), { writes: ['gain'] });
 
 const leaving = lights.cue({ patch: dim, role: 'scene', fade: { out: 2000 } });

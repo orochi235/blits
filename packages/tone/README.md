@@ -16,7 +16,7 @@ import { keys, kit, mix } from '@msb235/blits';
 import { channels, drive } from '@msb235/blits-tone';
 
 const K = kit({ ...channels });              // detune, volume and gain, plus any of your own
-const m = mix(K);
+const m = mix(K, { name: 'sound' });
 const tone = drive(m, { kit: K });
 
 const lead = tone.synth({ oscillator: { type: 'sawtooth' } });   // Tone's own options
@@ -130,7 +130,7 @@ import { keys, kit, mix, mul, sum } from '@msb235/blits';
 import { drive } from '@msb235/blits-tone';
 import * as Tone from 'tone';
 
-const m = mix(kit({ freq: sum(), gain: mul() }));
+const m = mix(kit({ freq: sum(), gain: mul() }), { name: 'sound' });
 const osc = new Tone.Oscillator().start();
 const amp = new Tone.Gain(0).toDestination();
 osc.connect(amp);

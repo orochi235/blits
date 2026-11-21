@@ -82,7 +82,7 @@ for (const next of m.marks(now, now + 2000)) if (next.mark === 'start') prepare(
 Ahead of the last sync it plays forward what is cued. Behind it, the mix needs [`history`](MixOptions.history):
 
 ```ts
-const m = mix(K, { history: { ms: 10_000 }, stepMs: 5 });
+const m = mix(K, { name: 'song', history: { ms: 10_000 }, stepMs: 5 });
 m.project(m.now - 3000).probe(part);
 ```
 
@@ -95,7 +95,7 @@ With history, the mix keeps what it cued, every change a handle made and when, t
 ```ts
 import { createHistory } from '@weasel-js/history';
 
-const m = mix(K, { history: { ms: 10_000, tape: createHistory }, stepMs: 5 });
+const m = mix(K, { name: 'song', history: { ms: 10_000, tape: createHistory }, stepMs: 5 });
 m.seek(m.now - 3000);
 ```
 

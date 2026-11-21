@@ -27,7 +27,7 @@ const flicker = patch<Part, PartPose>(
   { writes: ['gain'] },
 );
 
-const m = mix<Part, PartPose>(PART);
+const m = mix<Part, PartPose>(PART, { name: 'parts' });
 const handle = m.cue({ patch: flicker, loop: true, fade: { in: 300, out: 300 } });
 
 // Once a frame: tell the mix what time it is, then ask for the parts you are about to draw.

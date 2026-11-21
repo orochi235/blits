@@ -19,7 +19,7 @@ A patch says what an effect does at each phase. A **voice** says when it plays, 
 ```ts
 import { mix } from '@msb235/blits';
 
-const row = mix<Dot, DotPose>(DOT);
+const row = mix<Dot, DotPose>(DOT, { name: 'row' });
 const hop = row.cue({
   patch: bounce,
   rate: 1,
