@@ -262,23 +262,29 @@ export default function Patch() {
         </>
       }
       draw={(ctx, frame, size, ink, c) => {
-        const phase = (frame.t % DURATION) / DURATION;
+        // Each voice's own place in its pass, which a seek on its handle moves alone.
+        const phaseOf = (i: number) => {
+          const ms = frame.handles[i]?.elapsed ?? Number.NaN;
+          return ((Number.isNaN(ms) ? frame.t : ms) % DURATION) / DURATION;
+        };
+        const fnAt = phaseOf(0);
+        const keysAt = phaseOf(1);
         const pad = 12;
         const kp: P<object, Pose, void> = keysPatch(c);
         const pose = frame.poses[0];
-        const ago = (k: number) => (((phase - (k * TRAIL) / GHOSTS) % 1) + 1) % 1;
+        const ago = (phase: number, k: number) => (((phase - (k * TRAIL) / GHOSTS) % 1) + 1) % 1;
         const railH = Math.max(28, Math.min(44, size.w * 0.055));
         rail(ctx, { x: pad, y: pad, w: size.w - 2 * pad, h: railH }, ink, {
           name: 'fn',
           color: ink.voice('v1'),
           value: pose?.fn,
-          past: (k) => fnPatch.at(ago(k), subject, stub).fn ?? 0,
+          past: (k) => fnPatch.at(ago(fnAt, k), subject, stub).fn ?? 0,
         });
         rail(ctx, { x: pad, y: 2.4 * pad + railH, w: size.w - 2 * pad, h: railH }, ink, {
           name: 'keys',
           color: ink.voice('v2'),
           value: pose?.keys,
-          past: (k) => kp.at(ago(k), subject, stub).keys ?? 0,
+          past: (k) => kp.at(ago(keysAt, k), subject, stub).keys ?? 0,
         });
 
         const top = 3 * pad + 2 * railH + 18;
@@ -296,14 +302,14 @@ export default function Patch() {
         plot(ctx, { x: left.x, y: top, w: left.w, h: rowH }, ink, {
           fn: (u) => fnPatch.at(u, subject, stub).fn ?? 0,
           color: ink.voice('v1'),
-          at: phase,
+          at: fnAt,
           value: frame.alone[0]?.fn,
           title: 'patch(duration, at)',
         });
         plot(ctx, { x: left.x, y: top + pad + rowH, w: left.w, h: rowH }, ink, {
           fn: (u) => kp.at(u, subject, stub).keys ?? 0,
           color: ink.voice('v2'),
-          at: phase,
+          at: keysAt,
           value: frame.alone[1]?.keys,
           title: 'keys(duration, stops)',
           stops: STOPS.map((s) => ({ at: s.at, value: s.delta.keys })),
@@ -311,7 +317,7 @@ export default function Patch() {
 
         const ramp = keys<object, Pose>(1, RAMP, { ease: easingOf(c) });
         const ease = (u: number) => ramp.at(u, subject, stub).keys ?? 0;
-        const seg = phase < 0.5 ? phase / 0.5 : (phase - 0.5) / 0.5;
+        const seg = keysAt < 0.5 ? keysAt / 0.5 : (keysAt - 0.5) / 0.5;
         const box = { x: size.w - side - pad, y: top, w: side, h: side };
         plot(ctx, box, ink, {
           fn: ease,

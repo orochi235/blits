@@ -1,9 +1,9 @@
-import type { Channel as Ch, Handle } from '@msb235/blits';
+import type { Channel as Ch, Setting } from '@msb235/blits';
 import { kit, max, mix, mul, patch, sum } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
 import { label, lamp } from './kit/draw';
 import { Explainer } from './kit/Explainer';
-import type { Scene, SceneEvent } from './kit/scene';
+import type { Scene } from './kit/scene';
 
 interface Pose {
   gain: number;
@@ -34,12 +34,9 @@ function build(c: Config) {
   return kit<Pose>({ gain: (channels[c.channel] ?? mul)() });
 }
 
-/** Sets the two weights for a handover at share k, on the handles a scene event is given. */
-function weigh(handles: Handle[], k: number): void {
-  const [a, b] = handles;
-  if (a) a.weight = 1 - k;
-  if (b) b.weight = k;
-}
+/** A's and B's weights across the handover, read off the mix clock. */
+const leaving = (_s: typeof subject, setting: Setting) => 1 - share(setting.timestamp);
+const arriving = (_s: typeof subject, setting: Setting) => share(setting.timestamp);
 
 /** The folded gain across the whole handover, from a throwaway mix per point, for the curves. */
 function curve(c: Config, role: boolean): [number, number][] {
@@ -52,25 +49,20 @@ function curve(c: Config, role: boolean): [number, number][] {
     m.cue({ patch: hold(c.gain), weight: k, role: spot });
     m.sync(0);
     points.push([k, m.probe(subject).gain]);
+    m.close();
   }
   return points;
 }
 
 function scene(c: Config): Scene<typeof subject, Pose, Config> {
   const spot = c.role ? 'handover' : undefined;
-  const events: SceneEvent<typeof subject, Pose>[] = [];
-  for (let t = HOLD; t <= HOLD + OVER; t += 50) {
-    const k = share(t);
-    events.push({ at: t, run: (_m, handles) => weigh(handles, k) });
-  }
   return {
     kit: build(c),
     subjects: () => [subject],
     voices: () => [
-      { name: 'A', color: 'v1', spec: { patch: hold(c.gain), weight: 1, role: spot } },
-      { name: 'B', color: 'v2', spec: { patch: hold(c.gain), weight: 0, role: spot } },
+      { name: 'A', color: 'v1', spec: { patch: hold(c.gain), weight: leaving, role: spot } },
+      { name: 'B', color: 'v2', spec: { patch: hold(c.gain), weight: arriving, role: spot } },
     ],
-    events: () => events,
     ledger: { subject: () => subject, channels: ['gain'] },
   };
 }
@@ -109,7 +101,7 @@ export default function Role() {
       draw={(ctx, frame, size, ink, c) => {
         const { folded, piled } = curvesFor(c);
         const rest = (channels[c.channel] ?? mul)().rest ?? 0;
-        const k = frame.handles[1]?.weight ?? share(frame.t);
+        const k = frame.handles[1]?.weightOf(subject) ?? share(frame.t);
         const live = frame.poses[0]?.gain;
         const at = (points: [number, number][]) => points[Math.round(k * 50)]?.[1];
         const inRole = c.role ? live : at(folded);
@@ -126,7 +118,7 @@ export default function Role() {
 
         const split = size.w * 0.33;
         [size.w * 0.09, size.w * 0.24].forEach((x, i) => {
-          const w = frame.handles[i]?.weight ?? (i === 0 ? 1 - k : k);
+          const w = frame.handles[i]?.weightOf(subject) ?? (i === 0 ? 1 - k : k);
           lamp(ctx, ink, x, cy, r, w, ink.voice(`v${i + 1}`));
           label(ctx, i === 0 ? 'A' : 'B', x, cy - r - 12, ink.ink, 'center');
           label(ctx, `weight ${w.toFixed(2)}`, x, cy + r + 20, ink.soft, 'center', true);
