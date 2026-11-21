@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- `fling` lets go at rest when the pointer sat still for longer than `stop` before the release: the
+  release itself no longer counts as a fresh sample when the pointer did not move to it.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied:
   it is copied as a `DataView` over its own bytes.
 - `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so
