@@ -1,4 +1,5 @@
 import { PLACEMENTS, parsePlacement } from '@pg/blits/anchor';
+import { waitableOf } from '@pg/blits/groups';
 import type { ControlRenderer } from '@weasel-js/labkit';
 import { Button, MenuButton, type PrefRenderContext } from '@weasel-js/ui';
 import { useState } from 'react';
@@ -16,18 +17,21 @@ export const anchorRow: ControlRenderer = (row) => <AnchorRow row={row} />;
 function AnchorRow({ row }: { row: PrefRenderContext }) {
   const { x, comp, spanned } = useSpec();
   const [error, setError] = useState<string | null>(null);
-  const it =
-    ('patch' in x ? comp.voices.find((o) => o.id !== x.id) : comp.voices[0])?.name ?? 'intro';
+  const it = waitableOf(comp, x)?.name;
   const commit = (text: string) => {
     const r = parsePlacement(text);
     setError('error' in r ? r.error : null);
     if (!('error' in r)) row.setValue(r.placement);
   };
   return (
-    <Row row={row} wide hint={`“it” is ${it}${spanned ? '; its start: a span places it' : ''}`}>
+    <Row
+      row={row}
+      wide
+      hint={`${it === undefined ? 'no voice to wait on' : `“it” is ${it}`}${spanned ? '; its start: a span places it' : ''}`}
+    >
       <ExprRow
         row={row}
-        placeholder={`{"start": {"after": "${it}"}}`}
+        placeholder={`{"start": {"after": "${it ?? 'intro'}"}}`}
         value={x.anchor ? JSON.stringify(x.anchor) : ''}
         error={error}
         onCommit={commit}
@@ -37,8 +41,11 @@ function AnchorRow({ row }: { row: PrefRenderContext }) {
           label="insert…"
           aria-label="insert an anchor"
           items={INSERTS}
+          isDisabled={it === undefined}
+          disabledReason="no voice to wait on"
           onAction={(k) => {
             const make = PLACEMENTS[k];
+            if (it === undefined) return;
             if (make) commit(JSON.stringify(make(it)));
           }}
         />

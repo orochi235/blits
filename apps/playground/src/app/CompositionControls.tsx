@@ -8,6 +8,9 @@ import {
   switchStage,
   tuneLevel,
   withLength,
+  withLevels,
+  withStage,
+  withTitle,
 } from '@pg/blits/edit';
 import {
   type ConfigEntry,
@@ -88,7 +91,7 @@ export interface CompProps {
 // header's and the stage's few fields are drawn as the same property rows, side by side.
 export function StageControls({ comp, onChange }: CompProps) {
   const { stage } = comp;
-  const set = (next: Composition['stage']) => onChange({ ...comp, stage: next });
+  const set = (next: Composition['stage']) => onChange(withStage(comp, next));
   return (
     <div className={r.bar}>
       <PropertyField
@@ -147,7 +150,7 @@ export function CompFields({ comp, onChange }: CompProps) {
         label="title"
         kind="string"
         value={comp.title}
-        onChange={(title: string) => onChange({ ...comp, title })}
+        onChange={(title: string) => onChange(withTitle(comp, title))}
       />
       <PropertyField
         layout="inline"
@@ -202,7 +205,7 @@ function levelsSchema(names: readonly string[], act: { current: (i: number | nul
 }
 
 export function LevelsPanel({ comp, onChange }: CompProps) {
-  const set = (levels: Level[]) => onChange({ ...comp, levels });
+  const set = (levels: Level[]) => onChange(withLevels(comp, levels));
   const levels = comp.levels;
   // Removing or adding is an action, which a memoized schema calls through this.
   const act = useLatest((i: number | null) =>

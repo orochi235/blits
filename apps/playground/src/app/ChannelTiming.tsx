@@ -25,6 +25,13 @@ function within<V>(
   return Object.keys(next).length > 0 ? next : undefined;
 }
 
+/**
+ * A channel's own ease from an EaseField, whose undefined is blits' default curve. A channel left
+ * unset follows the patch instead, so it is written as `linear` unless the patch's ease is the default.
+ */
+export const channelEase = (patch: Easing | undefined, e: Easing | undefined): Easing | undefined =>
+  e ?? (patch === undefined || patch === 'linear' ? undefined : 'linear');
+
 const ROWS = [
   { key: 'delay', label: 'waits' },
   { key: 'ease', label: 'ease' },
@@ -42,7 +49,7 @@ export function ChannelTiming({ patch: p, onChange }: { patch: Keys; onChange(p:
       <EaseField
         label={column === 'patch' ? 'patch ease' : `${column} ease`}
         value={easeOf(column)}
-        onChange={(e) => ctx.setValue(e)}
+        onChange={(e) => ctx.setValue(column === 'patch' ? e : channelEase(p.ease, e))}
       />
     );
   };
