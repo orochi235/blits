@@ -105,7 +105,8 @@ function published(name, v) {
 /** Pushes `tag` unless origin has it, then waits on its run, unless npm already serves `name@v`. */
 async function ship(tag, name, v) {
   if (published(name, v)) return;
-  if (run('git', ['ls-remote', '--tags', 'origin', tag]) === '') sh('git', ['push', '-q', 'origin', tag]);
+  if (run('git', ['ls-remote', '--tags', 'origin', tag]) === '')
+    sh('git', ['push', '-q', 'origin', tag]);
   await watch(tag);
 }
 
@@ -139,7 +140,9 @@ const plan = PACKAGES.map((p) => {
     new RegExp(`^## ${pkg.version.replaceAll('.', '\\.')}$`, 'm').test(readFileSync(log, 'utf8'));
   const next = p.lockstep ? version : done ? pkg.version : bump(pkg.version, unreleased(log));
   if (!p.lockstep && !takes(pkg.peerDependencies[ENGINE], version)) {
-    throw new Error(`${pkg.name}'s peer range ${pkg.peerDependencies[ENGINE]} does not take ${version}; widen it first`);
+    throw new Error(
+      `${pkg.name}'s peer range ${pkg.peerDependencies[ENGINE]} does not take ${version}; widen it first`,
+    );
   }
   return { ...p, name: pkg.name, from: pkg.version, to: next };
 });
@@ -147,22 +150,28 @@ console.log(`${ENGINE} ${readJson('package.json').version} -> ${version}`);
 for (const p of plan) console.log(`${p.name} ${p.from} -> ${p.to}`);
 if (dry) process.exit(0);
 
-if (run('git', ['status', '--porcelain']) !== '') throw new Error('the tree has uncommitted changes');
+if (run('git', ['status', '--porcelain']) !== '')
+  throw new Error('the tree has uncommitted changes');
 if (run('git', ['branch', '--show-current']) !== 'main') throw new Error('release from main');
 sh('git', ['fetch', '-q', 'origin']);
-if (run('git', ['rev-list', '--count', 'main..origin/main']) !== '0') throw new Error('main is behind origin');
+if (run('git', ['rev-list', '--count', 'main..origin/main']) !== '0')
+  throw new Error('main is behind origin');
 
 // The engine.
 const engineTag = `v${version}`;
 // A run that failed after the release commit has the version in place already; it only needs tagging.
 if (!tagExists(engineTag) && readJson('package.json').version !== version) {
-  if (!unreleased('CHANGELOG.md')?.trim()) throw new Error("the engine's CHANGELOG has nothing under Unreleased");
+  if (!unreleased('CHANGELOG.md')?.trim())
+    throw new Error("the engine's CHANGELOG has nothing under Unreleased");
   stamp('CHANGELOG.md', version);
   const root = readJson('package.json');
   root.version = version;
   writeJson('package.json', root);
   const shared = readFileSync('src/shared.ts', 'utf8');
-  const stamped = shared.replace(/^export const release = '[^']*';$/m, `export const release = '${version}';`);
+  const stamped = shared.replace(
+    /^export const release = '[^']*';$/m,
+    `export const release = '${version}';`,
+  );
   if (stamped === shared && !shared.includes(`release = '${version}'`)) {
     throw new Error("src/shared.ts has no `export const release = '…';` line to stamp");
   }
@@ -185,11 +194,18 @@ if (pending.length) {
     pkg.devDependencies[ENGINE] = version;
     if (p.lockstep) pkg.peerDependencies[ENGINE] = version;
     writeJson(f, pkg);
-    stamp(`${p.dir}/CHANGELOG.md`, p.to, `### Changed\n\n- Built and tested against engine ${version}.`);
+    stamp(
+      `${p.dir}/CHANGELOG.md`,
+      p.to,
+      `### Changed\n\n- Built and tested against engine ${version}.`,
+    );
   }
   sh('npm', ['install', '--package-lock-only', '--ignore-scripts']);
   const names = pending.map((p) => `${p.name.replace('@msb235/', '')} ${p.to}`);
-  const list = names.length > 2 ? `${names.slice(0, -1).join(', ')}, and ${names.at(-1)}` : names.join(' and ');
+  const list =
+    names.length > 2
+      ? `${names.slice(0, -1).join(', ')}, and ${names.at(-1)}`
+      : names.join(' and ');
   sh('git', ['commit', '-qam', `release ${list} on engine ${version}`]);
   for (const p of pending) sh('git', ['tag', `${p.tag}${p.to}`]);
   sh('git', ['push', '-q', 'origin', 'main']);
