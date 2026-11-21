@@ -1,6 +1,6 @@
 import type { Easing } from '@msb235/blits';
 import type { EasingSpec } from '@weasel-js/core';
-import { easingBezier } from '@weasel-js/ui';
+import { easingBezier } from '@weasel-js/geom';
 
 type Bezier = readonly [number, number, number, number];
 type Named = Exclude<Easing, object | ((u: number) => number)>;

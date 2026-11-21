@@ -3,7 +3,7 @@ import '@weasel-js/labkit/styles.css';
 import { App } from '@pg/app/App';
 import { IconRegistryProvider } from '@weasel-js/icons/react';
 import { localStorageAdapter, Persistence } from '@weasel-js/labkit';
-import { kitIcons } from '@weasel-js/ui/kit-icons';
+import { kitIcons } from '@weasel-js/ui-canvas/kit-icons';
 import { StrictMode, useEffect, useState } from 'react';
 
 // The diagrams bake Oswald's glyphs from a canvas, which draws a fallback face until the file is in.
