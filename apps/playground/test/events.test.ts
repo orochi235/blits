@@ -11,7 +11,7 @@ import { clipsOf } from '@pg/blits/score';
 import { subjectsOf } from '@pg/blits/stage';
 import { tickTimes } from '@pg/widgets/ScoreLanes/Marks';
 import { describe, expect, it } from 'vitest';
-import { comp, subjects, voice } from './helpers';
+import { comp, play as playTo, subjects, voice } from './helpers';
 
 const KEYS: PatchSource = {
   kind: 'keys',
@@ -126,7 +126,7 @@ describe('the event log', () => {
       p.events.tag = tag;
       p.rebuild();
     }
-    p.seek(2600);
+    playTo(p, 2600);
     return p;
   };
 
@@ -168,6 +168,7 @@ describe('the event log', () => {
 
   it('starts over on a scrub back by replay', () => {
     const p = play();
+    p.seekBy = 'replay';
     p.seek(100);
     expect(p.events.sent.map((e) => e.event)).toEqual([{ pass: 0 }]);
   });

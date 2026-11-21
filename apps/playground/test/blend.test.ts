@@ -40,7 +40,7 @@ describe('a blend', () => {
       (s) => s.x,
       { start: 100, fade: { in: 200 }, loop: 2 },
     );
-    same(built.mix, m);
+    same(built, m);
     expect([...built.handles.keys()]).toEqual(['m0', 'm1', 'm2']);
     expect(built.handles.get('m2')?.state).toBe(handles[2]?.state);
   });
@@ -48,8 +48,7 @@ describe('a blend', () => {
   it('plays each member alone in its solo mix, the solos folding to the blend', () => {
     const built = compile(three(), subjects, { solos: true });
     for (let t = 0; t <= 600; t += FRAME) {
-      built.mix.sync(t);
-      for (const solo of built.solos.values()) solo.sync(t);
+      built.transport.sync(t);
       for (const s of subjects) {
         const alone = [...built.solos.values()].map((solo) => solo.probe(s).scale);
         const moved = alone.filter((x) => Math.abs(x - 1) > 1e-9);
@@ -74,8 +73,8 @@ describe('a blend', () => {
       const built = compile(c, subjects, { solos });
       expect(built.errors).toEqual([]);
       const mixes = [built.mix, ...built.solos.values()];
+      built.transport.sync(0);
       for (const m of mixes) {
-        m.sync(0);
         const starts = m.marks(0, 1000).filter((x) => x.mark === 'start');
         expect(starts.map((x) => [x.name, x.timestamp])).toEqual([
           ['m0', 0],

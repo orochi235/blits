@@ -35,15 +35,16 @@ column's edge, or focusing it and pressing the arrow keys, sets its width, which
 clamps so the stage and diagrams keep room; the width, like whether the score's tracks are open and
 whether Both shows port labels, is kept per viewer through labkit's `Persistence` over
 localStorage. The score fills the bottom under the stage and diagrams, with the transport above it: play and pause, loop, rate, a choice of how a
-scrub back moves the mixes, step back and step forward one frame, the live switch with, in live mode, the mix's own `rate`, an `over`
-that ramps a rate change (`mix.ramp`) and fades a **mute** (`mix.mute`), and a slider per level.
-Blank, `over` sets a rate at once and mutes over each voice's own `fade.out`. The transport's rate slows the playground's clock,
-while the mix's slows the voices as the score's clock runs on.
-A scrub back either replays from 0, which shows exactly what playback showed, or calls blits'
-`mix.seek({ frame })` with the frame each mix played at that point of the score, which restores
-from the history every mix keeps. By `mix.seek`, the transport shows the full mix's `now` and
-`seq`: at a mix rate of 0 the score runs on while `now` holds, so each frame held at one mix time
-has its own place on the score, and scrubbing or stepping there reaches it. Either way the
+scrub back moves the mixes, step back and step forward one frame, the live switch with, in live mode, an `over`
+that ramps a rate change (`transport.ramp`) and fades a **mute** (`mix.mute`), and a slider per level.
+Blank, `over` sets a rate at once and mutes over each voice's own `fade.out`.
+The full mix and every solo play on one blits `transport()`, synced at each animation frame's time, so
+the rate is the transport's: the debug panel shows it and can set it, and at 0 the score holds. Pausing stops the syncs, and
+playing again calls `rebase()`. The score runs on mix time. A scrub ahead is `transport.seek`, which a rate of 0
+never reaches, so stepping forward is off then. A scrub back either replays from 0, rebuilding the mixes and doing
+again what the host did (each sync at its time, each rate change, each rebase), which shows exactly what playback
+showed short of live changes; or calls blits' `transport.seek`, which restores from the history the transport keeps,
+the rate recorded then included. By `transport.seek`, the transport shows its `now` and `seq`. Either way the
 inspector labels each channel with blits' `assess` answer for the picked subject: `exact`,
 `stepped`, or `held`. Space plays and pauses from anywhere but a text field, a menu, or a control
 that uses Space itself: a clip or group header on the score and a strip on the desk select theirs
@@ -408,13 +409,13 @@ owner or a span; deleting a group moves what it held up to its parent.
   full mix out, with handles and patches by voice id, a solo mix per voice for the inspector, and
   errors by field. A voice with errors is left out; the rest still play. Every edit recompiles and
   replays to the playhead.
-- **Play and scrub.** The `Player` (`src/blits/player.ts`) advances in whole 1000/60 ms frames and
-  pulls every subject every frame, in every mix, so live play and a replay give the same poses.
-  Scrubbing forward plays ahead; scrubbing back rebuilds and replays from 0, because a stateful
-  signal or a spring reads each frame's gap, or calls `mix.seek` where the transport's scrub choice
-  says so, falling back to the replay where history cannot reach. The Player keeps each mix's
-  `seq` for every frame it showed and seeks by that, not by time, so a score frame lands on the
-  frame it showed even where a mix rate other than 1 has parted mix time from score time. A seek
+- **Play and scrub.** The `Player` (`src/blits/player.ts`) puts the full mix and every solo on one
+  blits `transport()` and syncs it at each animation frame's time, pulling every subject every
+  frame, in every mix. It records what the host did to the transport (each sync with its time,
+  each rate change, each rebase, each seek ahead), and cuts that record back on a seek back. Scrubbing
+  ahead is `transport.seek`; scrubbing back either rebuilds and does the record again from 0,
+  because a stateful signal or a spring reads each frame's gap, or calls `transport.seek` where the
+  transport's scrub choice says so, falling back to the replay where history cannot reach. A seek
   lands at the end of a frame, so a live change made at a frame shows when seeking to it, a frame
   sooner than play showed it. Because every subject is met every frame, a voice's `catchUp:
   'fresh'` changes anything only when the voice starts partway through a frame and its `stepMs`
@@ -444,7 +445,7 @@ owner or a span; deleting a group moves what it held up to its parent.
   handles instead of the composition. A change reaches the voice in the full mix and in every solo
   mix, where it plays silent but keeps time for anything anchored to it; a weight lands only where
   the voice is heard. A badge says the changes are in force; the next edit drops them, and so does a
-  backward scrub by replay, while one by `mix.seek` plays them again.
+  backward scrub by replay, while one by `transport.seek` plays them again.
 - **State.** The current composition is kept in `localStorage`; undo and redo (Cmd/Ctrl-Z,
   Shift for redo, outside a text field, which keeps its own) use labkit's pure undo-stack
   functions. Share, on the Voice tab, copies a link carrying the composition as base64url of its
@@ -552,12 +553,11 @@ Calls made while building, each the owner's to overturn, with how to reverse it.
 - **The read-ahead is saved in the composition** as `book.ahead`, 0 to `MAX_AHEAD` (5000 ms), while
   the book-and-drain tag stays per session on the `EventLog` (2026-10-17). Moving the tag to
   `book.tag` would save and share it too.
-- **A scrub back by `mix.seek` always seeks by frame**: the Player keeps each mix's `seq` for every
-  score frame it showed and passes that, with the step buttons on the transport to step one frame. There is no
-  separate stepper over the held frames alone (2026-10-17). Reverse by passing `target * FRAME` to
-  `m.seek` in `seekBack` (`src/blits/player.ts`), which lands on the last held frame.
-- **The Events list's seek cut goes by the full mix's `now`**, the clock `Sent.timestamp` reads,
-  not score time; they differ only under a live mix rate (2026-10-17).
+- **The playground keeps no clock of its own** (2026-11-21): the transport's `rate` is its speed, so
+  the debug panel sees and sets it, and the score runs on mix time. This replaced a host clock the
+  Player stepped a frame at a time, scaled by a speed outside blits, with a separate live "mix
+  rate" beside it; the score could show the several frames rate 0 held at one mix time, which it no
+  longer does.
 - **`catchUp` shows in the voice panel only for an fn patch with a `step`**, as `stepMs` does,
   since blits reads it only there, and both are held alike across a blend's members, as
   `mix.blend` takes them once (2026-10-17). Reverse the second by removing them from `SHARED` in

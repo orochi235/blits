@@ -19,7 +19,7 @@ export interface TimingPanelProps {
 
 export function TimingPanel({ comp, faulted, player, selected, onVoice }: TimingPanelProps) {
   const timing = useMemo(() => timingOf(comp, faulted), [comp, faulted]);
-  const now = lit(timing, liveOf(player.built, player.host));
+  const now = lit(timing, liveOf(player.built, player.built.transport.timestamp));
   const kept = useRef({ key: flowKey(now), flow: now });
   const key = flowKey(now);
   if (kept.current.key !== key) kept.current = { key, flow: now };

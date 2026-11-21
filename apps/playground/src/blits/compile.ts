@@ -1,4 +1,12 @@
-import { type Handle, type Mix, type MixOptions, mix, type Patch } from '@msb235/blits';
+import {
+  type Handle,
+  type Mix,
+  type MixOptions,
+  mix,
+  type Patch,
+  type Transport,
+  transport,
+} from '@msb235/blits';
 import { createHistory as tape } from '@weasel-js/history';
 import type { Composition, MixSettings } from './composition';
 import { cueAll, type Voices } from './cueGroups';
@@ -11,6 +19,8 @@ import type { FieldError } from './spec';
 import type { Subject } from './stage';
 
 export interface Built {
+  /** The one clock the full mix and every solo play on. */
+  transport: Transport;
   mix: Mix<Subject, Mixed>;
   solos: Map<string, Mix<Subject, Mixed>>;
   /** Every voice and group cued in each solo mix, by solo then id, so a live change can reach them. */
@@ -62,15 +72,16 @@ export function compile(
   const bounded = usesAround(c);
   const xy = bounded ? xyOf(subjects) : null;
 
+  // History lets the player seek back with blits' own `seek` rather than replaying from 0.
+  const clock = transport({ history: { ms: c.length + HISTORY_SLACK, inputs: true, tape } });
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
-    // History lets the player seek back with blits' own `seek` rather than replaying from 0.
     const voice = only === null ? undefined : c.voices.find((v) => v.id === only);
     const name = opts.name && (voice ? `${opts.name} · solo ${voice.name}` : opts.name);
     const m = mix<Subject, Mixed>(kit, {
       ...mixOptionsOf(c.mix),
       ...(name ? { name } : {}),
-      history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
+      transport: clock,
     });
     if (xy !== null) m.plot(subjects, xy);
     for (const { name, at, ...opts } of c.announced ?? []) m.announce(name, { at, ...opts });
@@ -87,6 +98,7 @@ export function compile(
       soloVoices.set(id, made);
     }
   const built: Built = {
+    transport: clock,
     mix: full.m,
     solos,
     soloVoices,

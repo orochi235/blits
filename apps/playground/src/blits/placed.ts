@@ -17,7 +17,7 @@ export type Placed = Partial<Record<MarkName, number>>;
  * it only at a sync.
  */
 export function placedOf(built: Built): Map<string, Placed> {
-  if (Number.isNaN(built.mix.timestamp)) built.mix.sync(0);
+  if (Number.isNaN(built.transport.timestamp)) built.transport.sync(0);
   const ids = new Map<number, string>();
   for (const [id, h] of built.handles) ids.set(h.id, id);
   for (const [id, h] of built.groupHandles) ids.set(h.id, id);

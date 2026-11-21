@@ -31,7 +31,7 @@ let dragged: ReadonlyMap<string, At> = new Map();
 export function BothPanel({ comp, faulted, player, selected, onVoice, onComp }: BothPanelProps) {
   const flow = useMemo(() => flowOf(comp, faulted), [comp, faulted]);
   const timing = useMemo(() => timingOf(comp, faulted), [comp, faulted]);
-  const now = bothOf(flow, lit(timing, liveOf(player.built, player.host)));
+  const now = bothOf(flow, lit(timing, liveOf(player.built, player.built.transport.timestamp)));
   const kept = useRef({ key: flowKey(now), flow: now });
   const key = flowKey(now);
   if (kept.current.key !== key) kept.current = { key, flow: now };

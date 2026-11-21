@@ -71,7 +71,7 @@ describe('compile', () => {
     const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({ patch: keys(500, stops), loop: 2, stagger: (s) => s.col * 100, fade: { in: 200 } });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
+    same(built, hand);
   });
 
   it('a fn voice with state and step gives the hand-written poses', () => {
@@ -107,7 +107,7 @@ describe('compile', () => {
         },
       ),
     });
-    same(built.mix, hand);
+    same(built, hand);
   });
 
   it("a fn voice's catchUp reaches its cue: fresh skips the steps from a mid-frame start to the frame", () => {
@@ -132,7 +132,7 @@ describe('compile', () => {
         subjects,
       );
       expect(built.errors).toEqual([]);
-      return built.mix;
+      return built;
     };
     const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
@@ -157,12 +157,12 @@ describe('compile', () => {
     const fresh = turns('fresh');
     const [late] = subjects as [(typeof subjects)[0]];
     for (let t = 0; t <= 10 * FRAME; t += FRAME) {
-      exact.sync(t);
-      fresh.sync(t);
-      exact.probe(late);
-      fresh.probe(late);
+      exact.transport.sync(t);
+      fresh.transport.sync(t);
+      exact.mix.probe(late);
+      fresh.mix.probe(late);
     }
-    expect(fresh.probe(late).turn).toBeLessThan(exact.probe(late).turn);
+    expect(fresh.mix.probe(late).turn).toBeLessThan(exact.mix.probe(late).turn);
   });
 
   it('a spring voice gives the hand-written poses', () => {
@@ -187,7 +187,7 @@ describe('compile', () => {
         stiffness: 120,
       }),
     });
-    same(built.mix, hand);
+    same(built, hand);
   });
 
   it('a glide voice gives the hand-written poses', () => {
@@ -213,7 +213,7 @@ describe('compile', () => {
       }),
     });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
+    same(built, hand);
   });
 
   it('a keys voice with per-channel eases and delays gives the hand-written poses', () => {
@@ -247,7 +247,7 @@ describe('compile', () => {
       }),
     });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
+    same(built, hand);
   });
 
   it('a wave voice gives the hand-written poses, swinging scale around its rest', () => {
@@ -275,10 +275,10 @@ describe('compile', () => {
       }),
     });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
-    const fresh = compile(comp([swing]), subjects).mix;
-    fresh.sync(0);
-    expect(fresh.probe(subjects[0] as (typeof subjects)[0]).scale).toBeCloseTo(1.5, 9);
+    same(built, hand);
+    const fresh = compile(comp([swing]), subjects);
+    fresh.transport.sync(0);
+    expect(fresh.mix.probe(subjects[0] as (typeof subjects)[0]).scale).toBeCloseTo(1.5, 9);
   });
 
   it('folds by the rules a composition names', () => {
@@ -295,7 +295,7 @@ describe('compile', () => {
         loop: true,
       });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
+    same(built, hand);
   });
 
   it('a tween voice gives the hand-written poses', () => {
@@ -327,7 +327,7 @@ describe('compile', () => {
       }),
     });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
+    same(built, hand);
   });
 
   it('a motion option that throws for some subjects falls back to the channel rest', () => {
@@ -355,7 +355,7 @@ describe('compile', () => {
       }),
     });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand, 3000);
+    same(built, hand, 3000);
     const thrown = subjects.find((s) => s.col === 1) as (typeof subjects)[0];
     expect(built.mix.probe(thrown).offset).toEqual([0, 0]);
     expect(built.faults.get('s')?.count).toBeGreaterThan(0);
@@ -379,7 +379,7 @@ describe('compile', () => {
       ['zero', 'opts.ms'],
       ['aimless', 'opts.to'],
     ]);
-    built.mix.sync(0);
+    built.transport.sync(0);
     expect(built.mix.probe(subjects[0] as never).glow).toBe(1);
     expect([...built.handles.keys()]).toEqual(['ok']);
   });
@@ -425,7 +425,7 @@ describe('compile', () => {
       }),
     });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
+    same(built, hand);
     expect(built.mix.probe(subjects.find((s) => s.col === 1) as never).scale).toBe(3);
   });
 
@@ -466,7 +466,7 @@ describe('compile', () => {
       }),
     });
     expect(built.errors).toEqual([]);
-    same(built.mix, hand);
+    same(built, hand);
     expect(built.faults.get('w')?.count).toBeGreaterThan(0);
     expect(built.faults.get('w')?.first).toBe('opts.ms takes a positive number');
     expect(built.faults.get('s')?.first).toBe('opts.to takes 2 numbers');
@@ -495,16 +495,16 @@ describe('compile', () => {
       const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
       for (const v of voices)
         if (v.patch.kind === 'keys') hand.cue({ patch: keys(100, v.patch.stops.map(mixedStop)) });
-      same(built.mix, hand, 100);
+      same(built, hand, 100);
     }
-    const forward = compile(comp(order), subjects).mix;
-    const back = compile(comp([...order].reverse()), subjects).mix;
-    forward.sync(0);
-    back.sync(0);
+    const forward = compile(comp(order), subjects);
+    const back = compile(comp([...order].reverse()), subjects);
+    forward.transport.sync(0);
+    back.transport.sync(0);
     const s0 = subjects[0] as never;
-    expect(forward.probe(s0).turn).not.toBe(back.probe(s0).turn);
-    expect(toHex(forward.probe(s0).color)).toBe(0x0000ff);
-    expect(toHex(back.probe(s0).color)).toBe(0xff0000);
+    expect(forward.mix.probe(s0).turn).not.toBe(back.mix.probe(s0).turn);
+    expect(toHex(forward.mix.probe(s0).color)).toBe(0x0000ff);
+    expect(toHex(back.mix.probe(s0).color)).toBe(0xff0000);
   });
 
   it('skips a voice with a bad expression, names the field, and keeps the rest', () => {
@@ -515,7 +515,7 @@ describe('compile', () => {
     const bad = voice({ id: 'bad', patch: ok.patch, stagger: { code: '(s) =>' } });
     const built = compile(comp([ok, bad]), subjects);
     expect(built.errors.map((e) => [e.voice, e.field])).toEqual([['bad', 'stagger']]);
-    built.mix.sync(0);
+    built.transport.sync(0);
     expect(built.mix.probe(subjects[0] as never).glow).toBe(1);
     expect(built.handles.has('bad')).toBe(false);
     expect([...built.patches.keys()]).toEqual(['ok']);
@@ -542,8 +542,8 @@ describe('compile', () => {
       anchor: { start: { after: 'gone' } },
     });
     const built = compile(comp([v]), subjects);
-    built.mix.sync(0);
-    built.mix.sync(500);
+    built.transport.sync(0);
+    built.transport.sync(500);
     expect(built.handles.get('late')?.state).toBe('pending');
   });
 
@@ -558,9 +558,9 @@ describe('compile', () => {
     });
     const b = voice({ id: 'b', name: 'b', start: 2000, patch: glow });
     const built = compile(comp([a, b]), subjects);
-    built.mix.sync(100);
+    built.transport.sync(100);
     expect(built.handles.get('a')?.state).toBe('pending');
-    built.mix.sync(600);
+    built.transport.sync(600);
     expect(built.handles.get('a')?.state).toBe('live');
   });
 
@@ -575,7 +575,7 @@ describe('compile', () => {
     });
     const built = compile(comp([a, b]), subjects, { solos: true });
     const solo = built.solos.get('a');
-    solo?.sync(0);
+    built.transport.sync(0);
     expect(solo?.probe(subjects[0] as never).glow).toBe(0.5);
   });
 
@@ -589,11 +589,10 @@ describe('compile', () => {
     ]);
     c.levels = [{ name: 'k', value: 0.25, min: 0, max: 1 }];
     const built = compile(c, subjects, { solos: true });
-    built.mix.sync(0);
+    built.transport.sync(0);
     expect(built.mix.probe(subjects[0] as never).glow).toBeCloseTo(0.25, 12);
     built.levels.get('k')?.set(1);
-    built.mix.sync(FRAME);
-    built.solos.get('w')?.sync(FRAME);
+    built.transport.sync(FRAME);
     expect(built.mix.probe(subjects[0] as never).glow).toBe(1);
     expect(built.solos.get('w')?.probe(subjects[0] as never).glow).toBe(1);
   });
@@ -610,8 +609,8 @@ describe('compile, unlisted', () => {
     const b = compile(c, subjects, { solos: true, listed: false });
     expect(listed(b.mix)).toBe(false);
     for (const m of b.solos.values()) expect(listed(m)).toBe(false);
-    b.mix.sync(0);
-    expect(b.mix.probe(subjects[0])).toBeDefined();
+    b.transport.sync(0);
+    expect(b.mix.probe(subjects[0] as never)).toBeDefined();
   });
 
   it('lists one by default', () => {

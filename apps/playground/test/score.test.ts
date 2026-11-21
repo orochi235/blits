@@ -185,7 +185,7 @@ describe('a clip’s rate', () => {
     const h = built.handles.get('x');
     const s0 = subjects[0] as (typeof subjects)[number];
     for (const t of [0, 100, 200]) {
-      built.mix.sync(t);
+      built.transport.sync(t);
       built.mix.probe(s0);
     }
     expect(h?.weightOf(s0)).toBeCloseTo(0.5, 6);

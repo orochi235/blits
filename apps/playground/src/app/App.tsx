@@ -41,20 +41,31 @@ export function App() {
   const last = useRef<Player | null>(null);
   const compiled = useRef<Composition | null>(null);
   // A new stage needs new columns, so a new player; it takes over the old one's playhead and sliders.
+  // It is made unlisted, since a render can be thrown away, and listed once mounted.
   const player = useMemo(() => {
-    const build = () => compile(compRef.current, subjects, { solos: true, name: 'playground' });
-    const p = new Player(build, subjects, { levels: compRef.current.levels, from: last.current });
-    last.current = p;
+    const build = (listed: boolean) =>
+      compile(compRef.current, subjects, { solos: true, name: 'playground', listed });
+    const p = new Player(build, subjects, {
+      levels: compRef.current.levels,
+      from: last.current,
+      listed: false,
+    });
     compiled.current = compRef.current;
     return p;
   }, [subjects]);
+  useEffect(() => {
+    last.current = player;
+    player.list(true);
+    return () => player.list(false);
+  }, [player]);
   const [frame, setFrame] = useState(0);
   const tick = useCallback(() => setFrame((f) => f + 1), []);
-  const [rate, setRate] = useState(1);
   const [loop, setLoop] = useState(true);
-  const { playing, play } = usePlayback(player, compRef, { rate, loop, tick });
+  const { playing, play } = usePlayback(player, compRef, { loop, tick });
   const [live, setLive] = useState(false);
-  const [seekBy, setSeekBy] = useState<SeekBy>('replay');
+  const [seekBy, setSeekBy] = useState<SeekBy>('seek');
+  // In live mode, how long a rate change ramps and a mute fades, ms; undefined at once.
+  const [over, setOver] = useState<number | undefined>(undefined);
   useEffect(() => {
     player.seekBy = seekBy;
   }, [player, seekBy]);
@@ -228,8 +239,11 @@ export function App() {
           <Transport
             playing={playing}
             onPlaying={play}
-            rate={rate}
-            onRate={setRate}
+            rate={player.rate}
+            onRate={(r) => {
+              player.setRate(r, live ? over : undefined);
+              tick();
+            }}
             loop={loop}
             onLoop={setLoop}
             t={player.t}
@@ -241,14 +255,8 @@ export function App() {
             onSeekBy={setSeekBy}
             onStep={(n) => scrub(player.t + n * FRAME)}
             clock={player.clock}
-            mixRate={player.built.mix.rate}
-            onMixRate={(r, over) => {
-              player.liveMix((m) => {
-                if (over === undefined) m.rate = r;
-                else m.ramp(r, over);
-              });
-              tick();
-            }}
+            over={over}
+            onOver={setOver}
             onMute={(over) => {
               player.liveMix((m) => m.mute(over === undefined ? undefined : { over }));
               tick();

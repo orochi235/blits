@@ -31,7 +31,7 @@ export function coursesOf(
 ): Map<string, Track> {
   const built = compile(c, subjects, { solos: true });
   try {
-    const { mix, solos, handles, groupHandles } = built;
+    const { transport, mix, solos, handles, groupHandles } = built;
     const weighed = [...handles, ...groupHandles];
     const weights = new Map(weighed.map(([id]) => [id, [] as number[]]));
     const values = new Map([...solos.keys()].map((id) => [id, NUMBERS.map(() => [] as number[])]));
@@ -45,10 +45,8 @@ export function coursesOf(
     // Every frame is played and pulled as the Player plays it: a handle's weight reads the last pull.
     for (let f = 0; f <= last && k < n; f++) {
       const host = f * FRAME;
-      for (const m of [mix, ...solos.values()]) {
-        m.sync(host);
-        m.pull(subjects, columns);
-      }
+      transport.sync(host);
+      for (const m of [mix, ...solos.values()]) m.pull(subjects, columns);
       for (; k < n && frameOf(k) === f; k++) {
         at.push(host);
         for (const [id, h] of weighed) {

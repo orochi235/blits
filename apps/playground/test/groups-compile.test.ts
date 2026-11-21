@@ -17,7 +17,7 @@ import { KIT, type Mixed } from '@pg/blits/kit';
 import type { Subject } from '@pg/blits/stage';
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
-import { comp, group, same, subjects, voice } from './helpers';
+import { comp, group, type Played, partsOf, same, subjects, voice } from './helpers';
 
 const stops = [
   { at: 0, delta: { scale: 1 } },
@@ -42,7 +42,7 @@ describe('compiling groups', () => {
     const m = hand();
     const h = m.owns({ start: 100, rate: 2, weight: 0.5, fade: { in: 200 } });
     m.cue({ patch: keys(400, stops), start: 50, loop: 2, owner: h });
-    same(built.mix, m);
+    same(built, m);
     expect(built.groupHandles.get('g')?.state).toBe(h.state);
   });
 
@@ -76,7 +76,7 @@ describe('compiling groups', () => {
       fit: pipe(condense(), shed()),
     });
     for (const hints of HINTS) m.cue({ patch: keys(400, stops), loop: false, owner: s, ...hints });
-    same(built.mix, m);
+    same(built, m);
     expect(resultOf(built.groupHandles, 's')).toEqual(s.result);
     expect(s.result.budget).toBe(600);
   });
@@ -109,7 +109,7 @@ describe('compiling groups', () => {
     m.cue({ patch: keys(400, stops), loop: false, owner: s });
     m.cue({ patch: keys(400, stops), loop: false, owner: s });
     m.cue({ patch: keys(400, stops), start: 300, loop: false, owner: o });
-    same(built.mix, m);
+    same(built, m);
     expect(resultOf(built.groupHandles, 's')).toEqual(s.result);
   });
 
@@ -136,7 +136,7 @@ describe('compiling groups', () => {
     const s = m.span({ start: 0, duration: 600 });
     m.cue({ patch: keys(400, stops), loop: false, owner: s });
     m.cue({ patch: keys(400, stops), loop: false, owner: s });
-    same(built.mix, m);
+    same(built, m);
   });
 
   it('a motion voice under a span is a field error on its patch', () => {
@@ -171,7 +171,7 @@ describe('compiling groups', () => {
     expect([...built.solos.keys()]).toEqual(['c']);
     const m = hand();
     m.cue({ patch: keys(400, stops), start: 0, loop: false });
-    same(built.mix, m);
+    same(built, m);
   });
 
   it("a fit's code step that fails to compile is a field error on that step", () => {
@@ -219,7 +219,7 @@ describe('compiling groups', () => {
     );
     expect(built.errors).toEqual([]);
     for (let t = 0; t <= 100; t += FRAME) {
-      built.mix.sync(t);
+      built.transport.sync(t);
       for (const s of subjects) built.mix.probe(s);
     }
     expect(built.faults.get('o')).toMatchObject({ first: 'w' });
@@ -250,8 +250,8 @@ describe('compiling groups', () => {
     expect(built.errors).toEqual([]);
     for (const id of ['a', 'b'])
       expect([...(built.soloVoices.get(id)?.groupHandles.keys() ?? [])]).toEqual(['g', 's']);
-    const silent = compile(comp([a, { ...b, weight: 0 }], groups), subjects).mix;
-    same(built.solos.get('a') as Mix<Subject, Mixed>, silent);
+    const silent = compile(comp([a, { ...b, weight: 0 }], groups), subjects);
+    same({ mix: built.solos.get('a') as Mix<Subject, Mixed>, transport: built.transport }, silent);
   });
 
   it("an owner's seek, rate below 0, tags, score, and hits give the hand-written owns", () => {
@@ -273,8 +273,8 @@ describe('compiling groups', () => {
       const m = mix<Subject, Mixed>(KIT, { stepMs: FRAME, history: { ms: 3000, tape } });
       const h = m.owns({ start: 50, rate: 1, weight: 1, fade: {}, ...over });
       m.cue({ patch: keys(400, stops), start: 100, loop: false, owner: h });
-      const took = [bookOn(built.mix), bookOn(m)];
-      same(built.mix, m);
+      const took = [bookOn(built), bookOn(m)];
+      same(built, m);
       expect(took[0]).toEqual(took[1]);
       const events = took[1]?.map((t) => (t as unknown[])[0]);
       // Behind its seek, 'up' is taken late, as a voice's is; running back, it books none.
@@ -304,7 +304,8 @@ describe('compiling groups', () => {
 });
 
 /** Every hit and mark `m` books as it plays, on a clock that reads the host's. */
-function bookOn(m: Mix<Subject, Mixed>) {
+function bookOn(p: Played) {
+  const { mix: m, transport } = partsOf(p);
   const took: unknown[] = [];
   let host = 0;
   m.book({
@@ -316,8 +317,8 @@ function bookOn(m: Mix<Subject, Mixed>) {
       return undefined;
     },
   });
-  const sync = m.sync.bind(m);
-  m.sync = (t: number) => {
+  const sync = transport.sync.bind(transport);
+  transport.sync = (t: number) => {
     host = t;
     sync(t);
   };

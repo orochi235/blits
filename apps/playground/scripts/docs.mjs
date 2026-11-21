@@ -40,6 +40,7 @@ for (const name of [
   'Handle',
   'Mix',
   'MixOptions',
+  'Transport',
   'BookOptions',
   'SpanHints',
   'OwnerSpec',

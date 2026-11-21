@@ -135,7 +135,7 @@ describe('lit', () => {
   const at = (ms: number) => {
     const p = new Player(() => compile(anchors, subjects), subjects, { levels: anchors.levels });
     p.seek(ms);
-    return lit(timingOf(anchors), liveOf(p.built, p.host));
+    return lit(timingOf(anchors), liveOf(p.built, p.built.transport.timestamp));
   };
   const tone = (ms: number, id: string) => {
     const f = at(ms);
@@ -174,7 +174,7 @@ describe('lit', () => {
     const drop = (ms: number) => {
       const p = new Player(() => compile(c, subs), subs, { levels: c.levels });
       p.seek(ms);
-      const f = lit(timingOf(c), liveOf(p.built, p.host));
+      const f = lit(timingOf(c), liveOf(p.built, p.built.transport.timestamp));
       return f.edges.find((e) => e.from === 'voice:a' && e.to === 'join:b:start');
     };
     expect(drop(200)?.label).toBe('its drop');

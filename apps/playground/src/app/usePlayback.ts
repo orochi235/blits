@@ -3,53 +3,41 @@ import { FRAME } from '@pg/blits/frame';
 import type { Player } from '@pg/blits/player';
 import { type RefObject, useCallback, useEffect, useState } from 'react';
 
-/** The most wall time one tick plays, so a hidden tab coming back does not replay seconds at once. */
-const MAX_TICK_MS = 250;
-
 /**
- * Plays `player` on the animation frame at `rate`, looping at the composition's length or stopping
- * there, and toggles with Space from anywhere but a text field or a control that uses it.
+ * Plays `player` on the animation frame, syncing its transport at each frame's time, and looping
+ * at the composition's length or stopping there. Paused, it stops syncing, and on playing again
+ * `rebase` takes the time it stood still off the clock. Space toggles it from anywhere but a text
+ * field or a control that uses it.
  */
 export function usePlayback(
   player: Player,
   comp: RefObject<Composition>,
-  opts: { rate: number; loop: boolean; tick(): void },
+  opts: { loop: boolean; tick(): void },
 ) {
-  const { rate, loop, tick } = opts;
+  const { loop, tick } = opts;
   const [playing, setPlaying] = useState(true);
 
   useEffect(() => {
     if (!playing) return;
-    let prev = performance.now();
-    let owed = 0;
+    player.rebase();
     let id = requestAnimationFrame(function step(now) {
-      owed += Math.min(now - prev, MAX_TICK_MS) * rate;
-      prev = now;
-      const frames = Math.floor(owed / FRAME);
-      if (frames > 0) {
-        owed -= frames * FRAME;
-        const end = comp.current.length;
-        const t = player.t + frames * FRAME;
-        // While something else moves the mix's clock, the score follows it and never loops.
-        if (t > end && !player.following) {
-          if (!loop) {
-            player.seek(end);
-            tick();
-            setPlaying(false);
-            return;
-          }
-          player.lap(end > 0 ? t % end : 0, end);
+      player.sync(now);
+      const end = comp.current.length;
+      // While something else moves the mix's clock, the score follows it and never loops.
+      if (player.t >= end && !player.following) {
+        if (!loop) {
+          player.seek(end);
           tick();
-          id = requestAnimationFrame(step);
+          setPlaying(false);
           return;
         }
-        player.seek(t);
-        tick();
+        player.lap(end > 0 ? player.t % end : 0, end);
       }
+      tick();
       id = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(id);
-  }, [playing, rate, loop, player, tick, comp]);
+  }, [playing, loop, player, tick, comp]);
 
   const play = useCallback(
     (on: boolean) => {

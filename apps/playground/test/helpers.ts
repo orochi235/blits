@@ -1,7 +1,8 @@
-import type { Mix } from '@msb235/blits';
+import type { Mix, Transport } from '@msb235/blits';
 import type { Composition, Group, Voice } from '@pg/blits/composition';
 import { FRAME } from '@pg/blits/frame';
 import type { Mixed } from '@pg/blits/kit';
+import type { Player } from '@pg/blits/player';
 import { type Subject, subjectsOf } from '@pg/blits/stage';
 import { expect } from 'vitest';
 
@@ -39,11 +40,29 @@ export const comp = (voices: Voice[], groups?: Group[]): Composition => ({
 
 export const subjects = subjectsOf({ kind: 'dots', cols: 3, rows: 2 });
 
+/** Plays `p` `n` frames, syncing its transport a frame's time apart, as the animation frame does. */
+export function step(p: Player, n = 1) {
+  for (let k = 0; k < n; k++) p.sync(p.host + FRAME);
+}
+
+/** Plays `p` frame by frame until its score reaches mix time `t`. */
+export function play(p: Player, t: number) {
+  while (p.t < t - 1e-9) step(p);
+}
+
+/** A mix of its own, or one on a transport with the transport that moves it, such as a compile. */
+export type Played = Mix<Subject, Mixed> | { mix: Mix<Subject, Mixed>; transport: Transport };
+
+export const partsOf = (p: Played) =>
+  'transport' in p && 'mix' in p ? p : { mix: p, transport: p as { sync(t: number): void } };
+
 /** Plays both mixes frame by frame and compares every subject's pose, to the bit. */
-export function same(a: Mix<Subject, Mixed>, b: Mix<Subject, Mixed>, ms = 1500) {
+export function same(a: Played, b: Played, ms = 1500) {
+  const x = partsOf(a);
+  const y = partsOf(b);
   for (let t = 0; t <= ms; t += FRAME) {
-    a.sync(t);
-    b.sync(t);
-    for (const s of subjects) expect(a.probe(s)).toStrictEqual(b.probe(s));
+    x.transport.sync(t);
+    y.transport.sync(t);
+    for (const s of subjects) expect(x.mix.probe(s)).toStrictEqual(y.mix.probe(s));
   }
 }

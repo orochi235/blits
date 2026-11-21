@@ -5,7 +5,7 @@ import { CHANNELS } from '@pg/blits/kit';
 import { type Columns, Player, WINDOW } from '@pg/blits/player';
 import { subjectsOf } from '@pg/blits/stage';
 import { describe, expect, it } from 'vitest';
-import { comp as compOf, group, voice } from './helpers';
+import { comp as compOf, group, play, step, voice } from './helpers';
 
 const c: Composition = {
   version: 1,
@@ -41,16 +41,9 @@ const bits = (cols: Columns) =>
   CHANNELS.map((k) => [...new BigUint64Array(cols[k].slice().buffer)].map((b) => b.toString(16)));
 
 describe('Player', () => {
-  it('lands on whole frames', () => {
-    const p = player();
-    p.seek(100);
-    expect(p.t).toBe(Math.floor(100 / FRAME) * FRAME);
-    p.seek(30 * FRAME);
-    expect(p.t).toBe(30 * FRAME);
-  });
-
   it('scrubbing back over a spring and a slew weight lands on the pose playback showed, to the bit', () => {
     const live = player();
+    live.seekBy = 'replay';
     const snaps = new Map<number, string[][]>();
     const offsets = new Map<number, number[]>();
     for (let f = 0; f <= 90; f++) {
@@ -75,6 +68,7 @@ describe('Player', () => {
 
   it('seeking back with mix.seek lands near what playback showed, and says how sure it is', () => {
     const replay = player();
+    replay.seekBy = 'replay';
     const seeker = player();
     seeker.pick(3);
     seeker.seekBy = 'seek';
@@ -112,48 +106,43 @@ describe('Player', () => {
     expect(p.livened).toBe(true);
   });
 
-  it('a seek back by mix.seek reaches each of the frames rate 0 held at one mix time', () => {
-    const turn = compOf([
-      voice({
-        id: 'k',
-        patch: { kind: 'keys', period: 1000, stops: [{ at: 0, delta: { turn: 30 } }] },
-      }),
-    ]);
-    const p = new Player(() => compile(turn, subjects, { solos: true }), subjects);
-    p.seekBy = 'seek';
-    p.seek(30 * FRAME);
-    p.liveMix((m) => {
-      m.rate = 0;
-    });
-    p.seek(35 * FRAME);
-    const held = p.clock;
-    const before = [...p.columns.turn];
-    p.live('k', (h) => {
-      h.weight = 0;
-    });
-    p.seek(45 * FRAME);
-    const after = [...p.columns.turn];
-    expect(p.clock.now).toBe(held.now);
-    expect(p.clock.seq).toBeGreaterThan(held.seq);
-    expect(after).not.toEqual(before);
-    p.seek(33 * FRAME);
-    expect(p.clock.now).toBe(held.now);
-    expect([...p.columns.turn]).toEqual(before);
-    expect(p.built.handles.get('k')?.weight).toBe(1);
-    p.seek(40 * FRAME);
-    expect([...p.columns.turn]).toEqual(after);
-    p.seek(36 * FRAME);
-    expect([...p.columns.turn]).toEqual(after);
-    // The write was made during frame 35, and a seek lands at the end of a frame.
-    p.seek(35 * FRAME);
-    expect([...p.columns.turn]).toEqual(after);
-    p.seek(34 * FRAME);
-    expect([...p.columns.turn]).toEqual(before);
-    expect(p.livened).toBe(true);
+  it("runs at the transport's rate, which every mix shares, a seek ahead never passes at 0, and a rebuild keeps", () => {
+    const p = player();
+    play(p, 300);
+    p.setRate(0.5);
+    expect(p.rate).toBe(0.5);
+    for (const m of [p.built.mix, ...p.built.solos.values()]) expect(m.rate).toBe(0.5);
+    const t = p.t;
+    step(p, 6);
+    expect(p.t).toBeCloseTo(t + 3 * FRAME, 9);
+    p.rebuild(c.levels);
+    expect(p.rate).toBe(0.5);
+    expect(p.t).toBeCloseTo(t + 3 * FRAME, 9);
+    p.setRate(0);
+    const held = p.t;
+    step(p, 5);
+    expect(p.t).toBe(held);
+    expect(p.seek(held + 100)).toBe(false);
+    expect(p.t).toBe(held);
+  });
+
+  it('a seek back restores the rate recorded then, and a lap keeps the rate it ends at', () => {
+    const p = player();
+    play(p, 300);
+    p.setRate(2);
+    play(p, 600);
+    p.seek(200);
+    expect(p.rate).toBe(1);
+    p.seek(400);
+    expect(p.rate).toBe(2);
+    p.lap(0, 3000);
+    expect(p.t).toBe(0);
+    expect(p.rate).toBe(2);
   });
 
   it('a scrub back replays a moved level at its current value', () => {
     const moved = player();
+    moved.seekBy = 'replay';
     moved.setLevel('k', 0.5);
     moved.seek(40 * FRAME);
     const want = bits(moved.columns);
@@ -222,19 +211,6 @@ describe('Player', () => {
     expect(bits(p.columns)).toEqual(want);
   });
 
-  it('a live mix rate reaches the full mix and every solo, until a rebuild', () => {
-    const p = player();
-    p.seek(100);
-    p.liveMix((m) => {
-      m.rate = 0.5;
-    });
-    expect(p.livened).toBe(true);
-    expect(p.built.mix.rate).toBe(0.5);
-    for (const m of p.built.solos.values()) expect(m.rate).toBe(0.5);
-    p.rebuild(c.levels);
-    expect(p.built.mix.rate).toBe(1);
-  });
-
   it('a solo pulls one voice', () => {
     const p = player();
     p.seek(400);
@@ -243,8 +219,9 @@ describe('Player', () => {
     expect(bits(out)).toEqual(bits(p.columns));
   });
 
-  it('a live retarget reaches the full mix and the solo, and a seek back or a rebuild drops it', () => {
+  it('a live retarget reaches the full mix and the solo, and a seek back by replay or a rebuild drops it', () => {
     const p = player();
+    p.seekBy = 'replay';
     p.seek(1500);
     const plain = player();
     plain.seek(1500);
@@ -353,10 +330,11 @@ describe('Player', () => {
 
   it('records the picked subject through play, a seek back and a rebuild, keeping the last window', () => {
     const p = player();
+    p.seekBy = 'replay';
     const seen: number[] = [];
     const stop = p.subscribe(() => seen.push(p.getSnapshot().samples.length));
     p.pick(1);
-    p.seek(4000);
+    play(p, 4000);
     const h = p.getSnapshot();
     expect(h.picked).toBe(1);
     expect(h.samples[h.samples.length - 1]?.t).toBe(p.t);
@@ -365,7 +343,10 @@ describe('Player', () => {
     expect(last?.solos.get('sp')?.offset).toEqual(last?.full.offset);
     expect(last?.weights.get('sp')).toBeGreaterThan(0);
     p.seek(1000);
-    expect(p.getSnapshot().samples.length).toBe(Math.floor(1000 / FRAME + 1e-9) + 1);
+    const back = p.getSnapshot().samples;
+    expect(back.at(-1)?.t).toBe(1000);
+    expect(back.every((x) => x.t <= 1000)).toBe(true);
+    expect(back.length).toBeGreaterThan(Math.floor(1000 / FRAME) - 1);
     const before = p.getSnapshot();
     p.rebuild();
     expect(p.getSnapshot()).not.toBe(before);

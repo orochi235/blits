@@ -31,7 +31,7 @@ describe('a voice cued partway or backward', () => {
     expect(built.errors).toEqual([]);
     const m = hand();
     m.cue({ patch: keys(400, stops), loop: 2, start: 100, ...over });
-    same(built.mix, m);
+    same(built, m);
   });
 
   it('draws what is left to play, where blits ends it', () => {
