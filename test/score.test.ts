@@ -27,6 +27,13 @@ describe('placement', () => {
     expect(at(m, 0, 600)).toEqual(['300 a start', '500 a in']);
   });
 
+  it('lists in at the start under reduced motion, which plays no fade in', () => {
+    const m = mix<Row, Pose>(K, { reduce: true });
+    m.sync(0);
+    m.cue({ patch: hold(100), name: 'a', start: 0, loop: false, fade: { in: 500 } });
+    expect(at(m, 0, 1000)).toEqual(['0 a start', '0 a in', '100 a coast', '100 a out', '100 a end']);
+  });
+
   it("plays astv's orb, its landing text and the tint, each anchored on the one before", () => {
     // An orb flies 300 ms from 100; its row's text arrives over 240 ms once it lands; the tint is
     // in when the text has arrived, holds 500 ms, then fades over 1400.

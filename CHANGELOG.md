@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under reduced motion, a voice's `in` mark is its start, as the fade in it would wait for is not
+  played; it was listed after the fade's length, even after the voice had ended.
 - On a transport without `history`, a mark announced as now starts the voices anchored on it in
   every mix on the transport, not only in the first: the first mix no longer lets go of it before
   the others place.
