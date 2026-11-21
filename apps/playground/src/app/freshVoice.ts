@@ -1,11 +1,13 @@
-import type { Voice } from '@pg/blits/composition';
+import type { Composition, Voice } from '@pg/blits/composition';
 
 let made = 0;
 const freshId = () =>
   typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `v${Date.now()}-${++made}`;
 
-export function freshVoice(voices: readonly Voice[]): Voice {
-  const names = new Set(voices.map((v) => v.name));
+/** A new voice for `c`, named apart from every voice and group, which share one name space. */
+export function freshVoice(c: Pick<Composition, 'voices' | 'groups'>): Voice {
+  const { voices } = c;
+  const names = new Set([...voices, ...(c.groups ?? [])].map((x) => x.name));
   let n = voices.length + 1;
   while (names.has(`voice ${n}`)) n++;
   return {

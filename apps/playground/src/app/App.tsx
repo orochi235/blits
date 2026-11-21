@@ -114,7 +114,7 @@ export function App() {
   const setVoice = (next: Voice) => set(withVoice(compRef.current, next));
   const addVoice = () => {
     if (compRef.current.voices.length >= MAX_VOICES) return;
-    const v = freshVoice(compRef.current.voices);
+    const v = freshVoice(compRef.current);
     set({ ...compRef.current, voices: [...compRef.current.voices, v] });
     pickVoice(v.id);
   };
