@@ -263,11 +263,9 @@ export default function Mix() {
         const when =
           c.muteAt >= DURATION
             ? 'never muted'
-            : frame.t < c.muteAt
-              ? `mute() at ${(c.muteAt / 1000).toFixed(1)} s`
-              : frame.t < c.muteAt + MUTE_OVER
-                ? 'muting'
-                : 'muted';
+            : frame.handles.some((h) => h.state === 'fading')
+              ? 'muting'
+              : `mute() at ${(c.muteAt / 1000).toFixed(1)} s`;
         label(ctx, live ? `Live, ${when}` : 'Not live: every voice is done', left, 18, ink.soft);
       }}
     />

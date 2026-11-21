@@ -110,7 +110,7 @@ export function Retarget() {
         }
         const x = frame.poses[0]?.x;
         if (x !== undefined) {
-          const second = frame.t >= c.at;
+          const second = frame.handles[1]?.state !== 'pending';
           ctx.fillStyle = ink.voice(second ? 'v2' : 'v1');
           ctx.beginPath();
           ctx.arc(px(x), y, 10, 0, Math.PI * 2);

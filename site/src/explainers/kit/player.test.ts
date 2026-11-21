@@ -153,4 +153,26 @@ describe('the explainer player', () => {
     expect(p.at(0).t).toBe(0);
     p.close();
   });
+  it('stays where a debugger holds the mix while the explainer plays back', () => {
+    const duration = 1000;
+    const p = new Player(scene, {}, { name: 'player-held-reverse', duration });
+    const m = mixOf(p);
+    for (let t = 0; t <= 600; t += FRAME) p.at(t);
+    const entry = watched()
+      .entries()
+      .find((e) => e.mix === (m as unknown));
+    const h = (entry as NonNullable<typeof entry>).hold();
+    const held = m.now;
+    const shown = p.at(600).t;
+    for (let t = 600; t > 300; t -= FRAME) expect(p.at(t).t).toBe(shown);
+    expect(m.now).toBe(held);
+    h.free();
+    // Let go, the queued seek back lands and the player follows it there.
+    const f = p.at(300);
+    expect(f.t).toBeLessThan(shown);
+    expect(m.now - held).toBeCloseTo(f.t - shown);
+    for (let t = f.t; t > 0; t -= FRAME) p.at(t);
+    expect(p.at(0).t).toBe(0);
+    p.close();
+  });
 });

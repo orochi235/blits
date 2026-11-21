@@ -8,7 +8,7 @@ import { type Dot, row } from './shared';
 
 const BLEND_DURATION = 8000;
 
-/** The blend signal: 0 to 1 and back once per run, read off the mix clock. */
+/** The blend signal: 0 to 1 and back once per run of the mix clock. */
 const sweep = (t: number) => 0.5 - 0.5 * Math.cos((2 * Math.PI * t) / BLEND_DURATION);
 
 const blendRow = row(9);
@@ -70,6 +70,7 @@ export function Blend() {
   return (
     <Explainer
       scene={blendScene}
+      names={{ main: `blend of ${shapes.map((s) => s.name).join(', ')}` }}
       schema={blendConfig}
       duration={BLEND_DURATION}
       aspect={0.46}
@@ -105,7 +106,7 @@ export function Blend() {
           opts,
         );
 
-        const k = blendBy(c, frame.t);
+        const k = blendBy(c, frame.now);
         const left = 60;
         const right = size.w - 60;
         const y = size.h * 0.86;
