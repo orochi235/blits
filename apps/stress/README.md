@@ -17,7 +17,7 @@ to watch. For whoever runs them or adds one.
 | `deck` | A slide presentation | 40 slides per size unit of builds chained by anchors on `owns` owners under `history`; seeded next, back, jump, and next pressed mid-build | After each action, and at seeded frames mid-build, the deck equals a fresh one sought straight to the action's start and played to the same time; each build's `done` resolves at most once |
 
 A check reports **fail** (blits is wrong by its own docs, or by the model), **undecided** (an
-area blits has not settled, named in HANDOFF), or **gap** (something the scenario had to do
+area blits has not settled), or **gap** (something the scenario had to do
 itself). A fail blits is known to have carries a `key` listed in `src/known.ts`; the run prints it
 as `known`.
 

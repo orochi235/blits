@@ -18,7 +18,7 @@ To copy those values into each pose quickly, `mixer` writes a small function wit
 You pass a different engine through `MixOptions`:
 
 ```ts
-const m = mix<Part, PartPose>(PART, { engine: myEngine });
+const m = mix<Part, PartPose>(PART, { name: 'parts', engine: myEngine });
 ```
 
 A mix refuses a voice its engine can't run. The refusal comes at `cue`, not partway through a frame, and names the engine and the form.
@@ -136,7 +136,7 @@ const keysOnly: Engine = {
   create: (kit, opts) => mixer.create(kit, opts),
 };
 
-const m = mix<Part, PartPose>(PART, { engine: keysOnly });
+const m = mix<Part, PartPose>(PART, { name: 'parts', engine: keysOnly });
 const rise = keys<Part, PartPose>(400, [
   { at: 0, delta: { gain: 0 } },
   { at: 1, delta: { gain: 1 } },

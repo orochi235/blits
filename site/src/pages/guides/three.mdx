@@ -37,7 +37,7 @@ The scene below runs both of this page's listings on one transport: the row of p
 
 The bob writes an offset rather than a position, and the loop adds it to where the part rests. A voice that wrote the position outright would pin every part to the patch's numbers.
 
-[`probe(part, pose)`](Mix.probe) reuses one pose object for every part. Where `pose` already holds an array of the right length for a `vec`, `quat`, or `color` channel, the mix writes into that array rather than making a new one. That saves an allocation per part per frame, and it means the array changes on the next probe: copy the numbers out before reading the next part, as the loop does.
+[`probe(part, pose)`](Mix.probe) reuses one pose object for every part. Where `pose` already holds an array of the right length for a `vec` channel, or for a `quat` or `color` in the cases [`probe`](Mix.probe) lists, the mix writes into that array rather than making a new one. That saves an allocation per part per frame, and it means the array changes on the next probe: copy the numbers out before reading the next part, as the loop does.
 
 ## Instances
 

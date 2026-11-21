@@ -140,11 +140,11 @@ text(40, 770, `Where ${word('track')}s come from`, 'section');
 
 box(68, 786, 540, 92, 'panel dashed');
 head('source', ' — whatever decides one should exist', 88, 814, 500);
-rows(88, 838, [`a handler on an event, a ${word('sequence')} handing over,`, `${word('v-add')}s and gets back ${an('handle')} ${word('handle')}`], 500);
+rows(88, 838, [`a handler on an event, ${an('sequence')} ${word('sequence')} handing over,`, `${word('v-add')}s and gets back ${an('handle')} ${word('handle')}`], 500);
 
 box(660, 786, 540, 92, 'panel dashed');
 head('score', ` — the ${word('source')} the app keeps`, 680, 814, 500);
-rows(680, 838, [`the whole plan: timings and the cast`, `blits never reads one; it only knows it is there`], 500);
+rows(680, 838, [`the whole plan: timings and the cast`, `voices name it; anchors and queries look in it`], 500);
 
 arrow('M 340 782 V 742', `${word('v-add')}`, 348, 762);
 

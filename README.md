@@ -110,7 +110,7 @@ Everything else is the same and so are the poses. `lanes: true` is refused there
 import { fling } from '@msb235/blits/fling';
 
 const scroll = glide<Page, Pose>('y', { from: 0 });
-mix.cue({ patch: scroll });
+m.cue({ patch: scroll });
 const off = fling(element, scroll, page, { scale: -1 }); // content moves against the drag
 ```
 
@@ -160,9 +160,9 @@ releases at the engine's version.
 ## Status
 
 v1.4.0. magicsmoke runs every fault on it, wod its wheel, tricks and
-transitions, weasel its animator's tweens, sherpa its seams, and
-[klieg](https://github.com/orochi235/klieg) composes all three of its systems — letter motion,
-part effects, and the environment a sign is lit by — on a mix each.
+transitions, weasel its animator's tweens, and sherpa its seams; astv, blinken, agnew and
+portfolio run on it too. [klieg](https://github.com/orochi235/klieg) composes all three of its
+systems — letter motion, part effects, and the environment a sign is lit by — on a mix each.
 That port was an extraction rather than a rewrite, so it is also the evidence that the arithmetic
 here is the arithmetic a working renderer already had: klieg's suite of 1974 cases and its
 screenshot baselines came through it unchanged.

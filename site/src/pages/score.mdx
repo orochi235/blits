@@ -72,7 +72,7 @@ A voice waiting on a mark nobody has announced stays pending, and a read ahead s
 `mix.marks(from, to)` lists every mark the plan knows between two timestamps, earliest first: each voice's own, with its id, name and tags, and every announced mark. A mark nothing has fixed yet is left out.
 
 ```ts
-for (const next of m.marks(now, now + 2000)) if (next.mark === 'start') prepare(next.name);
+for (const next of m.marks(m.timestamp, m.timestamp + 2000)) if (next.mark === 'start') prepare(next.name);
 ```
 
 ## Reading another time
