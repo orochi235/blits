@@ -90,13 +90,14 @@ export default demo((d) => {
 
   // The host's own kit, the library's channels spread into it, and the host object patches read.
   const host: GlowHost = { pointer: { x: FAR, y: 0 } };
-  const m = mix<Bulb, GlowPose, GlowHost>(kit<GlowPose>({ ...glowChannels }), {
-    ...d.options('patch-library: lamps', {
+  const m = mix<Bulb, GlowPose, GlowHost>(
+    kit<GlowPose>({ ...glowChannels }),
+    d.options('patch-library: lamps', {
       labelOf: (b: Bulb) => `lamp ${bulbs.indexOf(b) + 1}`,
       history: { ...d.history(), every: 250 },
+      host,
     }),
-    host,
-  });
+  );
   d.closes(m);
   m.cue({ patch: pulse, subjects: bulbs, loop: true, weight: 0.5, name: 'pulse' });
   m.cue({ patch: near, subjects: bulbs, name: 'near' });

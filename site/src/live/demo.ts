@@ -12,7 +12,7 @@ export interface Demo {
    * A mix's options: its name, history to seek back `ms`, and `more`. A mix on a transport takes
    * the transport's history, so it gets none of its own.
    */
-  options(name: string, more?: MixOptions, ms?: number): MixOptions;
+  options<H = unknown>(name: string, more?: MixOptions<H>, ms?: number): MixOptions<H>;
   /** History for a transport or a mix: `ms` of it, with a tape, so it can seek back. */
   history(ms?: number): NonNullable<MixOptions['history']>;
   /** Adds a listener, taken off when the demo stops. */
