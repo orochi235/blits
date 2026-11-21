@@ -38,7 +38,17 @@ const OPTIONS: Record<Motion['kind'], readonly string[]> = {
 };
 
 /** Errors on the patch as a whole, which no single field shows; so are errors on options it has no field for. */
-const WHOLE = new Set(['stops', 'writes', 'opts']);
+const WHOLE = new Set(['patch', 'stops', 'writes', 'opts']);
+
+/** `mine`'s errors that `PatchPanel` lists above its fields, for patch `p`. */
+export function wholeErrors(mine: readonly FieldError[], p: PatchSource): FieldError[] {
+  const shown = isMotion(p) ? OPTIONS[p.kind] : [];
+  return mine.filter(
+    (e) =>
+      WHOLE.has(e.field) ||
+      (e.field.startsWith('opts.') && !shown.includes(e.field.slice('opts.'.length))),
+  );
+}
 
 function blank(kind: Kind): PatchSource {
   if (kind === 'keys')
@@ -164,12 +174,7 @@ export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchP
   const set = (patch: PatchSource) => onChange({ ...v, patch });
   const mine = errors.filter((e) => e.voice === v.id);
   const err = (field: string) => mine.find((e) => e.field === field);
-  const shown = isMotion(p) ? OPTIONS[p.kind] : [];
-  const whole = mine.filter(
-    (e) =>
-      WHOLE.has(e.field) ||
-      (e.field.startsWith('opts.') && !shown.includes(e.field.slice('opts.'.length))),
-  );
+  const whole = wholeErrors(mine, p);
   const period = periodOf(p) ?? 0;
   const phase = period > 0 ? Math.max(0, (playhead - v.start) * v.rate) % period : 0;
 
