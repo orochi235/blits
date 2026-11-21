@@ -171,7 +171,7 @@ export default demo((d) => {
     d.on(castWeight.input, 'input', weigh);
     d.on(fixWeight.input, 'input', weigh);
     weigh();
-    playPause(show, play);
+    playPause(d, show, play);
 
     // The gray card's middle, for the readouts.
     const card = CELLS.reduce((a, c) =>

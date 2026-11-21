@@ -338,7 +338,7 @@ export default demo((d) => {
     };
     refresh = rebuild;
 
-    playPause(show, play);
+    playPause(d, show, play);
 
     const probe = (m: Mix<Cell, Tint> | undefined, v: View) => {
       CELLS.forEach((c, i) => {
