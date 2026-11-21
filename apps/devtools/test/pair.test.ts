@@ -156,4 +156,21 @@ describe('pairing a panel with its tab', () => {
     await settle();
     expect(ok.pages).toHaveLength(1);
   });
+
+  it('ends the agent it put in when the attach fails after injecting it', async () => {
+    const f = fake();
+    const ended: string[] = [];
+    const run = f.chrome.run;
+    f.chrome.run = async (tab, fn, arg) => {
+      if (arg === MARK) throw new Error('Frame was removed');
+      if (typeof arg === 'string' && arg.includes('devtools/page')) ended.push(arg);
+      return run(tab, fn, arg);
+    };
+    const panel = new FakePort();
+    pair(f.chrome, panel, 6);
+    await settle();
+    await settle();
+    expect(decode(panel.sent[0] as string)).toMatchObject({ ctl: 'unreachable' });
+    expect(ended).toHaveLength(1);
+  });
 });

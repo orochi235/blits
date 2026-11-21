@@ -50,9 +50,11 @@ export function pair(chrome: Chrome, panel: Port, tab: number): void {
     page?.disconnect();
     page = null;
     let history: number | null;
+    let injected = false;
     try {
       await chrome.inject(tab, 'relay.js', false);
       await chrome.inject(tab, 'page.js', true);
+      injected = true;
       history = await chrome.run(
         tab,
         (mark: string) => {
@@ -65,6 +67,8 @@ export function pair(chrome: Chrome, panel: Port, tab: number): void {
         MARK,
       );
     } catch (e) {
+      // A later attach's agent has replaced this one's, or will, unless the panel closed.
+      if (injected && (closed || run === attaching)) void end();
       if (run === attaching)
         tell({ ctl: 'unreachable', why: e instanceof Error ? e.message : String(e) });
       return;
