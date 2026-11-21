@@ -101,13 +101,17 @@ export function FlowDiagram({
           };
         }),
         edges: edges.specs,
-        groups: [...boxes.values()].map((b) => ({ id: b.id, label: b.label, members: b.members })),
+        clusters: [...boxes.values()].map((b) => ({
+          id: b.id,
+          label: b.label,
+          members: b.members,
+        })),
       },
       {
         outline: 'card',
         layoutOptions: { direction, order: 'barycenter', nodeGap: 40, rankGap: 56 },
         nodeStyle: (d) => styleOf(byId.get(d.id) as FlowNode),
-        groupStyle: (g) => boxStyleOf(boxes.get(g.id) as FlowBox),
+        clusterStyle: (c) => boxStyleOf(boxes.get(c.id) as FlowBox),
         edgeStyle: edges.styleOf,
       },
     );
@@ -147,8 +151,8 @@ export function FlowDiagram({
       height={height}
       minScale={minScale}
       anchor="start"
-      selected={selected}
-      onSelect={onSelect}
+      selection={selected}
+      onSelectionChange={onSelect}
       {...(onMove ? { onMove } : {})}
       {...(onConnect
         ? {
