@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice whose rate is written more than 256 times keeps its latest 256 past clocks, as a child's
+  handle does, so a subject whose stagger delay runs out late takes its origin from the clock it
+  ran on. It kept the first 256 and placed every later origin by its current rate.
 - Under `history` with `inputs`, an input read again while rate 0 holds mix time still is recorded,
   and paged to a store, under the frame that read it, not the earlier frame whose value it replaced.
 - Under reduced motion, an arc's `in` mark no longer waits on its fade in, and an arc set to leave
