@@ -182,6 +182,19 @@ describe('flowOf', () => {
     expect(flowOf(c, new Set(['g'])).nodes.find((n) => n.id === 'group:g')?.faulted).toBe(true);
   });
 
+  it("feeds a group listed before its owner from the end of the owner's chain", () => {
+    const c: Composition = {
+      ...comp([voice({ id: 'a', owner: 'g1' })], [{ name: 'x', value: 1, min: 0, max: 1 }]),
+      groups: [
+        group({ id: 'g1', owner: 'g2' }),
+        group({ id: 'g2', weight: { code: "level('x')" } }),
+      ],
+    };
+    const e = edges(c);
+    expect(e).toContainEqual(['step:group:g2:weight', 'group:g1', '']);
+    expect(e).not.toContainEqual(['group:g2', 'group:g1', '']);
+  });
+
   it('gives an empty composition a pose and nothing else', () => {
     expect(flowOf(comp([])).nodes.map((n) => n.id)).toEqual(['pose']);
   });
