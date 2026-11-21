@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A sync under `history` no longer throws `RangeError: Maximum call stack size exceeded` when it
+  lets go of old voices while keeping hundreds of thousands of others finished out of order.
 - An easing of `{ steps }` refuses a count that is not a whole number of 1 or more, and one of
   `{ bezier }` an x outside 0 to 1 or a y that is not finite, with a `RangeError`, as CSS does. A
   count of 0 gave NaN, a fraction stopped short of 1, and an x outside 0 to 1 was solved at an
