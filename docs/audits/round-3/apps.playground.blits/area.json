@@ -1,0 +1,99 @@
+{
+ "id": "apps.playground.blits",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/playground/src/blits/anchor.ts",
+  "apps/playground/src/blits/blend.ts",
+  "apps/playground/src/blits/both.ts",
+  "apps/playground/src/blits/clip.ts",
+  "apps/playground/src/blits/color.ts",
+  "apps/playground/src/blits/compile.ts",
+  "apps/playground/src/blits/composition.ts",
+  "apps/playground/src/blits/course.ts",
+  "apps/playground/src/blits/cueBlend.ts",
+  "apps/playground/src/blits/cueGroups.ts",
+  "apps/playground/src/blits/desk.ts",
+  "apps/playground/src/blits/easing.ts",
+  "apps/playground/src/blits/edit.ts",
+  "apps/playground/src/blits/events.ts",
+  "apps/playground/src/blits/expr.ts",
+  "apps/playground/src/blits/file.ts",
+  "apps/playground/src/blits/fit.ts",
+  "apps/playground/src/blits/flow.ts",
+  "apps/playground/src/blits/follow.ts",
+  "apps/playground/src/blits/frame.ts",
+  "apps/playground/src/blits/groupEdits.ts",
+  "apps/playground/src/blits/groups.ts",
+  "apps/playground/src/blits/keyed.ts",
+  "apps/playground/src/blits/keys.ts",
+  "apps/playground/src/blits/kit.ts",
+  "apps/playground/src/blits/load.ts",
+  "apps/playground/src/blits/outline.ts",
+  "apps/playground/src/blits/params.ts",
+  "apps/playground/src/blits/placed.ts",
+  "apps/playground/src/blits/player.ts",
+  "apps/playground/src/blits/pointer.ts",
+  "apps/playground/src/blits/readBack.ts",
+  "apps/playground/src/blits/score.ts",
+  "apps/playground/src/blits/scoreHeaders.ts",
+  "apps/playground/src/blits/spec.ts",
+  "apps/playground/src/blits/stage.ts",
+  "apps/playground/src/blits/stages/Stage.module.css",
+  "apps/playground/src/blits/stages/Stage.tsx",
+  "apps/playground/src/blits/stages/draw.ts",
+  "apps/playground/src/blits/stamps.ts",
+  "apps/playground/src/blits/timing.ts",
+  "apps/playground/src/blits/wire.ts"
+ ],
+ "a": 7,
+ "b": 6,
+ "m": 2,
+ "distinct": 11,
+ "chapman": 17.7,
+ "unfound": 6.7,
+ "read": {
+  "A": 42,
+  "B": 42
+ },
+ "patches": 10,
+ "verify": {
+  "ok": true,
+  "files": 22,
+  "testFiles": {
+   "failed": 0,
+   "passed": 25,
+   "total": 25
+  },
+  "repairs": 0
+ },
+ "questions": 1,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 7.2,
+   "B": 8.3,
+   "match": 0.1,
+   "fix": 9.3
+  },
+  "nodes": {
+   "A": "studio",
+   "B": "msb-uai",
+   "fix": "teitou"
+  },
+  "weightedTokens": 2732027,
+  "costUsd": 7.61
+ },
+ "fixCommits": [
+  "4ff39a193eb68aaf1744f32967626d5dfedf5f6d",
+  "c712eb8397d5761d3f00d92170900d67c31b87bd",
+  "ce07b8b52005d1473c53293343d734f0f1dee920",
+  "adb1f0e711efb110a9344b3404979aacac7fcdfe",
+  "8c704104c616d35d45d1aef7343d45f1054444f2",
+  "9fb56bb7e932d71b9f37bb5428463af44c24ac44",
+  "4ba8428ca4584a72e08e62ee7c9ee249495df353",
+  "bfbbe1cf4bf4daaa8619123cbbdedc7e88a2a55c",
+  "2c712ecb96ddfbe80c85854ff6a734fdeca9fdea",
+  "a88974a34e390bdb1e8d6a3e3801b27295229906"
+ ]
+}

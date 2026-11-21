@@ -1,0 +1,32 @@
+{
+ "pairs": [
+  [
+   1,
+   0
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   3,
+   3
+  ]
+ ],
+ "a": [
+  "A clip or header that runs past the score's end draws its fade-out ending at the score's end",
+  "Dragging an open clip's loop arrow loses pointer capture, and the drag can get stuck",
+  "The code pane traps Tab, so keyboard focus can't leave it",
+  "FlowDiagram styles edges by (from, to, label), so two edges between the same nodes share one style",
+  "The FoldStamp \"Looks\" story shows identical rows under labels that say they differ"
+ ],
+ "b": [
+  "Dragging an open clip's loop arrow removes the element holding the pointer, so letting go outside the score leaves the drag running",
+  "CodePane's Tab handler traps keyboard focus in the textarea",
+  "Scrubbing the open score ignores a pointer left of the time axis, while the closed score clamps it to 0",
+  "FlowDiagram drops edge ids and looks up edge styles by (from, to, label), so two edges between the same nodes share one style",
+  "CodePane and ExprInput send the same rejected draft twice: once on Mod+Enter/Enter, again on blur",
+  "Track gradient stops are keyed by sample time, which repeats when two samples snap to the same frame",
+  "The ruler labels every whole second at any duration, so labels on long scores overprint each other"
+ ]
+}

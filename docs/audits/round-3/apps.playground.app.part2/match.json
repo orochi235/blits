@@ -1,0 +1,35 @@
+{
+ "pairs": [
+  [
+   0,
+   1
+  ],
+  [
+   1,
+   3
+  ],
+  [
+   3,
+   0
+  ]
+ ],
+ "a": [
+  "A voice's `patch` field error is shown nowhere, so a motion voice under a span silently drops out",
+  "The score's own compile is an unnamed mix left registered on the debug panel while it is current",
+  "A blended voice's weight error drops the voice but its row is hidden, so the reason is invisible",
+  "The keys timeline's playhead is `(playhead - start) * rate % period`, ignoring the voice's seek, owner clock, anchor, span placement, loop end, and reverse rate",
+  "`fade in` shows an unset `fade.in` as 0 and can never unset it, though blits' `rise` reads unset and 0 differently",
+  "`freshVoice` checks only voice names, but voices and groups share one name space",
+  "A shared link opened in a tab already on the playground is ignored, and its hash then overrules edits on reload",
+  "The transport's speed is frame-loop math on the host clock, not the mix's `rate`"
+ ],
+ "b": [
+  "The keys timeline's playhead is computed in frame-loop math from start and rate instead of read from the voice, so it is wrong for seek, negative rate, finite loops, spans and owner groups",
+  "No panel shows a spanned motion voice's compile error (`field: 'patch'`)",
+  "Opening a shared link overwrites the composition saved in localStorage, and undo can't bring it back",
+  "useScore's compile makes an unnamed mix that still shows up on the debug panel",
+  "Under StrictMode, useScore leaks one registered mix per edit and unregisters the mix in use",
+  "A shared link that fails to load is dropped with no message and removed from the address bar",
+  "Typing an out-of-range number like `1e999` into a motion option saves the whole composition in a form the next reload discards"
+ ]
+}

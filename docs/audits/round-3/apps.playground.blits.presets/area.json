@@ -1,0 +1,67 @@
+{
+ "id": "apps.playground.blits.presets",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/playground/src/blits/presets/anchors.ts",
+  "apps/playground/src/blits/presets/backward.ts",
+  "apps/playground/src/blits/presets/blend.ts",
+  "apps/playground/src/blits/presets/bounded-glow.ts",
+  "apps/playground/src/blits/presets/crossfade.ts",
+  "apps/playground/src/blits/presets/fold-rules.ts",
+  "apps/playground/src/blits/presets/freeze-handover.ts",
+  "apps/playground/src/blits/presets/index.ts",
+  "apps/playground/src/blits/presets/logo.ts",
+  "apps/playground/src/blits/presets/marks-hits.ts",
+  "apps/playground/src/blits/presets/owner-fade.ts",
+  "apps/playground/src/blits/presets/pointer-glow.ts",
+  "apps/playground/src/blits/presets/span-fit.ts",
+  "apps/playground/src/blits/presets/spring-retarget.ts",
+  "apps/playground/src/blits/presets/stagger-wave.ts"
+ ],
+ "a": 3,
+ "b": 3,
+ "m": 0,
+ "distinct": 6,
+ "chapman": 15,
+ "unfound": 9,
+ "read": {
+  "A": 15,
+  "B": 15
+ },
+ "patches": 5,
+ "verify": {
+  "ok": true,
+  "files": 6,
+  "testFiles": {
+   "failed": 0,
+   "passed": 25,
+   "total": 25
+  },
+  "repairs": 0
+ },
+ "questions": 1,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 3.8,
+   "B": 3.7,
+   "match": 0.1,
+   "fix": 3.8
+  },
+  "nodes": {
+   "A": "teitou",
+   "B": "teitou",
+   "fix": "teitou"
+  },
+  "weightedTokens": 1158659,
+  "costUsd": 3.36
+ },
+ "fixCommits": [
+  "8235ec512432008588b008810e371bfbfea0efc9",
+  "e195bfc30c040d01c2a96337e795363ac4857203",
+  "1bf54b6bfe5c6b78679793df06cfe5f8ffc440c5",
+  "2eaf4f86cfda20150953f0f0132176ca6bc0aacd",
+  "4764ad580f1b8094933f7c37b9c794785d0b27ee"
+ ]
+}

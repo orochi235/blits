@@ -1,0 +1,99 @@
+{
+ "id": "apps.playground.widgets",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/playground/src/widgets/ChannelPlot.stories.tsx",
+  "apps/playground/src/widgets/CodePane/CodePane.module.css",
+  "apps/playground/src/widgets/CodePane/CodePane.stories.tsx",
+  "apps/playground/src/widgets/CodePane/CodePane.tsx",
+  "apps/playground/src/widgets/CodePane/index.ts",
+  "apps/playground/src/widgets/ExprInput/ExprInput.module.css",
+  "apps/playground/src/widgets/ExprInput/ExprInput.stories.tsx",
+  "apps/playground/src/widgets/ExprInput/ExprInput.tsx",
+  "apps/playground/src/widgets/ExprInput/index.ts",
+  "apps/playground/src/widgets/FlowDiagram/FlowDiagram.stories.tsx",
+  "apps/playground/src/widgets/FlowDiagram/FlowDiagram.tsx",
+  "apps/playground/src/widgets/FlowDiagram/index.ts",
+  "apps/playground/src/widgets/FlowDiagram/style.ts",
+  "apps/playground/src/widgets/FlowDiagram/types.ts",
+  "apps/playground/src/widgets/FoldStamp/FoldStamp.module.css",
+  "apps/playground/src/widgets/FoldStamp/FoldStamp.stories.module.css",
+  "apps/playground/src/widgets/FoldStamp/FoldStamp.stories.tsx",
+  "apps/playground/src/widgets/FoldStamp/FoldStamp.tsx",
+  "apps/playground/src/widgets/FoldStamp/curves.ts",
+  "apps/playground/src/widgets/FoldStamp/grid.ts",
+  "apps/playground/src/widgets/FoldStamp/index.ts",
+  "apps/playground/src/widgets/FoldStamp/stamp.ts",
+  "apps/playground/src/widgets/Glyph.tsx",
+  "apps/playground/src/widgets/MixerDesk/MixerDesk.module.css",
+  "apps/playground/src/widgets/MixerDesk/MixerDesk.stories.tsx",
+  "apps/playground/src/widgets/MixerDesk/MixerDesk.tsx",
+  "apps/playground/src/widgets/MixerDesk/index.ts",
+  "apps/playground/src/widgets/MixerDesk/layout.ts",
+  "apps/playground/src/widgets/MixerDesk/types.ts",
+  "apps/playground/src/widgets/ScoreLanes/ClipLane.tsx",
+  "apps/playground/src/widgets/ScoreLanes/HeaderLane.tsx",
+  "apps/playground/src/widgets/ScoreLanes/Marks.tsx",
+  "apps/playground/src/widgets/ScoreLanes/Ruler.tsx",
+  "apps/playground/src/widgets/ScoreLanes/ScoreLanes.module.css",
+  "apps/playground/src/widgets/ScoreLanes/ScoreLanes.stories.tsx",
+  "apps/playground/src/widgets/ScoreLanes/ScoreLanes.tsx",
+  "apps/playground/src/widgets/ScoreLanes/Strips.tsx",
+  "apps/playground/src/widgets/ScoreLanes/TrackLayers.tsx",
+  "apps/playground/src/widgets/ScoreLanes/drag.ts",
+  "apps/playground/src/widgets/ScoreLanes/geometry.ts",
+  "apps/playground/src/widgets/ScoreLanes/index.ts",
+  "apps/playground/src/widgets/ScoreLanes/keys.ts",
+  "apps/playground/src/widgets/ScoreLanes/track.ts"
+ ],
+ "a": 5,
+ "b": 7,
+ "m": 3,
+ "distinct": 9,
+ "chapman": 11,
+ "unfound": 2,
+ "read": {
+  "A": 39,
+  "B": 43
+ },
+ "patches": 9,
+ "verify": {
+  "ok": true,
+  "files": 17,
+  "testFiles": {
+   "failed": 0,
+   "passed": 10,
+   "total": 10
+  },
+  "repairs": 0
+ },
+ "questions": 1,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 4.9,
+   "B": 7.1,
+   "match": 0.1,
+   "fix": 6.2
+  },
+  "nodes": {
+   "A": "teitou",
+   "B": "msb-uai",
+   "fix": "teitou"
+  },
+  "weightedTokens": 1703824,
+  "costUsd": 5.03
+ },
+ "fixCommits": [
+  "04ff8361112867a2445a5182f8e358d21a02afb9",
+  "1e81025fef6690efeccc35a6077d8c34de6e9990",
+  "4e902c259019f3150ee4e278c2db17c98c024ad3",
+  "c925864c88ebef930dad192108a9928766ea16c7",
+  "4e5d60ce2838d8d8bc232aa71a65c1f9d0304559",
+  "8db41ad860b0d90220c94a0f3e256c1cd46b6e14",
+  "268671e0a896b3b01a87ab93483708837ae0268f",
+  "1553ac80550f7121de5ce21e2a4f553aa8c3dd84",
+  "0eacaae186e7112498858bce1f72be328bf7af43"
+ ]
+}

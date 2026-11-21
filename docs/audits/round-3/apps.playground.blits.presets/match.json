@@ -1,0 +1,13 @@
+{
+ "pairs": [],
+ "a": [
+  "logo preset feeds the hue schedule a different sign geometry from the rail it says it reproduces",
+  "logo preset says hovering runs the rainbow, but in the playground only the `hover` slider drives it",
+  "the `logo` preset is missing from the playground README's preset table"
+ ],
+ "b": [
+  "crossfade's `warm` weight wraps `level(\"mix\")` in a plain arrow, so blits no longer sees it as an input",
+  "blend's `tone` signal wraps `level(\"slide\")` in a plain arrow and loses its input mark the same way",
+  "logo's halo is always on, but the rail's halo shows only while the logo is hovered"
+ ]
+}

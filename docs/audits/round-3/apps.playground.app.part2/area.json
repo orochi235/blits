@@ -1,0 +1,83 @@
+{
+ "id": "apps.playground.app.part2",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/playground/src/app/LivePanel.tsx",
+  "apps/playground/src/app/MarksFields.tsx",
+  "apps/playground/src/app/MixPanel.tsx",
+  "apps/playground/src/app/OwnerField.tsx",
+  "apps/playground/src/app/PanelTabs.module.css",
+  "apps/playground/src/app/PanelTabs.tsx",
+  "apps/playground/src/app/PatchLive.module.css",
+  "apps/playground/src/app/PatchPanel.tsx",
+  "apps/playground/src/app/ReadBack.tsx",
+  "apps/playground/src/app/Rows.module.css",
+  "apps/playground/src/app/RulesPanel.tsx",
+  "apps/playground/src/app/SpanFields.tsx",
+  "apps/playground/src/app/SpecFields.tsx",
+  "apps/playground/src/app/TimingPanel.tsx",
+  "apps/playground/src/app/Transport.tsx",
+  "apps/playground/src/app/VoiceColumn.tsx",
+  "apps/playground/src/app/VoicePanel.tsx",
+  "apps/playground/src/app/WaveFields.tsx",
+  "apps/playground/src/app/WeightField.tsx",
+  "apps/playground/src/app/docs.ts",
+  "apps/playground/src/app/flowKey.ts",
+  "apps/playground/src/app/freshVoice.ts",
+  "apps/playground/src/app/ms.ts",
+  "apps/playground/src/app/useComposition.ts",
+  "apps/playground/src/app/usePlayback.ts",
+  "apps/playground/src/app/useScore.ts",
+  "apps/playground/src/app/useSize.ts",
+  "apps/playground/src/app/useTracksOpen.ts"
+ ],
+ "a": 8,
+ "b": 7,
+ "m": 3,
+ "distinct": 12,
+ "chapman": 17,
+ "unfound": 5,
+ "read": {
+  "A": 28,
+  "B": 28
+ },
+ "patches": 8,
+ "verify": {
+  "ok": true,
+  "files": 17,
+  "testFiles": {
+   "failed": 0,
+   "passed": 26,
+   "total": 26
+  },
+  "repairs": 0
+ },
+ "questions": 1,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 7.7,
+   "B": 6,
+   "match": 0.1,
+   "fix": 6.9
+  },
+  "nodes": {
+   "A": "studio",
+   "B": "studio",
+   "fix": "teitou"
+  },
+  "weightedTokens": 2551925,
+  "costUsd": 6.84
+ },
+ "fixCommits": [
+  "bb6d72998b0b1962ac0b4b88bf9c34fa4b78712f",
+  "52c34fb560f04c935259a4c38ae07eb9d67803c7",
+  "233ecde2c63bf640dd33065db11a0a14a0b0d61a",
+  "2561afebeaa51f259b3b983aee04686fa9b712fd",
+  "85966f329f821cfd32ecb0444c380b90cf9948de",
+  "de97466ff7bb4057125b7d9760d7c79c1286305a",
+  "099fd633306b7346c4827c335f9e6f32103894bc",
+  "75d59d91f34514f6350d6d6f1b580bf5847303f9"
+ ]
+}

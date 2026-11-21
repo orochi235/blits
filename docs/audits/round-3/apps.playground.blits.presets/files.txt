@@ -1,0 +1,15 @@
+apps/playground/src/blits/presets/anchors.ts
+apps/playground/src/blits/presets/backward.ts
+apps/playground/src/blits/presets/blend.ts
+apps/playground/src/blits/presets/bounded-glow.ts
+apps/playground/src/blits/presets/crossfade.ts
+apps/playground/src/blits/presets/fold-rules.ts
+apps/playground/src/blits/presets/freeze-handover.ts
+apps/playground/src/blits/presets/index.ts
+apps/playground/src/blits/presets/logo.ts
+apps/playground/src/blits/presets/marks-hits.ts
+apps/playground/src/blits/presets/owner-fade.ts
+apps/playground/src/blits/presets/pointer-glow.ts
+apps/playground/src/blits/presets/span-fit.ts
+apps/playground/src/blits/presets/spring-retarget.ts
+apps/playground/src/blits/presets/stagger-wave.ts

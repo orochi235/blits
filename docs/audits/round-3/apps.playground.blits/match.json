@@ -1,0 +1,29 @@
+{
+ "pairs": [
+  [
+   3,
+   2
+  ],
+  [
+   6,
+   5
+  ]
+ ],
+ "a": [
+  "A motion option's expression loses its `input` marking when `specOf` wraps it to check its output",
+  "A blend member's own `marks` are silently replaced by the lead's",
+  "Params list a voice's or group's `start` when an `in` anchor places it, which the mix ignores",
+  "A replaced Player drops the Events panel's tag filter",
+  "`coursesOf` leaves its mixes open when a sync throws",
+  "`alignTo` swallows a failed solo seek and leaves the solo ahead of the full mix",
+  "`usesAround`'s doc says `around` mixes keep no history, but `compile` always gives them history"
+ ],
+ "b": [
+  "Timing and score draw anchor edges to voices blits never resolves the anchor to (non-siblings, other scores)",
+  "The score's link drag and the Both tab's wiring write anchors to voices outside the asker's group, which blits never resolves",
+  "A replacement Player drops the booker's tag filter",
+  "A child group listed before its parent loses the parent's weight step in the flow",
+  "An emptied fit list reads as blits' default fit but runs no fit at all",
+  "pointer.ts says an `around` composition keeps no history and scrubs by replay; compile gives it history like any other"
+ ]
+}
