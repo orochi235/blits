@@ -1,4 +1,3 @@
-import '@weasel-js/theme/faces.css';
 import { Playground } from '@pg/Playground';
 import { createRoot } from 'react-dom/client';
 
@@ -6,7 +5,4 @@ import { createRoot } from 'react-dom/client';
 if (new URLSearchParams(location.search).has('panel'))
   void import('@msb235/blits-panel').then(({ mount }) => mount());
 
-// The diagrams bake Oswald's glyphs from a canvas, which draws a fallback face until the file is in.
-void document.fonts
-  .load('400 12px Oswald')
-  .finally(() => createRoot(document.getElementById('root') as HTMLElement).render(<Playground />));
+createRoot(document.getElementById('root') as HTMLElement).render(<Playground />);
