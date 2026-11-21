@@ -52,6 +52,7 @@ function curve(c: Config, role: boolean): [number, number][] {
     m.cue({ patch: hold(c.gain), weight: k, role: spot });
     m.sync(0);
     points.push([k, m.probe(subject).gain]);
+    m.close();
   }
   return points;
 }
