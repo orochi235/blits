@@ -100,6 +100,13 @@ describe('a blend', () => {
       expect(strays.errors.map((e) => [e.voice, e.field])).toEqual([['m1', 'role']]);
     }
   });
+
+  it("cues a member whose own weight fails to compile, since the blend's signal stands in for it", () => {
+    const c = blended([0, 1].map((i) => member(i, { weight: { code: '(s) => (' } })));
+    const b = compile(c, subjects);
+    expect(b.errors).toEqual([]);
+    expect([...b.handles.keys()]).toEqual(['m0', 'm1']);
+  });
 });
 
 describe('editing a blend', () => {

@@ -8,6 +8,7 @@ import {
   type SpanHints,
   shed,
 } from '@msb235/blits';
+import { wholeErrors } from '@pg/app/PatchPanel';
 import { compile } from '@pg/blits/compile';
 import type { PatchSource, Voice } from '@pg/blits/composition';
 import { fitFaultKey } from '@pg/blits/cueGroups';
@@ -148,6 +149,7 @@ describe('compiling groups', () => {
       subjects,
     );
     expect(built.errors.map((e) => [e.voice, e.field])).toEqual([['m', 'patch']]);
+    expect(wholeErrors(built.errors, glide).map((e) => e.field)).toEqual(['patch']);
   });
 
   it('a group with errors is left out with everything under it, and the rest still play', () => {

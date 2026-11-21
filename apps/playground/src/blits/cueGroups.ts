@@ -174,7 +174,8 @@ export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): 
       const stray = strayOf(lead, v);
       if (stray !== null)
         fail(v, 'role', `a blend plays its voices by one spec: its ${stray} is not ${lead.name}'s`);
-      const r = stray === null ? ready(v) : undefined;
+      // The blend's signal stands in for a member's weight, so a weight it throws away is not compiled.
+      const r = stray === null ? ready({ ...v, weight: 1 }) : undefined;
       return r && 'patch' in r.spec ? [{ ...r, id: v.id, spec: r.spec }] : [];
     });
     const first = members[0];

@@ -38,7 +38,28 @@ const OPTIONS: Record<Motion['kind'], readonly string[]> = {
 };
 
 /** Errors on the patch as a whole, which no single field shows; so are errors on options it has no field for. */
-const WHOLE = new Set(['stops', 'writes', 'opts']);
+const WHOLE = new Set(['patch', 'stops', 'writes', 'opts']);
+
+/** `mine`'s errors that `PatchPanel` lists above its fields, for patch `p`. */
+export function wholeErrors(mine: readonly FieldError[], p: PatchSource): FieldError[] {
+  const shown = isMotion(p) ? OPTIONS[p.kind] : [];
+  return mine.filter(
+    (e) =>
+      WHOLE.has(e.field) ||
+      (e.field.startsWith('opts.') && !shown.includes(e.field.slice('opts.'.length))),
+  );
+}
+
+/**
+ * Where a voice whose clock reads `elapsed` is in its patch of `period`, so the keys timeline
+ * follows its seek, owner, span placement, loop count and direction. A voice done (NaN) rests at
+ * the end it played to.
+ */
+export function phaseOf(elapsed: number | undefined, period: number, rate: number): number {
+  if (!(period > 0) || elapsed === undefined) return 0;
+  if (Number.isNaN(elapsed)) return rate < 0 ? 0 : period;
+  return ((elapsed % period) + period) % period;
+}
 
 function blank(kind: Kind): PatchSource {
   if (kind === 'keys')
@@ -68,13 +89,16 @@ function blank(kind: Kind): PatchSource {
 const textOf = (v: number | number[] | Expr | undefined) =>
   v === undefined ? '' : typeof v === 'object' && !Array.isArray(v) ? v.code : JSON.stringify(v);
 
-/** A number or a list of numbers stays a literal; anything else is an expression. */
-function parsed(text: string): number | number[] | Expr | undefined {
+/**
+ * A finite number or a list of them stays a literal; anything else is an expression, so one JSON
+ * cannot hold, `1e999` among them, is never kept as a literal that saves as `null`.
+ */
+export function parsed(text: string): number | number[] | Expr | undefined {
   const t = text.trim();
   if (t === '') return undefined;
   try {
     const v: unknown = JSON.parse(t);
-    if (typeof v === 'number' || (Array.isArray(v) && v.every((x) => typeof x === 'number')))
+    if (Number.isFinite(v) || (Array.isArray(v) && v.every((x) => Number.isFinite(x))))
       return v as number | number[];
   } catch {}
   return { code: t };
@@ -152,26 +176,21 @@ export interface PatchPanelProps {
   /** The composition's kit, whose rests the fields show. */
   kit: Kit<Mixed>;
   errors: FieldError[];
-  /** Score time, ms. */
-  playhead: number;
+  /** The voice's clock, its handle's `elapsed`; undefined when it is not cued. */
+  elapsed: number | undefined;
   onChange(v: Voice): void;
 }
 
-export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchPanelProps) {
+export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPanelProps) {
   const p = v.patch;
   const [mode, setMode] = useState<'dope' | 'graph'>('dope');
   const schema = useMemo(schemaOf, []);
   const set = (patch: PatchSource) => onChange({ ...v, patch });
   const mine = errors.filter((e) => e.voice === v.id);
   const err = (field: string) => mine.find((e) => e.field === field);
-  const shown = isMotion(p) ? OPTIONS[p.kind] : [];
-  const whole = mine.filter(
-    (e) =>
-      WHOLE.has(e.field) ||
-      (e.field.startsWith('opts.') && !shown.includes(e.field.slice('opts.'.length))),
-  );
+  const whole = wholeErrors(mine, p);
   const period = periodOf(p) ?? 0;
-  const phase = period > 0 ? Math.max(0, (playhead - v.start) * v.rate) % period : 0;
+  const phase = phaseOf(elapsed, period, v.rate);
 
   const config = {
     kind: p.kind,

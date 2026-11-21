@@ -47,8 +47,11 @@ export function mixOptionsOf(s: MixSettings = {}): MixOptions {
 export function compile(
   c: Composition,
   subjects: readonly Subject[],
-  /** `name` names the full mix and, after it, each solo, so the debug panel lists them. */
-  opts: { solos?: boolean; name?: string } = {},
+  /**
+   * `name` names the full mix and, after it, each solo, so the debug panel lists them. `listed:
+   * false` keeps them off the panel, for a compile that is only read, never played.
+   */
+  opts: { solos?: boolean; name?: string; listed?: boolean } = {},
 ): Built {
   const scope = scopeOf(c.levels);
   const kit = kitOf(c.rules);
@@ -83,7 +86,7 @@ export function compile(
       solos.set(id, made.m);
       soloVoices.set(id, made);
     }
-  return {
+  const built: Built = {
     mix: full.m,
     solos,
     soloVoices,
@@ -97,6 +100,8 @@ export function compile(
     colorAxes: Array.isArray(kit.color.rest) ? kit.color.rest.length : 4,
     pointer,
   };
+  if (opts.listed === false) close(built);
+  return built;
 }
 
 /** Takes every mix of `b` off the debug panel's list, for a compile the app is done with. */
