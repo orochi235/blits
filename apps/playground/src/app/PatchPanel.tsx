@@ -50,6 +50,17 @@ export function wholeErrors(mine: readonly FieldError[], p: PatchSource): FieldE
   );
 }
 
+/**
+ * Where a voice whose clock reads `elapsed` is in its patch of `period`, so the keys timeline
+ * follows its seek, owner, span placement, loop count and direction. A voice done (NaN) rests at
+ * the end it played to.
+ */
+export function phaseOf(elapsed: number | undefined, period: number, rate: number): number {
+  if (!(period > 0) || elapsed === undefined) return 0;
+  if (Number.isNaN(elapsed)) return rate < 0 ? 0 : period;
+  return ((elapsed % period) + period) % period;
+}
+
 function blank(kind: Kind): PatchSource {
   if (kind === 'keys')
     return {
@@ -162,12 +173,12 @@ export interface PatchPanelProps {
   /** The composition's kit, whose rests the fields show. */
   kit: Kit<Mixed>;
   errors: FieldError[];
-  /** Score time, ms. */
-  playhead: number;
+  /** The voice's clock, its handle's `elapsed`; undefined when it is not cued. */
+  elapsed: number | undefined;
   onChange(v: Voice): void;
 }
 
-export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchPanelProps) {
+export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPanelProps) {
   const p = v.patch;
   const [mode, setMode] = useState<'dope' | 'graph'>('dope');
   const schema = useMemo(schemaOf, []);
@@ -176,7 +187,7 @@ export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchP
   const err = (field: string) => mine.find((e) => e.field === field);
   const whole = wholeErrors(mine, p);
   const period = periodOf(p) ?? 0;
-  const phase = period > 0 ? Math.max(0, (playhead - v.start) * v.rate) % period : 0;
+  const phase = phaseOf(elapsed, period, v.rate);
 
   const config = {
     kind: p.kind,

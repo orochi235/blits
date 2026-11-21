@@ -131,7 +131,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
           voice={voice}
           kit={kitOf(p.comp.rules)}
           errors={p.player.built.errors}
-          playhead={p.player.t}
+          elapsed={p.player.built.handles.get(voice.id)?.elapsed}
           onChange={p.onVoice}
         />
       )}
