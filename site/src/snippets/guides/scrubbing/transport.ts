@@ -15,6 +15,7 @@ interface LampPose {
 }
 declare const drop: Patch<Letter, LetterPose>;
 declare const flash: Patch<Lamp, LampPose>;
+declare const back: HTMLButtonElement;
 // ---
 const show = transport({ history: { ms: 10_000, tape: createHistory } });
 const motion = mix<Letter, LetterPose>(kit<LetterPose>({ y: sum() }), {
@@ -39,4 +40,4 @@ requestAnimationFrame(function frame(now) {
   show.sync(now);
   requestAnimationFrame(frame);
 });
-show.seek(show.now - 2000);
+back.addEventListener('click', () => show.seek(show.now - 2000));
