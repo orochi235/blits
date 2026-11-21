@@ -12,7 +12,7 @@ import Listing from '../../components/Listing.astro';
 
 ## Staggered text reveal
 
-Each letter is a subject. One voice reaches all of them, and its [`stagger`](VoiceSpec.stagger) delays each letter by its place in the line. [`freeze`](VoiceSpec.freeze) holds a letter's first frame before its turn and its last frame after, until the voice fades out. See [Voice](../voice/).
+Each letter is a subject. One voice reaches all of them, and its [`stagger`](VoiceSpec.stagger) delays each letter by its place in the line. [`freeze`](VoiceSpec.freeze) `'after'` holds a letter's last frame once it lands, until the voice fades out; before its turn a letter rests, unseen. Each pass is a new voice, placed on the [score](../score/) by its [`anchor`](VoiceSpec.anchor): it starts 2.2 s after the one before has landed, and that one fades out 700 ms before it. See [Voice](../voice/).
 
 <Live client:only="react" of="examples/reveal.ts" />
 
