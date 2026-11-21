@@ -1,7 +1,7 @@
 import '@weasel-js/theme/faces.css';
 import '@weasel-js/labkit/styles.css';
 import { App } from '@pg/app/App';
-import { IconRegistryProvider } from '@weasel-js/core';
+import { IconRegistryProvider } from '@weasel-js/icons/react';
 import { localStorageAdapter, Persistence } from '@weasel-js/labkit';
 import { kitIcons } from '@weasel-js/ui/kit-icons';
 import { StrictMode, useEffect, useState } from 'react';

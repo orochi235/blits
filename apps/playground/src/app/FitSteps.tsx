@@ -5,7 +5,7 @@ import { Glyph } from '@pg/widgets/Glyph';
 import type { ControlRenderer } from '@weasel-js/labkit';
 import {
   Button,
-  CloseButton,
+  CLOSE_BUTTON_PROPS,
   MenuButton,
   type PrefRenderContext,
   PropertyControl,
@@ -124,8 +124,9 @@ function FitRow({ row }: { row: PrefRenderContext }) {
                     >
                       <Glyph name="ui:arrowDown" />
                     </Button>
-                    <CloseButton
-                      ariaLabel={`remove ${step.kind}`}
+                    <Button
+                      {...CLOSE_BUTTON_PROPS}
+                      aria-label={`remove ${step.kind}`}
                       onClick={() => onChange(list.filter((_, j) => j !== i))}
                     />
                   </span>

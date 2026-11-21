@@ -7,7 +7,7 @@ import {
   f,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
-import { CloseButton, PropertyControl, PropertyRow } from '@weasel-js/ui';
+import { Button, CLOSE_BUTTON_PROPS, PropertyControl, PropertyRow } from '@weasel-js/ui';
 import { useMemo } from 'react';
 import s from './App.module.css';
 import { actionRow, useLatest } from './CompositionControls';
@@ -86,8 +86,9 @@ export function AnnouncedFields({
               onInput={ignore}
               onChange={(at: number) => tune(i, { at })}
             />
-            <CloseButton
-              ariaLabel={`remove mark ${i + 1}`}
+            <Button
+              {...CLOSE_BUTTON_PROPS}
+              aria-label={`remove mark ${i + 1}`}
               onClick={() => set(list.filter((_, k) => k !== i))}
             />
           </span>

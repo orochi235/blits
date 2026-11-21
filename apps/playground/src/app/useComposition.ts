@@ -1,6 +1,6 @@
 import type { Composition } from '@pg/blits/composition';
 import { fromHash, load, toHash } from '@pg/blits/load';
-import { createHistory, swapOp } from '@weasel-js/history';
+import { createHistory, createSwapOp } from '@weasel-js/history';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const DEPTH = 200;
@@ -44,7 +44,13 @@ export function useComposition(initial: Composition) {
     (next: Composition) => {
       if (next === now.current) return;
       edits.apply(
-        swapOp({ name: 'composition', label: 'edit', before: now.current, after: next, emit }),
+        createSwapOp({
+          name: 'composition',
+          label: 'edit',
+          before: now.current,
+          after: next,
+          emit,
+        }),
       );
     },
     [edits, emit],
