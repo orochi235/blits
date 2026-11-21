@@ -169,10 +169,11 @@ export default function run(root: HTMLElement): () => void {
       drawn = -1;
     };
     // Each hit is one voice over every cell, lighting its creature's, for one pass, leaving when
-    // the pass ends.
+    // the pass ends. A later `start` is on the host's clock, not the mix's.
     const hit = (who: number, after = 0) => {
       if (m === undefined) return;
-      m.cue({ patch: flash.with({ who }), subjects: cells, start: m.now + after });
+      const at = after > 0 ? { start: show.timestamp + after } : {};
+      m.cue({ patch: flash.with({ who }), subjects: cells, ...at });
     };
     for (const { n, b } of modeButtons) b.addEventListener('click', () => choose(n));
     double.addEventListener('click', () => {
