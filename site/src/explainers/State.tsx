@@ -68,7 +68,7 @@ function scene(c: Config): Scene<Subject, Pose, Config> {
     voices: () => [{ name: 'Spring', color: 'v1', spec: { patch: spring } }],
     options: () => (c.cap < MOST ? { maxDt: c.cap } : {}),
     probing: (t, s) => s !== gap || t < awayOf(c).from || t >= awayOf(c).to,
-    record: ({ t, poses }) => [poses[0]?.x ?? 0, poses[1]?.x ?? 0, target(t)],
+    record: ({ now, poses }) => [poses[0]?.x ?? 0, poses[1]?.x ?? 0, target(now)],
   };
 }
 
@@ -184,7 +184,7 @@ export default function State() {
         const span = awayOf(c);
         const stage = Math.round(size.h * 0.3);
         const away = frame.t >= span.from && frame.t < span.to;
-        rails(ctx, size.w, stage, ink, target(frame.t), [
+        rails(ctx, size.w, stage, ink, target(frame.now), [
           { name: 'Steady', color: ink.voice('v1'), x: frame.poses[0]?.x },
           {
             name: 'Unprobed',

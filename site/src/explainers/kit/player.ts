@@ -179,6 +179,7 @@ export class Player<I, O, C> {
   private frame(): Frame<I, O> {
     return {
       t: Math.max(0, this.k) * FRAME,
+      now: this.main.mix.now,
       subjects: this.subjects,
       poses: this.poses,
       voices: this.voices,
@@ -332,7 +333,13 @@ export class Player<I, O, C> {
     this.history.push({
       t,
       values: this.scene.record(
-        { t, subjects: this.subjects, poses: this.poses, alone: this.alone },
+        {
+          t,
+          now: this.main.mix.now,
+          subjects: this.subjects,
+          poses: this.poses,
+          alone: this.alone,
+        },
         this.config,
       ),
     });

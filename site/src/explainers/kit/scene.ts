@@ -36,7 +36,10 @@ export interface Scene<I, O, C> {
    * Values to keep a history of, taken after every frame's probes, for a trace. The kit keeps the
    * last `HISTORY` frames of them.
    */
-  record?(frame: { t: number; subjects: I[]; poses: O[]; alone: O[] }, config: C): number[];
+  record?(
+    frame: { t: number; now: number; subjects: I[]; poses: O[]; alone: O[] },
+    config: C,
+  ): number[];
   /**
    * Called with the main mix once the player makes it, for a scene that acts on the mix's clock
    * beside drawing, such as booking sounds. `moving` hears, before each move, whether the player is
@@ -54,6 +57,8 @@ export interface Attached {
 
 export interface Frame<I, O> {
   t: number;
+  /** The main mix's clock at this frame: what its patches and signals read as `timestamp`. */
+  now: number;
   subjects: I[];
   /** The folded pose per subject, as last probed. */
   poses: O[];
