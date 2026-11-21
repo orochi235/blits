@@ -69,59 +69,62 @@ export const timeline: Make = ({ seed, size, lanes }) => {
       fresh.m.sync(0);
       return { ms, fresh, time: 0, got: new Float64Array(width) };
     });
-    const n0 = t.clips.length;
-    let framed: Finding | undefined;
-    for (const cp of order) {
-      for (const run of runs) {
-        const from = run.time;
-        const n = Math.ceil((cp.at - from) / run.ms - 1e-9);
-        for (let j = 1; j <= n; j++) {
-          run.time = j === n ? cp.at : from + ((cp.at - from) * j) / n;
-          run.fresh.m.sync(run.time);
+    try {
+      const n0 = t.clips.length;
+      let framed: Finding | undefined;
+      for (const cp of order) {
+        for (const run of runs) {
+          const from = run.time;
+          const n = Math.ceil((cp.at - from) / run.ms - 1e-9);
+          for (let j = 1; j <= n; j++) {
+            run.time = j === n ? cp.at : from + ((cp.at - from) * j) / n;
+            run.fresh.m.sync(run.time);
+            readInto(run.fresh, run.got);
+          }
           readInto(run.fresh, run.got);
         }
-        readInto(run.fresh, run.got);
-      }
-      checked++;
-      const base = runs[0] as (typeof runs)[number];
-      const unstable = new Set<number>();
-      for (const run of runs.slice(1)) {
-        for (let k = 0; k < width; k++) {
-          if (same(base.got[k] as number, run.got[k] as number)) continue;
-          if (!framed) {
-            const { clip, field } = where(n0, k);
-            framed = {
-              kind: 'fail',
-              at: cp.frame,
-              what:
-                `a fresh timeline played forward at rate 1 reads differently by frame rate alone: at reel ${cp.at.toFixed(3)}, ` +
-                `clip ${clip} ${field} is ${base.got[k]} at ${(1000 / base.ms).toFixed(0)} fps and ${run.got[k]} at ${(1000 / run.ms).toFixed(0)} fps`,
-            };
+        checked++;
+        const base = runs[0] as (typeof runs)[number];
+        const unstable = new Set<number>();
+        for (const run of runs.slice(1)) {
+          for (let k = 0; k < width; k++) {
+            if (same(base.got[k] as number, run.got[k] as number)) continue;
+            if (!framed) {
+              const { clip, field } = where(n0, k);
+              framed = {
+                kind: 'fail',
+                at: cp.frame,
+                what:
+                  `a fresh timeline played forward at rate 1 reads differently by frame rate alone: at reel ${cp.at.toFixed(3)}, ` +
+                  `clip ${clip} ${field} is ${base.got[k]} at ${(1000 / base.ms).toFixed(0)} fps and ${run.got[k]} at ${(1000 / run.ms).toFixed(0)} fps`,
+              };
+            }
+            unstable.add(k);
           }
-          unstable.add(k);
+        }
+        if (unstable.size > 0) framedAt++;
+        const failing: number[] = [];
+        for (let k = 0; k < width; k++)
+          if (!unstable.has(k) && !same(cp.values[k] as number, base.got[k] as number))
+            failing.push(k);
+        const k = failing[0];
+        if (k !== undefined) {
+          const { clip, field } = where(n0, k);
+          found.push({
+            kind: 'fail',
+            at: cp.frame,
+            what:
+              `frame ${cp.frame}, reel at ${cp.at.toFixed(3)} (mix time ${cp.now.toFixed(3)}): ` +
+              `clip ${clip} ${field} live ${cp.values[k]} fresh ${base.got[k]}, ${failing.length} of ${width} numbers differ; ` +
+              `recent: ${cp.recent.join('; ')}`,
+          });
         }
       }
-      if (unstable.size > 0) framedAt++;
-      const failing: number[] = [];
-      for (let k = 0; k < width; k++)
-        if (!unstable.has(k) && !same(cp.values[k] as number, base.got[k] as number))
-          failing.push(k);
-      const k = failing[0];
-      if (k !== undefined) {
-        const { clip, field } = where(n0, k);
-        found.push({
-          kind: 'fail',
-          at: cp.frame,
-          what:
-            `frame ${cp.frame}, reel at ${cp.at.toFixed(3)} (mix time ${cp.now.toFixed(3)}): ` +
-            `clip ${clip} ${field} live ${cp.values[k]} fresh ${base.got[k]}, ${failing.length} of ${width} numbers differ; ` +
-            `recent: ${cp.recent.join('; ')}`,
-        });
-      }
+      if (framed) found.push(framed);
+      return found;
+    } finally {
+      for (const run of runs) run.fresh.m.close();
     }
-    if (framed) found.push(framed);
-    for (const run of runs) run.fresh.m.close();
-    return found;
   }
 
   const scenario: Scenario = {

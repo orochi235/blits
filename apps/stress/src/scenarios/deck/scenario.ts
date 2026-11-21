@@ -95,10 +95,13 @@ export const deck: Make = ({ seed, size, lanes }) => {
         const got = new Float64Array(width);
         const delta = cp.now - cp.start;
         const n = Math.max(1, Math.ceil(delta / ms - 1e-9));
-        fresh.m.seek(cp.start);
-        for (let j = 1; j <= n; j++) fresh.m.sync(j === n ? delta : (delta * j) / n);
-        readInto(fresh, got);
-        fresh.m.close();
+        try {
+          fresh.m.seek(cp.start);
+          for (let j = 1; j <= n; j++) fresh.m.sync(j === n ? delta : (delta * j) / n);
+          readInto(fresh, got);
+        } finally {
+          fresh.m.close();
+        }
         return { ms, got };
       });
       checked++;
