@@ -19,7 +19,7 @@ import {
   type LeafRenderer,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
-import { PrefActionButton, PropertyField, PropertyRow } from '@weasel-js/ui';
+import { ActionLeaf, PropertyField, PropertyRow } from '@weasel-js/ui';
 import { useMemo, useRef } from 'react';
 import s from './App.module.css';
 import r from './Rows.module.css';
@@ -67,10 +67,11 @@ export function fieldRow(extra: FieldExtras): LeafRenderer {
 /** An action's button on a row of its own, unlabeled: labkit's action row repeats the button's text as its label. */
 export const actionRow: LeafRenderer = (ctx) => (
   <PropertyRow group span layout="inline" label="">
-    <PrefActionButton
-      pref={ctx.pref as Parameters<typeof PrefActionButton>[0]['pref']}
+    <ActionLeaf
+      leaf={ctx.pref as Parameters<typeof ActionLeaf>[0]['leaf']}
       path={ctx.path}
       disabled={ctx.disabled}
+      form="row"
     />
   </PropertyRow>
 );
