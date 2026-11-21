@@ -214,10 +214,10 @@ export function ClipLane(p: ClipLaneProps) {
         onPointerDown={(e) => p.onBegin(e, raw, 'fadeIn')}
         onKeyDown={(e) => p.onKeyEdit(e, raw, 'fadeIn')}
       />
-      {!open && !cut && (
+      {!open && !cut && shownEnd(c) - c.fadeOut <= duration && (
         <circle
           className={s.handle}
-          cx={scale.x(end - c.fadeOut)}
+          cx={scale.x(shownEnd(c) - c.fadeOut)}
           cy={top}
           r={4}
           role="slider"

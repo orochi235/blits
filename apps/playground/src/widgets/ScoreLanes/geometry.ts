@@ -42,16 +42,21 @@ export interface Extent {
   fadeOut: number;
 }
 
-/** A bar over `e` with its fades as slopes; an open end runs flat to `viewEnd`. */
+/** A bar over `e` with its fades as slopes; an end past `viewEnd` is cut there at the height the
+ *  bar has reached, so an open end runs flat to it. */
 export function slopePolygon(e: Extent, s: Scale, top: number, h: number, viewEnd: number): string {
-  const open = !Number.isFinite(e.end);
   const end = Math.min(e.end, viewEnd);
-  const x0 = s.x(e.start);
-  const x1 = s.x(end);
-  const inX = s.x(e.start + e.fadeIn);
-  const outX = open ? x1 : s.x(end - e.fadeOut);
+  const outAt = Math.min(e.end - e.fadeOut, end);
+  const left = e.end > end ? Math.min(1, e.fadeOut > 0 ? (e.end - end) / e.fadeOut : 1) : 0;
   const fmt = (x: number, y: number) => `${Math.round(x * 100) / 100},${y}`;
-  return [fmt(x0, top + h), fmt(inX, top), fmt(outX, top), fmt(x1, top + h)].join(' ');
+  const points = [
+    fmt(s.x(e.start), top + h),
+    fmt(s.x(e.start + e.fadeIn), top),
+    fmt(s.x(outAt), top),
+    fmt(s.x(end), top + h * (1 - left)),
+    fmt(s.x(end), top + h),
+  ];
+  return points.filter((x, i) => x !== points[i - 1]).join(' ');
 }
 
 export function clipPolygon(c: Clip, s: Scale, top: number, h: number, viewEnd: number): string {

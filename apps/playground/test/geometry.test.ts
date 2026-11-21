@@ -156,4 +156,12 @@ describe('slopePolygon', () => {
     const e = { start: 0, end: Number.POSITIVE_INFINITY, fadeIn: 0, fadeOut: 300 };
     expect(slopePolygon(e, s, 0, 8, 600)).toBe('0,8 0,0 600,0 600,8');
   });
+  it('keeps a fade-out that ends past the view end where it is, off the view', () => {
+    const e = { start: 100, end: 1200, fadeIn: 0, fadeOut: 100 };
+    expect(slopePolygon(e, s, 0, 8, 1000)).toBe('100,8 100,0 1000,0 1000,8');
+  });
+  it('cuts a fade-out that straddles the view end at the height it has reached', () => {
+    const e = { start: 100, end: 1100, fadeIn: 0, fadeOut: 400 };
+    expect(slopePolygon(e, s, 0, 8, 1000)).toBe('100,8 100,0 700,0 1000,6 1000,8');
+  });
 });
