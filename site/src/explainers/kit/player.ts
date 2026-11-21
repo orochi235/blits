@@ -68,6 +68,11 @@ export class Player<I, O, C> {
   /** Set where something else sought the main mix, so the next frame follows it there. */
   private sought = false;
   /**
+   * Set where a seek back did not move the main mix, because a debugger holds its clock and queued
+   * the seek until it lets go; until it does, the player follows the mix rather than queue more.
+   */
+  private stalled = false;
+  /**
    * Explainer ms from the first frame to where the run ends, which the main mix announces then as
    * `end`; null once announced, and for an unlisted run.
    */
@@ -106,7 +111,10 @@ export class Player<I, O, C> {
     for (const solo of this.solos) solo.mix.close();
     for (const p of [this.main, ...this.solos])
       p.mix.onSeek((s) => {
-        if (p === this.main && !this.own) this.sought = true;
+        if (p === this.main && !this.own) {
+          this.sought = true;
+          this.stalled = false;
+        }
         // A seek back lets go of every later frame, so their numbers name nothing now.
         if (!s.back) return;
         const i = p.seqs.findIndex((seq) => seq > s.frame);
@@ -281,7 +289,17 @@ export class Player<I, O, C> {
   private back(k: number): void {
     const last = this.lastNow(k, true);
     if (last === undefined) return;
-    for (const p of [this.main, ...this.solos]) {
+    const main = this.main.mix;
+    if (!this.stalled) {
+      const s = this.main.seqs[last.k];
+      if (s !== undefined) main.seek({ frame: s });
+      this.stalled = Math.abs(main.now - last.now) > 0.5;
+    }
+    if (this.stalled) {
+      this.follow(main.now);
+      return;
+    }
+    for (const p of this.solos) {
       const s = p.seqs[last.k];
       if (s !== undefined) p.mix.seek({ frame: s });
     }
