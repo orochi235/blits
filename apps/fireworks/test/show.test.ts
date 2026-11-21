@@ -10,7 +10,7 @@ describe('the fireworks show', () => {
     const s = shell(-3, 5);
     cue(m, s);
     for (let f = 16; f <= 800; f += 16) m.sync(f);
-    const risen = m.probe(s).offset[1];
+    const risen = m.probe(s).offset[1] as number;
     m.sync(1600);
     m.seek(800);
     expect(m.now).toBe(800);
