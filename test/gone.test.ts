@@ -3,7 +3,12 @@ import { expireGone, GoneIndex } from '../src/gone.js';
 
 /** The part of a mix `expireGone` reads and writes, over gone voices finished at `reached`. */
 const stub = (reached: number[]) => {
-  const gone = reached.map((reachedTo) => ({ reachedTo, doneAt: reachedTo, named: null, spec: {} }));
+  const gone = reached.map((reachedTo) => ({
+    reachedTo,
+    doneAt: reachedTo,
+    named: null,
+    spec: {},
+  }));
   return {
     gone,
     goneIx: new GoneIndex(),
