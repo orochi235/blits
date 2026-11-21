@@ -1,7 +1,8 @@
-import { decode, encode, Panel, panelStyles, type Wire, wireSource } from '@msb235/blits-panel';
+import { decode, encode, Panel, panelStyles, wireSource } from '@msb235/blits-panel';
 import { ThemeProvider } from '@weasel-js/theme/react';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { link } from './link.js';
 import { type Control, HISTORY_MS, PING_MS, panelPort } from './names.js';
 import './panel.css';
 
@@ -10,34 +11,8 @@ const tab =
   chrome.devtools?.inspectedWindow?.tabId ??
   Number(new URLSearchParams(location.search).get('tab'));
 
-// One wire for the page's life, over whichever port is open: Chrome stops an idle worker, which
-// drops the port, so a dropped port is opened again and the worker attaches anew.
-const fns = new Set<(text: string) => void>();
-let port: chrome.runtime.Port;
-const open = () => {
-  port = chrome.runtime.connect({ name: panelPort(tab) });
-  port.onMessage.addListener((text: string) => {
-    for (const fn of [...fns]) fn(text);
-  });
-  port.onDisconnect.addListener(() => setTimeout(open, 100));
-};
-open();
-setInterval(() => {
-  try {
-    port.postMessage(encode({ ctl: 'ping' }));
-  } catch {}
-}, PING_MS);
-const wire: Wire = {
-  send(text) {
-    try {
-      port.postMessage(text);
-    } catch {}
-  },
-  listen(fn) {
-    fns.add(fn);
-    return () => fns.delete(fn);
-  },
-};
+const wire = link(() => chrome.runtime.connect({ name: panelPort(tab) }));
+setInterval(() => wire.send(encode({ ctl: 'ping' })), PING_MS);
 const source = wireSource(wire);
 
 function App() {
@@ -59,7 +34,7 @@ function App() {
     [],
   );
   const toggle = () =>
-    port.postMessage(encode({ ctl: 'history', ms: history === null ? HISTORY_MS : null }));
+    wire.send(encode({ ctl: 'history', ms: history === null ? HISTORY_MS : null }));
   const bar = (
     <button
       type="button"
