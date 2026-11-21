@@ -18,10 +18,13 @@ const SPARK = kit<SparkPose>({ dx: sum(), dy: sum(), alpha: mul() });
 const HEIGHT = 260;
 /** How often a burst goes off by itself, ms of mix time. */
 const EVERY = 1400;
+/** How far back the mix's history reaches, ms. */
+const KEPT = 10_000;
 
+const FLY = 1200;
 // Out along its angle, pulled down, fading as it goes.
 const fly = patch<Spark, SparkPose>(
-  1200,
+  FLY,
   (phase, s) => ({
     dx: Math.cos(s.angle) * s.speed * phase,
     dy: Math.sin(s.angle) * s.speed * phase + 140 * phase * phase,
@@ -38,11 +41,12 @@ export default demo((d) => {
   const ctx = canvas.getContext('2d');
   if (ctx === null) return;
 
-  const m = mix<Spark, SparkPose>(SPARK, d.options('burst'));
+  const m = mix<Spark, SparkPose>(SPARK, d.options('burst', {}, KEPT));
   d.closes(m);
-  const bursts = new Set<{ sparks: Spark[]; handle: Handle<Spark> }>();
+  const bursts = new Set<{ sparks: Spark[]; handle: Handle<Spark>; at: number }>();
 
-  // One voice per burst, for one pass: when it ends the voice leaves the mix, and its sparks go.
+  // One voice per burst, for one pass: when it ends the voice leaves the mix. Its sparks are kept
+  // while history reaches back to its pass, so a seek back finds them, and drawn while it plays.
   const burst = (x: number, y: number) => {
     const sparks = Array.from({ length: 40 }, () => ({
       x,
@@ -50,9 +54,7 @@ export default demo((d) => {
       angle: Math.random() * 2 * Math.PI,
       speed: 40 + Math.random() * 90,
     }));
-    const b = { sparks, handle: m.cue({ patch: fly, subjects: sparks }) };
-    bursts.add(b);
-    void b.handle.done.then(() => bursts.delete(b));
+    bursts.add({ sparks, handle: m.cue({ patch: fly, subjects: sparks }), at: m.now });
   };
 
   d.on(canvas, 'click', (e) => {
@@ -73,11 +75,15 @@ export default demo((d) => {
     canvas.height = HEIGHT * devicePixelRatio;
     ctx.scale(devicePixelRatio, devicePixelRatio);
     ctx.fillStyle = getComputedStyle(root).color;
-    for (const { sparks } of bursts)
-      for (const s of sparks) {
+    const playing = new Set(m.voices());
+    for (const b of bursts) {
+      if (b.at + FLY < m.now - KEPT) bursts.delete(b);
+      if (!playing.has(b.handle) || b.handle.state === 'pending') continue;
+      for (const s of b.sparks) {
         m.probe(s, pose);
         ctx.globalAlpha = pose.alpha;
         ctx.fillRect(s.x + pose.dx - 2, s.y + pose.dy - 2, 4, 4);
       }
+    }
   });
 });

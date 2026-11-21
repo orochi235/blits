@@ -35,7 +35,7 @@ Point at a card. One voice holds every card raised and glowing, and its weight i
 
 ## Particle burst
 
-Click the canvas. Each burst is one voice over 40 new sparks, played for one pass. When the pass ends the voice leaves the mix, its [`done`](Handle.done) promise resolves, and the sparks are let go. See [Mix](../mix/).
+Click the canvas. Each burst is one voice over 40 new sparks, played for one pass. When the pass ends the voice leaves the mix. A burst is drawn only while [`voices`](Mix.voices) lists its voice and it has started, and its sparks are kept for as long as the mix's history reaches back to it, so a seek back in the [debug panel](../guides/debugging/) draws it again. See [Mix](../mix/).
 
 <Live client:only="react" of="examples/burst.ts" />
 
