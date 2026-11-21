@@ -1,6 +1,5 @@
 import { color, css, kit, mix, mul, oklab, patch, sum } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Dot {
   el: HTMLElement;
@@ -34,7 +33,8 @@ const pulse = patch<Dot, DotPose>(
   { writes: ['y', 'scale', 'color'] },
 );
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const row = document.createElement('div');
   row.className = 'dots';
   root.append(row);
@@ -50,16 +50,14 @@ export default function run(root: HTMLElement): () => void {
   root.append(button);
 
   // Both loops share a role, so mid-crossfade a dot is a blend of the two, not both stacked.
-  const m = mix<Dot, DotPose>(DOT, {
-    name: 'crossfade',
-    history: { ms: 10_000, tape: createHistory },
-  });
+  const m = mix<Dot, DotPose>(DOT, d.options('crossfade'));
+  d.closes(m);
   const fade = { in: 1200, out: 1200 };
   let playing = 'wave';
   let current = m.cue({ patch: wave, loop: true, role: 'motion', fade: { out: fade.out } });
   button.textContent = 'Switch to pulse';
 
-  const onClick = () => {
+  d.on(button, 'click', () => {
     current.fade();
     playing = playing === 'wave' ? 'pulse' : 'wave';
     current = m.cue({
@@ -69,11 +67,10 @@ export default function run(root: HTMLElement): () => void {
       fade,
     });
     button.textContent = `Switch to ${playing === 'wave' ? 'pulse' : 'wave'}`;
-  };
-  button.addEventListener('click', onClick);
+  });
 
   const pose: DotPose = { y: 0, scale: 1, color: [0, 0, 0, 0] };
-  const stop = loop(m, root, (now) => {
+  d.frame(m, (now) => {
     m.sync(now);
     for (const dot of dots) {
       m.probe(dot, pose);
@@ -81,10 +78,4 @@ export default function run(root: HTMLElement): () => void {
       dot.el.style.background = css(pose.color);
     }
   });
-
-  return () => {
-    stop();
-    button.removeEventListener('click', onClick);
-    m.close();
-  };
-}
+});

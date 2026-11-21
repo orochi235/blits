@@ -1,6 +1,5 @@
 import { input, kit, lag, mix, patch, sum } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Card {
   el: HTMLElement;
@@ -15,7 +14,8 @@ const CARD = kit<CardPose>({ lift: sum(), glow: sum() });
 // Duration 0 holds for good; the voice's weight does all the moving.
 const raised = patch<Card, CardPose>(0, () => ({ lift: 1, glow: 1 }), { writes: ['lift', 'glow'] });
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const row = document.createElement('div');
   row.className = 'cards';
   root.append(row);
@@ -29,28 +29,24 @@ export default function run(root: HTMLElement): () => void {
 
   let hovered: Card | undefined;
   const over = input<Card>((card) => (card === hovered ? 1 : 0));
-  const onOver = (e: PointerEvent) => {
+  d.on(row, 'pointerover', (e) => {
     hovered = cards.find((c) => c.el === e.target);
     over.touch();
-  };
-  const onLeave = () => {
+  });
+  d.on(row, 'pointerleave', () => {
     hovered = undefined;
     over.touch();
-  };
-  row.addEventListener('pointerover', onOver);
-  row.addEventListener('pointerleave', onLeave);
+  });
 
   // Quick to rise, slow to settle: lag eases each card's weight toward the pointer's 0 or 1.
   // `floor` ends the settle within a hundredth; below that, a card left at a sub-pixel offset
   // and shadow shimmers at its edges for seconds.
-  const m = mix<Card, CardPose>(CARD, {
-    name: 'glow',
-    history: { ms: 10_000, tape: createHistory },
-  });
+  const m = mix<Card, CardPose>(CARD, d.options('glow'));
+  d.closes(m);
   m.cue({ patch: raised, weight: lag(over, { riseMs: 80, fallMs: 350, floor: 0.01 }) });
 
   const pose = { lift: 0, glow: 0 };
-  const stop = loop(m, root, (now) => {
+  d.frame(m, (now) => {
     m.sync(now);
     for (const card of cards) {
       m.probe(card, pose);
@@ -58,11 +54,4 @@ export default function run(root: HTMLElement): () => void {
       card.el.style.setProperty('--glow', String(pose.glow));
     }
   });
-
-  return () => {
-    stop();
-    row.removeEventListener('pointerover', onOver);
-    row.removeEventListener('pointerleave', onLeave);
-    m.close();
-  };
-}
+});

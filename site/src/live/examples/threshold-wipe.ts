@@ -14,9 +14,8 @@ import {
   transport,
   vividLight,
 } from '@msb235/blits/gpu';
-import { createHistory } from '@weasel-js/history';
+import { demo } from '../demo';
 import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
-import { loop } from '../loop';
 import { scrubbed } from '../play';
 
 interface Cell {
@@ -85,7 +84,8 @@ out.w = array<f32, 4>(select(0.0, pow(s, 1.0 / 3.0), s > 0.0), 0.0, 0.0, 1.0);`,
   writes: ['w'],
 });
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   const el = document.createElement('canvas');
@@ -146,18 +146,20 @@ export default function run(root: HTMLElement): () => void {
     });
     onMode();
   };
-  for (const b of maps.buttons) b.addEventListener('click', () => paintMap(b.textContent ?? ''));
-  for (const b of modes.buttons) b.addEventListener('click', () => pickMode(b.textContent as Mode));
+  for (const b of maps.buttons) d.on(b, 'click', () => paintMap(b.textContent ?? ''));
+  for (const b of modes.buttons) d.on(b, 'click', () => pickMode(b.textContent as Mode));
   paintMap('iris');
   pickMode(mode);
 
-  let stop = () => {};
   let gone = false;
+  d.stops(() => {
+    gone = true;
+  });
   void gpuDevice().then((device) => {
-    if (!gone) stop = start(device);
+    if (!gone) start(device);
   });
 
-  function start(device: GpuDevice | null): () => void {
+  function start(device: GpuDevice | null): void {
     let grid: Grid | undefined;
     // With the GPU, it folds the level and lays it over the map; the grid holds the map's colors,
     // so a new map or a new mix makes it again.
@@ -179,18 +181,20 @@ export default function run(root: HTMLElement): () => void {
     };
 
     // Pausing stops the transport; dragging seeks the level's voice.
-    const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
+    const show = transport({ history: d.history(2 * PERIOD) });
     let m: Mix<Cell, Wipe> | undefined;
     let sweep: Handle | undefined;
     const place = scrubbed(show, play, scrub, PERIOD, () => [sweep]);
     const choose = () => {
       const at = place();
       m?.close();
-      m = mix<Cell, Wipe>(kit<Wipe>({ w: color(MODES[mode]()) }), {
-        name: 'threshold-wipe',
-        transport: show,
-        ...(device === null ? {} : { engine: gpu({ device }) }),
-      });
+      m = mix<Cell, Wipe>(
+        kit<Wipe>({ w: color(MODES[mode]()) }),
+        d.options('threshold-wipe', {
+          transport: show,
+          ...(device === null ? {} : { engine: gpu({ device }) }),
+        }),
+      );
       sweep = m.cue({ patch: level, subjects: cells, loop: true, seek: at });
       regrid();
       drawn = -1;
@@ -218,9 +222,14 @@ export default function run(root: HTMLElement): () => void {
         ctx.putImageData(image, 0, 0);
       };
     }
-    const halt = loop(
+    d.stops(() => {
+      onMap = () => {};
+      onMode = () => {};
+      grid?.destroy();
+      m?.close();
+    });
+    d.frame(
       show,
-      root,
       (t) => {
         show.sync(t);
         scrub.value = String(place());
@@ -230,18 +239,5 @@ export default function run(root: HTMLElement): () => void {
       },
       { settle: () => (m ? [m] : []) },
     );
-
-    return () => {
-      halt();
-      onMap = () => {};
-      onMode = () => {};
-      grid?.destroy();
-      m?.close();
-    };
   }
-
-  return () => {
-    gone = true;
-    stop();
-  };
-}
+});

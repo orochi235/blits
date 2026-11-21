@@ -13,9 +13,8 @@ import {
   toHex,
   transport,
 } from '@msb235/blits/gpu';
-import { createHistory } from '@weasel-js/history';
+import { demo } from '../demo';
 import { gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
-import { loop } from '../loop';
 import { playPause } from '../play';
 
 interface Cell {
@@ -85,7 +84,8 @@ function put(image: ImageData, i: number, rgb: number) {
   image.data.set([rgb >> 16, (rgb >> 8) & 0xff, rgb & 0xff, 255], i * 4);
 }
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   // The same scene twice, from one probe a cell: under the light alone, and with the correction
@@ -132,21 +132,26 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(pair, castWeight.row, fixWeight.row, controls);
   root.append(wrap);
 
-  let stop = () => {};
   let gone = false;
+  d.stops(() => {
+    gone = true;
+  });
   void gpuDevice().then((device) => {
-    if (!gone) stop = start(device);
+    if (!gone) start(device);
   });
 
-  function start(device: GpuDevice | null): () => void {
+  function start(device: GpuDevice | null): void {
     // Both voices loop on one period, cued together, so the correction divides by the very color
     // the cast multiplies by, whichever way the light has drifted. Their weights are the sliders.
-    const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
-    const m = mix<Cell, Balance>(BALANCE, {
-      name: 'white-balance',
-      transport: show,
-      ...(device === null ? {} : { engine: gpu({ device }) }),
-    });
+    const show = transport({ history: d.history(2 * PERIOD) });
+    const m = mix<Cell, Balance>(
+      BALANCE,
+      d.options('white-balance', {
+        transport: show,
+        ...(device === null ? {} : { engine: gpu({ device }) }),
+      }),
+    );
+    d.closes(m);
     const lit: Handle = m.cue({
       patch: cast,
       subjects: CELLS,
@@ -163,8 +168,8 @@ export default function run(root: HTMLElement): () => void {
       lit.weight = Number(castWeight.input.value);
       fixed.weight = Number(fixWeight.input.value);
     };
-    castWeight.input.addEventListener('input', weigh);
-    fixWeight.input.addEventListener('input', weigh);
+    d.on(castWeight.input, 'input', weigh);
+    d.on(fixWeight.input, 'input', weigh);
     weigh();
     playPause(show, play);
 
@@ -230,9 +235,9 @@ export default function run(root: HTMLElement): () => void {
       };
     }
     let drawn = -1;
-    const stop = loop(
+    d.stops(() => free());
+    d.frame(
       show,
-      root,
       (now) => {
         show.sync(now);
         if (show.seq === drawn) return;
@@ -242,16 +247,5 @@ export default function run(root: HTMLElement): () => void {
       },
       { settle: [m] },
     );
-
-    return () => {
-      stop();
-      free();
-      m.close();
-    };
   }
-
-  return () => {
-    gone = true;
-    stop();
-  };
-}
+});

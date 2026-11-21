@@ -14,9 +14,8 @@ import {
   toHex,
   transport,
 } from '@msb235/blits/gpu';
-import { createHistory } from '@weasel-js/history';
+import { demo } from '../demo';
 import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
-import { loop } from '../loop';
 
 interface Cell {
   x: number;
@@ -86,7 +85,8 @@ const flash = shaderPatch<Cell, Flash, { who: number }>(FLASH, {
   writes: ['hit'],
 });
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   const el = document.createElement('canvas');
@@ -115,14 +115,16 @@ export default function run(root: HTMLElement): () => void {
       cells.push({ x: x / (COLS - 1), y: y / (ROWS - 1), base: s.base, cov: s.cov, who: s.who });
     }
 
-  let stop = () => {};
   let gone = false;
+  d.stops(() => {
+    gone = true;
+  });
   void gpuDevice().then((device) => {
-    if (!gone) stop = start(device);
+    if (!gone) start(device);
   });
 
-  function start(device: GpuDevice | null): () => void {
-    const show = transport({ history: { ms: 4 * EVERY, tape: createHistory } });
+  function start(device: GpuDevice | null): void {
+    const show = transport({ history: d.history(4 * EVERY) });
     let m: Mix<Cell, Flash> | undefined;
     let draw = () => {};
     let grid: Grid | undefined;
@@ -133,11 +135,13 @@ export default function run(root: HTMLElement): () => void {
       m?.close();
       grid?.destroy();
       // Room for eight flashes laid on one cell at once.
-      const made = mix<Cell, Flash>(kit<Flash>({ hit: color(MODES[mode]({ layers: 8 })) }), {
-        name: 'hit-flash',
-        transport: show,
-        ...(device === null ? {} : { engine: gpu({ device }) }),
-      });
+      const made = mix<Cell, Flash>(
+        kit<Flash>({ hit: color(MODES[mode]({ layers: 8 })) }),
+        d.options('hit-flash', {
+          transport: show,
+          ...(device === null ? {} : { engine: gpu({ device }) }),
+        }),
+      );
       m = made;
       if (device !== null) {
         // The GPU folds the flashes for every cell, and lays their stack over the scene.
@@ -175,32 +179,34 @@ export default function run(root: HTMLElement): () => void {
       const at = after > 0 ? { start: show.timestamp + after } : {};
       m.cue({ patch: flash.with({ who }), subjects: cells, ...at });
     };
-    for (const { n, b } of modeButtons) b.addEventListener('click', () => choose(n));
-    double.addEventListener('click', () => {
+    for (const { n, b } of modeButtons) d.on(b, 'click', () => choose(n));
+    d.on(double, 'click', () => {
       hit(1);
       hit(1, 70);
     });
     let autoOn = true;
     auto.ariaPressed = 'true';
-    auto.addEventListener('click', () => {
+    d.on(auto, 'click', () => {
       autoOn = !autoOn;
       auto.ariaPressed = String(autoOn);
     });
-    const onClick = (e: MouseEvent) => {
+    d.on(el, 'click', (e) => {
       const box = el.getBoundingClientRect();
       const x = Math.floor(((e.clientX - box.left) / box.width) * COLS);
       const y = Math.floor(((e.clientY - box.top) / box.height) * ROWS);
       const s = scene(x / (COLS - 1), y / (ROWS - 1));
       if (s.who >= 0) hit(s.who);
-    };
-    el.addEventListener('click', onClick);
+    });
 
     let drawn = -1;
     let last = 0;
     choose('difference');
-    const stop = loop(
+    d.stops(() => {
+      grid?.destroy();
+      m?.close();
+    });
+    d.frame(
       show,
-      root,
       (now) => {
         show.sync(now);
         if (autoOn && show.now - last >= EVERY) {
@@ -213,17 +219,5 @@ export default function run(root: HTMLElement): () => void {
       },
       { settle: () => (m ? [m] : []) },
     );
-
-    return () => {
-      stop();
-      el.removeEventListener('click', onClick);
-      grid?.destroy();
-      m?.close();
-    };
   }
-
-  return () => {
-    gone = true;
-    stop();
-  };
-}
+});

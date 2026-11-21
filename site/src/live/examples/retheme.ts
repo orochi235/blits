@@ -10,8 +10,7 @@ import {
   toHex,
   transport,
 } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 /** One color token of one element: the custom property it sets, and the color it was designed in. */
 interface Token {
@@ -71,7 +70,8 @@ const PARTS: [string, string, Partial<Record<Token['prop'], number>>][] = [
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   const mock = document.createElement('div');
@@ -119,8 +119,9 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(mock, row, readout);
   root.append(wrap);
 
-  const show = transport({ history: { ms: 2 * CYCLE, tape: createHistory } });
-  const m = mix<Token, Theme>(THEME, { name: 'retheme', transport: show });
+  const show = transport({ history: d.history(2 * CYCLE) });
+  const m = mix<Token, Theme>(THEME, d.options('retheme', { transport: show }));
+  d.closes(m);
 
   // Brands share a role, so changing brand crossfades one hue into the next.
   const fade = { in: 700, out: 700 };
@@ -141,13 +142,13 @@ export default function run(root: HTMLElement): () => void {
     cycleButton.ariaPressed = String(b === undefined);
   };
   brandButtons.forEach((el, i) => {
-    el.addEventListener('click', () => pick(i));
+    d.on(el, 'click', () => pick(i));
   });
-  cycleButton.addEventListener('click', () => pick(-1));
+  d.on(cycleButton, 'click', () => pick(-1));
 
   let muted: Handle | undefined;
   muteButton.ariaPressed = 'false';
-  muteButton.addEventListener('click', () => {
+  d.on(muteButton, 'click', () => {
     if (muted === undefined)
       muted = m.cue({ patch: mute, subjects: tokens, fade: { in: 500, out: 500 } });
     else {
@@ -161,9 +162,8 @@ export default function run(root: HTMLElement): () => void {
   const NONE = [0, 0, 0, 0];
   const pose: Theme = {};
   let drawn = -1;
-  const stop = loop(
+  d.frame(
     show,
-    root,
     (now) => {
       show.sync(now);
       if (show.seq === drawn) return;
@@ -180,9 +180,4 @@ export default function run(root: HTMLElement): () => void {
     },
     { settle: [m] },
   );
-
-  return () => {
-    stop();
-    m.close();
-  };
-}
+});

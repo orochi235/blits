@@ -16,9 +16,8 @@ import {
   toHex,
   transport,
 } from '@msb235/blits/gpu';
-import { createHistory } from '@weasel-js/history';
+import { demo } from '../demo';
 import { gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
-import { loop } from '../loop';
 import { playPause } from '../play';
 
 interface Cell {
@@ -174,7 +173,8 @@ const FADE = 900;
 /** How long each look holds while the board runs the show by itself. */
 const HOLD = 4000;
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   const el = document.createElement('canvas');
@@ -198,19 +198,24 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(el, row);
   root.append(wrap);
 
-  let stop = () => {};
   let gone = false;
+  d.stops(() => {
+    gone = true;
+  });
   void gpuDevice().then((device) => {
-    if (!gone) stop = start(device);
+    if (!gone) start(device);
   });
 
-  function start(device: GpuDevice | null): () => void {
-    const show = transport({ history: { ms: 4 * HOLD, tape: createHistory } });
-    const m = mix<Cell, Light>(BOARD, {
-      name: 'light-board',
-      transport: show,
-      ...(device === null ? {} : { engine: gpu({ device }) }),
-    });
+  function start(device: GpuDevice | null): void {
+    const show = transport({ history: d.history(4 * HOLD) });
+    const m = mix<Cell, Light>(
+      BOARD,
+      d.options('light-board', {
+        transport: show,
+        ...(device === null ? {} : { engine: gpu({ device }) }),
+      }),
+    );
+    d.closes(m);
 
     // Gels share a role, so a change of look crossfades one gel into the next rather than stacking
     // them. Spots and the blackout come up and go on their own fades.
@@ -234,12 +239,12 @@ export default function run(root: HTMLElement): () => void {
       auto.ariaPressed = String(running);
     };
     buttons.forEach((b, i) => {
-      b.addEventListener('click', () => {
+      d.on(b, 'click', () => {
         running = false;
         take(i);
       });
     });
-    auto.addEventListener('click', () => {
+    d.on(auto, 'click', () => {
       running = true;
       take((current + 1) % LOOKS.length);
     });
@@ -284,9 +289,9 @@ export default function run(root: HTMLElement): () => void {
     }
 
     let drawn = -1;
-    const stop = loop(
+    d.stops(() => free());
+    d.frame(
       show,
-      root,
       (now) => {
         show.sync(now);
         if (current < 0) take(0);
@@ -297,16 +302,5 @@ export default function run(root: HTMLElement): () => void {
       },
       { settle: [m] },
     );
-
-    return () => {
-      stop();
-      free();
-      m.close();
-    };
   }
-
-  return () => {
-    gone = true;
-    stop();
-  };
-}
+});

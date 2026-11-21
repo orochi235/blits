@@ -28,9 +28,8 @@ import {
   toHex,
   transport,
 } from '@msb235/blits/gpu';
-import { createHistory } from '@weasel-js/history';
+import { demo } from '../demo';
 import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
-import { loop } from '../loop';
 import { playPause, showPlay } from '../play';
 
 interface Cell {
@@ -161,7 +160,8 @@ function differing(a: ImageData, b: ImageData, out: ImageData): number {
   return n / (a.data.length / 4);
 }
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
 
@@ -232,20 +232,22 @@ export default function run(root: HTMLElement): () => void {
   };
 
   for (const { n, b } of modeButtons)
-    b.addEventListener('click', () => {
+    d.on(b, 'click', () => {
       mode = n;
       refresh();
     });
   drawOrder();
 
-  let stop = () => {};
   let gone = false;
+  d.stops(() => {
+    gone = true;
+  });
   void gpuDevice().then((device) => {
-    if (!gone) stop = start(device);
+    if (!gone) start(device);
   });
 
-  function start(device: GpuDevice | null): () => void {
-    const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
+  function start(device: GpuDevice | null): void {
+    const show = transport({ history: d.history(2 * PERIOD) });
     let left: Mix<Cell, Tint> | undefined;
     let right: Mix<Cell, Tint> | undefined;
     let grids: Grid[] = [];
@@ -256,11 +258,13 @@ export default function run(root: HTMLElement): () => void {
     // Each change makes both mixes again, the voices cued in order, each as far into its turn as
     // the transport is, so the discs carry on where they were.
     const build = (names: readonly Name[], name: string) => {
-      const m = mix<Cell, Tint>(kit<Tint>({ c: color(RULES[mode]()) }), {
-        name,
-        transport: show,
-        ...(device === null ? {} : { engine: gpu({ device }) }),
-      });
+      const m = mix<Cell, Tint>(
+        kit<Tint>({ c: color(RULES[mode]()) }),
+        d.options(name, {
+          transport: show,
+          ...(device === null ? {} : { engine: gpu({ device }) }),
+        }),
+      );
       for (const n of names)
         m.cue({ patch: DISCS[n], subjects: CELLS, loop: true, name: n, seek: into() });
       if (device !== null) gpuOf(m).subjects(CELLS, (c) => ({ x: c.x, y: c.y }));
@@ -345,9 +349,14 @@ export default function run(root: HTMLElement): () => void {
     };
 
     rebuild();
-    const halt = loop(
+    d.stops(() => {
+      refresh = () => {};
+      for (const g of grids) g.destroy();
+      left?.close();
+      right?.close();
+    });
+    d.frame(
       show,
-      root,
       (now) => {
         show.sync(now);
         const key = `${show.seq}`;
@@ -373,18 +382,5 @@ export default function run(root: HTMLElement): () => void {
       },
       { settle: () => [left, right].filter((x) => x !== undefined) },
     );
-
-    return () => {
-      halt();
-      refresh = () => {};
-      for (const g of grids) g.destroy();
-      left?.close();
-      right?.close();
-    };
   }
-
-  return () => {
-    gone = true;
-    stop();
-  };
-}
+});

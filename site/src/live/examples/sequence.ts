@@ -1,6 +1,5 @@
 import { keys, kit, mix, sum } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Bar {
   el: HTMLElement;
@@ -21,7 +20,8 @@ const slide = keys<Bar, BarPose>(
   {},
 );
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const lanes = document.createElement('div');
   lanes.className = 'lanes';
   root.append(lanes);
@@ -46,10 +46,8 @@ export default function run(root: HTMLElement): () => void {
   // and the third starts with the second.
   const [a, b, c] = bars as [Bar, Bar, Bar];
   // History reaches back over the whole run, so the slider can seek anywhere in it.
-  const m = mix<Bar, BarPose>(BAR, {
-    name: 'sequence',
-    history: { ms: LENGTH + 1000, tape: createHistory },
-  });
+  const m = mix<Bar, BarPose>(BAR, d.options('sequence', {}, LENGTH + 1000));
+  d.closes(m);
   m.sync(0);
   m.cue({ patch: slide, subjects: [a], name: 'first', start: 200, freeze: 'after' });
   m.cue({
@@ -70,23 +68,20 @@ export default function run(root: HTMLElement): () => void {
   // Played, the mix syncs each frame and seeks back to 0 at the end of the run. Held, it isn't
   // synced, so nothing is recorded over the run, and the slider seeks it anywhere in it.
   let held = false;
-  const onInput = () => {
+  d.on(scrub, 'input', () => {
     held = true;
     m.seek(Number(scrub.value));
-  };
-  const onRelease = () => {
+  });
+  d.on(scrub, 'change', () => {
     held = false;
     m.rebase();
-  };
-  scrub.addEventListener('input', onInput);
-  scrub.addEventListener('change', onRelease);
+  });
 
   const pose = { x: 0 };
   // The cues' starts count from the first frame, which the mix synced to as 0.
   let first = Number.NaN;
-  const stop = loop(
+  d.frame(
     m,
-    root,
     (now) => {
       if (Number.isNaN(first)) first = now;
       if (!held) {
@@ -101,11 +96,4 @@ export default function run(root: HTMLElement): () => void {
     },
     { settle: false },
   );
-
-  return () => {
-    stop();
-    scrub.removeEventListener('input', onInput);
-    scrub.removeEventListener('change', onRelease);
-    m.close();
-  };
-}
+});

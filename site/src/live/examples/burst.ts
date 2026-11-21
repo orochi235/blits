@@ -1,6 +1,5 @@
 import { type Handle, kit, mix, mul, patch, sum } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Spark {
   x: number;
@@ -31,17 +30,16 @@ const fly = patch<Spark, SparkPose>(
   { writes: ['dx', 'dy', 'alpha'] },
 );
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const canvas = document.createElement('canvas');
   canvas.className = 'burst';
   root.append(canvas);
   const ctx = canvas.getContext('2d');
-  if (ctx === null) return () => {};
+  if (ctx === null) return;
 
-  const m = mix<Spark, SparkPose>(SPARK, {
-    name: 'burst',
-    history: { ms: 10_000, tape: createHistory },
-  });
+  const m = mix<Spark, SparkPose>(SPARK, d.options('burst'));
+  d.closes(m);
   const bursts = new Set<{ sparks: Spark[]; handle: Handle<Spark> }>();
 
   // One voice per burst, for one pass: when it ends the voice leaves the mix, and its sparks go.
@@ -57,15 +55,14 @@ export default function run(root: HTMLElement): () => void {
     void b.handle.done.then(() => bursts.delete(b));
   };
 
-  const onClick = (e: MouseEvent) => {
+  d.on(canvas, 'click', (e) => {
     const box = canvas.getBoundingClientRect();
     burst(e.clientX - box.left, e.clientY - box.top);
-  };
-  canvas.addEventListener('click', onClick);
+  });
 
   const pose = { dx: 0, dy: 0, alpha: 1 };
   let last = Number.NaN;
-  const stop = loop(m, root, (now) => {
+  d.frame(m, (now) => {
     m.sync(now);
     if (Number.isNaN(last)) last = m.now;
     if (document.hasFocus() && m.now - last >= EVERY) {
@@ -83,10 +80,4 @@ export default function run(root: HTMLElement): () => void {
         ctx.fillRect(s.x + pose.dx - 2, s.y + pose.dy - 2, 4, 4);
       }
   });
-
-  return () => {
-    stop();
-    canvas.removeEventListener('click', onClick);
-    m.close();
-  };
-}
+});

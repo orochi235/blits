@@ -37,9 +37,8 @@ import {
   transport,
   vividLight,
 } from '@msb235/blits/gpu';
-import { createHistory } from '@weasel-js/history';
+import { demo } from '../demo';
 import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
-import { loop } from '../loop';
 import { scrubbed } from '../play';
 
 interface Cell {
@@ -202,7 +201,8 @@ function drawn(name: Mode): { axes: number; body: string } {
   return { axes: (MODES[name].rest as number[]).length, body: layStack(name, 'shown') };
 }
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'picker';
   const big = canvas(192, 84);
@@ -235,13 +235,15 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(big, caption, strip, controls);
   root.append(wrap);
 
-  let stop = () => {};
   let gone = false;
+  d.stops(() => {
+    gone = true;
+  });
   void gpuDevice().then((device) => {
-    if (!gone) stop = start(device);
+    if (!gone) start(device);
   });
 
-  function start(device: GpuDevice | null): () => void {
+  function start(device: GpuDevice | null): void {
     const small = grid(48, 21);
     const large = grid(192, 84);
     const engine = device === null ? {} : { engine: gpu({ device }) };
@@ -250,12 +252,12 @@ export default function run(root: HTMLElement): () => void {
     // The thumbnails' mix holds every mode. The large view's holds only the one it shows, and is
     // made again for each pick, since a probe pays for every channel in its kit. Both run on one
     // transport, whose history keeps two sweeps so the debug panel can seek back through them.
-    const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
-    const m = mix<Cell, Tint>(kit<Tint>(MODES), {
-      name: 'blend-modes',
-      transport: show,
-      ...engine,
-    });
+    const show = transport({ history: d.history(2 * PERIOD) });
+    const m = mix<Cell, Tint>(
+      kit<Tint>(MODES),
+      d.options('blend-modes', { transport: show, ...engine }),
+    );
+    d.closes(m);
     const sweep = layers(m, small, NAMES);
     let chosen: Mode = 'overlay';
     let one: Mix<Cell, Tint> | undefined;
@@ -326,23 +328,25 @@ export default function run(root: HTMLElement): () => void {
       caption.textContent = label(name);
       for (const t of thumbs) t.button.ariaPressed = String(t.name === name);
       one?.close();
-      one = mix<Cell, Tint>(kit<Tint>({ [name]: MODES[name] }), {
-        name: 'blend-modes-large',
-        transport: show,
-        ...engine,
-      });
+      one = mix<Cell, Tint>(
+        kit<Tint>({ [name]: MODES[name] }),
+        d.options('blend-modes-large', { transport: show, ...engine }),
+      );
       oneSweep = layers(one, large, [name]);
       oneSweep.seek(place());
       picked(one);
       seen = '';
     };
-    for (const t of thumbs) t.button.addEventListener('click', () => choose(t.name));
+    for (const t of thumbs) d.on(t.button, 'click', () => choose(t.name));
 
     let seen = '';
     choose(chosen);
-    const stop = loop(
+    d.stops(() => {
+      free();
+      one?.close();
+    });
+    d.frame(
       show,
-      root,
       (now) => {
         show.sync(now);
         scrub.value = String(place());
@@ -353,17 +357,5 @@ export default function run(root: HTMLElement): () => void {
       },
       { settle: () => (one ? [m, one] : [m]) },
     );
-
-    return () => {
-      stop();
-      free();
-      one?.close();
-      m.close();
-    };
   }
-
-  return () => {
-    gone = true;
-    stop();
-  };
-}
+});

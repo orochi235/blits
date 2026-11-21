@@ -1,6 +1,5 @@
 import { keys, kit, max, mix, sum } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Letter {
   el: HTMLElement;
@@ -22,7 +21,8 @@ const reveal = keys<Letter, LetterPose>(
   {},
 );
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const line = document.createElement('p');
   line.className = 'reveal';
   root.append(line);
@@ -33,10 +33,8 @@ export default function run(root: HTMLElement): () => void {
     return { el, index };
   });
 
-  const m = mix<Letter, LetterPose>(LETTER, {
-    name: 'reveal',
-    history: { ms: 10_000, tape: createHistory },
-  });
+  const m = mix<Letter, LetterPose>(LETTER, d.options('reveal'));
+  d.closes(m);
   // Synced once before the first cue: a voice cued earlier starts at 0, and its one pass would be
   // over by the first frame.
   m.sync(performance.now());
@@ -62,7 +60,7 @@ export default function run(root: HTMLElement): () => void {
   play();
 
   const pose = { rise: 0, show: 0 };
-  const stop = loop(m, root, (now) => {
+  d.frame(m, (now) => {
     m.sync(now);
     for (const letter of letters) {
       m.probe(letter, pose);
@@ -70,11 +68,8 @@ export default function run(root: HTMLElement): () => void {
       letter.el.style.transform = `translateY(${pose.rise}px)`;
     }
   });
-
-  return () => {
+  d.stops(() => {
     stopped = true;
     clearTimeout(timer);
-    stop();
-    m.close();
-  };
-}
+  });
+});
