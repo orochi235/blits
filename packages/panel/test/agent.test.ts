@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { kit, mix, patch, sum, vec } from '@msb235/blits';
+import { kit, mix, patch, sum, transport, vec } from '@msb235/blits';
 import { createHistory as tape } from '@weasel-js/history';
 import { afterEach, describe, expect, it } from 'vitest';
 import { agent } from '../src/agent.js';
@@ -111,6 +111,34 @@ describe('the agent', () => {
     expect(last('hold')?.hold.state).toBe('free');
     expect(m.seek).toBe(Object.getPrototypeOf(m).seek);
     expect(other).toBeDefined();
+  });
+
+  it('holds a transport: seeks and steps every mix on it, and keeps the hold across them', () => {
+    const t = transport({ history: { ms: 1000, tape } });
+    const m = mix<unknown, Pose>(K, { transport: t, name: 'agent-t1' });
+    const n = mix<unknown, Pose>(K, { transport: t, name: 'agent-t2' });
+    m.cue({ patch: clock, start: 0, subjects: ['s'], name: 'one' });
+    n.cue({ patch: clock, start: 0, subjects: ['s'] });
+    t.sync(0);
+    t.sync(100);
+    const { a, last } = setup();
+    const ids = last('mixes')?.mixes ?? [];
+    const idOf = (name: string) => ids.find((x) => x.name === name)?.id as number;
+    a.send({ kind: 'mix', id: idOf('agent-t1') });
+    expect(last('voices')?.voices[0]?.name).toBe('one');
+    expect(last('marks')?.marks.find((k) => k.mark === 'start')?.at).toBe(0);
+    a.send({ kind: 'hold', on: true });
+    expect(last('hold')?.hold.state).toBe('held');
+    a.send({ kind: 'step', ms: 50 });
+    expect([m.now, n.now, t.now]).toEqual([150, 150, 150]);
+    a.send({ kind: 'seek', to: 20 });
+    expect([m.now, n.now]).toEqual([20, 20]);
+    a.send({ kind: 'mix', id: idOf('agent-t2') });
+    expect(last('hold')?.hold.state).toBe('held');
+    a.send({ kind: 'hold', on: false });
+    t.sync(200);
+    t.sync(300);
+    expect([m.now, n.now]).toEqual([120, 120]);
   });
 
   it('sends the plan ahead on the mix clock: voice marks, announced marks, and no end for a loop', () => {
