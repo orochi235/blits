@@ -93,7 +93,7 @@ function spanParams(s: SpanSettings | undefined): Param[] {
   if (s.share !== undefined) out.push(['share', String(s.share)]);
   if (s.priority !== undefined) out.push(['priority', String(s.priority)]);
   if (s.spill !== undefined) out.push(['spill', s.spill]);
-  if (s.fit?.length) out.push(['fit', s.fit.map((f) => f.kind).join(' → ')]);
+  if (s.fit) out.push(['fit', s.fit.map((f) => f.kind).join(' → ') || 'none']);
   return out;
 }
 
