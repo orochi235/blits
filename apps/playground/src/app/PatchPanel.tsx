@@ -89,13 +89,16 @@ function blank(kind: Kind): PatchSource {
 const textOf = (v: number | number[] | Expr | undefined) =>
   v === undefined ? '' : typeof v === 'object' && !Array.isArray(v) ? v.code : JSON.stringify(v);
 
-/** A number or a list of numbers stays a literal; anything else is an expression. */
-function parsed(text: string): number | number[] | Expr | undefined {
+/**
+ * A finite number or a list of them stays a literal; anything else is an expression, so one JSON
+ * cannot hold, `1e999` among them, is never kept as a literal that saves as `null`.
+ */
+export function parsed(text: string): number | number[] | Expr | undefined {
   const t = text.trim();
   if (t === '') return undefined;
   try {
     const v: unknown = JSON.parse(t);
-    if (typeof v === 'number' || (Array.isArray(v) && v.every((x) => typeof x === 'number')))
+    if (Number.isFinite(v) || (Array.isArray(v) && v.every((x) => Number.isFinite(x))))
       return v as number | number[];
   } catch {}
   return { code: t };
