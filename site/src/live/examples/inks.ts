@@ -1,6 +1,5 @@
 import { color, css, ink, keys, kit, mix, oklab, patch } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Swatch {
   name: string;
@@ -31,7 +30,8 @@ const blue = keys<Swatch, SwatchPose>(4000, [
   { at: 1, delta: both(NONE), ease: 'ease-in-out' },
 ]);
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const grid = document.createElement('div');
   grid.className = 'inks';
   root.append(grid);
@@ -55,17 +55,15 @@ export default function run(root: HTMLElement): () => void {
   const colored = row('color');
   const inked = row('ink');
 
-  const m = mix<Swatch, SwatchPose>(KIT, {
-    name: 'inks',
-    history: { ms: 10_000, tape: createHistory },
-  });
+  const m = mix<Swatch, SwatchPose>(KIT, d.options('inks'));
+  d.closes(m);
   const [moving, mixed] = swatches as [Swatch, Swatch];
   m.cue({ patch: travel, subjects: [moving], loop: true });
   m.cue({ patch: red, subjects: [mixed] });
   m.cue({ patch: blue, subjects: [mixed], loop: true });
 
   const pose: SwatchPose = { color: [0, 0, 0, 0], ink: [0, 0, 0, 0, 0] };
-  const stop = loop(m, root, (now) => {
+  d.frame(m, (now) => {
     m.sync(now);
     swatches.forEach((s, i) => {
       m.probe(s, pose);
@@ -73,9 +71,4 @@ export default function run(root: HTMLElement): () => void {
       (inked[i] as HTMLElement).style.background = css(pose.ink);
     });
   });
-
-  return () => {
-    stop();
-    m.close();
-  };
-}
+});
