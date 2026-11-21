@@ -147,6 +147,9 @@ built and what is deliberately not offered.
   are offered.
 - **[maintainer] Recording level moves** as a composition field, so they save, share and undo.
 - **[maintainer] A booker with its own clock, and link drags on group headers** — wanted or not.
+- **[waiting] Three unnamed mixes on the playground's debug panel come from weasel** (seen
+  2026-11-21): their channels are `pose`, `alpha`, `path` and `data`, a weasel UI kit's, not the
+  playground's. Weasel's own mixes need a name, or `close()`, to keep off a host's panel.
 
 ## Companions
 
@@ -169,6 +172,18 @@ built and what is deliberately not offered.
 
 ## Site and diagrams
 
+- **[agent] A panel hold does not pause an explainer playing backward.** `back()` in
+  `site/src/explainers/kit/player.ts` seeks the mix every frame; under a hold those seeks queue
+  until the hold is freed, while the readout, solos and ledger run on back. Forward is fine, as the
+  player follows a held `sync`. Needs a public way to tell a mix is held (`src/types/watch.ts` or
+  `Mix`), which nothing offers yet.
+- **[maintainer] Explainer and example demos that still keep time outside blits** (found
+  2026-11-21): the time explainer's twin is a second mix, not on a shared `transport()`
+  (`kit/Explainer.tsx`); `reveal.ts` fades and replays on `setTimeout`, so Pause does not stop it,
+  and anchoring the passes to each other works only with `freeze: 'after'`, which the examples
+  page contradicts; `burst.ts` forgets a burst once its `done` resolves, so a panel seek back
+  restores voices whose sparks are no longer drawn; `hit-flash.ts` and `light-board.ts` cue from
+  the frame loop on `show.now`. Each needs a demo redesign, and some change what the page says.
 - **[maintainer] Channel nodes shaped by their fold rule** (parked 2026-11-05). The outline is the
   region the rule sweeps: `sum` leans, `mul` and `min` lower the top, `max` raises the bottom,
   `last` narrows to a funnel. `node spikes/fold-shapes/shapes.mjs > shapes.svg` draws the sketch;
