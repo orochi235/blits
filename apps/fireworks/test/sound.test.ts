@@ -18,7 +18,11 @@ const LATER = 2400;
  * The show's two shells through the Tone driver, as `main.ts` plays them, rendered offline. The
  * noise is seeded, so two renders differ only where their shells do.
  */
-async function show(late: Shell = right): Promise<{ l: Float32Array; r: Float32Array }> {
+async function show(
+  late: Shell = right,
+  later = LATER,
+  early: Shell | null = left,
+): Promise<{ l: Float32Array; r: Float32Array }> {
   const random = Math.random;
   let seed = 1;
   Math.random = () => {
@@ -47,8 +51,8 @@ async function show(late: Shell = right): Promise<{ l: Float32Array; r: Float32A
       for (let f = 0; f < DUR; f += 1000 / 60) {
         read = f;
         m.sync(f);
-        if (f === 0) launch(left);
-        if (f >= LATER && f - 1000 / 60 < LATER) launch(late);
+        if (f === 0 && early) launch(early);
+        if (f >= later && f - 1000 / 60 < later) launch(late);
         sound.write();
       }
     },
@@ -91,5 +95,18 @@ describe('the fireworks show, rendered', () => {
     for (let i = 0; i < l.length; i++)
       peak = Math.max(peak, Math.abs(l[i] as number), Math.abs(r[i] as number));
     expect(peak).toBeLessThan(1);
+  });
+
+  it("keeps a bang's tail on its own side when another shell bangs on the other while it rings", async () => {
+    await show();
+    // Panned hard each way, so each sounds on its own side only. The right bangs 200 ms after the
+    // left, at 1.3 s, while the left's tail still rings.
+    const hardLeft: Shell = { ...left, x: -8 };
+    const hardRight: Shell = { ...right, x: 8 };
+    const alone = await show(hardLeft, 0, null);
+    const both = await show(hardRight, 200, hardLeft);
+    const tail = [1310, 1500] as const;
+    expect(rms(alone.l, ...tail)).toBeGreaterThan(0.005);
+    expect(rms(both.l, ...tail) / rms(alone.l, ...tail)).toBeGreaterThan(0.9);
   });
 });

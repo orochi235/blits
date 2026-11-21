@@ -30,8 +30,9 @@ its time on the audio clock (`src/sound.ts`). A hit names only a bang or a crack
 the shell off the hit's `subjects` and pans the sound by where it is and sizes a bang by its stars.
 A shell launched while all six whistles are in the air rises silently and still bangs.
 
-The frame loop in `src/main.ts` syncs the mix, then writes both drivers. The quarks driver takes
-the frame's gap in mix time, so it and the sparks' own aging are scaled by `mix.rate`; the Tone
+Each frame, `src/frame.ts` syncs the mix and launches on its clock, then `src/main.ts` writes both
+drivers. The quarks driver emits for the mix time since its last write, and the sparks age by the
+mix time the frame played, so the debug panel's pause and seek stop and move them both; the Tone
 driver takes the timestamp the mix was synced to.
 
 Nobody has listened to it. `test/sound.test.ts` renders two shells offline through the same

@@ -1,5 +1,6 @@
-import { type Handle, type Hit, kit, type Mix, patch, sum } from '@msb235/blits';
+import { type Handle, type Hit, kit, type Mix, mix, patch, sum } from '@msb235/blits';
 import { channels, type Emission } from '@msb235/blits-quarks';
+import { createHistory } from '@weasel-js/history';
 
 /** What a shell's pose holds: what its sparks do, and what its whistle sounds like. */
 export interface Pose extends Emission {
@@ -69,6 +70,18 @@ export const panOf = (shell: Shell): number => shell.x / HALF_WIDTH;
 
 /** How big a shell's bang is, about 0.5 to 1.25. */
 export const sizeOf = (shell: Shell): number => shell.stars / 160;
+
+/** How far back the show's history reaches, so the panel or the DevTools extension can seek it. */
+const HISTORY_MS = 30_000;
+
+/** The show's mix, named and with history whether or not a panel is mounted. */
+export function createShow(): Mix<Shell, Pose> {
+  return mix<Shell, Pose>(KIT, {
+    name: 'show',
+    labelOf: (s: Shell) => `shell at x ${s.x.toFixed(1)}`,
+    history: { ms: HISTORY_MS, tape: createHistory },
+  });
+}
 
 /** Cues a shell: it rises, then blooms. The handle is the bloom's, done when the shell is over. */
 export function cue(m: Mix<Shell, Pose>, shell: Shell): Handle<Shell> {
