@@ -9,3 +9,6 @@ dist
 # Agent worktrees.
 .claude/worktrees/
 .onto-fetch-cache.json
+
+# Profiles bench/stopprof.sh writes, one directory a size, replaced each run.
+bench/out/
