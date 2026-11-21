@@ -11,7 +11,8 @@ npm run dev -w @blits/fireworks     # http://localhost:4883, and the same port o
 
 Press "Start the show": a browser plays no audio before a click. "Launch" sends one shell up,
 "keep launching" sends them on its own, a click on the sky aims one, and "speed" ramps the mix's
-rate, which slows or hurries the sparks and the sound together.
+rate, which slows or hurries the sparks and the sound together. The slider and its readout show
+the mix's rate, so they follow the debug panel or a seek back that sets it too.
 
 ## How it works
 

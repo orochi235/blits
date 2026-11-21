@@ -66,15 +66,25 @@ start.addEventListener('click', async () => {
     const { x, y } = sky.toWorld(event.clientX, event.clientY);
     launch(shell(x, Math.max(2.5, y)));
   });
-  rate.addEventListener('input', () => {
-    m.ramp(Number(rate.value), 200);
-    rateOut.value = `${Number(rate.value).toFixed(2)}×`;
+  // The slider shows the mix's rate, which a seek back or the panel also sets, except mid-drag.
+  let dragging = false;
+  rate.addEventListener('pointerdown', () => {
+    dragging = true;
   });
+  window.addEventListener('pointerup', () => {
+    dragging = false;
+  });
+  rate.addEventListener('input', () => m.ramp(Number(rate.value), 200));
+  const showRate = () => {
+    rateOut.value = `${m.rate.toFixed(2)}×`;
+    if (!dragging && rate.valueAsNumber !== m.rate) rate.valueAsNumber = m.rate;
+  };
 
   const step = createFrame(m, { launch: () => launch(shell()), auto: () => auto.checked });
   const frame = (now: number) => {
     requestAnimationFrame(frame);
     const seconds = step(now);
+    showRate();
     sparks.write();
     sound.write();
     sky.render(seconds);
