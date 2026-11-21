@@ -49,6 +49,34 @@ describe('timingOf', () => {
     expect(edges(marksHits)).toContainEqual(['mark:beat', 'voice:on-beat', 'start with']);
   });
 
+  it("draws a name only from a sibling on the asker's score, as blits finds it, else a mark", () => {
+    const c = comp(
+      [
+        voice({ id: 'b', patch: keys }),
+        voice({ id: 'a', patch: keys, owner: 'g', anchor: { start: { after: 'b' } } }),
+        voice({ id: 'c', patch: keys, score: 's', anchor: { start: { after: 'b' } } }),
+        voice({ id: 'd', patch: keys, owner: 'g', anchor: { start: { after: { name: 'b' } } } }),
+        voice({ id: 'e', patch: keys, owner: 'g', anchor: { start: { after: 'h' } } }),
+        voice({ id: 'f', patch: keys, owner: 'g', anchor: { start: { after: 'k' } } }),
+      ],
+      [group({ id: 'g' }), group({ id: 'h', score: 's' }), group({ id: 'k' })],
+    );
+    const from = (to: string) => edges(c).find(([, t]) => t === `voice:${to}`)?.[0];
+    expect(from('a')).toBe('mark:b');
+    expect(from('c')).toBe('mark:b');
+    expect(from('d')).toBe('mark:b');
+    expect(from('e')).toBe('mark:h');
+    expect(from('f')).toBe('mark:k');
+    expect(
+      edges(
+        comp(
+          [voice({ id: 'x', patch: keys, anchor: { start: { after: 'k' } } })],
+          [group({ id: 'k' })],
+        ),
+      ),
+    ).toContainEqual(['group:k', 'voice:x', 'start after']);
+  });
+
   it('draws a query as a node fed by every voice it could pick', () => {
     const t = timingOf(marksHits);
     const q = t.nodes.find((n) => n.kind === 'query');
