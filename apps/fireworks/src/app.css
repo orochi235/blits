@@ -25,7 +25,8 @@ body {
 
 .sky {
   position: relative;
-  height: min(400px, 100%);
+  /* Capped by the width too, less #root's padding, so a narrow viewport keeps it 16:9. */
+  height: min(400px, 100%, (100vw - 32px) * 9 / 16);
   aspect-ratio: 16 / 9;
   max-width: 100%;
   flex-shrink: 1;
