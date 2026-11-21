@@ -23,7 +23,7 @@ Click a dot to make it hop, then drag the slider back over the last ten seconds 
 
 - `history.ms` is how far back the mix remembers, in ms of mix time. [`seek`](Mix.seek) throws for a time older than that, and before the first sync.
 - [`stepMs`](MixOptions.stepMs) makes a patch with state land exactly on the pose it showed, however you scrub. Without it, a read back steps state across the gap in one go.
-- Keep passing your own clock to [`sync`](Mix.sync). The next frame carries on from the moment you sought.
+- While the thumb is held, stop calling [`sync`](Mix.sync), and call [`rebase`](Mix.rebase) when it lets go, so the time held doesn't count. The next sync carries on from the moment you sought. Pausing with `rate = 0` instead would not do: a seek back restores the rate recorded then.
 
 Going back puts the mix as it stood then: each voice's clock, weight, and fade, voices that had left back on the handles you hold, and voices cued since waiting until the mix reaches their cue again. A call you make while recorded calls lie ahead starts a new branch, and the tape keeps the old one beside it. [Score](../../score/#seeking) says more.
 
@@ -37,7 +37,7 @@ Going back puts the mix as it stood then: each voice's clock, weight, and fade, 
 
 ## Several mixes on one clock
 
-Mixes over different kits can share a `transport`: one sync, one rate, one seek, and one tape for all of them. Each mix is made with the transport in its options and takes its history from it. The transport's [`sync`](Transport.sync), [`rebase`](Transport.rebase), [`rate`](Transport.rate), and [`seek`](Transport.seek) move every mix on it, and calling those on one of the mixes throws.
+Mixes over different kits can share a `transport`: one sync, one rate, one seek, and one tape for all of them. Each mix is made with the transport in its options and takes its history from it. The transport's [`sync`](Transport.sync), [`rebase`](Transport.rebase), [`rate`](Transport.rate), `ramp`, [`seek`](Transport.seek), and [`prepare`](Transport.prepare) move every mix on it, and calling those on one of the mixes throws.
 
 <Listing of="snippets/guides/scrubbing/transport.ts" />
 

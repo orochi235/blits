@@ -11,7 +11,7 @@ const K = kit<Pose>({ ...glowChannels, x: sum() });
 
 // The host object is the app's: the mix hands it to every patch as `setting.host`.
 const host: GlowHost = { pointer: { x: 0, y: 0 } };
-const m = mix<Lamp, Pose, GlowHost>(K, { host });
+const m = mix<Lamp, Pose, GlowHost>(K, { name: 'lamps', host });
 m.cue({ patch: pulse, loop: true });
 m.cue({ patch: near, subjects: lamps });
 
