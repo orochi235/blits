@@ -36,8 +36,8 @@ export default demo((d) => {
   const m = mix<Letter, LetterPose>(LETTER, d.options('reveal'));
   d.closes(m);
   // Synced once before the first cue: a voice cued earlier starts at 0, and its one pass would be
-  // over by the first frame.
-  m.sync(performance.now());
+  // over by the first frame. The frame's own time, as no animation frame's timestamp is earlier.
+  m.sync(Number(document.timeline.currentTime ?? performance.now()));
   let timer = 0;
   let stopped = false;
 
