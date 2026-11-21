@@ -31,7 +31,7 @@ A voice waits until its anchor has an answer, and follows it: cut the title shor
 
 ## Inside a span
 
-`m.span` returns an owner. Voices cued with it as their [`owner`](VoiceSpec.owner) are laid out on its clock: by default each after the one before ends (`order: 'queue'`), or partway through it (`'stagger'`, with `share`), or all at once (`'together'`). Given a [`duration`](SpanSpec.duration), the span fits its children into that budget as their hints allow: `faster: 3` lets a line play up to three times its own speed, [`slower`](SpanHints.slower) the reverse, and [`ballast`](SpanHints.ballast) lets it be skipped. Where they can't fit, the default is to jump the weakest to their end; `spill: 'overrun'` lets them run long instead.
+`m.span` returns an owner. Voices cued with it as their [`owner`](VoiceSpec.owner) are laid out on its clock: by default each after the one before ends (`order: 'queue'`), or partway through it (`'stagger'`, with `share`), or all at once (`'together'`). Given a [`duration`](SpanSpec.duration), the span fits its children into that budget as their hints allow: `faster: 3` lets a line play up to three times its own speed, [`slower`](SpanHints.slower) the reverse, and [`ballast`](SpanHints.ballast) lets it be skipped. Where they can't fit, the default jumps every child weaker than the span to its end; `spill: 'overrun'` lets them run long instead.
 
 `intro.result` says how the last fit came out: the budget, where the children end, how far over it ran, and how many were skipped.
 
