@@ -30,6 +30,18 @@ const c: Composition = {
   length: CYCLE,
   levels: [{ name: 'hover', value: 0, min: 0, max: 1 }],
   rules: { opacity: { rule: 'max', bounds: [0, 1] } },
+  groups: [
+    {
+      id: 'near',
+      name: 'near',
+      hue: 50,
+      kind: 'owner',
+      start: 0,
+      rate: 1,
+      weight: { code: "slew(level('hover'), { riseMs: 150, fallMs: 500 })" },
+      fade: {},
+    },
+  ],
   voices: [
     {
       id: 'word',
@@ -87,6 +99,7 @@ const c: Composition = {
       rate: 1,
       loop: true,
       fade: {},
+      owner: 'near',
       weight: { code: "around(5, { ease: 'ease-out' })" },
       patch: {
         kind: 'keys',

@@ -170,4 +170,13 @@ describe('logo', () => {
       ])
         expect(at(phase, s).color).toBe(turnedHex(hueAt(phase * CYCLE, s.col, s.row, cols, rows)));
   });
+
+  it('lights its halo only while hovered, as the rail does', () => {
+    const at = (p: Player, subjects: readonly Subject[]) =>
+      p.columns.glow[subjects.findIndex((s) => s.col === 10 && s.row === 5)];
+    const off = play(0);
+    expect(at(off.p, off.subjects)).toBe(0);
+    const on = play(1);
+    expect(at(on.p, on.subjects)).toBeGreaterThan(0);
+  });
 });
