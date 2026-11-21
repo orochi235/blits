@@ -15,8 +15,8 @@ import {
 import {
   type ConfigEntry,
   ControlPanel,
-  type ControlRenderer,
   f,
+  type LeafRenderer,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
 import { PrefActionButton, PropertyField, PropertyRow } from '@weasel-js/ui';
@@ -32,7 +32,7 @@ export interface FieldExtras {
 }
 
 /** A typed schema leaf drawn as a property field, with the row props a leaf has no word for. */
-export function fieldRow(extra: FieldExtras): ControlRenderer {
+export function fieldRow(extra: FieldExtras): LeafRenderer {
   return (ctx) => {
     const leaf = ctx.pref as unknown as Record<string, unknown>;
     const row = {
@@ -65,7 +65,7 @@ export function fieldRow(extra: FieldExtras): ControlRenderer {
 }
 
 /** An action's button on a row of its own, unlabeled: labkit's action row repeats the button's text as its label. */
-export const actionRow: ControlRenderer = (ctx) => (
+export const actionRow: LeafRenderer = (ctx) => (
   <PropertyRow group span layout="inline" label="">
     <PrefActionButton
       pref={ctx.pref as Parameters<typeof PrefActionButton>[0]['pref']}

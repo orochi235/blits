@@ -1,7 +1,7 @@
 import { blendOf, stopOf } from '@pg/blits/blend';
 import type { Voice } from '@pg/blits/composition';
-import type { ControlRenderer } from '@weasel-js/labkit';
-import { Button, type PrefRenderContext } from '@weasel-js/ui';
+import type { LeafRenderer } from '@weasel-js/labkit';
+import { Button, type LeafContext } from '@weasel-js/ui';
 import g from './Group.module.css';
 import { ExprRow, Row, useSpec } from './SpecFields';
 
@@ -11,9 +11,9 @@ const FRESH = '(s) => s.x';
  * A role cued by `mix.blend`: the one signal its voices split, in place of a weight each. Writes the
  * blend's `by`, or undefined to go back to each voice's own weight.
  */
-export const blendRow: ControlRenderer = (row) => <BlendRow row={row} />;
+export const blendRow: LeafRenderer = (row) => <BlendRow row={row} />;
 
-function BlendRow({ row }: { row: PrefRenderContext }) {
+function BlendRow({ row }: { row: LeafContext }) {
   const { x, comp, errors } = useSpec();
   const v = x as Voice;
   const blend = blendOf(comp, v);

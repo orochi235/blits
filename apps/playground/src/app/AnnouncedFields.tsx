@@ -3,8 +3,8 @@ import { withKey } from '@pg/blits/keyed';
 import {
   type ConfigEntry,
   ControlPanel,
-  type ControlRenderer,
   f,
+  type LeafRenderer,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
 import { Button, CLOSE_BUTTON_PROPS, PropertyControl, PropertyRow } from '@weasel-js/ui';
@@ -56,7 +56,7 @@ export function AnnouncedFields({
   const schema = useMemo(() => marksSchema(list.length, add), [list.length]);
 
   const row =
-    (i: number): ControlRenderer =>
+    (i: number): LeafRenderer =>
     () => {
       const a = list[i];
       if (!a) return null;
@@ -95,7 +95,7 @@ export function AnnouncedFields({
         </PropertyRow>
       );
     };
-  const renderers: Record<string, ControlRenderer> = {};
+  const renderers: Record<string, LeafRenderer> = {};
   list.forEach((_, i) => {
     renderers[markKey(i)] = row(i);
   });

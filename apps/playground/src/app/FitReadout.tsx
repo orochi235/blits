@@ -1,7 +1,7 @@
 import type { FitResult } from '@msb235/blits';
-import type { ControlRenderer } from '@weasel-js/labkit';
+import type { LeafRenderer } from '@weasel-js/labkit';
 import num from '@weasel-js/theme/numeric.module.css';
-import { type PrefRenderContext, PropertyRow } from '@weasel-js/ui';
+import { type LeafContext, PropertyRow } from '@weasel-js/ui';
 import { docOf } from './docs';
 import g from './Group.module.css';
 import { msWide } from './ms';
@@ -29,9 +29,9 @@ export function FitReadout({ result: r }: { result: FitResult }) {
 }
 
 /** The running span's last fit, or a note that it is not running. */
-export const resultRow: ControlRenderer = (row) => <ResultRow row={row} />;
+export const resultRow: LeafRenderer = (row) => <ResultRow row={row} />;
 
-function ResultRow({ row }: { row: PrefRenderContext }) {
+function ResultRow({ row }: { row: LeafContext }) {
   const { result } = useSpec();
   return (
     <PropertyRow

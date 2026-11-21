@@ -13,7 +13,7 @@ import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
 import type { FieldError } from '@pg/blits/spec';
 import { CodePane } from '@pg/widgets/CodePane';
 import type { SampledTrack } from '@weasel-js/animator';
-import { ControlPanel, type ControlRenderer, f, resolveConfigSchema } from '@weasel-js/labkit';
+import { ControlPanel, f, type LeafRenderer, resolveConfigSchema } from '@weasel-js/labkit';
 import { Timeline } from '@weasel-js/ui';
 import { type CSSProperties, useMemo, useState } from 'react';
 import s from './App.module.css';
@@ -225,7 +225,7 @@ export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPa
   };
 
   const code =
-    (field: 'at' | 'state' | 'step', label: string, rows?: number): ControlRenderer =>
+    (field: 'at' | 'state' | 'step', label: string, rows?: number): LeafRenderer =>
     () => {
       if (p.kind !== 'fn') return null;
       const optional = field !== 'at';
@@ -243,7 +243,7 @@ export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPa
       );
     };
 
-  const renderers: Record<string, ControlRenderer> = {};
+  const renderers: Record<string, LeafRenderer> = {};
   if (p.kind === 'keys') {
     const tracks = tracksOf(p.stops, p.period);
     renderers['keys.timeline'] = () => (

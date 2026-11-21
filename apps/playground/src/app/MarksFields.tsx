@@ -2,7 +2,7 @@ import { MARKS } from '@pg/blits/anchor';
 import { type Group, MAX_HITS, MAX_MARKS, MAX_TAGS, type Voice } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
 import { f } from '@weasel-js/labkit';
-import { ListEditor, type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import { type LeafContext, ListEditor, PropertyControl } from '@weasel-js/ui';
 import g from './Group.module.css';
 
 type Hit = NonNullable<Voice['hits']>[number];
@@ -26,7 +26,7 @@ function markFault(marks: readonly Mark[], i: number, name: string): string | nu
   return null;
 }
 
-function TagsDialog({ row }: { row: PrefRenderContext }) {
+function TagsDialog({ row }: { row: LeafContext }) {
   return (
     <ListEditor
       aria-label="tags"
@@ -40,7 +40,7 @@ function TagsDialog({ row }: { row: PrefRenderContext }) {
   );
 }
 
-function HitsDialog({ row, note }: { row: PrefRenderContext; note: string }) {
+function HitsDialog({ row, note }: { row: LeafContext; note: string }) {
   const draft = (row.value as Hit[] | undefined) ?? [];
   return (
     <div className={g.dialog}>
@@ -95,7 +95,7 @@ function marksOf(draft: unknown): Record<string, number> | undefined {
   return kept.length > 0 ? Object.fromEntries(kept) : undefined;
 }
 
-function MarksDialog({ row, note }: { row: PrefRenderContext; note: string }) {
+function MarksDialog({ row, note }: { row: LeafContext; note: string }) {
   const draft = marksIn(row.value);
   const free = () => {
     for (let n = draft.length + 1; ; n++)

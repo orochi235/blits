@@ -1,6 +1,6 @@
 import type { Expr } from '@pg/blits/composition';
-import type { ControlRenderer } from '@weasel-js/labkit';
-import { MenuButton, type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import type { LeafRenderer } from '@weasel-js/labkit';
+import { type LeafContext, MenuButton, PropertyControl } from '@weasel-js/ui';
 import g from './Group.module.css';
 import { ExprRow, errorOf, Row, useSpec } from './SpecFields';
 
@@ -17,9 +17,9 @@ const FORMS = [
 ] as const;
 
 /** A weight: a number from 0 to 1, or a signal typed as code, with a menu of signals to start from. */
-export const weightRow: ControlRenderer = (row) => <WeightRow row={row} />;
+export const weightRow: LeafRenderer = (row) => <WeightRow row={row} />;
 
-function WeightRow({ row }: { row: PrefRenderContext }) {
+function WeightRow({ row }: { row: LeafContext }) {
   const spec = useSpec();
   const value = row.value as number | Expr;
   const isNum = typeof value === 'number';

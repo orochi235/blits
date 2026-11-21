@@ -2,12 +2,12 @@ import { FIT_PRESETS, type FitStep } from '@pg/blits/composition';
 import { fitFaultKey } from '@pg/blits/cueGroups';
 import { CodePane } from '@pg/widgets/CodePane';
 import { Glyph } from '@pg/widgets/Glyph';
-import type { ControlRenderer } from '@weasel-js/labkit';
+import type { LeafRenderer } from '@weasel-js/labkit';
 import {
   Button,
   CLOSE_BUTTON_PROPS,
+  type LeafContext,
   MenuButton,
-  type PrefRenderContext,
   PropertyControl,
 } from '@weasel-js/ui';
 import g from './Group.module.css';
@@ -37,9 +37,9 @@ const same = (a: readonly FitStep[], b: readonly FitStep[]) =>
   JSON.stringify(a) === JSON.stringify(b);
 
 /** A span's fit as a list of blits' fit steps, run in order: `pipe(...)`. Undefined plays blits' default. */
-export const fitRow: ControlRenderer = (row) => <FitRow row={row} />;
+export const fitRow: LeafRenderer = (row) => <FitRow row={row} />;
 
-function FitRow({ row }: { row: PrefRenderContext }) {
+function FitRow({ row }: { row: LeafContext }) {
   const spec = useSpec();
   const steps = row.value as FitStep[] | undefined;
   const onChange = (next: FitStep[] | undefined) => row.setValue(next);

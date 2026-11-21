@@ -1,7 +1,7 @@
 import { PLACEMENTS, parsePlacement } from '@pg/blits/anchor';
 import { waitableOf } from '@pg/blits/groups';
-import type { ControlRenderer } from '@weasel-js/labkit';
-import { Button, MenuButton, type PrefRenderContext } from '@weasel-js/ui';
+import type { LeafRenderer } from '@weasel-js/labkit';
+import { Button, type LeafContext, MenuButton } from '@weasel-js/ui';
 import { useState } from 'react';
 import g from './Group.module.css';
 import { ExprRow, Row, useSpec } from './SpecFields';
@@ -12,9 +12,9 @@ const INSERTS = Object.keys(PLACEMENTS).map((k) => ({ value: k, label: k }));
  * The anchor, blits' `Placement` typed as JSON, with a menu of ones to start from that point at
  * "it", another voice's name; under a span, which places it, the hint says so.
  */
-export const anchorRow: ControlRenderer = (row) => <AnchorRow row={row} />;
+export const anchorRow: LeafRenderer = (row) => <AnchorRow row={row} />;
 
-function AnchorRow({ row }: { row: PrefRenderContext }) {
+function AnchorRow({ row }: { row: LeafContext }) {
   const { x, comp, spanned } = useSpec();
   const [error, setError] = useState<string | null>(null);
   const it = waitableOf(comp, x)?.name;

@@ -1,6 +1,6 @@
 import { ancestorsOf } from '@pg/blits/groups';
-import type { ControlRenderer } from '@weasel-js/labkit';
-import { type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import type { LeafRenderer } from '@weasel-js/labkit';
+import { type LeafContext, PropertyControl } from '@weasel-js/ui';
 import { errorOf, Row, useSpec } from './SpecFields';
 
 /** The panel writes `''` as no owner: the mix. */
@@ -10,9 +10,9 @@ const NONE = '';
  * The group a voice or group plays under, chosen from those it may join: never itself or a group
  * it holds, and never a span for an owner. Writes the owner's id, or `''` for the mix.
  */
-export const ownerRow: ControlRenderer = (row) => <OwnerRow row={row} />;
+export const ownerRow: LeafRenderer = (row) => <OwnerRow row={row} />;
 
-function OwnerRow({ row }: { row: PrefRenderContext }) {
+function OwnerRow({ row }: { row: LeafContext }) {
   const spec = useSpec();
   const { comp, x } = spec;
   const self = comp.groups?.find((g) => g.id === x.id);

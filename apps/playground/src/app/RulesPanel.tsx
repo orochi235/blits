@@ -16,7 +16,7 @@ import { Glyph } from '@pg/widgets/Glyph';
 import {
   type ConfigEntry,
   ControlPanel,
-  type ControlRenderer,
+  type LeafRenderer,
   f,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
@@ -112,7 +112,7 @@ export function RulesPanel({
   );
 
   const numberRow =
-    (ch: NumberChannel): ControlRenderer =>
+    (ch: NumberChannel): LeafRenderer =>
     () => {
       const spec = rules[ch];
       const options = rulesFor(ch);
@@ -159,7 +159,7 @@ export function RulesPanel({
     };
 
   const boundsRow =
-    (ch: NumberChannel): ControlRenderer =>
+    (ch: NumberChannel): LeafRenderer =>
     () => {
       const spec: NumberRuleSpec = rules[ch];
       const [lo, hi] = spec.bounds ?? [0, 1];
@@ -190,7 +190,7 @@ export function RulesPanel({
       );
     };
 
-  const colorRow: ControlRenderer = () => {
+  const colorRow: LeafRenderer = () => {
     const spec: ColorRuleSpec = rules.color;
     return (
       <PropertyRow group layout="inline" label="color" changed={!same(spec, DEFAULT_RULES.color)}>
@@ -208,7 +208,7 @@ export function RulesPanel({
     );
   };
 
-  const renderers: Record<string, ControlRenderer> = { color: colorRow };
+  const renderers: Record<string, LeafRenderer> = { color: colorRow };
   for (const ch of CHANNELS) {
     if (ch === 'color') continue;
     renderers[ch] = numberRow(ch);

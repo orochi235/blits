@@ -2,7 +2,7 @@ import type { Kit, WaveShape } from '@msb235/blits';
 import type { PatchSource } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
 import { type Mixed, SWINGS, type SwingName } from '@pg/blits/kit';
-import { type ControlRenderer, f } from '@weasel-js/labkit';
+import { f, type LeafRenderer } from '@weasel-js/labkit';
 import { PropertyControl, PropertyRow } from '@weasel-js/ui';
 import { docOf } from './docs';
 import m from './PatchLive.module.css';
@@ -48,13 +48,13 @@ export function depthRenderers(
   p: Wave,
   kit: Kit<Mixed>,
   onChange: (p: Wave) => void,
-): Record<string, ControlRenderer> {
+): Record<string, LeafRenderer> {
   const setDepth = (ch: SwingName, d: number | undefined) =>
     onChange({ ...p, depth: withKey(p.depth, ch, d) });
   return Object.fromEntries(
     SWINGS.map((ch) => {
       const d = p.depth[ch];
-      const row: ControlRenderer = () => (
+      const row: LeafRenderer = () => (
         <PropertyRow group label={`${ch} · rest ${String(kit[ch].rest ?? 0)}`}>
           <div className={m.values}>
             <PropertyControl

@@ -5,9 +5,9 @@ import { withKey } from '@pg/blits/keyed';
 import type { ChannelName } from '@pg/blits/kit';
 import {
   ControlMatrix,
-  type ControlRenderer,
   f,
   isAuto,
+  type LeafRenderer,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
 import { docOf } from './docs';
@@ -43,7 +43,7 @@ export function ChannelTiming({ patch: p, onChange }: { patch: Keys; onChange(p:
   if (channels.length === 0) return null;
   const easeOf = (column: string): Easing | undefined =>
     column === 'patch' ? p.ease : (p.easeBy?.[column as ChannelName] ?? p.ease);
-  const ease: ControlRenderer = (ctx) => {
+  const ease: LeafRenderer = (ctx) => {
     const column = ctx.path.split('.')[0] ?? 'patch';
     return (
       <EaseField

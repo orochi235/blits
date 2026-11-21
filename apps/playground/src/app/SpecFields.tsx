@@ -4,10 +4,10 @@ import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
 import { ExprInput } from '@pg/widgets/ExprInput';
-import { type ConfigShape, type ControlRenderer, f, resolveConfigSchema } from '@weasel-js/labkit';
+import { type ConfigShape, f, type LeafRenderer, resolveConfigSchema } from '@weasel-js/labkit';
 import {
   Button,
-  type PrefRenderContext,
+  type LeafContext,
   PropertyControl,
   PropertyRow,
   prefFieldProps,
@@ -85,7 +85,7 @@ export function Row({
   error,
   children,
 }: {
-  row: PrefRenderContext;
+  row: LeafContext;
   label?: string;
   hint?: ReactNode;
   /** A value read off the row, beside its label. */
@@ -118,7 +118,7 @@ export function Row({
 
 /** The leaf's own control, with `hint` after its label, or `off` while it is disabled. */
 export const noted =
-  (hint?: string, off?: string): ControlRenderer =>
+  (hint?: string, off?: string): LeafRenderer =>
   (row) => {
     const field = prefFieldProps(row.pref, { value: row.value, setValue: row.setValue }, 'lab');
     if (!field) return null;
@@ -152,7 +152,7 @@ const read = <T,>(v: T | ((spec: Spec) => T), spec: Spec): T =>
   typeof v === 'function' ? (v as (spec: Spec) => T)(spec) : v;
 
 /** A number that may be unset, which blits then defaults: emptied, the field writes undefined. */
-function OptionalNumberRow({ row, o }: { row: PrefRenderContext; o: OptionalNumber }) {
+function OptionalNumberRow({ row, o }: { row: LeafContext; o: OptionalNumber }) {
   const spec = useSpec();
   const value = typeof row.value === 'number' ? row.value : undefined;
   return (
@@ -176,7 +176,7 @@ function OptionalNumberRow({ row, o }: { row: PrefRenderContext; o: OptionalNumb
 }
 
 export const optionalNumber =
-  (o: OptionalNumber): ControlRenderer =>
+  (o: OptionalNumber): LeafRenderer =>
   (row) => <OptionalNumberRow row={row} o={o} />;
 
 /** An optional number leaf: `undefined` until set. */
@@ -193,7 +193,7 @@ export function ExprRow({
   value = typeof row.value === 'string' ? row.value : '',
   onCommit = (code) => row.setValue(code),
 }: {
-  row: PrefRenderContext;
+  row: LeafContext;
   placeholder?: string;
   error: string | null;
   value?: string;
@@ -213,10 +213,10 @@ export function ExprRow({
 
 /** A code row: the leaf's value is the code, blank for none. */
 export const exprRow =
-  (placeholder: string): ControlRenderer =>
+  (placeholder: string): LeafRenderer =>
   (row) => <CodeRow row={row} placeholder={placeholder} />;
 
-function CodeRow({ row, placeholder }: { row: PrefRenderContext; placeholder: string }) {
+function CodeRow({ row, placeholder }: { row: LeafContext; placeholder: string }) {
   const spec = useSpec();
   return (
     <Row row={row} wide>
@@ -226,7 +226,7 @@ function CodeRow({ row, placeholder }: { row: PrefRenderContext; placeholder: st
 }
 
 /** The ease both fades take, on a row of its own. */
-export const fadeEaseRow: ControlRenderer = (row) => (
+export const fadeEaseRow: LeafRenderer = (row) => (
   <EaseField
     label={row.pref.name}
     description={row.pref.description || undefined}
@@ -237,7 +237,7 @@ export const fadeEaseRow: ControlRenderer = (row) => (
 
 /** Removes the voice or group. */
 export const deleteRow =
-  (label: string): ControlRenderer =>
+  (label: string): LeafRenderer =>
   () => <DeleteButton label={label} />;
 
 function DeleteButton({ label }: { label: string }) {
@@ -253,7 +253,7 @@ function DeleteButton({ label }: { label: string }) {
 
 /** Errors on fields that have no row of their own, in a list. */
 export const looseErrorsRow =
-  (fields: ReadonlySet<string>): ControlRenderer =>
+  (fields: ReadonlySet<string>): LeafRenderer =>
   (row) => <LooseErrors fields={fields} label={row.pref.name} />;
 
 function LooseErrors({ fields, label }: { fields: ReadonlySet<string>; label: string }) {
@@ -274,7 +274,7 @@ function LooseErrors({ fields, label }: { fields: ReadonlySet<string>; label: st
 }
 
 /** How many calls of `x`'s expressions threw, and the first message; nothing while none have. */
-export const faultsRow: ControlRenderer = () => <XFaults />;
+export const faultsRow: LeafRenderer = () => <XFaults />;
 
 function XFaults() {
   const spec = useSpec();

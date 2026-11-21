@@ -3,8 +3,8 @@ import type { Composition, Expr, Group } from '@pg/blits/composition';
 import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
-import { ControlPanel, type ControlRenderer, f } from '@weasel-js/labkit';
-import { type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import { ControlPanel, f, type LeafRenderer } from '@weasel-js/labkit';
+import { type LeafContext, PropertyControl } from '@weasel-js/ui';
 import { anchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { docOf } from './docs';
@@ -38,9 +38,9 @@ const ROWED = { name: 'name', rate: 'rate' };
 const LOOSE = new Set(['cue', 'start', 'anchor']);
 
 /** Owner or span; a span holds no owner, and a group under a span can only be a span. */
-const kindRow: ControlRenderer = (row) => <KindRow row={row} />;
+const kindRow: LeafRenderer = (row) => <KindRow row={row} />;
 
-function KindRow({ row }: { row: PrefRenderContext }) {
+function KindRow({ row }: { row: LeafContext }) {
   const { x, comp, spanned } = useSpec();
   const holdsOwner = comp.groups?.some((o) => o.owner === x.id && o.kind === 'owner') ?? false;
   return (
