@@ -11,6 +11,7 @@ const CARD = kit<CardPose>({ y: sum() });
 declare const scrubber: HTMLInputElement;
 // ---
 const m = mix<Card, CardPose>(CARD, {
+  name: 'cards',
   history: { ms: 10_000, tape: createHistory },
   stepMs: 5,
 });

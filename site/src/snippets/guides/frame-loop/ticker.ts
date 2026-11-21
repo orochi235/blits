@@ -10,7 +10,7 @@ const CARD = kit<CardPose>({ y: sum() });
 declare const cards: Card[];
 // ---
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-const m = mix<Card, CardPose>(CARD, { reduce: () => reduced.matches });
+const m = mix<Card, CardPose>(CARD, { name: 'cards', reduce: () => reduced.matches });
 
 const loop = ticker();
 loop.add(m);

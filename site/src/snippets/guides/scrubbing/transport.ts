@@ -17,8 +17,14 @@ declare const drop: Patch<Letter, LetterPose>;
 declare const flash: Patch<Lamp, LampPose>;
 // ---
 const show = transport({ history: { ms: 10_000, tape: createHistory } });
-const motion = mix<Letter, LetterPose>(kit<LetterPose>({ y: sum() }), { transport: show });
-const light = mix<Lamp, LampPose>(kit<LampPose>({ level: sum() }), { transport: show });
+const motion = mix<Letter, LetterPose>(kit<LetterPose>({ y: sum() }), {
+  name: 'motion',
+  transport: show,
+});
+const light = mix<Lamp, LampPose>(kit<LampPose>({ level: sum() }), {
+  name: 'light',
+  transport: show,
+});
 
 // An anchor reaches into another mix through a score both voices name.
 motion.cue({ patch: drop, name: 'drop', score: 'scene' });

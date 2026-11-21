@@ -6,7 +6,7 @@ interface Card {
 interface CardPose {
   y: number;
 }
-const m = mix<Card, CardPose>(kit<CardPose>({ y: sum() }));
+const m = mix<Card, CardPose>(kit<CardPose>({ y: sum() }), { name: 'cards' });
 declare const card: Card;
 declare function drawGhost(card: Card, pose: CardPose): void;
 // ---
