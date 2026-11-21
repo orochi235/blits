@@ -1,5 +1,5 @@
 import type { Composition, Group, Voice } from '@pg/blits/composition';
-import { ancestorsOf, parentOf, rowsOf, treeFault, underSpan } from '@pg/blits/groups';
+import { ancestorsOf, parentOf, rowsOf, treeFault, underSpan, waitableOf } from '@pg/blits/groups';
 import { describe, expect, it } from 'vitest';
 import { comp, group as g, voice as v } from './helpers';
 
@@ -71,5 +71,20 @@ describe('the tree', () => {
     expect(treeFault(loop)).toMatch(/cycle/);
     expect(treeFault(comp([voice('a', 'nope')]))).toMatch(/nope/);
     expect(treeFault(comp([], [group('g', 'owner', 'nope')]))).toMatch(/nope/);
+  });
+});
+
+describe('waitableOf', () => {
+  const patch = { kind: 'keys', period: 100, stops: [] } as unknown as Voice['patch'];
+  it('passes over the asker, its members, and other scores', () => {
+    const inner = v({ id: 'a', patch, owner: 'g' });
+    const deep = v({ id: 'b', patch, owner: 'h' });
+    const other = v({ id: 'c', patch, score: 's2' });
+    const free = v({ id: 'd', patch });
+    const c = comp([inner, deep, other, free], [g({ id: 'g' }), g({ id: 'h', owner: 'g' })]);
+    const top = c.groups?.[0] as Group;
+    expect(waitableOf(c, top)?.id).toBe('d');
+    expect(waitableOf(c, inner)?.id).toBe('b');
+    expect(waitableOf(comp([free]), free)).toBeUndefined();
   });
 });

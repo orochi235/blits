@@ -1,4 +1,4 @@
-import type { Composition, Group } from './composition';
+import type { Composition, Group, Voice } from './composition';
 
 export interface Row {
   kind: 'voice' | 'group';
@@ -30,6 +30,16 @@ export function ancestorsOf(c: Composition, id: string): Group[] {
     g = g.owner ? groups.get(g.owner) : undefined;
   }
   return out;
+}
+
+/**
+ * The first voice `x` can wait on in an anchor: not `x`, not one of its members, and in its score,
+ * as an anchor's plain name resolves. Undefined when there is none.
+ */
+export function waitableOf(c: Composition, x: Voice | Group): Voice | undefined {
+  return c.voices.find(
+    (v) => v.id !== x.id && v.score === x.score && !ancestorsOf(c, v.id).some((g) => g.id === x.id),
+  );
 }
 
 /** A cycle in `owner` links, or an unknown `owner` id, as a message; null when the tree is sound. */
