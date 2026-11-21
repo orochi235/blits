@@ -4,8 +4,9 @@ import type { Composition } from '../composition';
 
 /**
  * The site's rail logo as voices: the word lit on its sign, its hues turning on a clock of their
- * own, a halo following the pointer, and the rainbow that hovering runs. bree's moves (swarm, fall
- * and the rest) are its own effects and are left out.
+ * own, and the rainbow and the halo round the pointer that pointing at it brings up. The `hover`
+ * level stands in for pointing at it, since the stage's pointer moves only `around` circles. bree's
+ * moves (swarm, fall and the rest) are its own effects and are left out.
  */
 const WORD = compose('blits');
 const { CYCLE } = logoHues();
