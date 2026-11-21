@@ -1,8 +1,9 @@
 import { freshVoice } from '@pg/app/freshVoice';
+import type { Voice } from '@pg/blits/composition';
 import { describe, expect, it } from 'vitest';
 import { group, voice } from './helpers';
 
-const patch = { kind: 'keys', period: 1000, stops: [] } as const;
+const patch: Voice['patch'] = { kind: 'keys', period: 1000, stops: [] };
 
 describe('freshVoice', () => {
   it('names the voice apart from the groups too, which share the name space', () => {

@@ -1,8 +1,9 @@
 import { sharedConfig, writtenShared } from '@pg/app/SpecFields';
+import type { Voice } from '@pg/blits/composition';
 import { describe, expect, it } from 'vitest';
 import { group, voice } from './helpers';
 
-const patch = { kind: 'keys', period: 1000, stops: [] } as const;
+const patch: Voice['patch'] = { kind: 'keys', period: 1000, stops: [] };
 
 describe("the shared rows' fade in", () => {
   it('shows an unset fade in as unset, not 0, since a rise reads them apart', () => {

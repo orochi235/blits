@@ -4,19 +4,19 @@ import type { Voice } from '@pg/blits/composition';
 import { describe, expect, it } from 'vitest';
 import { comp, group, subjects, voice } from './helpers';
 
-const patch = {
+const patch: Voice['patch'] = {
   kind: 'keys',
   period: 1000,
   stops: [
     { at: 0, delta: { turn: 0 } },
     { at: 1, delta: { turn: 90 } },
   ],
-} as const;
+};
 
 /** The keys timeline's playhead for voice `a` at score ms `t`. */
 const at = (t: number, a: Partial<Voice>, groups?: Parameters<typeof comp>[1]) => {
   const b = compile(comp([voice({ id: 'a', patch, ...a })], groups), subjects, { listed: false });
-  b.mix.sync(t);
+  b.transport.sync(t);
   return phaseOf(b.handles.get('a')?.elapsed, 1000, a.rate ?? 1);
 };
 
