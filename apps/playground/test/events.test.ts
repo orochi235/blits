@@ -1,3 +1,4 @@
+import { newest } from '@pg/app/EventsPanel';
 import { tagsOf } from '@pg/app/MarksFields';
 import { PLACEMENTS, parsePlacement, placementFault } from '@pg/blits/anchor';
 import { compile } from '@pg/blits/compile';
@@ -21,6 +22,15 @@ const KEYS: PatchSource = {
   ],
 };
 const once = (id: string, over = {}) => voice({ id, patch: KEYS, loop: false, ...over });
+
+describe('the event tables', () => {
+  it('draw the newest rows of an earliest-first list, newest first', () => {
+    const list = Array.from({ length: 200 }, (_, i) => i);
+    expect(newest(list, 3)).toEqual([199, 198, 197]);
+    expect(newest(list)).toHaveLength(60);
+    expect(newest([1, 2], 5)).toEqual([2, 1]);
+  });
+});
 
 describe('a placement typed as JSON', () => {
   it('takes every anchor blits has', () => {

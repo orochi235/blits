@@ -42,6 +42,9 @@ const BOOKER = resolveConfigSchema(
 
 /** The most rows a list draws, newest first. */
 const SHOWN = 60;
+
+/** The last `n` of an earliest-first list, newest first. */
+export const newest = <T,>(list: readonly T[], n = SHOWN): T[] => list.slice(-n).reverse();
 const text = (event: unknown) => (typeof event === 'string' ? event : JSON.stringify(event));
 
 type Cells = { id: string; canceled?: boolean } & Record<
@@ -165,7 +168,7 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
       <Table
         label="marks"
         columns={MARKS}
-        rows={marks.slice(0, SHOWN * 2).map((m, i) => ({
+        rows={newest(marks, SHOWN * 2).map((m, i) => ({
           id: String(i),
           ms: ms(m.timestamp),
           mark: m.mark ?? 'announced',
@@ -179,20 +182,17 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
       <Table
         label="booked"
         columns={BOOKED}
-        rows={events.booked
-          .slice(-SHOWN)
-          .reverse()
-          .map((b, i) => ({
-            id: String(i),
-            canceled: b.canceled,
-            when: ms(b.when),
-            late: ms(b.lateBy),
-            item:
-              'hit' in b.item
-                ? `hit ${text(b.item.event)}${groups.has(b.item.voice) ? '' : `, pass ${b.item.pass + 1}`}`
-                : (b.item.mark ?? 'announced'),
-            of: who(b.item.voice, b.item.name),
-          }))}
+        rows={newest(events.booked).map((b, i) => ({
+          id: String(i),
+          canceled: b.canceled,
+          when: ms(b.when),
+          late: ms(b.lateBy),
+          item:
+            'hit' in b.item
+              ? `hit ${text(b.item.event)}${groups.has(b.item.voice) ? '' : `, pass ${b.item.pass + 1}`}`
+              : (b.item.mark ?? 'announced'),
+          of: who(b.item.voice, b.item.name),
+        }))}
       />
       <h3 className={s.heading} title={docOf('Mix.drain')}>
         sent · mix.drain, on the mix’s clock
@@ -200,16 +200,13 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
       <Table
         label="sent"
         columns={SENT}
-        rows={events.sent
-          .slice(-SHOWN)
-          .reverse()
-          .map((x, i) => ({
-            id: String(i),
-            ms: ms(x.timestamp),
-            voice: who(x.voice),
-            subject: x.subject.index,
-            event: text(x.event),
-          }))}
+        rows={newest(events.sent).map((x, i) => ({
+          id: String(i),
+          ms: ms(x.timestamp),
+          voice: who(x.voice),
+          subject: x.subject.index,
+          event: text(x.event),
+        }))}
       />
     </div>
   );
