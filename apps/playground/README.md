@@ -57,7 +57,7 @@ blank, and its bounds may not cross; its value is held inside them. Each of thes
 Enter, on leaving it, or once typing rests for 800 ms, so a burst of typing is one undo step, and Escape puts back what it held; so do the
 booker's tag and read-ahead, every field of the mix, fold rules and announced marks panels, and
 every expression field. A number field left blank puts back what it held. A code pane commits on Cmd/Ctrl-Enter or leaving
-it, and Tab indents. Every other text and number field, the transport's included, is weasel's and commits the same way. Removing or renaming a level an expression names is allowed: the expression then reads
+it, and Tab indents: Shift-Tab, or Tab after Escape, moves focus on. Every other text and number field, the transport's included, is weasel's and commits the same way. Removing or renaming a level an expression names is allowed: the expression then reads
 0, with no error.
 
 ## A composition
