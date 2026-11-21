@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A fade, `rise`, `mute`, and a cue's `fade: { in, out }` refuse a time that is not finite and 0 or
+  more, as a rate ramp does, with a `RangeError`. A NaN `over` used to leave the voice fading forever
+  at a NaN weight, and a negative one cut it off at full weight.
 - `fling` lets go at rest when the pointer sat still for longer than `stop` before the release: the
   release itself no longer counts as a fresh sample when the pointer did not move to it.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied:

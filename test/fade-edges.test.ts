@@ -99,3 +99,21 @@ for (const lanes of [true, false]) {
     expect(x(m, 650)).toBeCloseTo(350 * 0.5, 6);
   });
 }
+
+// A ramp takes a finite time of 0 or more, as a rate ramp's `over` does.
+test('a fade, a rise, a mute and a cue refuse a fade time that is not finite and 0 or more', () => {
+  const m = mix<Part, Pose>(K);
+  const h = m.cue({ patch: ten });
+  m.sync(0);
+  for (const over of [Number.NaN, -1, Number.POSITIVE_INFINITY]) {
+    expect(() => h.fade({ over })).toThrow(RangeError);
+    expect(() => h.fade({ over, at: 50 })).toThrow(RangeError);
+    expect(() => h.fade({ over, subject: a })).toThrow(RangeError);
+    expect(() => m.mute({ over })).toThrow(RangeError);
+    expect(() => m.cue({ patch: ten, fade: { in: over } })).toThrow(RangeError);
+    expect(() => m.cue({ patch: ten, fade: { out: over } })).toThrow(RangeError);
+  }
+  h.fade({ over: 100 });
+  expect(() => h.rise({ over: Number.NaN })).toThrow(RangeError);
+  expect(x(m, 50)).toBeCloseTo(5, 9);
+});
