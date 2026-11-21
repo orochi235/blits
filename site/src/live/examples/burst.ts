@@ -16,6 +16,8 @@ interface SparkPose {
 const SPARK = kit<SparkPose>({ dx: sum(), dy: sum(), alpha: mul() });
 
 const HEIGHT = 260;
+/** How often a burst goes off by itself, ms of mix time. */
+const EVERY = 1400;
 
 // Out along its angle, pulled down, fading as it goes.
 const fly = patch<Spark, SparkPose>(
@@ -56,14 +58,16 @@ export default function run(root: HTMLElement): () => void {
     burst(e.clientX - box.left, e.clientY - box.top);
   };
   canvas.addEventListener('click', onClick);
-  const auto = window.setInterval(() => {
-    if (!document.hasFocus()) return;
-    burst(canvas.clientWidth * (0.2 + 0.6 * Math.random()), HEIGHT * (0.3 + 0.3 * Math.random()));
-  }, 1400);
 
   const pose = { dx: 0, dy: 0, alpha: 1 };
+  let last = Number.NaN;
   const stop = loop(m, root, (now) => {
     m.sync(now);
+    if (Number.isNaN(last)) last = m.now;
+    if (document.hasFocus() && m.now - last >= EVERY) {
+      last = m.now;
+      burst(canvas.clientWidth * (0.2 + 0.6 * Math.random()), HEIGHT * (0.3 + 0.3 * Math.random()));
+    }
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = HEIGHT * devicePixelRatio;
     ctx.scale(devicePixelRatio, devicePixelRatio);
@@ -77,7 +81,6 @@ export default function run(root: HTMLElement): () => void {
   });
 
   return () => {
-    clearInterval(auto);
     stop();
     canvas.removeEventListener('click', onClick);
     m.close();
