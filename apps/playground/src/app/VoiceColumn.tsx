@@ -36,6 +36,8 @@ export interface VoiceColumnProps {
   subject: Subject | undefined;
   live: boolean;
   shared: { copied: boolean; url: string } | null;
+  /** The address holds a shared link that loads no composition. */
+  refusedLink: boolean;
   linkRef: RefObject<HTMLInputElement | null>;
   onAddVoice: () => void;
   onAddGroup: (kind: Group['kind']) => void;
@@ -72,6 +74,9 @@ export function VoiceColumn(p: VoiceColumnProps) {
         <Button onClick={p.onShare}>share</Button>
         <FileButtons comp={p.comp} onOpen={p.onComp} />
         {p.shared?.copied && <span role="status">link copied</span>}
+        {p.refusedLink && (
+          <span role="status">the shared link holds no composition the playground can load</span>
+        )}
       </div>
       {p.shared && !p.shared.copied && (
         <div className={s.row} role="status">

@@ -34,7 +34,7 @@ const NOTICE_MS = 3000;
 const PANEL_WIDTH = 440;
 
 export function App() {
-  const { comp, set, undo, redo, share } = useComposition(DEFAULT);
+  const { comp, set, undo, redo, share, refusedLink } = useComposition(DEFAULT);
   const compRef = useRef(comp);
   compRef.current = comp;
   const subjects = useMemo(() => subjectsOf(comp.stage), [comp.stage]);
@@ -168,6 +168,7 @@ export function App() {
           subject={shown !== null ? subjects[shown] : undefined}
           live={live}
           shared={shared}
+          refusedLink={refusedLink}
           linkRef={linkRef}
           onAddVoice={addVoice}
           onAddGroup={addGroupOf}
