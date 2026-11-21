@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { copyHeld, copyHeldInto } from '../src/history.js';
+import { copyHeld, copyHeldInto, recordInput } from '../src/history.js';
 import { wholeRecord } from '../src/record.js';
 import type { Subject } from '../src/subject.js';
 
@@ -45,4 +45,30 @@ describe('copyHeldInto', () => {
       expect(out.base).not.toBe(h.base);
       expect(out.kept).not.toBe(h.kept);
     });
+
+  it('leaves nothing of a reused record behind, its trail row included', () => {
+    const h = full();
+    const voice = { patch: {} } as never;
+    const into = full();
+    into.probeRow = 3;
+    into.probeEpoch = 7;
+    expect(copyHeldInto(voice, h, into)).toEqual(copyHeld(voice, h));
+  });
+});
+
+describe('recordInput', () => {
+  it('stamps a value read again at the same mix time with the frame that read it', () => {
+    const transport = { seq: 10, pager: null };
+    const m = {
+      opts: { history: { ms: 1000, inputs: true } },
+      projecting: false,
+      now: 500,
+      transport,
+    };
+    const h = wholeRecord(null, true, undefined);
+    recordInput(m as never, {} as never, 's', h, 0.2);
+    transport.seq = 11;
+    recordInput(m as never, {} as never, 's', h, 0.8);
+    expect(h.inputs).toEqual([{ at: 500, seq: 11, value: 0.8 }]);
+  });
 });

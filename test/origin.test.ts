@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
+import { leave, MOST, originOf } from '../src/origin.js';
 import { keys, patch } from '../src/patch.js';
 import type { Handle, Mix, MixOptions, VoiceSpec } from '../src/types.js';
+import type { Voice } from '../src/voice.js';
 
 interface Pose {
   x: number;
@@ -167,5 +169,36 @@ describe("a subject's origin does not depend on when the host first probes it", 
     m.sync(320);
     expect(m.probe(a).x).toBeGreaterThan(0);
     expect(ahead).toBeCloseTo(m.probe(a).x, 9);
+  });
+});
+
+describe('past clocks', () => {
+  it('keep the latest once there are more than MOST, so a late origin reads its own clock', () => {
+    const voice = {
+      clocks: null,
+      holding: null,
+      spec: { stagger: {} },
+      anchorNow: 0,
+      anchorElapsed: 0,
+      rate: 1,
+      ramp: null,
+      rebuilds: 0,
+      beginless: false,
+      start: 0,
+      owner: null,
+    } as unknown as Voice<unknown, unknown>;
+    // A rate written every 10 ms, alternating 1 and 2, as a slider through the handle would.
+    for (let k = 0; k < MOST + 100; k++) {
+      const at = 10 * (k + 1);
+      leave(voice, at);
+      voice.anchorElapsed += 10 * voice.rate;
+      voice.anchorNow = at;
+      voice.rate = k % 2 === 0 ? 2 : 1;
+    }
+    // Clock k reads 10 * k * 1.5 at its start, so halfway through clock 300 is mix time 3005.
+    const k = MOST + 44;
+    const e = 15 * k + 5 * (k % 2 === 0 ? 1 : 2);
+    expect(originOf(voice, e, false)).toBeCloseTo(10 * k + 5, 9);
+    expect(voice.clocks?.length).toBeLessThanOrEqual(MOST);
   });
 });

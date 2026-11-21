@@ -8,6 +8,8 @@ export interface Past extends Clock {
   rebuilds: number;
   /** Whether the voice left it by a seek. */
   sought: boolean;
+  /** How many clocks the voice had left before it, those let go included. */
+  n: number;
 }
 
 /** The most past clocks a voice keeps. */
@@ -19,15 +21,29 @@ export const MOST = 256;
  */
 export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void {
   const past = voice.clocks;
-  if (past !== null && past.length >= MOST) return;
   // A voice with neither stagger nor children is only ever asked when its clock read 0.
   const reach =
     voice.holding !== null || voice.spec.stagger !== undefined ? Number.POSITIVE_INFINITY : 0;
   if (past !== null && reached(past, 0) >= reach && reached(past, fresh(voice)) >= reach) return;
   const { anchorNow, anchorElapsed, rate, ramp, rebuilds } = voice;
-  const left: Past = { anchorNow, anchorElapsed, rate, ramp, until: u, rebuilds, sought };
+  const n = leftCount(past);
+  const left: Past = { anchorNow, anchorElapsed, rate, ramp, until: u, rebuilds, sought, n };
   if (past === null) voice.clocks = [left];
+  // Down to the latest half, so the copy comes once every MOST / 2 clocks, not on each.
+  else if (past.length >= MOST) voice.clocks = [...past.slice(past.length - MOST / 2), left];
   else past.push(left);
+}
+
+/** How many clocks a voice has left, those let go included. */
+export function leftCount(past: readonly Past[] | null): number {
+  return past === null || past.length === 0 ? 0 : (past[past.length - 1] as Past).n + 1;
+}
+
+/** A voice's past clocks as they stood when it had left `count`. */
+export function pastAt(past: Past[], count: number): Past[] | null {
+  const keep = past.length - (leftCount(past) - count);
+  if (keep >= past.length) return past;
+  return keep <= 0 ? null : past.slice(0, keep);
 }
 
 /** The most a voice's past clocks from index `from` read before they were left. */

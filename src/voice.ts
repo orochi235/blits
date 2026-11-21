@@ -20,7 +20,7 @@ import type { Leavings } from './leavings.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import { Named } from './named.js';
-import type { Past } from './origin.js';
+import { leftCount, type Past, pastAt } from './origin.js';
 import {
   childPlayed,
   Holding,
@@ -71,7 +71,7 @@ export interface Controls extends Clock {
   rebuilds: number;
   /** An arc's hold. */
   hold: number;
-  /** How many of the voice's past clocks it had then. */
+  /** How many past clocks the voice had left then, those since let go included. */
   past: number;
   /** The clocks a fit or a rate write replaced; absent from a store written before a voice kept them. */
   earlier?: Earlier | null;
@@ -520,9 +520,7 @@ export class Voice<I, O> {
       this.fitting.end = fitted.end;
       this.fitting.report = fitted.report;
     }
-    const clocks = this.clocks;
-    if (clocks !== null && clocks.length !== c.past)
-      this.clocks = c.past === 0 ? null : clocks.slice(0, c.past);
+    if (this.clocks !== null) this.clocks = pastAt(this.clocks, c.past);
   }
 
   /**
@@ -816,7 +814,7 @@ export class Voice<I, O> {
       outSet: this.outSet,
       rebuilds: this.rebuilds,
       hold: this.hold,
-      past: this.clocks?.length ?? 0,
+      past: leftCount(this.clocks),
       earlier: this.earlier,
       later: this.later,
       fitted: this.fitting === null ? null : { end: this.fitting.end, report: this.fitting.report },

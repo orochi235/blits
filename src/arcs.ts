@@ -213,6 +213,7 @@ export function settleArcs<I, O>(mix: Mixer<I, O>, now: number): void {
 
 /** An arc's marks: when its enter ends, its hold ends and its exit begins and ends. */
 export function arcMark<I, O>(
+  mix: Mixer<I, O>,
   voice: Voice<I, O>,
   start: number,
   mark: 'in' | 'coast' | 'out' | 'end',
@@ -224,7 +225,7 @@ export function arcMark<I, O>(
   };
   if (mark === 'in') {
     const t = at(arc.enter);
-    return t === undefined ? t : Math.max(t, start + (voice.fade.in ?? 0));
+    return t === undefined ? t : Math.max(t, start + (mix.reduced ? 0 : (voice.fade.in ?? 0)));
   }
   const coast = at(arc.enter + voice.hold);
   // Faded, or set to fade, before its hold ended: it left with no exit.
@@ -240,7 +241,7 @@ export function arcMark<I, O>(
   if (cutShort) {
     if (out !== null) return out.at + out.over;
     const over = Number.isNaN(voice.outOver) ? (voice.fade.out ?? 0) : voice.outOver;
-    return (cut as number) + over;
+    return (cut as number) + (mix.reduced ? 0 : over);
   }
   return at(arcEnd(voice));
 }

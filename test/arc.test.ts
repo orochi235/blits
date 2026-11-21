@@ -195,6 +195,19 @@ describe('arcs', () => {
     expect(marksOf(m, 'f')).toMatchObject({ out: 400, end: 500 });
   });
 
+  it('lists in by its enter alone under reduced motion, which plays no fade in', () => {
+    const m = make({ reduce: true });
+    m.arc({
+      name: 'w',
+      enter: { patch: part('a', 200) },
+      active: { patch: part('b', 100) },
+      hold: 500,
+      fade: { in: 500, out: 300 },
+      anchor: { out: 400 },
+    });
+    expect(marksOf(m, 'w')).toMatchObject({ start: 0, in: 200, out: 400, end: 400 });
+  });
+
   it('leaves with no exit when faded, and done still resolves', async () => {
     const m = make();
     const h = m.arc({

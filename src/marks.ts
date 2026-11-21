@@ -136,8 +136,8 @@ export function markOf<I, O>(
   if (!Number.isFinite(start)) return undefined;
   if (mark === 'start') return start;
   if (voice.arc !== null && (mark === 'in' || mark === 'coast' || mark === 'out' || mark === 'end'))
-    return arcMark(voice, start, mark as 'in' | 'coast' | 'out' | 'end');
-  if (mark === 'in') return start + (voice.fade.in ?? 0);
+    return arcMark(mix, voice, start, mark as 'in' | 'coast' | 'out' | 'end');
+  if (mark === 'in') return start + (mix.reduced ? 0 : (voice.fade.in ?? 0));
   if (mark === 'coast') return coastOf(mix, voice, start);
   if (mark !== 'out' && mark !== 'end') return insideOf(mix, voice, start, mark);
   const out = voice.out;

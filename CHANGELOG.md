@@ -28,6 +28,22 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   at a NaN weight, and a negative one cut it off at full weight.
 - `fling` lets go at rest when the pointer sat still for longer than `stop` before the release: the
   release itself no longer counts as a fresh sample when the pointer did not move to it.
+- A voice whose rate is written more than 256 times keeps its latest 256 past clocks, as a child's
+  handle does, so a subject whose stagger delay runs out late takes its origin from the clock it
+  ran on. It kept the first 256 and placed every later origin by its current rate.
+- Under `history` with `inputs`, an input read again while rate 0 holds mix time still is recorded,
+  and paged to a store, under the frame that read it, not the earlier frame whose value it replaced.
+- Under reduced motion, an arc's `in` mark no longer waits on its fade in, and an arc set to leave
+  before its hold ends lists its `end` where it leaves, not a fade out later.
+- Under reduced motion, an `in` or `end` anchor places the voice on the anchored time itself:
+  it no longer starts the voice early, or ends it early, by a fade that is not played.
+- Under reduced motion, a voice's `in` mark is its start, as the fade in it would wait for is not
+  played; it was listed after the fade's length, even after the voice had ended.
+- On a transport without `history`, a mark announced as now starts the voices anchored on it in
+  every mix on the transport, not only in the first: the first mix no longer lets go of it before
+  the others place.
+- A record a seek reuses no longer keeps the trail row it held before, so a trail no longer
+  reads or writes its poses in a row another subject owns.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied:
   it is copied as a `DataView` over its own bytes.
 - `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so
