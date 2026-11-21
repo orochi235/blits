@@ -140,6 +140,23 @@ describe('Player', () => {
     expect(p.rate).toBe(2);
   });
 
+  it('a ramp under way at the end of a lap runs on through the next', () => {
+    for (const seekBy of ['seek', 'replay'] as const) {
+      const p = player();
+      p.seekBy = seekBy;
+      play(p, 2900);
+      p.setRate(3, 1000);
+      while (p.t < 3000) step(p);
+      const rate = p.rate;
+      expect(rate).toBeGreaterThan(1);
+      expect(rate).toBeLessThan(3);
+      p.lap(p.t % 3000, 3000);
+      expect(p.rate).toBeCloseTo(rate, 9);
+      step(p, 60);
+      expect(p.rate).toBe(3);
+    }
+  });
+
   it('a scrub back replays a moved level at its current value', () => {
     const moved = player();
     moved.seekBy = 'replay';
