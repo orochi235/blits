@@ -226,7 +226,7 @@ export interface Mix<I, O, H = unknown> {
    * everything a voice owns runs on: its clock, its fades and a handle's ramp, {@link VoiceSpec.stagger | `stagger`}, an
    * anchor's `by`, {@link MixOptions.stepMs | `stepMs`}, {@link MixOptions.maxDt | `maxDt`}, `history.ms`, every {@link Setting.dt | `dt`}, and `setting.timestamp`. Timestamps
    * on the host's clock name the same moment whatever the rate does: a {@link VoiceSpec.start | `start`}, an anchor given as
-   * a number, an announced mark, what `marks` reports and the time `project` reads, so a start
+   * a number, an announced mark and what `marks` reports, so a start
    * ahead of a paused mix waits for the host's clock to reach it. A weight signal is still asked at
    * every probe, so one reading host input follows it while the mix is paused.
    */
