@@ -4,6 +4,7 @@ import { mount } from '@msb235/blits-panel';
 import { drive as driveSparks } from '@msb235/blits-quarks';
 import { drive as driveSound } from '@msb235/blits-tone';
 import * as Tone from 'tone';
+import { createFrame } from './frame';
 import { BURSTS, cue, KIT, type Pose, type Shell, type Sound, shell } from './show';
 import { createSky } from './sky';
 import { createSounds } from './sound';
@@ -18,9 +19,6 @@ const launchButton = el<HTMLButtonElement>('launch');
 const auto = el<HTMLInputElement>('auto');
 const rate = el<HTMLInputElement>('rate');
 const rateOut = el<HTMLOutputElement>('rate-out');
-
-/** A gap between frames this long is a hidden tab coming back, and is left out of the show. */
-const AWAY_MS = 250;
 
 // The debugger panel, in dev only; mounted before the mix so the mix can scrub back. `?nopanel`
 // leaves it off, for the DevTools extension alone.
@@ -71,25 +69,13 @@ start.addEventListener('click', async () => {
     rateOut.value = `${Number(rate.value).toFixed(2)}×`;
   });
 
-  let last = performance.now();
-  let next = last;
+  const step = createFrame(m, { launch: () => launch(shell()), auto: () => auto.checked });
   const frame = (now: number) => {
     requestAnimationFrame(frame);
-    let gap = now - last;
-    last = now;
-    if (gap > AWAY_MS) {
-      m.rebase();
-      gap = 0;
-    }
-    if (auto.checked && now >= next) {
-      launch(shell());
-      next = now + (350 + Math.random() * 900) / Math.max(m.rate, 0.1);
-    }
-    m.sync(now);
-    const dt = gap * m.rate;
+    const seconds = step(now);
     sparks.write();
     sound.write();
-    sky.render(dt / 1000);
+    sky.render(seconds);
   };
   start.hidden = true;
   requestAnimationFrame(frame);
