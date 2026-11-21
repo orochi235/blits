@@ -247,7 +247,10 @@ export function recordInput<I, O>(
   held.inputs = inputs;
   const prev = inputs[inputs.length - 1];
   if (prev !== undefined && (prev.value === value || prev.at === mix.now)) {
-    if (prev.at === mix.now) prev.value = value;
+    if (prev.at === mix.now) {
+      prev.value = value;
+      prev.seq = mix.transport.seq;
+    }
     return;
   }
   inputs.push({ at: mix.now, seq: mix.transport.seq, value });

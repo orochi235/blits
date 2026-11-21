@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under `history` with `inputs`, an input read again while rate 0 holds mix time still is recorded,
+  and paged to a store, under the frame that read it, not the earlier frame whose value it replaced.
 - Under reduced motion, an arc's `in` mark no longer waits on its fade in, and an arc set to leave
   before its hold ends lists its `end` where it leaves, not a fade out later.
 - Under reduced motion, an `in` or `end` anchor places the voice on the anchored time itself:
