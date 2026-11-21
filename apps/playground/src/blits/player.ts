@@ -180,14 +180,16 @@ export class Player {
   /**
    * Starts the score over at `t` after a loop `length` ms long, as a seek back would, but keeps the
    * picked subject's history: the plots carry on from the lap before rather than starting empty.
-   * The rate playing at the end of the lap carries on through the next.
+   * The rate playing at the end of the lap carries on through the next, and a ramp under way runs on.
    */
   lap(t: number, length: number): void {
     const kept = this.samples;
     const rate = this.rate;
+    const ramp = this.ramping();
     this.lapped += length;
     this.seek(t);
     if (this.rate !== rate) this.apply({ kind: 'rate', rate, over: 0 });
+    if (ramp !== null) this.apply({ kind: 'rate', rate: ramp.rate, over: ramp.left });
     const first = this.samples[0]?.t ?? Number.POSITIVE_INFINITY;
     this.samples = [...kept.filter((s) => s.t < first), ...this.samples];
     const last = this.samples.at(-1)?.t ?? 0;
@@ -399,6 +401,24 @@ export class Player {
     this.lastNow = this.built.transport.now;
     this.shown();
     return true;
+  }
+
+  /**
+   * The rate the last rate change ramps to and the host ms it has left, counted as the transport
+   * counts them, without the gaps a rebase took out; null once it has arrived.
+   */
+  private ramping(): { rate: number; left: number } | null {
+    let ramp: { rate: number; left: number } | null = null;
+    let host = Number.NaN;
+    for (const op of this.ops) {
+      if (op.kind === 'rate') ramp = { rate: op.rate, left: op.over };
+      else if (op.kind === 'rebase') host = Number.NaN;
+      else if (op.kind === 'sync') {
+        if (ramp !== null && !Number.isNaN(host)) ramp.left -= op.at - host;
+        host = op.at;
+      }
+    }
+    return ramp !== null && ramp.left > 0 ? ramp : null;
   }
 
   /** Drops the ops from the first that left the clock past `t`: what a seek back to `t` undoes. */
