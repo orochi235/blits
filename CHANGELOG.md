@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A record a seek reuses no longer keeps the trail row it held before, so a trail no longer
+  reads or writes its poses in a row another subject owns.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied:
   it is copied as a `DataView` over its own bytes.
 - `affine` keeps a transform with no extent along x: it takes its rotation from its y axis, so

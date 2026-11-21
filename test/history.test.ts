@@ -45,4 +45,13 @@ describe('copyHeldInto', () => {
       expect(out.base).not.toBe(h.base);
       expect(out.kept).not.toBe(h.kept);
     });
+
+  it('leaves nothing of a reused record behind, its trail row included', () => {
+    const h = full();
+    const voice = { patch: {} } as never;
+    const into = full();
+    into.probeRow = 3;
+    into.probeEpoch = 7;
+    expect(copyHeldInto(voice, h, into)).toEqual(copyHeld(voice, h));
+  });
 });

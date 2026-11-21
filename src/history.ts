@@ -189,6 +189,8 @@ export function copyHeldInto<I, O>(
   into.unknown = h.unknown;
   into.replay = h.replay;
   into.voice = h.voice;
+  into.probeRow = -1;
+  into.probeEpoch = -1;
   into.slot = h.slot;
   into.run = h.run;
   into.freed = h.freed;
