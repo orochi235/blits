@@ -13,7 +13,6 @@ import {
   vec,
 } from '@msb235/blits';
 import { offer } from '@msb235/blits-panel';
-import { createHistory } from '@weasel-js/history';
 import {
   AmbientLight,
   Box3,
@@ -31,7 +30,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 const HEIGHT = 360;
 const BASE = 0x8899aa;
@@ -91,7 +90,8 @@ const ROWS = 10;
 const GAP = 0.36;
 const grid = (i: number) => ({ x: (i % COLS) * GAP, z: Math.floor(i / COLS) * GAP });
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const canvas = document.createElement('canvas');
   canvas.className = 'three-scene';
   root.append(canvas);
@@ -119,16 +119,25 @@ export default function run(root: HTMLElement): () => void {
   const field = new InstancedMesh(dotGeometry, dotMaterial, COLS * ROWS);
   field.position.set((-(COLS - 1) * GAP) / 2, -0.7, -(ROWS - 1) * GAP + 0.4);
   scene.add(field);
+  d.stops(() => {
+    for (const g of [...shapes, dotGeometry]) g.dispose();
+    for (const p of parts) p.mesh.material.dispose();
+    dotMaterial.dispose();
+    field.dispose();
+    renderer.dispose();
+    canvas.remove();
+  });
 
   // Both mixes keep time on one transport, which the debug panel can pause and seek.
-  const show = transport({ history: { ms: 10_000, every: 250, tape: createHistory } });
+  const show = transport({ history: { ...d.history(), every: 250 } });
 
-  const m = mix<Part, Pose>(PART, { name: 'meshes', transport: show });
+  const m = mix<Part, Pose>(PART, d.options('meshes', { transport: show }));
   m.cue({ patch: bob, loop: true, stagger: (part) => part.index * 150, name: 'bob' });
   m.cue({ patch: spin, loop: true, name: 'spin' });
 
   const instances = Array.from({ length: field.count }, (_, i) => i);
-  const f = mix<number, Dot>(DOT, { name: 'field', transport: show });
+  const f = mix<number, Dot>(DOT, d.options('field', { transport: show }));
+  d.closes(m, f);
   f.cue({ patch: wave, loop: true, stagger: (i) => (grid(i).x + grid(i).z) * 60, name: 'wave' });
 
   const pose: Pose = { offset: [0, 0, 0], turn: [0, 0, 0, 1], size: 1, tint: [0, 0, 0, 0] };
@@ -167,8 +176,8 @@ export default function run(root: HTMLElement): () => void {
     hovered = undefined;
     canvas.classList.remove('three-over');
   };
-  canvas.addEventListener('pointermove', point);
-  canvas.addEventListener('pointerleave', leave);
+  d.on(canvas, 'pointermove', point);
+  d.on(canvas, 'pointerleave', leave);
 
   // Lets the debug panel's pick find a part, or an instance by its index, under the pointer.
   const matrix = new Matrix4();
@@ -211,10 +220,12 @@ export default function run(root: HTMLElement): () => void {
       return part === undefined ? undefined : screenBox(new Box3().setFromObject(part.mesh));
     },
   });
+  d.stops(() => offer({}));
 
-  const stop = loop(
+  d.stops(() => release());
+
+  d.frame(
     show,
-    root,
     (now) => {
       show.sync(now);
 
@@ -256,20 +267,4 @@ export default function run(root: HTMLElement): () => void {
     },
     { settle: [m, f] },
   );
-
-  return () => {
-    stop();
-    release();
-    offer({});
-    canvas.removeEventListener('pointermove', point);
-    canvas.removeEventListener('pointerleave', leave);
-    m.close();
-    f.close();
-    for (const g of [...shapes, dotGeometry]) g.dispose();
-    for (const p of parts) p.mesh.material.dispose();
-    dotMaterial.dispose();
-    field.dispose();
-    renderer.dispose();
-    canvas.remove();
-  };
-}
+});

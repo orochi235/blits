@@ -1,6 +1,5 @@
 import { kit, mix, patch, sum } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Dot {
   index: number;
@@ -25,7 +24,8 @@ const hop = patch<Dot, DotPose>(600, (phase) => ({ y: -46 * Math.sin(Math.PI * p
   writes: ['y'],
 });
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'scrub-demo';
   const row = document.createElement('div');
@@ -55,14 +55,12 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(row, controls);
   root.append(wrap);
 
-  const m = mix<Dot, DotPose>(DOT, {
-    name: 'scrubbing',
-    history: { ms: MEMORY, tape: createHistory },
-  });
+  const m = mix<Dot, DotPose>(DOT, d.options('scrubbing', {}, MEMORY));
+  d.closes(m);
   m.cue({ patch: bob, loop: true });
   // Each hop is a call on the mix, so the tape records it and a seek forward plays it again.
-  for (const d of dots)
-    d.el.addEventListener('click', () => m.cue({ patch: hop, subjects: [d.subject] }));
+  for (const dot of dots)
+    d.on(dot.el, 'click', () => m.cue({ patch: hop, subjects: [dot.subject] }));
 
   // Dragging holds the mix: it isn't synced, so nothing new is recorded, and each move seeks it.
   // Letting go takes the time held off the clock and plays on from where the thumb is.
@@ -80,14 +78,13 @@ export default function run(root: HTMLElement): () => void {
     latest = m.now;
     m.rebase();
   };
-  scrubber.addEventListener('pointerdown', grab);
-  scrubber.addEventListener('input', seek);
-  scrubber.addEventListener('change', release);
+  d.on(scrubber, 'pointerdown', grab);
+  d.on(scrubber, 'input', seek);
+  d.on(scrubber, 'change', release);
 
   const pose: DotPose = { y: 0 };
-  const stop = loop(
+  d.frame(
     m,
-    root,
     (now) => {
       if (!held) {
         m.sync(now);
@@ -97,20 +94,15 @@ export default function run(root: HTMLElement): () => void {
         scrubber.value = String(latest);
       }
       const ahead = m.project(m.now + AHEAD);
-      for (const d of dots) {
-        m.probe(d.subject, pose);
-        d.el.style.transform = `translateY(${pose.y}px)`;
-        ahead.probe(d.subject, pose);
-        d.ghost.style.transform = `translateY(${pose.y}px)`;
+      for (const dot of dots) {
+        m.probe(dot.subject, pose);
+        dot.el.style.transform = `translateY(${pose.y}px)`;
+        ahead.probe(dot.subject, pose);
+        dot.ghost.style.transform = `translateY(${pose.y}px)`;
       }
       const behind = (latest - m.now) / 1000;
       time.textContent = behind > 0.005 ? `${behind.toFixed(2)} s back` : 'live';
     },
     { settle: false },
   );
-
-  return () => {
-    stop();
-    m.close();
-  };
-}
+});
