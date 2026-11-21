@@ -27,7 +27,14 @@ const sky = createSky(canvas);
 const sparks = driveSparks(m, { kit: KIT, bursts: BURSTS });
 
 start.addEventListener('click', async () => {
-  await Tone.start();
+  // A second click while the audio context resumes would start a second show.
+  start.disabled = true;
+  try {
+    await Tone.start();
+  } catch (error) {
+    start.disabled = false;
+    throw error;
+  }
   const sounds = createSounds();
   const sound = driveSound<Shell, Pose, Sound>(m, {
     take: (item, time) => {

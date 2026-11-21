@@ -13,6 +13,7 @@ export default defineConfig({
       '@msb235/blits-quarks': fileURLToPath(
         new URL('./packages/quarks/src/index.ts', import.meta.url),
       ),
+      '@msb235/blits-tone': fileURLToPath(new URL('./packages/tone/src/index.ts', import.meta.url)),
       '@stress': fileURLToPath(new URL('./apps/stress/src', import.meta.url)),
       '@pg': fileURLToPath(new URL('./apps/playground/src', import.meta.url)),
       '@brand': fileURLToPath(new URL('./brand', import.meta.url)),
