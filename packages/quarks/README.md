@@ -15,7 +15,7 @@ import { kit, max, mix, wave } from '@msb235/blits';
 import { channels, drive } from '@msb235/blits-quarks';
 
 const K = kit({ ...channels, heat: max() });   // the driver's channels, plus your own
-const m = mix(K);
+const m = mix(K, { name: 'sparks' });
 const quarks = drive(m, { kit: K, bursts: 'sparks' });
 
 const sparks = quarks.particles({ startLife, startSpeed, startSize, startColor, shape, material });
@@ -84,14 +84,15 @@ import { kit, max, mix } from '@msb235/blits';
 import { channels, drive } from '@msb235/blits-quarks';
 
 const K = kit({ ...channels, heat: max() });   // the driver's channels, plus your own
-const m = mix(K);
+const m = mix(K, { name: 'sparks' });
 const quarks = drive(m, { kit: K, bursts: 'sparks' });
 quarks.attach(fault, fizzSystem, { at: () => fault.at });
 
 // each frame
+const from = m.now;
 m.sync(now);
 quarks.write();
-batch.update(dt / 1000);    // your own BatchedRenderer
+batch.update(Math.max(0, m.now - from) / 1000);   // your own BatchedRenderer, on mix time
 ```
 
 

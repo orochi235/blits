@@ -27,7 +27,7 @@ const flicker = patch<Part, PartPose>(
   { writes: ['gain'] },
 );
 
-const m = mix<Part, PartPose>(PART);
+const m = mix<Part, PartPose>(PART, { name: 'parts' });
 const handle = m.cue({ patch: flicker, loop: true, fade: { in: 300, out: 300 } });
 
 // Once a frame: tell the mix what time it is, then ask for the parts you are about to draw.
@@ -153,9 +153,13 @@ do yet.
 world in a mix: voices push bodies, each body's simulated pose blends with authored motion, and a
 seek replays the world exactly. Its README says how.
 
+`packages/panel` is `@msb235/blits-panel`, a debugger window for any page running blits: every
+mix, its voices and subjects, channels plotted over time, and a clock to pause, step and scrub. It
+releases at the engine's version.
+
 ## Status
 
-v1.1.0, with five consumers. magicsmoke runs every fault on it, wod its wheel, tricks and
+v1.4.0. magicsmoke runs every fault on it, wod its wheel, tricks and
 transitions, weasel its animator's tweens, sherpa its seams, and
 [klieg](https://github.com/orochi235/klieg) composes all three of its systems — letter motion,
 part effects, and the environment a sign is lit by — on a mix each.

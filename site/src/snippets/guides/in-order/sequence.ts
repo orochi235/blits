@@ -10,7 +10,9 @@ declare const shine: Patch<HTMLElement, Pose>;
 declare const heading: HTMLElement;
 declare const lines: HTMLElement[];
 declare const badge: HTMLElement;
-const m = mix<HTMLElement, Pose>(kit<Pose>({ reveal: sum(), glow: sum() }));
+const m = mix<HTMLElement, Pose>(kit<Pose>({ reveal: sum(), glow: sum() }), {
+  name: 'heading',
+});
 // ---
 // At a time: now, unless the spec gives a `start` on the host's clock. `freeze` holds the typed
 // text once it ends.

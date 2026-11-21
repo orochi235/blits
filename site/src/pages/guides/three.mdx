@@ -56,11 +56,11 @@ A channel with no value for a subject writes NaN in its places. The channels abo
 [`@msb235/blits-quarks`](https://www.npmjs.com/package/@msb235/blits-quarks) drives [three.quarks](https://github.com/Alchemist0823/three.quarks) particle systems from a mix: how many particles each subject emits, where, and with what start values. You build the systems and the renderer; once a frame, after [`sync`](Mix.sync), `write()` turns each emitter's pose into particles.
 
 ```ts
-import { kit, max, mix, wave } from '@msb235/blits';
+import { kit, max, mix } from '@msb235/blits';
 import { channels, drive } from '@msb235/blits-quarks';
 
 const K = kit({ ...channels, heat: max() });
-const m = mix(K);
+const m = mix(K, { name: 'sparks' });
 const quarks = drive(m, { kit: K, bursts: 'sparks' });
 ```
 

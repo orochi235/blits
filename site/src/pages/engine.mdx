@@ -1,15 +1,15 @@
 ---
 layout: ../layouts/Page.astro
 title: Engine
-description: The implementation behind a mix. One ships, and the seam is there so a second one does not need the first rewritten.
+description: The implementation behind a mix. mixer runs on the CPU and is the default, gpu folds on the GPU, and the seam is there so another does not need either rewritten.
 ---
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Engine
 
-<p class="lede">An engine is the implementation behind a mix. One ships, called <code>mixer</code>, and every mix uses it unless told otherwise.</p>
+<p class="lede">An engine is the implementation behind a mix. Every mix uses <code>mixer</code> unless told otherwise; <code>gpu</code>, from <code>@msb235/blits/gpu</code>, folds on the GPU instead.</p>
 
-An engine is three things. A [`name`](Engine.name), for error messages. [`runs`](Engine.runs), the set of patch forms it can run: `'fn'` for patches written as a function, `'keys'` for patches written as keyframes, `'motion'` for a `spring` or `glide`. And `create(kit, opts)`, which builds a mix. Everything on a mix is the engine's to implement.
+An engine is three things. A [`name`](Engine.name), for error messages. [`runs`](Engine.runs), the set of patch forms it can run: `'fn'` for patches written as a function, `'keys'` for patches written as keyframes, `'motion'` for a `spring`, `glide` or `tween`. And `create(kit, opts)`, which builds a mix. Everything on a mix is the engine's to implement.
 
 `mixer` runs all three forms in JavaScript, working out each subject's pose when it is probed. Where every voice writing a channel allows it, it works that channel out for every subject at once at the frame's first probe instead, with the same result; `MixOptions.lanes: false` turns that off, and `mix` from `@msb235/blits/lean` is the same engine with that code left out of the bundle, about a quarter smaller.
 
@@ -33,7 +33,7 @@ It folds blits' own patches as they are written for `mixer`: `keys`, `wave`, `tw
 import { gpu, gpuOf } from '@msb235/blits/gpu';
 
 const device = await (await navigator.gpu.requestAdapter())!.requestDevice();
-const m = mix<Cell, Glow>(K, { engine: gpu({ device }) });
+const m = mix<Cell, Glow>(K, { name: 'cells', engine: gpu({ device }) });
 gpuOf(m).subjects(cells, () => ({}));
 m.cue({ patch: keys(2000, PULSE, { ease: 'ease-in-out' }), subjects: cells, loop: true });
 
