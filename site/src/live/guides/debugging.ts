@@ -1,6 +1,5 @@
 import { kit, mix, patch, sum, watched } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Pose {
   y: number;
@@ -26,7 +25,8 @@ const hop = patch<HTMLElement, Pose>(700, (phase) => ({ y: -28 * Math.sin(Math.P
 
 const pad = (s: string, n: number) => s.padEnd(n);
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   const stage = document.createElement('div');
@@ -57,11 +57,14 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(stage, controls, read);
   root.append(wrap);
 
-  const m = mix<HTMLElement, Pose>(LAMP, {
-    name: 'debugging: lamps',
-    labelOf: (el: HTMLElement) => `lamp ${el.dataset.name}`,
-    history: { ms: 10_000, every: 250, tape: createHistory },
-  });
+  const m = mix<HTMLElement, Pose>(
+    LAMP,
+    d.options('debugging: lamps', {
+      labelOf: (el: HTMLElement) => `lamp ${el.dataset.name}`,
+      history: { ...d.history(), every: 250 },
+    }),
+  );
+  d.closes(m);
 
   // `watched()` is what the panel reads, and it knows each voice's name and tags.
   const entry = watched()
@@ -93,11 +96,11 @@ export default function run(root: HTMLElement): () => void {
     picked = el;
     for (const l of lamps) l.setAttribute('aria-pressed', String(l === el));
   };
-  for (const el of lamps) el.addEventListener('click', () => pick(el));
+  for (const el of lamps) d.on(el, 'click', () => pick(el));
   pick(picked);
 
   // Starts 400 ms from now, so it is listed as pending first.
-  hopButton.addEventListener('click', () => {
+  d.on(hopButton, 'click', () => {
     m.cue({
       patch: hop,
       subjects: [picked],
@@ -107,7 +110,7 @@ export default function run(root: HTMLElement): () => void {
     });
   });
   let idling = true;
-  idleButton.addEventListener('click', () => {
+  d.on(idleButton, 'click', () => {
     idling = !idling;
     if (idling) idle();
     else for (const h of m.voices('idle')) h.fade({ over: 1200 });
@@ -121,7 +124,7 @@ export default function run(root: HTMLElement): () => void {
     panelButton.disabled = on;
     panelButton.textContent = on ? 'The debug panel is on' : 'Open the debug panel';
   };
-  panelButton.addEventListener('click', () => {
+  d.on(panelButton, 'click', () => {
     if (panelOn()) return showPanel();
     const url = new URL(location.href);
     url.searchParams.set('panel', 'on');
@@ -129,9 +132,10 @@ export default function run(root: HTMLElement): () => void {
   });
   showPanel();
   const panelCheck = setTimeout(showPanel, 1000);
+  d.stops(() => clearTimeout(panelCheck));
 
   const pose = m.pose();
-  const stop = loop(m, root, (now) => {
+  d.frame(m, (now) => {
     m.sync(now);
     for (const el of lamps) {
       m.probe(el, pose);
@@ -157,10 +161,4 @@ export default function run(root: HTMLElement): () => void {
     lines.push(`m.atRest(${label})  ${pad(String(m.atRest(picked)), 5)}   m.inert  ${m.inert}`);
     read.textContent = lines.join('\n');
   });
-
-  return () => {
-    stop();
-    clearTimeout(panelCheck);
-    m.close();
-  };
-}
+});

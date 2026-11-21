@@ -16,6 +16,13 @@ Click the canvas to send a gust through the boxes. **Tidy** crossfades every box
 
 <Listing of="live/guides/physics.ts" />
 
+<details class="listing-more">
+<summary><code>demo.ts</code>: the setup every example on this site runs on</summary>
+
+<Listing of="live/demo.ts" />
+
+</details>
+
 ## Bodies are subjects
 
 `physics` makes the mix and the world. `sim.body` adds a body from Rapier's own descriptions, and returns the mix's subject for its pose: `position` and `rotation`, read with [`probe`](Mix.probe) like any other subject. Call `sim.sync(now)` each frame where you would call [`sync`](Mix.sync); it syncs the mix, reads what is pushing each body, and steps the world, one Rapier step per [`stepMs`](MixOptions.stepMs).

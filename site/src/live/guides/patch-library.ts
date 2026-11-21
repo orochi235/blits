@@ -1,6 +1,5 @@
 import { color, type Handle, kit, mix, mul, patch, toHex } from '@msb235/blits';
 import { checkPatch } from '@msb235/blits/testing';
-import { createHistory } from '@weasel-js/history';
 import {
   type GlowHost,
   type GlowPose,
@@ -9,7 +8,7 @@ import {
   near,
   pulse,
 } from '../../snippets/guides/patch-library/glow';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Bulb extends Lamp {
   el: HTMLElement;
@@ -54,7 +53,8 @@ const FAR = -10_000;
 /** Lines the checkPatch readout holds room for. */
 const LINES = 6;
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   const stage = document.createElement('div');
@@ -91,11 +91,13 @@ export default function run(root: HTMLElement): () => void {
   // The host's own kit, the library's channels spread into it, and the host object patches read.
   const host: GlowHost = { pointer: { x: FAR, y: 0 } };
   const m = mix<Bulb, GlowPose, GlowHost>(kit<GlowPose>({ ...glowChannels }), {
-    name: 'patch-library: lamps',
-    labelOf: (b: Bulb) => `lamp ${bulbs.indexOf(b) + 1}`,
+    ...d.options('patch-library: lamps', {
+      labelOf: (b: Bulb) => `lamp ${bulbs.indexOf(b) + 1}`,
+      history: { ...d.history(), every: 250 },
+    }),
     host,
-    history: { ms: 10_000, every: 250, tape: createHistory },
   });
+  d.closes(m);
   m.cue({ patch: pulse, subjects: bulbs, loop: true, weight: 0.5, name: 'pulse' });
   m.cue({ patch: near, subjects: bulbs, name: 'near' });
 
@@ -110,13 +112,13 @@ export default function run(root: HTMLElement): () => void {
     return box;
   };
   measure();
-  stage.addEventListener('pointermove', (e) => {
+  d.on(stage, 'pointermove', (e) => {
     const box = measure();
     host.pointer.x = e.clientX - box.left - box.width / 2;
     host.pointer.y = e.clientY - box.top - box.height / 2;
     m.touch();
   });
-  stage.addEventListener('pointerleave', () => {
+  d.on(stage, 'pointerleave', () => {
     host.pointer.x = FAR;
     m.touch();
   });
@@ -136,7 +138,7 @@ export default function run(root: HTMLElement): () => void {
     flickering = m.cue({ patch: p, subjects: bulbs, fade: { in: 300 }, name: 'flicker' });
   };
   for (const [fault, b] of toggles)
-    b.addEventListener('click', () => {
+    d.on(b, 'click', () => {
       if (faults.has(fault)) faults.delete(fault);
       else faults.add(fault);
       b.setAttribute('aria-pressed', String(faults.has(fault)));
@@ -145,7 +147,7 @@ export default function run(root: HTMLElement): () => void {
   recue();
 
   const clashKit = kit<GlowPose>({ glow: mul(), tint: color() });
-  clashButton.addEventListener('click', () => {
+  d.on(clashButton, 'click', () => {
     const other = mix<Bulb, GlowPose>(clashKit, { name: 'patch-library: mul host' });
     try {
       other.cue({ patch: pulse, loop: true });
@@ -159,7 +161,7 @@ export default function run(root: HTMLElement): () => void {
   refused.textContent = ' ';
 
   const pose = m.pose();
-  const stop = loop(m, root, (now) => {
+  d.frame(m, (now) => {
     m.sync(now);
     for (const b of bulbs) {
       m.probe(b, pose);
@@ -170,9 +172,4 @@ export default function run(root: HTMLElement): () => void {
       );
     }
   });
-
-  return () => {
-    stop();
-    m.close();
-  };
-}
+});

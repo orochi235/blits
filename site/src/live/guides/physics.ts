@@ -1,8 +1,7 @@
 import RAPIER from '@dimforge/rapier2d-compat';
 import { kit, lag, level, patch, share } from '@msb235/blits';
 import { channels2, type Pose2, physics } from '@msb235/blits-rapier';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 const HEIGHT = 260;
 const SCALE = 40; // pixels per meter
@@ -23,7 +22,8 @@ const rest = (x: number) =>
     writes: ['position', 'rotation'],
   });
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const canvas = document.createElement('canvas');
   canvas.className = 'physics';
   const button = document.createElement('button');
@@ -31,8 +31,12 @@ export default function run(root: HTMLElement): () => void {
   button.textContent = 'Tidy';
   root.append(canvas, button);
   const ctx = canvas.getContext('2d');
-  let stop = () => {};
   let gone = false;
+  d.stops(() => {
+    gone = true;
+    canvas.remove();
+    button.remove();
+  });
 
   void RAPIER.init().then(() => {
     if (gone || ctx === null) return;
@@ -44,9 +48,10 @@ export default function run(root: HTMLElement): () => void {
       rapier: RAPIER,
       name: 'physics',
       // Kept so the debug panel can seek back through the last ten seconds.
-      history: { ms: 10_000, every: 250, tape: createHistory },
+      history: { ...d.history(), every: 250 },
       weight: share(toward, 0, 2),
     });
+    d.closes(sim.mix);
     sim.body(RAPIER.RigidBodyDesc.fixed(), RAPIER.ColliderDesc.cuboid(width, 0.05));
     sim.body(
       RAPIER.RigidBodyDesc.fixed().setTranslation(-0.05, 3),
@@ -73,17 +78,17 @@ export default function run(root: HTMLElement): () => void {
         weight: share(toward, 1, 2),
       });
     let tidy = false;
-    button.addEventListener('click', () => {
+    d.on(button, 'click', () => {
       tidy = !tidy;
       tidied.set(tidy ? 1 : 0);
       button.textContent = tidy ? 'Let go' : 'Tidy';
     });
-    canvas.addEventListener('click', () => {
+    d.on(canvas, 'click', () => {
       for (const box of boxes) box.drive({ patch: gust });
     });
 
     const pose = sim.mix.pose();
-    stop = loop(sim.mix, root, (now) => {
+    d.frame(sim.mix, (now) => {
       sim.sync(now);
       canvas.width = canvas.clientWidth * devicePixelRatio;
       canvas.height = HEIGHT * devicePixelRatio;
@@ -100,11 +105,4 @@ export default function run(root: HTMLElement): () => void {
       }
     });
   });
-
-  return () => {
-    gone = true;
-    stop();
-    canvas.remove();
-    button.remove();
-  };
-}
+});

@@ -1,6 +1,5 @@
 import { kit, mix, patch, sum } from '@msb235/blits';
-import { createHistory } from '@weasel-js/history';
-import { loop } from '../loop';
+import { demo } from '../demo';
 
 interface Part {
   el: HTMLElement;
@@ -57,7 +56,8 @@ function typed(el: HTMLElement, text: string) {
 
 const pad = (n: number) => String(Math.round(n)).padStart(4);
 
-export default function run(root: HTMLElement): () => void {
+export default demo((d) => {
+  const { root } = d;
   const wrap = document.createElement('div');
   wrap.className = 'rig';
   const card = document.createElement('article');
@@ -100,7 +100,8 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(card, controls, read);
   root.append(wrap);
 
-  const m = mix<Part, Pose>(POSE, { name: 'in-order', history: { ms: KEPT, tape: createHistory } });
+  const m = mix<Part, Pose>(POSE, d.options('in-order', {}, KEPT));
+  d.closes(m);
   m.sync(0);
   m.cue({ patch: typeIn(HEADING), name: 'title', subjects: [heading], freeze: 'after' });
   // Frozen on its last frame, the title has no end until it fades, so the underline waits on its
@@ -130,7 +131,7 @@ export default function run(root: HTMLElement): () => void {
     m.announce('loaded');
     load.disabled = true;
   };
-  load.addEventListener('click', onLoad);
+  d.on(load, 'click', onLoad);
 
   // Scrubbing holds the mix by not syncing it, and seeks it; letting go rebases and plays on.
   let held = false;
@@ -142,15 +143,14 @@ export default function run(root: HTMLElement): () => void {
     held = false;
     m.rebase();
   };
-  scrub.addEventListener('input', onInput);
-  scrub.addEventListener('change', onRelease);
+  d.on(scrub, 'input', onInput);
+  d.on(scrub, 'change', onRelease);
 
   const pose: Pose = { reveal: 0, under: 0, glow: 0 };
   let first = Number.NaN;
   let far = 0;
-  const stop = loop(
+  d.frame(
     m,
-    root,
     (now) => {
       if (Number.isNaN(first)) first = now;
       if (!held) {
@@ -176,12 +176,4 @@ export default function run(root: HTMLElement): () => void {
     },
     { settle: false },
   );
-
-  return () => {
-    stop();
-    load.removeEventListener('click', onLoad);
-    scrub.removeEventListener('input', onInput);
-    scrub.removeEventListener('change', onRelease);
-    m.close();
-  };
-}
+});
