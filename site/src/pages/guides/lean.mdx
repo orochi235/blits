@@ -35,12 +35,12 @@ To compare the two in your own app, keep the full import and pass `lanes: false`
 
 ## How much smaller
 
-Measured on the 0.13.0 source, bundling an entry that imports `kit`, `mix`, `patch`, and `sum` with esbuild 0.28.2 (`--bundle --minify --format=esm`), then `gzip -9`:
+Measured on the source just after 1.4.0, bundling an entry that imports `kit`, `mix`, `patch`, and `sum` with esbuild 0.28.2 (`--bundle --minify --format=esm`), then `gzip -9`:
 
 | Import from | Minified | Gzipped |
 |---|---:|---:|
-| `@msb235/blits` | 202.2 kB | 70.2 kB |
-| `@msb235/blits/lean` | 157.5 kB | 54.2 kB |
+| `@msb235/blits` | 277.4 kB | 97.0 kB |
+| `@msb235/blits/lean` | 215.3 kB | 74.8 kB |
 
 About a fifth to a quarter less. Your bundler and what else you import will move both numbers.
 
