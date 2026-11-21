@@ -57,8 +57,9 @@ export function TrackLayers(p: TrackLayersProps) {
       {defs && track?.colors && (
         <defs>
           <linearGradient id={grad}>
-            {stops(track.colors, track.at, track.length).map((x) => (
-              <stop key={x.at} offset={x.at} stopColor={x.color} />
+            {stops(track.colors, track.at, track.length).map((x, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: stops are positional, and two can share a time
+              <stop key={i} offset={x.at} stopColor={x.color} />
             ))}
           </linearGradient>
         </defs>

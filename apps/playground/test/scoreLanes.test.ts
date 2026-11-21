@@ -52,7 +52,13 @@ function mount(props: Partial<ScoreLanesProps>) {
 const pointer = (el: Element, type: string, clientX: number) =>
   act(() => {
     el.dispatchEvent(
-      new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, clientX, clientY: 40 }),
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        clientX,
+        clientY: 40,
+      }),
     );
   });
 
@@ -89,5 +95,19 @@ describe('ScoreLanes', () => {
     pointer(svg.querySelector('[aria-label="playhead"]') as Element, 'pointerdown', 500);
     pointer(svg, 'pointermove', 10);
     expect(onScrub).toHaveBeenLastCalledWith(0);
+  });
+
+  it('draws a track whose samples share a time with no duplicate keys', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mount({
+      clips: [clip({})],
+      tracks: new Map([
+        [
+          'a',
+          { at: [0, 0, 500], length: 1000, weights: [1, 1, 1], colors: ['red', 'blue', 'green'] },
+        ],
+      ]),
+    });
+    expect(error).not.toHaveBeenCalled();
   });
 });
