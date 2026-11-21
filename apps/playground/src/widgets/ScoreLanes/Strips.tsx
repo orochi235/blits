@@ -38,7 +38,7 @@ export function Strips(props: ScoreLanesProps) {
       role="group"
       aria-label="score"
       onPointerDown={(e) => {
-        (e.target as Element).setPointerCapture(e.pointerId);
+        e.currentTarget.setPointerCapture(e.pointerId);
         held.current = true;
         scrub(e);
       }}
@@ -47,6 +47,9 @@ export function Strips(props: ScoreLanesProps) {
         held.current = false;
       }}
       onPointerCancel={() => {
+        held.current = false;
+      }}
+      onLostPointerCapture={() => {
         held.current = false;
       }}
     >

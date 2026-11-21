@@ -58,9 +58,11 @@ function Lanes(props: ScoreLanesProps) {
     if (t >= 0) onScrub(Math.min(duration, t));
   };
 
+  // The score holds the pointer, not the handle pressed: a drag can unmount that handle.
+  const capture = (e: PointerEvent) => svg.current?.setPointerCapture(e.pointerId);
   const begin = (e: PointerEvent, clip: Clip, handle: Handle) => {
     e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capture(e);
     onSelect(clip.id);
     const p = local(e);
     if (e.altKey && (handle === 'body' || handle === 'end'))
@@ -73,7 +75,7 @@ function Lanes(props: ScoreLanesProps) {
   };
   const beginScrub = (e: PointerEvent) => {
     e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capture(e);
     setDrag({ scrub: true });
     scrubTo(local(e).x);
   };
@@ -119,7 +121,7 @@ function Lanes(props: ScoreLanesProps) {
   const laneAt = (y: number) => Math.floor((y - RULER) / laneH);
   const beginGroup = (e: PointerEvent, clip: Clip) => {
     e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capture(e);
     onSelect(clip.id);
     const p = local(e);
     setDrag({ group: clip.id, label: clip.label, x: p.x, y: p.y });
@@ -174,6 +176,7 @@ function Lanes(props: ScoreLanesProps) {
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerCancel={reset}
+      onLostPointerCapture={reset}
       onPointerDown={() => onSelect(null)}
     >
       <defs>
