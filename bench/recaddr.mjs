@@ -48,7 +48,7 @@ for (let f = 0; f < FRAMES; f++) {
   m.pull(subjects, columns);
 }
 
-// %DebugPrint writes each address to stdout from C++; bench/recgaps.mjs reads the lines after.
+// %DebugPrint writes each address to stdout from C++; bench/recaddr.sh keeps the lines it needs.
 const debugPrint = new Function('o', '%DebugPrint(o)');
 for (const lane of m.lanes.lanes) {
   const recs = lane.records.filter(Boolean).slice(0, SHOW);
