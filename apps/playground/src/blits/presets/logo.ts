@@ -10,11 +10,17 @@ import type { Composition } from '../composition';
 const WORD = compose('blits');
 const { CYCLE } = logoHues();
 
-/** The sign: the word with a column each side and 3 blank rows above it, as the rail stands it. */
-const LEFT = 2;
-const TOP = 4;
+/**
+ * The rail's sign (site/src/live/sign.ts): a dot of padding round the word, a blank column each
+ * side of it, 3 blank rows above it and 13 below. The stage stops 2 rows under the word, but the
+ * hues turn over the whole sign, as on the rail.
+ */
+const PAD = 1;
+const LEFT = PAD + 1;
+const TOP = PAD + 3;
 const COLS = WORD.cols + 2 * LEFT;
 const ROWS = TOP + WORD.rows + 2;
+const SIGN_ROWS = TOP + WORD.rows + 13 + PAD;
 const lit = JSON.stringify(WORD.lit.map(([c, r]) => `${c + LEFT},${r + TOP}`));
 
 const c: Composition = {
@@ -54,7 +60,7 @@ const c: Composition = {
         kind: 'fn',
         period: CYCLE,
         writes: ['color'],
-        at: `(() => {\n  const { CYCLE, hueAt, turnedHex } = (${logoHues.toString()})();\n  return (phase, s) => ({ color: turnedHex(hueAt(phase * CYCLE, s.col, s.row, ${COLS}, ${ROWS})) });\n})()`,
+        at: `(() => {\n  const { CYCLE, hueAt, turnedHex } = (${logoHues.toString()})();\n  return (phase, s) => ({ color: turnedHex(hueAt(phase * CYCLE, s.col, s.row, ${COLS}, ${SIGN_ROWS})) });\n})()`,
       },
     },
     {

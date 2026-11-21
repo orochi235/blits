@@ -1,3 +1,5 @@
+import { compose } from '@brand/glyphs.js';
+import { logoHues } from '@brand/hues.js';
 import { input, type SpanHandle } from '@msb235/blits';
 import { compile } from '@pg/blits/compile';
 import type { Expr } from '@pg/blits/composition';
@@ -135,4 +137,37 @@ it('every weight and blend built on a level stays an input, so a history records
       expect([name, (r.fn as { input?: boolean }).input]).toEqual([name, true]);
     }
   }
+});
+
+describe('logo', () => {
+  const comp = PRESETS.find((x) => x.name === 'logo')?.comp;
+  if (!comp) throw new Error('no logo');
+  const play = (hover: number) => {
+    const subjects = subjectsOf(comp.stage);
+    const p = new Player(() => compile(comp, subjects), subjects, { levels: comp.levels });
+    p.setLevel('hover', hover);
+    p.seek(1000);
+    p.point(10, 5);
+    return { p, subjects };
+  };
+
+  it("turns its hues on the rail sign's whole board, the rows below the word included", () => {
+    const voice = comp.voices.find((v) => v.id === 'hues');
+    if (voice?.patch.kind !== 'fn') throw new Error('no hues');
+    const at = new Function(`return ${voice.patch.at}`)() as (
+      phase: number,
+      s: { col: number; row: number },
+    ) => { color: number };
+    const { CYCLE, hueAt, turnedHex } = logoHues();
+    const word = compose('blits');
+    // The rail's sign: a dot of padding, the word a column in, 3 rows above it and 13 below.
+    const cols = word.cols + 4;
+    const rows = 1 + 3 + word.rows + 13 + 1;
+    for (let phase = 0; phase < 1; phase += 0.01)
+      for (const s of [
+        { col: 3, row: 4 },
+        { col: 10, row: 9 },
+      ])
+        expect(at(phase, s).color).toBe(turnedHex(hueAt(phase * CYCLE, s.col, s.row, cols, rows)));
+  });
 });
