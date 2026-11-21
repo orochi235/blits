@@ -72,3 +72,6 @@ DevTools extension's are in their READMEs.
 - **An explainer settles to rest on blur over the frame it stopped on** (2026-11-08): its own mix
   (`site/src/explainers/kit/settle.ts`) fades the held poses to rest over 400 ms while explainer time
   holds, so the run its player replays never holds a fade.
+- **The time explainer's twin stays a mix of its own** (2026-11-21), not on a shared `transport()`
+  with the main mix: it shows a mix that does not call `rebase()` beside one that does, and a
+  shared transport would rebase both.
