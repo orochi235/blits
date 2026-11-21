@@ -303,7 +303,18 @@ export function sharedNodes(doc: (member: string) => string | undefined) {
     name: f.string('').describe(d('name')),
     start: f.number(0).step(10).describe(d('start')),
     seek: optional().label('seek').describe(d('seek')),
-    fadeIn: f.number(0).step(10).label('fade in').describe(d('fade')),
+    // Unset differs from 0: a `rise` with no `over` takes `fade.out` where `fade.in` is unset.
+    fadeIn: optional()
+      .label('fade in')
+      .describe(d('fade'))
+      .render(
+        optionalNumber({
+          placeholder: '0',
+          hint: 'emptied, a rise without its own over takes the fade out',
+          min: 0,
+          step: 10,
+        }),
+      ),
     fadeOut: f.number(0).step(10).label('fade out').describe(d('fade')),
     fadeEase: f
       .custom<Timed['fade']['ease']>('ease', undefined)
@@ -320,7 +331,7 @@ export const sharedConfig = (x: Timed) => ({
   start: x.start,
   rate: x.rate,
   seek: x.seek,
-  fadeIn: x.fade.in ?? 0,
+  fadeIn: x.fade.in,
   fadeOut: x.fade.out ?? 0,
   fadeEase: x.fade.ease,
   freeze: x.freeze ?? 'none',
@@ -339,6 +350,7 @@ export function writtenShared<T extends Timed>(x: T, path: string, value: unknow
     case 'seek':
       return withKey(x, 'seek', n);
     case 'fadeIn':
+      if (value === undefined) return { ...x, fade: withKey(x.fade, 'in', undefined) };
       return n === undefined ? x : { ...x, fade: { ...x.fade, in: Math.max(0, n) } };
     case 'fadeOut':
       return n === undefined ? x : { ...x, fade: { ...x.fade, out: Math.max(0, n) } };
