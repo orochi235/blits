@@ -101,6 +101,7 @@ export class Player {
       this.at = from.at;
       for (const [name, v] of from.slid) this.slid.set(name, v);
       this.authored = from.authored && new Map(from.authored);
+      this.events.tag = from.events.tag;
     }
     if (init) this.author(init.levels);
     this.built = this.fresh();
