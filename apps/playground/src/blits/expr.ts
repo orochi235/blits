@@ -9,6 +9,7 @@ import {
   peak,
   plain,
   type Signal,
+  share,
   slew,
 } from '@msb235/blits';
 import { parse } from 'acorn';
@@ -107,6 +108,8 @@ export const compileExpr = <F extends (...args: never[]) => unknown>(
       lag,
       peak,
       gate,
+      input,
+      share,
       level: (name: string) => scope.level(name),
       around: (r: number, opts?: { ease?: Easing }) => {
         if (scope.around === undefined) throw new Error('around needs a mix');

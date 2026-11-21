@@ -110,7 +110,9 @@ reads. A `PatchSource` is one of:
 
 An `Expr` is `{ code }`, the source of a function: `(s) => …` over a subject for `stagger` and
 `target`, or a signal for `weight`, such as `slew(level('mouse'), { riseMs: 150, fallMs: 900 })`.
-It is compiled with `new Function` in a scope holding `slew`, `lag`, `peak`, `gate`,
+It is compiled with `new Function` in a scope holding `slew`, `lag`, `peak`, `gate`, `share`,
+`input`, which a signal of your own built on a level needs (`input((s, set) => …, [level('x')])`)
+for a seek back to replay the level as it was,
 `level(name)`, which reads the composition's level of that name (0 for a name it lacks), and
 `around(r, { ease })`, blits' `mix.around` over a circle of `r` dots centered on the stage's pointer. A throw
 inside the returned function rests that call and is counted, and the field shows the count and the

@@ -1,5 +1,7 @@
-import type { SpanHandle } from '@msb235/blits';
+import { input, type SpanHandle } from '@msb235/blits';
 import { compile } from '@pg/blits/compile';
+import type { Expr } from '@pg/blits/composition';
+import { compileExpr, scopeOf } from '@pg/blits/expr';
 import { FRAME } from '@pg/blits/frame';
 import { load } from '@pg/blits/load';
 import { Player } from '@pg/blits/player';
@@ -117,4 +119,20 @@ it('bounded glow: the glow follows the pointer, and a replay starts it where the
   p.seek(0);
   expect(p.built.handles.get('glow')?.weightOf(subjects[corner] as Subject)).toBe(1);
   expect(p.columns.glow[at(1, 0)]).toBeGreaterThan(0);
+});
+
+it('every weight and blend built on a level stays an input, so a history records it', () => {
+  for (const { name, comp } of PRESETS) {
+    const scope = { ...scopeOf(comp.levels), around: () => input<Subject>(() => 1) };
+    const exprs = [
+      ...comp.voices.map((v) => v.weight),
+      ...(comp.groups ?? []).map((g) => g.weight),
+      ...Object.values(comp.blends ?? {}),
+    ].filter((w): w is Expr => typeof w === 'object' && w.code.includes('level('));
+    for (const expr of exprs) {
+      const r = compileExpr(expr, scope, 0);
+      if ('error' in r) throw new Error(`${name}: ${r.error}`);
+      expect([name, (r.fn as { input?: boolean }).input]).toEqual([name, true]);
+    }
+  }
 });

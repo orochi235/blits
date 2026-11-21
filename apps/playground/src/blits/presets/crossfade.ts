@@ -16,7 +16,7 @@ const c: Composition = {
       loop: true,
       role: 'tone',
       fade: {},
-      weight: { code: '(s, set) => 1 - level("mix")(s, set)' },
+      weight: { code: 'share(level("mix"), 0, 2)' },
       patch: {
         kind: 'keys',
         period: 1000,
