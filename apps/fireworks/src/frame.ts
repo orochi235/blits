@@ -20,12 +20,12 @@ export function createFrame<I, O>(m: Mix<I, O>, opts: FrameOptions): (now: numbe
   return (now) => {
     if (now - last > AWAY_MS) m.rebase();
     last = now;
-    if (opts.auto() && now >= next) {
-      opts.launch();
-      next = now + (350 + Math.random() * 900) / Math.max(m.rate, 0.1);
-    }
     const before = m.now;
     m.sync(now);
+    if (opts.auto() && m.now >= next) {
+      opts.launch();
+      next = m.now + 350 + Math.random() * 900;
+    }
     const played = m.now - before;
     return Number.isFinite(played) ? Math.min(Math.max(played, 0), AWAY_MS) / 1000 : 0;
   };

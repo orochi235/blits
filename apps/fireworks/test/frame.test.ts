@@ -37,4 +37,26 @@ describe('the fireworks frame', () => {
     expect(step(5000)).toBe(0);
     expect(m.now).toBe(0);
   });
+
+  it('keeps launching on the mix clock: none while the panel pauses, sparser at a slower rate', () => {
+    const m = mix<Shell, Pose>(KIT, { name: 'show' });
+    let launched = 0;
+    const step = createFrame(m, { launch: () => launched++, auto: () => true });
+    step(0);
+    run(step, 0, 400);
+    const playing = launched;
+    expect(playing).toBeGreaterThanOrEqual(4);
+    const hold = entryOf(m).hold();
+    launched = 0;
+    run(step, 6400, 400);
+    expect(launched).toBe(0);
+    hold.free();
+    m.rate = 0.1;
+    step(12_800);
+    launched = 0;
+    // 64 s of host time at a tenth of the rate is 6.4 s of the show.
+    run(step, 12_800, 4000);
+    expect(launched).toBeGreaterThanOrEqual(4);
+    expect(launched).toBeLessThanOrEqual(20);
+  });
 });
