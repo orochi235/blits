@@ -113,16 +113,20 @@ try {
       'select[aria-label="mix"]',
       await option.first().getAttribute('value'),
     );
-    await panel
-      .locator('.bp-note', { hasText: 'added by the debugger' })
-      .waitFor({ timeout: 5000 });
+    // The show keeps history of its own, which the mark's default leaves alone.
+    const mark = await app.evaluate(() => sessionStorage.getItem('blits-devtools:history'));
+    if (mark !== '10000') throw new Error(`history mark reads ${mark}`);
+    await panel.locator('.bp-note', { hasText: 'its own' }).waitFor({ timeout: 5000 });
     await panel.click('.bp-bar button[title="hold the clock"]');
     await panel.locator('.bp-bar button[title="free the clock"]').waitFor();
     await panel.waitForTimeout(150);
     const scrub = panel.locator('.bp-bar .bp-scrub');
     if (await scrub.isDisabled()) throw new Error('scrub bar stayed off with history');
+    const held = await panel.locator('.bp-bar .bp-time').textContent();
     await scrub.fill(await scrub.getAttribute('min'));
     await panel.waitForTimeout(200);
+    if ((await panel.locator('.bp-bar .bp-time').textContent()) === held)
+      throw new Error('scrub did not move the clock');
   });
   await panel.screenshot({ path: join(shots, 'scrubbed.png') });
   if (errors.length > 0) throw new Error(`errors:\n${errors.join('\n')}`);
