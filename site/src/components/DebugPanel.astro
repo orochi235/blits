@@ -16,5 +16,20 @@
       else localStorage.removeItem(KEY);
     } catch {}
   }
-  if (on) void import('@msb235/blits-panel').then(({ mount }) => mount());
+  // The dev server compiles the panel for React's fast refresh, which needs the preamble that
+  // @astrojs/react writes only into pages with a React island.
+  const preamble = async () => {
+    const w = window as unknown as Record<string, unknown>;
+    if (!import.meta.env.DEV || w.__vite_plugin_react_preamble_installed__) return;
+    const url = `${import.meta.env.BASE_URL.replace(/\/?$/, '/')}@react-refresh`;
+    const { default: refresh } = await import(/* @vite-ignore */ url);
+    refresh.injectIntoGlobalHook(window);
+    w.$RefreshReg$ = () => {};
+    w.$RefreshSig$ = () => (type: unknown) => type;
+    w.__vite_plugin_react_preamble_installed__ = true;
+  };
+  if (on)
+    void preamble()
+      .then(() => import('@msb235/blits-panel'))
+      .then(({ mount }) => mount());
 </script>
