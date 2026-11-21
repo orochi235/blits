@@ -42,7 +42,7 @@ export function ExprInput({
       value={draft}
       placeholder={placeholder}
       spellCheck={false}
-      isInvalid={Boolean(error)}
+      invalid={Boolean(error)}
       errorMessage={error ?? undefined}
       onChange={(next) => {
         setDraft(next);

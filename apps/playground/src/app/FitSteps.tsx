@@ -108,7 +108,7 @@ function FitRow({ row }: { row: LeafContext }) {
                       size="sm"
                       variant="ghost"
                       iconOnly
-                      ariaLabel="move up"
+                      aria-label="move up"
                       disabled={i === 0}
                       onClick={() => move(i, -1)}
                     >
@@ -118,7 +118,7 @@ function FitRow({ row }: { row: LeafContext }) {
                       size="sm"
                       variant="ghost"
                       iconOnly
-                      ariaLabel="move down"
+                      aria-label="move down"
                       disabled={i === list.length - 1}
                       onClick={() => move(i, 1)}
                     >

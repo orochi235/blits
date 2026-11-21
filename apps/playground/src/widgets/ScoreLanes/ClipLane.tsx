@@ -41,7 +41,7 @@ function menuItems(c: Clip, clips: readonly Clip[]): MenuButtonItem[] {
       continue;
     items.push({ value: `group:${o.id}`, label: `Group with ${o.label}` });
   }
-  items.push({ value: 'leave', label: 'Leave group', isDisabled: c.group === undefined });
+  items.push({ value: 'leave', label: 'Leave group', disabled: c.group === undefined });
   return items;
 }
 

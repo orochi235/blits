@@ -102,7 +102,7 @@ export function RulesPanel({
         iconOnly
         variant="ghost"
         size="sm"
-        ariaLabel={`default ${ch} rule`}
+        aria-label={`default ${ch} rule`}
         tooltip={`back to blits' default: ${label(DEFAULT_RULES[ch])}`}
         onClick={() => set(ch, DEFAULT_RULES[ch])}
       >

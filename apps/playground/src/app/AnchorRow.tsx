@@ -41,7 +41,7 @@ function AnchorRow({ row }: { row: LeafContext }) {
           label="insert…"
           aria-label="insert an anchor"
           items={INSERTS}
-          isDisabled={it === undefined}
+          disabled={it === undefined}
           disabledReason="no voice to wait on"
           onAction={(k) => {
             const make = PLACEMENTS[k];

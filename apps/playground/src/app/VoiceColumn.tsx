@@ -67,7 +67,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
         <MenuButton
           label="add group"
           items={GROUP_KINDS}
-          isDisabled={groupsFull(p.comp)}
+          disabled={groupsFull(p.comp)}
           tooltip={groupsFull(p.comp) ? `at most ${MAX_GROUPS} groups` : undefined}
           onAction={p.onAddGroup}
         />
@@ -82,7 +82,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
         <div className={s.row} role="status">
           <Input
             label="copy this link"
-            isReadOnly
+            readOnly
             value={p.shared.url}
             ref={p.linkRef}
             onFocus={(e) => (e.target as HTMLInputElement).select()}

@@ -71,13 +71,13 @@ export function Transport(p: TransportProps) {
         onChange={p.onSeekBy}
       />
       <span className={s.level}>
-        <Button iconOnly variant="ghost" ariaLabel="back one frame" onClick={() => p.onStep(-1)}>
+        <Button iconOnly variant="ghost" aria-label="back one frame" onClick={() => p.onStep(-1)}>
           <Glyph name="ui:stepBack" />
         </Button>
         <Button
           iconOnly
           variant="ghost"
-          ariaLabel="forward one frame"
+          aria-label="forward one frame"
           disabled={p.rate === 0}
           onClick={() => p.onStep(1)}
         >
