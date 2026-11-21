@@ -1,0 +1,61 @@
+{
+ "id": "apps.devtools",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/devtools/src/devtools.ts",
+  "apps/devtools/src/names.ts",
+  "apps/devtools/src/page.ts",
+  "apps/devtools/src/pair.ts",
+  "apps/devtools/src/panel.css",
+  "apps/devtools/src/panel.tsx",
+  "apps/devtools/src/relay.ts",
+  "apps/devtools/src/start.ts",
+  "apps/devtools/src/worker.ts"
+ ],
+ "a": 5,
+ "b": 3,
+ "m": 3,
+ "distinct": 5,
+ "chapman": 5,
+ "unfound": 0,
+ "read": {
+  "A": 9,
+  "B": 9
+ },
+ "patches": 5,
+ "verify": {
+  "ok": true,
+  "files": 9,
+  "testFiles": {
+   "failed": 0,
+   "passed": 3,
+   "total": 3
+  },
+  "repairs": 0
+ },
+ "questions": 2,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 2,
+   "B": 2.4,
+   "match": 0.4,
+   "fix": 3.8
+  },
+  "nodes": {
+   "A": "teitou",
+   "B": "msb-uai",
+   "fix": "msb-uai"
+  },
+  "weightedTokens": 643347,
+  "costUsd": 2.04
+ },
+ "fixCommits": [
+  "a6135e43345c90bdcd5a513582755001c26d01c3",
+  "950d674c9ae6dd12bd2e6c6556199fdd6d352f6e",
+  "e0c43bc78e68c9c817cde52899ad0250a18ad5e7",
+  "890ebd736eb6787559abc596cd7a89fbfee3a481",
+  "91fb49aaeeae1e7c35ba72f10d698e02ea961f04"
+ ]
+}

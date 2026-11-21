@@ -1,0 +1,28 @@
+{
+ "pairs": [
+  [
+   0,
+   0
+  ],
+  [
+   3,
+   1
+  ],
+  [
+   4,
+   2
+  ]
+ ],
+ "a": [
+  "A re-attach in the same document can end its own new agent: the relay's `bye` is not tied to a port",
+  "An attach that fails after `page.js` went in leaves that agent running in the page with no port",
+  "A failed history toggle shows \"This page can't be inspected\" while the page is still attached",
+  "The panel's toggle posts on a port that may be disconnected, and it is the only send without a guard",
+  "The button's tooltip hardcodes \"10 s\" instead of deriving it from HISTORY_MS"
+ ],
+ "b": [
+  "A re-attach to a live document can end the new agent with the old port's `bye`",
+  "\"Reload with history\" throws instead of sending while the panel's port is reopening",
+  "The button's tooltip hard-codes \"10 s\" instead of reading `HISTORY_MS`"
+ ]
+}

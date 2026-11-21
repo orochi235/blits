@@ -1,0 +1,14 @@
+{
+ "pairs": [
+  [
+   0,
+   0
+  ]
+ ],
+ "a": [
+  "The site's /playground page mounts `Playground` without Oswald's @font-face or the font wait, so diagram title bars bake in a fallback face"
+ ],
+ "b": [
+  "The docs site's /playground/ page renders without the Oswald wait, so its diagram title bars bake in a fallback face"
+ ]
+}

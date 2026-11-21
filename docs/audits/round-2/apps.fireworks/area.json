@@ -1,0 +1,60 @@
+{
+ "id": "apps.fireworks",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/fireworks/src/app.css",
+  "apps/fireworks/src/main.ts",
+  "apps/fireworks/src/show.ts",
+  "apps/fireworks/src/sky.ts",
+  "apps/fireworks/src/sound.ts"
+ ],
+ "a": 6,
+ "b": 5,
+ "m": 5,
+ "distinct": 6,
+ "chapman": 6,
+ "unfound": 0,
+ "read": {
+  "A": 5,
+  "B": 5
+ },
+ "patches": 8,
+ "verify": {
+  "ok": true,
+  "files": 13,
+  "testFiles": {
+   "failed": 0,
+   "passed": 4,
+   "total": 4
+  },
+  "repairs": 0
+ },
+ "questions": 2,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 3,
+   "B": 1.4,
+   "match": 0.1,
+   "fix": 6.9
+  },
+  "nodes": {
+   "A": "teitou",
+   "B": "studio",
+   "fix": "teitou"
+  },
+  "weightedTokens": 915440,
+  "costUsd": 2.7
+ },
+ "fixCommits": [
+  "1560d4540d78bc870ceeb3a3cea46a87524d0a80",
+  "33db8a47e2e766a67df2642d35c162abe0d33d60",
+  "0c50c62266bb263a09990b41f32a2584c9b72d18",
+  "5603196aff06a545be607c144192ab29caeec930",
+  "ce607bf732f775c1a1ab997e163afce0584af1f5",
+  "d0fcd49de0d7e84f166ceedc0872185acca4ac54",
+  "f7ffcad4de96786bf8bfa4252bf952b55e43686f",
+  "8d0fc8d787ab0f9d6d34831588f5579731576e00"
+ ]
+}

@@ -1,0 +1,51 @@
+{
+ "id": "apps.playground",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/playground/src/Playground.tsx",
+  "apps/playground/src/icons.gen.ts",
+  "apps/playground/src/main.tsx"
+ ],
+ "a": 1,
+ "b": 1,
+ "m": 1,
+ "distinct": 1,
+ "chapman": 1,
+ "unfound": 0,
+ "read": {
+  "A": 3,
+  "B": 3
+ },
+ "patches": 1,
+ "verify": {
+  "ok": true,
+  "files": 3,
+  "testFiles": {
+   "failed": 0,
+   "passed": 1,
+   "total": 1
+  },
+  "repairs": 0
+ },
+ "questions": 0,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 0.8,
+   "B": 1.2,
+   "match": 1.3,
+   "fix": 1.7
+  },
+  "nodes": {
+   "A": "teitou",
+   "B": "teitou",
+   "fix": "msb-uai"
+  },
+  "weightedTokens": 402239,
+  "costUsd": 1.17
+ },
+ "fixCommits": [
+  "c71313cf9e2e85325328b81d21de6d84796882d4"
+ ]
+}

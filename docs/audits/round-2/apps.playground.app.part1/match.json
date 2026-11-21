@@ -1,0 +1,25 @@
+{
+ "pairs": [
+  [
+   0,
+   2
+  ],
+  [
+   2,
+   0
+  ]
+ ],
+ "a": [
+  "The marks table keeps the oldest 120 marks, in earliest-first order, while the other lists keep the newest",
+  "A refused or unchanged level, stage or title edit still pushes an undo step and rebuilds the player",
+  "A channel's ease can't be switched off steps while the patch's ease is steps",
+  "The booker's drain tag is dropped when the stage changes, though sliders and playhead carry over",
+  "Committing an empty retarget/push expression leaves the previous error on screen",
+  "Save revokes the object URL in the same tick as `a.click()`"
+ ],
+ "b": [
+  "A channel can never be given a smooth curve while the patch's ease is stepped",
+  "Anchor \"insert…\" for a group can target one of the group's own members, or a voice that does not exist",
+  "The marks table keeps the oldest 120 marks, so new ones past that never show"
+ ]
+}

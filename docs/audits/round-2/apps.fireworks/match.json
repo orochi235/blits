@@ -1,0 +1,39 @@
+{
+ "pairs": [
+  [
+   0,
+   0
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   3,
+   3
+  ],
+  [
+   4,
+   4
+  ]
+ ],
+ "a": [
+  "Sparks age on a wall-clock gap times `m.rate`, not on the mix's clock, so a panel pause, a hold rate, or a seek doesn't reach them",
+  "Auto-launch is timed on `performance.now()` in the frame loop, so it keeps launching while the panel holds the mix paused",
+  "Without the in-page panel the mix has no `history`, so the DevTools extension can't seek it",
+  "A double-click on \"Start the show\" builds two sound graphs, two drivers and two frame loops",
+  "Overlapping bangs share one panner and one mono NoiseSynth and MembraneSynth, so a second shell moves the first's ringing tail to its own side",
+  "The sky box loses its 16:9 shape on a narrow viewport, while the camera stays 16:9, so the show is drawn stretched"
+ ],
+ "b": [
+  "Sparks age on frame gap × `m.rate`, not on mix time, so the panel's pause and any hold leave them moving",
+  "\"Keep launching\" times launches on the frame loop's own wall clock, and keeps launching while the mix is paused",
+  "The mix has no `history`, so the panel can't seek the demo",
+  "Clicking \"Start the show\" twice before `Tone.start()` resolves starts the show twice",
+  "Overlapping shells share one panner, so a later bang re-pans an earlier one still sounding"
+ ]
+}

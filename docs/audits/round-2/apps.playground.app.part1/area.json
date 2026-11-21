@@ -1,0 +1,82 @@
+{
+ "id": "apps.playground.app.part1",
+ "commit": "0d1aa23ae22834c481f05bd51a4972ebae74778d",
+ "date": "2026-11-21",
+ "files": [
+  "apps/playground/src/app/AimField.tsx",
+  "apps/playground/src/app/AnchorRow.tsx",
+  "apps/playground/src/app/AnnouncedFields.tsx",
+  "apps/playground/src/app/App.module.css",
+  "apps/playground/src/app/App.tsx",
+  "apps/playground/src/app/BlendField.tsx",
+  "apps/playground/src/app/BothPanel.tsx",
+  "apps/playground/src/app/ChannelTiming.tsx",
+  "apps/playground/src/app/CompositionControls.tsx",
+  "apps/playground/src/app/DeskPanel.tsx",
+  "apps/playground/src/app/DiagramTabs.module.css",
+  "apps/playground/src/app/DiagramTabs.tsx",
+  "apps/playground/src/app/EaseField.tsx",
+  "apps/playground/src/app/Events.module.css",
+  "apps/playground/src/app/EventsPanel.tsx",
+  "apps/playground/src/app/FadeControls.tsx",
+  "apps/playground/src/app/FileButtons.tsx",
+  "apps/playground/src/app/FitReadout.tsx",
+  "apps/playground/src/app/FitSteps.tsx",
+  "apps/playground/src/app/FlowPanel.module.css",
+  "apps/playground/src/app/FlowPanel.tsx",
+  "apps/playground/src/app/Group.module.css",
+  "apps/playground/src/app/GroupPanel.tsx",
+  "apps/playground/src/app/Header.tsx",
+  "apps/playground/src/app/HintsFields.tsx",
+  "apps/playground/src/app/Inspector.tsx",
+  "apps/playground/src/app/KeyEditor.tsx",
+  "apps/playground/src/app/LiveMix.tsx"
+ ],
+ "a": 6,
+ "b": 3,
+ "m": 2,
+ "distinct": 7,
+ "chapman": 8.3,
+ "unfound": 1.3,
+ "read": {
+  "A": 28,
+  "B": 28
+ },
+ "patches": 7,
+ "verify": {
+  "ok": true,
+  "files": 16,
+  "testFiles": {
+   "failed": 0,
+   "passed": 27,
+   "total": 27
+  },
+  "repairs": 0
+ },
+ "questions": 2,
+ "budgetHit": [],
+ "jobs": {
+  "minutes": {
+   "A": 3.3,
+   "B": 6.4,
+   "match": 0.1,
+   "fix": 4.1
+  },
+  "nodes": {
+   "A": "msb-uai",
+   "B": "teitou",
+   "fix": "teitou"
+  },
+  "weightedTokens": 1792809,
+  "costUsd": 5.05
+ },
+ "fixCommits": [
+  "64796c9b7b7ab7b76d02d18d089223cfe91edb2d",
+  "e25dcfc3c63f8cc5daad62bf047495d38a557141",
+  "d90c2eecb378bda966f6d4a61aeb2734f8c1c052",
+  "bb5d4c2c0253b10eec026bc7ba202969807cbdb1",
+  "ce5765f13710e0e48ecf9f864ff9917ee6330b84",
+  "2f95c3fb410d7ac751209793cc4b18e623aa06b5",
+  "7ffa81b1f9b675bd745fabfa7bbc010b95fbdec1"
+ ]
+}

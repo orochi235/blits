@@ -1,0 +1,3 @@
+apps/playground/src/Playground.tsx
+apps/playground/src/icons.gen.ts
+apps/playground/src/main.tsx

@@ -1,0 +1,9 @@
+apps/devtools/src/devtools.ts
+apps/devtools/src/names.ts
+apps/devtools/src/page.ts
+apps/devtools/src/pair.ts
+apps/devtools/src/panel.css
+apps/devtools/src/panel.tsx
+apps/devtools/src/relay.ts
+apps/devtools/src/start.ts
+apps/devtools/src/worker.ts
