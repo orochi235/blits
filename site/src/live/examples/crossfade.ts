@@ -1,4 +1,5 @@
 import { color, css, kit, mix, mul, oklab, patch, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 interface Dot {
@@ -49,7 +50,10 @@ export default function run(root: HTMLElement): () => void {
   root.append(button);
 
   // Both loops share a role, so mid-crossfade a dot is a blend of the two, not both stacked.
-  const m = mix<Dot, DotPose>(DOT, { name: 'crossfade' });
+  const m = mix<Dot, DotPose>(DOT, {
+    name: 'crossfade',
+    history: { ms: 10_000, tape: createHistory },
+  });
   const fade = { in: 1200, out: 1200 };
   let playing = 'wave';
   let current = m.cue({ patch: wave, loop: true, role: 'motion', fade: { out: fade.out } });

@@ -1,4 +1,5 @@
 import { type Handle, kit, mix, mul, patch, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 interface Spark {
@@ -37,7 +38,10 @@ export default function run(root: HTMLElement): () => void {
   const ctx = canvas.getContext('2d');
   if (ctx === null) return () => {};
 
-  const m = mix<Spark, SparkPose>(SPARK, { name: 'burst' });
+  const m = mix<Spark, SparkPose>(SPARK, {
+    name: 'burst',
+    history: { ms: 10_000, tape: createHistory },
+  });
   const bursts = new Set<{ sparks: Spark[]; handle: Handle<Spark> }>();
 
   // One voice per burst, for one pass: when it ends the voice leaves the mix, and its sparks go.

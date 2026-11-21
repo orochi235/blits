@@ -1,4 +1,5 @@
 import { keys, kit, max, mix, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 interface Letter {
@@ -32,7 +33,10 @@ export default function run(root: HTMLElement): () => void {
     return { el, index };
   });
 
-  const m = mix<Letter, LetterPose>(LETTER, { name: 'reveal' });
+  const m = mix<Letter, LetterPose>(LETTER, {
+    name: 'reveal',
+    history: { ms: 10_000, tape: createHistory },
+  });
   let timer = 0;
   let stopped = false;
 

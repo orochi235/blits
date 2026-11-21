@@ -1,4 +1,5 @@
 import { color, css, ink, keys, kit, mix, oklab, patch } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 interface Swatch {
@@ -54,7 +55,10 @@ export default function run(root: HTMLElement): () => void {
   const colored = row('color');
   const inked = row('ink');
 
-  const m = mix<Swatch, SwatchPose>(KIT, { name: 'inks' });
+  const m = mix<Swatch, SwatchPose>(KIT, {
+    name: 'inks',
+    history: { ms: 10_000, tape: createHistory },
+  });
   const [moving, mixed] = swatches as [Swatch, Swatch];
   m.cue({ patch: travel, subjects: [moving], loop: true });
   m.cue({ patch: red, subjects: [mixed] });
