@@ -78,7 +78,7 @@ const HISTORY_MS = 30_000;
 export function createShow(): Mix<Shell, Pose> {
   return mix<Shell, Pose>(KIT, {
     name: 'show',
-    labelOf: (s) => `shell at x ${s.x.toFixed(1)}`,
+    labelOf: (s: Shell) => `shell at x ${s.x.toFixed(1)}`,
     history: { ms: HISTORY_MS, tape: createHistory },
   });
 }
