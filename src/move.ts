@@ -56,8 +56,9 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   if (mix.waking) wake(mix, now);
   if (mix.pins !== null && mix.pins.size > 0) repin(mix);
   if (mix.anchored > 0) place(mix);
-  if (mix.announced.length > 0) {
-    // Kept while still ahead, or while history reaches it; anchors waiting on one were placed above.
+  if (mix.announced.length > 0 && placesLast(mix)) {
+    // Kept while still ahead, or while history reaches it; anchors waiting on one were placed above,
+    // in every mix on the transport.
     const reach = mix.opts.history === undefined ? now : mix.transport.keepsFrom();
     mix.announced = mix.announced.filter((a) => mixAt(mix, a.at) >= reach);
   }
@@ -82,6 +83,13 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   forget(mix);
   mix.named.sweep();
   mix.goneIx.named.sweep();
+}
+
+/** Whether no later mix on the transport is still to place its anchors on the marks it holds. */
+function placesLast<I, O>(mix: Mixer<I, O>): boolean {
+  const members = mix.transport.members as readonly unknown[];
+  const i = members.indexOf(mix);
+  return i < 0 || i === members.length - 1;
 }
 
 /** Takes the span children waiting their turn, then lets go of spans and arcs that are over. */

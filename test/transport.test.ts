@@ -146,6 +146,33 @@ describe('transport', () => {
     expect(starts(runs, 'caret')).toEqual([510]);
   });
 
+  it.each([
+    ['the first mix', 'orbs'],
+    ['a later mix', 'runs'],
+  ] as const)('starts a voice in %s on a mark announced as now, without history', (_, which) => {
+    const { t, orbs, runs } = stage();
+    t.sync(0);
+    const on = { orbs, runs }[which] as typeof runs;
+    if (which === 'orbs')
+      orbs.cue({
+        patch: fly(100),
+        name: 'go-on',
+        loop: false,
+        anchor: { start: { after: { score: 's', name: 'go' } } },
+      });
+    else
+      runs.cue({
+        patch: type(100),
+        name: 'go-on',
+        loop: false,
+        anchor: { start: { after: { score: 's', name: 'go' } } },
+      });
+    t.sync(10);
+    t.announce('go', { score: 's' });
+    t.sync(20);
+    expect(starts(on, 'go-on')).toEqual([10]);
+  });
+
   it("waits on a step's motion across mixes and an announced mark, as astv's rail does", () => {
     const { t, orbs, runs } = stage();
     const rail = mix<string, Row>(ROWS, { transport: t, name: 'rail' });

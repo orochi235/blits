@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- On a transport without `history`, a mark announced as now starts the voices anchored on it in
+  every mix on the transport, not only in the first: the first mix no longer lets go of it before
+  the others place.
 - A record a seek reuses no longer keeps the trail row it held before, so a trail no longer
   reads or writes its poses in a row another subject owns.
 - A `last` channel holding a `DataView` no longer throws as keys are built or a rest is copied:
