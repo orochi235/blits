@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- The error for a `within` voice with no signal weight names the hard-edged disk it suggests as
+  `mix.around(ball, { ease: { steps: 1, jump: 'start' } })`; the call it gave before, with `steps` and
+  `jump` outside `ease`, made a linear falloff.
 - A sync under `history` no longer throws `RangeError: Maximum call stack size exceeded` when it
   lets go of old voices while keeping hundreds of thousands of others finished out of order.
 - An easing of `{ steps }` refuses a count that is not a whole number of 1 or more, and one of

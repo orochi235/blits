@@ -81,7 +81,7 @@ export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void
     throw new Error('blits: within needs indices: call mix.place or mix.plot first');
   if (typeof spec.weight !== 'function')
     throw new Error(
-      "blits: within needs a signal weight; for a hard-edged disk use weight: mix.around(ball, { steps: 1, jump: 'start' })",
+      "blits: within needs a signal weight; for a hard-edged disk use weight: mix.around(ball, { ease: { steps: 1, jump: 'start' } })",
     );
 }
 

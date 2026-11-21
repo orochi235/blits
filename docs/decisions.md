@@ -53,7 +53,7 @@ DevTools extension's are in their READMEs.
   opt-in and never the default; joins are `all`/`any`; the children's hints are plain fields on the
   spec, not under `give`.
 - **`within` on a constant weight stays refused**, naming the recipe
-  `weight: mix.around(circle, { steps: 1, jump: 'start' })` (2026-10-26). Unbounded voices are not
+  `weight: mix.around(circle, { ease: { steps: 1, jump: 'start' } })` (2026-10-26). Unbounded voices are not
   to be deprecated: klieg's lighting and wod's transitions are unbounded by design.
 - **`numeric@1` kept its version when lanes took `color({ lerp: 'oklch' })`** (2026-10-25): an older
   copy folds that channel as `'own'`, which is correct.
