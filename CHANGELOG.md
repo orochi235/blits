@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A patch whose first call is made on lanes warns, outside production, of a key it returns that is
+  not in its `writes`, as one first called on the general path does; the mix drops that key either way.
 - The error for a `within` voice with no signal weight names the hard-edged disk it suggests as
   `mix.around(ball, { ease: { steps: 1, jump: 'start' } })`; the call it gave before, with `steps` and
   `jump` outside `ease`, made a linear falloff.

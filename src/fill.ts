@@ -16,7 +16,7 @@ import { reading } from './reading.js';
 import { move, runMotion } from './sample.js';
 import type { Subject } from './subject.js';
 import { rested } from './turns.js';
-import type { Voice } from './voice.js';
+import { checkWrites, type Voice } from './voice.js';
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
 const open = openRecord;
@@ -503,6 +503,7 @@ export function call<I, O>(
   if (this.keeps) host.horizon(voice, delay);
   else reading.horizon = Number.POSITIVE_INFINITY;
   const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;
+  if (voice.unchecked) checkWrites(voice, delta);
   // What `contribution` leaves on the record, so a probe on the general path this frame reuses it.
   rec.delta = delta;
   rec.probed = this.now;
