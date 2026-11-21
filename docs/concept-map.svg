@@ -40,9 +40,9 @@
 <rect class="box host" x="40" y="92" width="1160" height="46" rx="10"/>
 <text class="head" x="62" y="122"><tspan class="strong">host</tspan> — owns the frame loop: syncs each mix once a frame, and holds every handle</text>
 <rect class="box frame" x="40" y="166" width="1160" height="404" rx="10"/>
-<text class="frametag" x="62" y="194">system — one complete area. klieg runs three: motion, effects, lighting</text>
+<text class="frametag" x="62" y="194">subsystem — one complete area. klieg runs three: motion, effects, lighting</text>
 <rect class="box panel" x="68" y="212" width="248" height="172" rx="10"/>
-<text class="head" x="88" y="240"><tspan class="strong">rig</tspan> <tspan class="was">(table)</tspan></text>
+<text class="head" x="88" y="240"><tspan class="strong">kit</tspan> <tspan class="was">(table)</tspan></text>
 <text class="row" x="88" y="262">what a subject can move on</text>
 <text class="row" x="88" y="292"><tspan class="chip">channel</tspan> position · sum</text>
 <text class="row" x="88" y="313"><tspan class="chip">channel</tspan> gain · mul</text>
@@ -55,7 +55,7 @@
 <text class="head" x="88" y="516"><tspan class="strong">signal</tspan> — from outside</text>
 <text class="row" x="88" y="540">0 to 1, per subject, per frame</text>
 <rect class="box panel" x="352" y="212" width="848" height="336" rx="10"/>
-<text class="head" x="374" y="240"><tspan class="strong">mix</tspan> — every voice playing, over one rig</text>
+<text class="head" x="374" y="240"><tspan class="strong">mix</tspan> — every voice playing, over one kit</text>
 <rect class="box ghost" x="396" y="268" width="392" height="180" rx="10"/>
 <rect class="box ghost" x="388" y="260" width="392" height="180" rx="10"/>
 <rect class="box card" x="380" y="252" width="392" height="180" rx="10"/>
@@ -65,7 +65,7 @@
 <text class="row" x="400" y="348"><tspan class="strong">weight</tspan> — ramp(now), or a signal</text>
 <text class="row" x="400" y="369">target — where it is heading</text>
 <rect class="box card dashed" x="800" y="252" width="372" height="92" rx="10"/>
-<text class="head" x="820" y="280"><tspan class="strong">group</tspan> — alternatives in time</text>
+<text class="head" x="820" y="280"><tspan class="strong">role</tspan> <tspan class="was">(group)</tspan> — alternatives in time</text>
 <text class="row" x="820" y="304">weights capped to sum to 1</text>
 <text class="row" x="820" y="325">klieg's enter · active · exit</text>
 <rect class="box card" x="800" y="360" width="372" height="94" rx="10"/>
@@ -83,17 +83,17 @@
 <text class="edgelabel" x="190" y="578">may be a weight</text>
 <text class="section" x="40" y="620">One subject, one frame</text>
 <rect class="box panel" x="68" y="636" width="300" height="108" rx="10"/>
-<text class="head" x="88" y="664"><tspan class="strong">delta</tspan> <tspan class="was">(offset)</tspan> ⊂ rig</text>
+<text class="head" x="88" y="664"><tspan class="strong">delta</tspan> <tspan class="was">(offset)</tspan> ⊂ kit</text>
 <text class="row" x="88" y="688">what one patch says about</text>
 <text class="row" x="88" y="709">one subject at one instant</text>
 <rect class="box panel" x="440" y="636" width="300" height="108" rx="10"/>
-<text class="head" x="460" y="664"><tspan class="strong">influence</tspan> <tspan class="was">(contribution)</tspan></text>
+<text class="head" x="460" y="664"><tspan class="strong">contribution</tspan></text>
 <text class="row" x="460" y="688">= weight ⊙ delta</text>
 <text class="row" x="460" y="709">pulled toward rest by how</text>
 <text class="row" x="460" y="730">much of the voice is on</text>
 <rect class="box panel" x="816" y="636" width="384" height="108" rx="10"/>
 <text class="head" x="836" y="664"><tspan class="strong">pose</tspan> <tspan class="was">(ResolvedOffset)</tspan></text>
-<text class="row" x="836" y="688">= rest ⊕ Σ influence</text>
+<text class="row" x="836" y="688">= rest ⊕ Σ contribution</text>
 <text class="row" x="836" y="709">everything reaching that subject,</text>
 <text class="row" x="836" y="730">folded by each channel's own rule</text>
 <path class="edge" d="M 588 440 V 600 H 218 V 630" marker-end="url(#tip)"/>
@@ -105,15 +105,15 @@
 <text class="section" x="40" y="770">Where voices come from</text>
 <rect class="box panel dashed" x="68" y="786" width="540" height="92" rx="10"/>
 <text class="head" x="88" y="814"><tspan class="strong">source</tspan> — whatever decides one should exist</text>
-<text class="row" x="88" y="838">a handler on an event, a chain handing over,</text>
+<text class="row" x="88" y="838">a handler on an event, an arc handing over,</text>
 <text class="row" x="88" y="859">cues and gets back a handle</text>
 <rect class="box panel dashed" x="660" y="786" width="540" height="92" rx="10"/>
 <text class="head" x="680" y="814"><tspan class="strong">score</tspan> — the source the app keeps</text>
 <text class="row" x="680" y="838">the whole plan: timings and the cast</text>
-<text class="row" x="680" y="859">blits never reads one; it only knows it is there</text>
+<text class="row" x="680" y="859">voices name it; anchors and queries look in it</text>
 <path class="edge" d="M 340 782 V 742" marker-end="url(#tip)"/>
 <text class="edgelabel" x="348" y="762">cue</text>
-<text class="note" x="40" y="906">A system declares one rig and one kind of subject; its mix runs voices over that rig; each voice is one patch with its own clock and weight.</text>
-<text class="note" x="40" y="928">Nothing is computed until it is asked for: sample folds that subject's influences at the current reading, and a subject nobody asks about costs nothing.</text>
-<text class="note" x="40" y="950">Two systems never share a mix, so a voice belongs to exactly one.</text>
+<text class="note" x="40" y="906">A subsystem declares one kit and one kind of subject; its mix runs voices over that kit; each voice is one patch with its own clock and weight.</text>
+<text class="note" x="40" y="928">Nothing is computed until it is asked for: probe folds that subject's contributions at the current reading, and a subject nobody asks about costs nothing.</text>
+<text class="note" x="40" y="950">Two subsystems never share a mix, so a voice belongs to exactly one.</text>
 </svg>
