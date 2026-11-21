@@ -338,8 +338,8 @@ export class Player {
     this.follows = movedElsewhere(this.lastNow, before, expect, mix.now);
     this.lastNow = mix.now;
     mix.pull(this.subjects, this.columns);
-    for (const solo of solos.values()) {
-      if (this.follows) alignTo(solo, mix.now);
+    for (const [id, solo] of solos) {
+      if (this.follows) alignTo(solo, mix.now, `solo ${id}`);
       else solo.sync(host);
       solo.pull(this.subjects, this.scratch);
     }
