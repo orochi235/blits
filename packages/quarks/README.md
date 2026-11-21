@@ -30,7 +30,7 @@ spot.burst(30);
 const from = m.now;
 m.sync(now);
 quarks.write();
-batch.update(Math.max(0, m.now - from) / 1000);   // particles move on mix time
+batch.update(Number.isNaN(from) ? 0 : Math.max(0, m.now - from) / 1000);   // particles move on mix time
 ```
 
 ## Sources and emitters
@@ -92,7 +92,7 @@ quarks.attach(fault, fizzSystem, { at: () => fault.at });
 const from = m.now;
 m.sync(now);
 quarks.write();
-batch.update(Math.max(0, m.now - from) / 1000);   // your own BatchedRenderer, on mix time
+batch.update(Number.isNaN(from) ? 0 : Math.max(0, m.now - from) / 1000);   // your own BatchedRenderer, on mix time
 ```
 
 
