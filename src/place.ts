@@ -172,7 +172,7 @@ export function place<I, O>(mix: Mixer<I, O>): void {
         const t = by === undefined ? undefined : resolve(mix, by, voice);
         if (t !== undefined) {
           const o = voice.owner;
-          const fadeIn = voice.fade.in ?? 0;
+          const fadeIn = mix.reduced ? 0 : (voice.fade.in ?? 0);
           const start =
             anchor.start !== undefined
               ? t
@@ -188,7 +188,7 @@ export function place<I, O>(mix: Mixer<I, O>): void {
         if (t !== undefined) {
           const m = voice.owner === null ? t : mixTime(voice.owner, t);
           const start = startOf(voice);
-          let at = anchor.out !== undefined ? m : m - (voice.fade.out ?? 0);
+          let at = anchor.out !== undefined || mix.reduced ? m : m - (voice.fade.out ?? 0);
           let over = Number.NaN;
           // A fade out begins no earlier than its voice starts, and one that has to end by `m`
           // is shortened to; an end before the start leaves the voice an instant at its start.

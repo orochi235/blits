@@ -31,7 +31,28 @@ describe('placement', () => {
     const m = mix<Row, Pose>(K, { reduce: true });
     m.sync(0);
     m.cue({ patch: hold(100), name: 'a', start: 0, loop: false, fade: { in: 500 } });
-    expect(at(m, 0, 1000)).toEqual(['0 a start', '0 a in', '100 a coast', '100 a out', '100 a end']);
+    expect(at(m, 0, 1000)).toEqual([
+      '0 a start',
+      '0 a in',
+      '100 a coast',
+      '100 a out',
+      '100 a end',
+    ]);
+  });
+
+  it('anchors in and end on the time itself under reduced motion, which plays no fades', () => {
+    const m = mix<Row, Pose>(K, { reduce: true });
+    m.sync(0);
+    m.cue({ patch: hold(1000), name: 'a', fade: { in: 200 }, anchor: { in: 500 } });
+    m.cue({ patch: dim(0), name: 'b', fade: { out: 300 }, anchor: { end: 800 } });
+    expect(at(m, 0, 1000).filter((e) => !e.includes(' a coast'))).toEqual([
+      '0 b start',
+      '0 b in',
+      '500 a start',
+      '500 a in',
+      '800 b out',
+      '800 b end',
+    ]);
   });
 
   it("plays astv's orb, its landing text and the tint, each anchored on the one before", () => {
