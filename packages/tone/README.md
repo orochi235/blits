@@ -142,7 +142,7 @@ const tone = drive(m, {
     return undefined;
   },
 });
-tone.attach(voice, { freq: osc.frequency, gain: amp.gain });
+tone.attach(osc, { freq: osc.frequency, gain: amp.gain });
 
 // each frame
 m.sync(now);

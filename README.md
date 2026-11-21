@@ -110,7 +110,7 @@ Everything else is the same and so are the poses. `lanes: true` is refused there
 import { fling } from '@msb235/blits/fling';
 
 const scroll = glide<Page, Pose>('y', { from: 0 });
-mix.cue({ patch: scroll });
+m.cue({ patch: scroll });
 const off = fling(element, scroll, page, { scale: -1 }); // content moves against the drag
 ```
 
