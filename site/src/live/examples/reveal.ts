@@ -38,23 +38,26 @@ export default demo((d) => {
   // Synced once before the first cue: a voice cued earlier starts at 0, and its one pass would be
   // over by the first frame. The frame's own time, as no animation frame's timestamp is earlier.
   m.sync(Number(document.timeline.currentTime ?? performance.now()));
-  let timer = 0;
   let stopped = false;
+  let round = 0;
 
-  // Each letter waits its turn, holds its last frame, and fades out with the rest.
+  // Each letter waits its turn and holds its last frame. Each pass starts 2.2 s after the one
+  // before has landed, and that one fades out 700 ms before it.
   const play = () => {
+    round += 1;
     const h = m.cue({
       patch: reveal,
+      name: `pass ${round}`,
       stagger: (letter) => letter.index * 40,
-      freeze: 'both',
+      freeze: 'after',
       fade: { out: 500 },
+      anchor: {
+        ...(round > 1 ? { start: { of: `pass ${round - 1}`, mark: 'coast', by: 2200 } } : {}),
+        out: { before: `pass ${round + 1}`, by: 700 },
+      },
     });
     void h.played.then(() => {
-      if (stopped) return;
-      timer = window.setTimeout(() => {
-        h.fade();
-        timer = window.setTimeout(play, 700);
-      }, 1500);
+      if (!stopped) play();
     });
   };
   play();
@@ -70,6 +73,5 @@ export default demo((d) => {
   });
   d.stops(() => {
     stopped = true;
-    clearTimeout(timer);
   });
 });

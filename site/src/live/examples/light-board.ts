@@ -248,7 +248,7 @@ export default demo((d) => {
       running = true;
       take((current + 1) % LOOKS.length);
     });
-    playPause(show, play);
+    playPause(d, show, play);
 
     let draw: () => void;
     let free = () => {};

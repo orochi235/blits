@@ -5,6 +5,7 @@ import {
   type GpuDevice,
   gpu,
   gpuOf,
+  type Handle,
   kit,
   luminosity,
   type Mix,
@@ -41,7 +42,7 @@ const NONE = [0, 0, 0, 0];
 const FLASH = 380;
 /** How much of a flash holds at full before it fades. */
 const HOLD = 0.4;
-/** How long between hits the scene lands by itself, in ms. */
+/** How long between the hits Auto lands, in ms. */
 const EVERY = 1300;
 
 const CREATURES = [
@@ -67,23 +68,34 @@ function scene(x: number, y: number): { base: number; who: number; cov: number }
   return { base: toHex([0.24 + 0.1 * y, -0.005, -0.03, 1], 0) as number, who: -1, cov: 0 };
 }
 
+/** A number as a WGSL f32 literal. */
+const f32 = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
+
 /**
- * A flash of white over each cell of creature `who`, held full for its first 40%, then fading out.
+ * A flash of white over each cell of creature `who`, or of any creature for -1, over the first
+ * `FLASH` ms of a pass `ms` long: held full for its first 40%, then fading out.
  */
-const flash = shaderPatch<Cell, Flash, { who: number }>(FLASH, {
-  fields: { cov: 'f32', who: 'f32' },
-  params: { who: 'f32' },
-  wgsl: `let fade = select((1.0 - phase) / ${1 - HOLD}, 1.0, phase < ${HOLD});
-  let a = select(0.0, subject.cov, subject.who == params.who) * fade * fade;
+const flashing = (ms: number) =>
+  shaderPatch<Cell, Flash, { who: number }>(ms, {
+    fields: { cov: 'f32', who: 'f32' },
+    params: { who: 'f32' },
+    wgsl: `let q = phase * ${f32(ms / FLASH)};
+  let fade = select((1.0 - q) / ${f32(1 - HOLD)}, 1.0, q < ${f32(HOLD)});
+  let mine = subject.who >= 0.0 && (params.who < 0.0 || subject.who == params.who);
+  let a = select(0.0, subject.cov, mine && q < 1.0) * fade * fade;
   out.hit = array<f32, 4>(a, 0.0, 0.0, a);`,
-  at: (phase, c, _, p) => {
-    if (c.who !== p.who) return {};
-    const fade = phase < HOLD ? 1 : (1 - phase) / (1 - HOLD);
-    const a = c.cov * fade * fade;
-    return a > 0 ? { hit: [a, 0, 0, a] } : {};
-  },
-  writes: ['hit'],
-});
+    at: (phase, c, _, p) => {
+      const q = (phase * ms) / FLASH;
+      if (c.who < 0 || (p.who >= 0 && c.who !== p.who) || q >= 1) return {};
+      const fade = q < HOLD ? 1 : (1 - q) / (1 - HOLD);
+      const a = c.cov * fade * fade;
+      return a > 0 ? { hit: [a, 0, 0, a] } : {};
+    },
+    writes: ['hit'],
+  });
+const flash = flashing(FLASH);
+/** Every creature in turn, one every `EVERY` ms, staggered by creature. */
+const rounds = flashing(EVERY * CREATURES.length).with({ who: -1 });
 
 export default demo((d) => {
   const { root } = d;
@@ -171,6 +183,7 @@ export default demo((d) => {
       }
       for (const { n, b } of modeButtons) b.ariaPressed = String(n === mode);
       drawn = -1;
+      autoHits();
     };
     // Each hit is one voice over every cell, lighting its creature's, for one pass, leaving when
     // the pass ends. A later `start` is on the host's clock, not the mix's.
@@ -184,11 +197,25 @@ export default demo((d) => {
       hit(1);
       hit(1, 70);
     });
+    // Auto is one more voice, looping for good over every cell.
     let autoOn = true;
+    let looping: Handle<Cell> | undefined;
+    const autoHits = () => {
+      looping = autoOn
+        ? m?.cue({
+            patch: rounds,
+            subjects: cells,
+            loop: true,
+            stagger: (c) => Math.max(0, c.who) * EVERY,
+          })
+        : undefined;
+    };
     auto.ariaPressed = 'true';
     d.on(auto, 'click', () => {
       autoOn = !autoOn;
       auto.ariaPressed = String(autoOn);
+      if (autoOn) autoHits();
+      else looping?.fade({ over: FLASH });
     });
     d.on(el, 'click', (e) => {
       const box = el.getBoundingClientRect();
@@ -199,7 +226,6 @@ export default demo((d) => {
     });
 
     let drawn = -1;
-    let last = 0;
     choose('difference');
     d.stops(() => {
       grid?.destroy();
@@ -209,10 +235,6 @@ export default demo((d) => {
       show,
       (now) => {
         show.sync(now);
-        if (autoOn && show.now - last >= EVERY) {
-          last = show.now;
-          hit(Math.floor(Math.random() * CREATURES.length));
-        }
         if (show.seq === drawn) return;
         drawn = show.seq;
         draw();

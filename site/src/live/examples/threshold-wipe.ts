@@ -184,7 +184,7 @@ export default demo((d) => {
     const show = transport({ history: d.history(2 * PERIOD) });
     let m: Mix<Cell, Wipe> | undefined;
     let sweep: Handle | undefined;
-    const place = scrubbed(show, play, scrub, PERIOD, () => [sweep]);
+    const place = scrubbed(d, show, play, scrub, PERIOD, () => [sweep]);
     const choose = () => {
       const at = place();
       m?.close();

@@ -1,3 +1,5 @@
+import type { Demo } from './demo';
+
 /** Labels a play/pause button for what a click does, with the glyph `glyph.css` draws. */
 export function showPlay(button: HTMLElement, paused: boolean): void {
   button.textContent = paused ? 'Play' : 'Pause';
@@ -5,12 +7,16 @@ export function showPlay(button: HTMLElement, paused: boolean): void {
 }
 
 /**
- * Has `button` pause and play `clock` through its `rate`. Returns the relabel, for a pause made
- * elsewhere.
+ * Has `button` pause and play `clock` through its `rate`, until demo `d` stops. Returns the
+ * relabel, for a pause made elsewhere.
  */
-export function playPause(clock: { rate: number }, button: HTMLElement): () => void {
+export function playPause(
+  d: Pick<Demo, 'on'>,
+  clock: { rate: number },
+  button: HTMLElement,
+): () => void {
   const label = () => showPlay(button, clock.rate === 0);
-  button.addEventListener('click', () => {
+  d.on(button, 'click', () => {
     clock.rate = clock.rate === 0 ? 1 : 0;
     label();
   });
@@ -19,18 +25,20 @@ export function playPause(clock: { rate: number }, button: HTMLElement): () => v
 }
 
 /**
- * A play button and a slider over sweeps that loop every `period`: dragging pauses `clock` and
- * seeks each of `sweeps()` there. Returns where the first of them is in its pass, for the slider.
+ * A play button and a slider over sweeps that loop every `period`, until demo `d` stops: dragging
+ * pauses `clock` and seeks each of `sweeps()` there. Returns where the first of them is in its
+ * pass, for the slider.
  */
 export function scrubbed(
+  d: Pick<Demo, 'on'>,
   clock: { rate: number },
   button: HTMLElement,
   slider: HTMLInputElement,
   period: number,
   sweeps: () => Iterable<{ readonly elapsed: number; seek(elapsed: number): unknown } | undefined>,
 ): () => number {
-  const label = playPause(clock, button);
-  slider.addEventListener('input', () => {
+  const label = playPause(d, clock, button);
+  d.on(slider, 'input', () => {
     if (clock.rate !== 0) {
       clock.rate = 0;
       label();

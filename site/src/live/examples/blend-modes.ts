@@ -264,7 +264,7 @@ export default demo((d) => {
     let oneSweep: Handle | undefined;
 
     // Pausing stops the transport; dragging moves each disc's own voice to that point in its sweep.
-    const place = scrubbed(show, play, scrub, PERIOD, () => [sweep, oneSweep]);
+    const place = scrubbed(d, show, play, scrub, PERIOD, () => [sweep, oneSweep]);
 
     let draw: () => void;
     let free = () => {};
