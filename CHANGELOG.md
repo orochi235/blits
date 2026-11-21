@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under reduced motion, an arc's `in` mark no longer waits on its fade in, and an arc set to leave
+  before its hold ends lists its `end` where it leaves, not a fade out later.
 - Under reduced motion, an `in` or `end` anchor places the voice on the anchored time itself:
   it no longer starts the voice early, or ends it early, by a fade that is not played.
 - Under reduced motion, a voice's `in` mark is its start, as the fade in it would wait for is not
