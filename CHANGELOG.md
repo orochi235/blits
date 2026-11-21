@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice cued `within` a bound weighs a subject outside it at 0 when `atRest` reads it after a
+  probe, as the probe did, instead of reading its signal there.
 - A channel whose values are typed arrays is found at its rest, so a fade `at: 'rest'` on it ends
   instead of fading forever, and its `bounds` clamp it as they clamp a plain array.
 - A fade, `rise`, `mute`, and a cue's `fade: { in, out }` refuse a time that is not finite and 0 or
