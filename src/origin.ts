@@ -8,8 +8,8 @@ export interface Past extends Clock {
   rebuilds: number;
   /** Whether the voice left it by a seek. */
   sought: boolean;
-  /** How many clocks the voice had left before it, those let go included. */
-  n: number;
+  /** How many clocks the voice had left before it, those let go included; absent from a store written before it was kept. */
+  n?: number;
 }
 
 /** The most past clocks a voice keeps. */
@@ -36,7 +36,9 @@ export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void
 
 /** How many clocks a voice has left, those let go included. */
 export function leftCount(past: readonly Past[] | null): number {
-  return past === null || past.length === 0 ? 0 : (past[past.length - 1] as Past).n + 1;
+  return past === null || past.length === 0
+    ? 0
+    : ((past[past.length - 1] as Past).n ?? past.length - 1) + 1;
 }
 
 /** A voice's past clocks as they stood when it had left `count`. */

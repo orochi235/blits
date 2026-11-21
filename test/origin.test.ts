@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
-import { leave, MOST, originOf } from '../src/origin.js';
+import { leave, leftCount, MOST, originOf, type Past, pastAt } from '../src/origin.js';
 import { keys, patch } from '../src/patch.js';
 import type { Handle, Mix, MixOptions, VoiceSpec } from '../src/types.js';
 import type { Voice } from '../src/voice.js';
@@ -200,5 +200,43 @@ describe('past clocks', () => {
     const e = 15 * k + 5 * (k % 2 === 0 ? 1 : 2);
     expect(originOf(voice, e, false)).toBeCloseTo(10 * k + 5, 9);
     expect(voice.clocks?.length).toBeLessThanOrEqual(MOST);
+  });
+
+  it('count every clock let go, so a voice paged with its count reads all its clocks back', () => {
+    const voice = {
+      clocks: null,
+      holding: null,
+      spec: { stagger: {} },
+      anchorNow: 0,
+      anchorElapsed: 0,
+      rate: 1,
+      ramp: null,
+      rebuilds: 0,
+      beginless: false,
+      start: 0,
+      owner: null,
+    } as unknown as Voice<unknown, unknown>;
+    for (let k = 0; k < MOST + 10; k++) leave(voice, 10 * (k + 1));
+    const clocks = voice.clocks as Past[];
+    expect(clocks.length).toBeLessThan(MOST + 10);
+    expect(leftCount(clocks)).toBe(MOST + 10);
+    // revive takes the clocks back as they stood at the count paged with them.
+    expect(pastAt(clocks, leftCount(clocks))).toBe(clocks);
+  });
+
+  it('count clocks from a store written before their count was kept by where they sit', () => {
+    const clock = {
+      anchorNow: 0,
+      anchorElapsed: 0,
+      rate: 1,
+      ramp: null,
+      until: 10,
+      rebuilds: 0,
+      sought: false,
+    };
+    const old: Past[] = [clock, { ...clock, until: 20 }, { ...clock, until: 30 }];
+    expect(leftCount(old)).toBe(3);
+    expect(pastAt(old, 3)).toBe(old);
+    expect(pastAt(old, 2)).toEqual(old.slice(0, 2));
   });
 });

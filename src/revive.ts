@@ -3,7 +3,7 @@ import { VoiceHandle } from './handle.js';
 import { handle } from './hosts.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
-import type { Past } from './origin.js';
+import { leftCount, type Past } from './origin.js';
 import { type PackedRecord, packHeld, unpackHeld } from './pack.js';
 import { type Key, type Keys, pageOut } from './paging.js';
 import type { Run } from './stretch.js';
@@ -157,7 +157,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     outSet: voice.outSet,
     rebuilds: voice.rebuilds,
     hold: voice.hold,
-    past: voice.clocks?.length ?? 0,
+    past: leftCount(voice.clocks),
     earlier: voice.earlier,
     later: voice.later,
     clocks: voice.clocks,
