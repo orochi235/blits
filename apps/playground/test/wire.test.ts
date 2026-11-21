@@ -96,9 +96,19 @@ describe('wired', () => {
   });
 
   it('refuses a start under a span, a node to itself, and a top to a start', () => {
-    expect(wired(base, code, end('voice:a', 'e'), end('voice:k', 'w'))).toBe(null);
-    expect(wired(base, code, end('voice:a', 'e'), end('voice:k', 'e'))).not.toBe(null);
+    const spanned = {
+      ...base,
+      voices: [...base.voices, voice({ id: 'j', patch: keys, owner: 's' })],
+    };
+    const codes = flowOf(spanned).code;
+    expect(wired(spanned, codes, end('voice:j', 'e'), end('voice:k', 'w'))).toBe(null);
+    expect(wired(spanned, codes, end('voice:j', 'e'), end('voice:k', 'e'))).not.toBe(null);
     expect(wired(base, code, end('voice:a', 'e'), end('voice:a', 'w'))).toBe(null);
     expect(wired(base, code, end('voice:a', 'n'), end('voice:b', 'w'))).toBe(null);
+  });
+
+  it('refuses to anchor a voice to one outside its group, which blits never finds', () => {
+    expect(wired(base, code, end('voice:a', 'e'), end('voice:k', 'e'))).toBe(null);
+    expect(wired(base, code, end('group:s', 'e'), end('voice:a', 'w'))).not.toBe(null);
   });
 });

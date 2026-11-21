@@ -200,7 +200,8 @@ function edited(
       return edit.hatch === null ? without(v, 'freeze') : { ...v, freeze: edit.hatch };
     case 'link': {
       const to = c.voices.find((x) => x.id === edit.link.to.clip);
-      if (!to || to.id === v.id) return v;
+      // blits looks for a name only among the asker's siblings on its score.
+      if (!to || !answers(v, to)) return v;
       if (edit.link.from.edge === 'start' && underSpan(c, v.id)) return v;
       const [mark, other]: [Mark, Mark] =
         edit.link.from.edge === 'start' ? ['start', 'in'] : ['end', 'out'];

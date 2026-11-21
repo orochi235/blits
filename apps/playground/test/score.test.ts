@@ -104,6 +104,15 @@ describe('clipsOf', () => {
       { from: { clip: 'f', edge: 'start' }, to: { clip: 'c', edge: 'end' } },
     ]);
   });
+  it('refuses a link to a voice outside its group', () => {
+    const d = comp([v({ id: 'b' }), v({ id: 'a', owner: 'g' })], [group({ id: 'g' })]);
+    const edit: ClipEdit = {
+      clip: 'a',
+      kind: 'link',
+      link: { from: { clip: 'a', edge: 'start' }, to: { clip: 'b', edge: 'end' } },
+    };
+    expect(applyEdit(d, edit)).toBe(d);
+  });
   it('a join anchor links from each voice it waits on, all or any', () => {
     const d = {
       ...c,
