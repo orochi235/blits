@@ -1,0 +1,21 @@
+{
+ "pairs": [
+  [
+   4,
+   1
+  ]
+ ],
+ "a": [
+  "fling's release sample defeats track's `stop`, so a pointer held still before release still flings",
+  "A fade's `over` is never validated, while a rate ramp's is, so `fade({ over: NaN })` leaves a voice fading for good at NaN weight",
+  "`restsAt`/`near` never match a typed-array value, so `fade({ at: 'rest' })` never finishes on a typed-array channel, and `bound` never clamps one",
+  "A dry read of a bounded voice weighs the signal outside the bound, where the live read uses 0",
+  "`steps` and `bezier` easings are not validated: `{ steps: 0 }` gives NaN, and a bezier x outside 0..1 is solved wrongly",
+  "`expireGone` spreads the kept voices into `splice`, which throws past the engine's argument limit"
+ ],
+ "b": [
+  "`within`'s error tells the host to call `around` with an option it ignores",
+  "`steps` easing takes any step count, and 0 or a fraction gives NaN or a curve that never reaches 1",
+  "A fn voice whose first calls come from a lane never has its returned keys checked against `writes`"
+ ]
+}

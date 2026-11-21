@@ -1,0 +1,13 @@
+{
+ "pairs": [],
+ "a": [
+  "copyHeldInto leaves a reused spare's probeRow/probeEpoch where copyHeld resets them to -1",
+  "Without history, the first mix on a transport prunes an announced mark before later mixes' anchors read it"
+ ],
+ "b": [
+  "The `in` mark ignores reduced motion, while `out`/`end` and arcs honor it",
+  "`in` and `end` anchors subtract fade lengths that reduced motion doesn't play",
+  "`recordInput` overwrites a value in place when mix time stands still, and keeps the older frame's `seq`",
+  "Past voice clocks stop being recorded after 256, which misplaces later subjects' origins"
+ ]
+}
