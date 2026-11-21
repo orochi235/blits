@@ -29,9 +29,6 @@ function frame(now: number) {
 }
 requestAnimationFrame(frame);
 
-scrubber.addEventListener('pointerdown', () => {
-  held = true;
-});
 scrubber.addEventListener('input', () => {
   held = true;
   m.seek(Number(scrubber.value));

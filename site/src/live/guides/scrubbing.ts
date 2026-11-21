@@ -66,9 +66,6 @@ export default demo((d) => {
   // Letting go takes the time held off the clock and plays on from where the thumb is.
   let latest = 0;
   let held = false;
-  const grab = () => {
-    held = true;
-  };
   const seek = () => {
     held = true;
     m.seek(Number(scrubber.value));
@@ -78,7 +75,6 @@ export default demo((d) => {
     latest = m.now;
     m.rebase();
   };
-  d.on(scrubber, 'pointerdown', grab);
   d.on(scrubber, 'input', seek);
   d.on(scrubber, 'change', release);
 
