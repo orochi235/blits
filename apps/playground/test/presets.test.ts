@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { compose } from '@brand/glyphs.js';
 import { logoHues } from '@brand/hues.js';
 import { input, type SpanHandle } from '@msb235/blits';
@@ -179,4 +180,11 @@ describe('logo', () => {
     const on = play(1);
     expect(at(on.p, on.subjects)).toBeGreaterThan(0);
   });
+});
+
+it("the README's preset table has a row for every preset, in order", () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const table = readme.slice(readme.indexOf('## Presets'), readme.indexOf('## Widgets'));
+  const rows = [...table.matchAll(/^\| (.+?) +\|/gm)].map((m) => m[1]).slice(1);
+  expect(rows).toEqual(PRESETS.map((p) => p.name));
 });

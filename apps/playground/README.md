@@ -475,6 +475,7 @@ One `Composition` per file in `src/blits/presets/`.
 | marks and hits  | a voice tagged `lead` with two hits a pass and a mark `peak` inside it, one voice anchored to `peak`, one to its `coast` by tag, one waiting on the announced mark `beat`, and an fn voice that sends its pass number |
 | anchors         | one voice waiting on an `all` of a voice and the mark `beat`, one on an `any` of a voice and a tag query, a queue span anchored after the first, and a voice anchored to the span's `end` |
 | backward        | one sweep three ways: forward, cued at rate -1 from its end, and cued with a `seek` halfway in |
+| logo            | the site's rail logo: the word lit on its sign, its hues on a clock of their own, and the `hover` level, standing in for pointing at it, running a rainbow and a halo round the pointer |
 
 ## Widgets
 
