@@ -21,3 +21,20 @@ describe('curveData', () => {
     expect(curveData((u) => u * u)).toBeUndefined();
   });
 });
+
+describe('curve', () => {
+  it('refuses a step count that is not a whole number of 1 or more', () => {
+    for (const steps of [0, -1, 2.5, Number.NaN, Number.POSITIVE_INFINITY])
+      expect(() => curve({ steps })).toThrow(RangeError);
+  });
+  it('refuses a bezier whose x is outside 0..1, or any number that is not finite', () => {
+    for (const b of [
+      [-0.1, 0, 0.5, 1],
+      [0.5, 0, 1.2, 1],
+      [0.5, Number.NaN, 0.5, 1],
+      [0.5, 0, 0.5, Number.POSITIVE_INFINITY],
+    ] as const)
+      expect(() => curve({ bezier: b })).toThrow(RangeError);
+    expect(() => curve({ bezier: [0.3, -0.5, 0.7, 1.6] })).not.toThrow();
+  });
+});

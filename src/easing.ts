@@ -136,10 +136,18 @@ export function curve(easing: Easing): Curve {
   if (held) return held;
   let made: Curve;
   if ('bezier' in easing) {
+    const [x1, y1, x2, y2] = easing.bezier;
+    // CSS refuses an x outside 0..1, where x(t) turns back and u has more than one t.
+    if (!(x1 >= 0 && x1 <= 1 && x2 >= 0 && x2 <= 1 && Number.isFinite(y1) && Number.isFinite(y2)))
+      throw new RangeError(
+        `blits: a bezier takes x1 and x2 from 0 to 1 and finite y1 and y2, not [${easing.bezier.join(', ')}]`,
+      );
     made = bezier(...easing.bezier);
     starts.set(made, bezierStart(...easing.bezier));
   } else {
     const n = easing.steps;
+    if (!(Number.isInteger(n) && n >= 1))
+      throw new RangeError(`blits: steps takes a whole number of 1 or more, not ${n}`);
     const start = easing.jump === 'start';
     made = pack(
       (u) => {
