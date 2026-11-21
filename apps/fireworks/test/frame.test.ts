@@ -1,4 +1,4 @@
-import { mix, type Mix, type Watched, watched } from '@msb235/blits';
+import { type Mix, mix, type Watched, watched } from '@msb235/blits';
 import { describe, expect, it } from 'vitest';
 import { createFrame } from '../src/frame.js';
 import { KIT, type Pose, type Shell } from '../src/show.js';

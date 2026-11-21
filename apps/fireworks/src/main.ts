@@ -1,11 +1,10 @@
 import './app.css';
-import { mix } from '@msb235/blits';
 import { mount } from '@msb235/blits-panel';
 import { drive as driveSparks } from '@msb235/blits-quarks';
 import { drive as driveSound } from '@msb235/blits-tone';
 import * as Tone from 'tone';
 import { createFrame } from './frame';
-import { BURSTS, cue, KIT, type Pose, type Shell, type Sound, shell } from './show';
+import { BURSTS, createShow, cue, KIT, type Pose, type Shell, type Sound, shell } from './show';
 import { createSky } from './sky';
 import { createSounds } from './sound';
 
@@ -20,14 +19,10 @@ const auto = el<HTMLInputElement>('auto');
 const rate = el<HTMLInputElement>('rate');
 const rateOut = el<HTMLOutputElement>('rate-out');
 
-// The debugger panel, in dev only; mounted before the mix so the mix can scrub back. `?nopanel`
-// leaves it off, for the DevTools extension alone.
+// The debugger panel, in dev only. `?nopanel` leaves it off, for the DevTools extension alone.
 if (import.meta.env.DEV && !new URLSearchParams(location.search).has('nopanel')) mount();
 
-const m = mix<Shell, Pose>(KIT, {
-  name: 'show',
-  labelOf: (s: Shell) => `shell at x ${s.x.toFixed(1)}`,
-});
+const m = createShow();
 const sky = createSky(canvas);
 const sparks = driveSparks(m, { kit: KIT, bursts: BURSTS });
 
