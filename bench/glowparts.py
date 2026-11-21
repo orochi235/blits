@@ -24,7 +24,7 @@ variants = {
     'V7-sqrt': [('bench/frame.mjs', 'const near = (s) => Math.max(0, 1 - Math.hypot(s.x - pointer.x, s.y - pointer.y) / RADIUS);', 'const near = (s) => { const dx = s.x - pointer.x; const dy = s.y - pointer.y; return Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / RADIUS); };')],
     # The lane's signal read without `base` around the call, without prime, without the signal at all.
     'V8-barebase': [('dist/hosts.js', 'const base = mix.base(voice, subject, mix.now, held, slot);', 'const base = voice.spec.weight(subject, voice.setting);')],
-    'V4-noprime': [('dist/hosts.js', 'mix.prime(voice, held);\n            const kept', 'const kept')],
+    'V4-noprime': [('dist/hosts.js', 'mix.primeLaned(voice, held, arg);\n            const kept', 'const kept')],
     'V6-nobase': [('dist/hosts.js', 'const base = mix.base(voice, subject, mix.now, held, slot);', 'const base = 0;')],
     'V3-nosignal': [('dist/hosts.js', 'signal: (voice, subject, held, slot) => {', 'signal: (voice, subject, held, slot) => {\n            mix.lanes.arg[0] = 0; return;')],
     # A subject at weight 0 returning before `call`; a signalled voice's lane read skipped outright.
