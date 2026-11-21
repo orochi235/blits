@@ -255,7 +255,7 @@ export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPa
           mode={mode}
           onModeChange={setMode}
           transport={false}
-          onScrub={() => {}}
+          onSeek={() => {}}
           renderKeyEditor={KeyEditor}
           onChange={(tracks) =>
             set({ ...p, stops: stopsOf(tracks as SampledTrack<unknown>[], p.period, p.stops) })

@@ -50,13 +50,12 @@ export function Transport(p: TransportProps) {
   return (
     <div className={s.transport}>
       <WeaselTransport
-        paused={!p.playing}
+        playing={p.playing}
         loop={p.loop}
         rate={p.rate}
         playhead={p.t}
         duration={p.length}
-        onPlay={() => p.onPlaying(true)}
-        onPause={() => p.onPlaying(false)}
+        onPlayingChange={p.onPlaying}
         onLoopChange={(l) => p.onLoop(l !== false && l !== 0)}
         onRateChange={p.onRate}
       />
