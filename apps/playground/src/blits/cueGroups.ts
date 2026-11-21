@@ -1,4 +1,5 @@
 import type { Handle, Kit, Mix, Patch, Signal, SpanSpec } from '@msb235/blits';
+import { placesStart } from './anchor';
 import { type Blend, blendOf, strayOf } from './blend';
 import { type Composition, type Group, isExpr, isMotion, type Voice } from './composition';
 import { cueBlend } from './cueBlend';
@@ -71,7 +72,7 @@ function groupSpecOf(
   markInto(spec, g);
   if (g.anchor) {
     spec.anchor = g.anchor;
-    if (g.anchor.start !== undefined || g.anchor.in !== undefined) delete spec.start;
+    if (placesStart(g.anchor)) delete spec.start;
   }
   if (s) {
     for (const k of ['duration', 'priority', 'order', 'share', 'spill'] as const)

@@ -5,6 +5,10 @@ const obj = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Ar
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const str = (v: unknown): v is string => typeof v === 'string';
 
+/** Whether an anchor places a voice's or group's start, so blits ignores its `start`. */
+export const placesStart = (a: { start?: unknown; in?: unknown } | undefined): boolean =>
+  a?.start !== undefined || a?.in !== undefined;
+
 /** A voice's own five marks, which a mark placed inside it cannot be named. */
 export const MARKS: readonly string[] = ['start', 'in', 'coast', 'out', 'end'] satisfies Mark[];
 const RESOLVERS = ['last', 'first', 'next', 'earliest', 'latest'];

@@ -13,6 +13,7 @@ import {
   tween,
   wave,
 } from '@msb235/blits';
+import { placesStart } from './anchor';
 import { type Expr, isExpr, type PatchSource, type Voice } from './composition';
 import { compileExpr, type Faults, type Scope } from './expr';
 import { FRAME } from './frame';
@@ -86,7 +87,7 @@ export function specOf(
   markInto(spec, v);
   if (v.anchor) {
     spec.anchor = v.anchor;
-    if (v.anchor.start !== undefined || v.anchor.in !== undefined) delete spec.start;
+    if (placesStart(v.anchor)) delete spec.start;
   }
   return { spec };
 }

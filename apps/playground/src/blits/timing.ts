@@ -1,5 +1,6 @@
 import type { Anchor, Handle, Mark, MarkName, Query } from '@msb235/blits';
 import type { Flow, FlowBox, FlowEdge, FlowNode, FlowTone } from '@pg/widgets/FlowDiagram/types';
+import { placesStart } from './anchor';
 import type { Built } from './compile';
 import type { Composition, Group, Voice } from './composition';
 import { writesOf } from './flow';
@@ -175,7 +176,7 @@ export function timingOf(c: Composition, faulted: ReadonlySet<string> = new Set(
   for (const v of c.voices) {
     const parts: string[] = [];
     const a = v.anchor ?? {};
-    if (a.start === undefined && a.in === undefined && !spanned.has(v.id))
+    if (!placesStart(a) && !spanned.has(v.id))
       parts.push(FIXED.start(v.start));
     for (const slot of SLOTS) {
       const at = a[slot];

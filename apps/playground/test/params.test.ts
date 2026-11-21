@@ -66,6 +66,18 @@ describe('voiceParams', () => {
     expect(voiceParams(v, false)).toContainEqual(['start', 'anchored']);
     expect(voiceParams(v, false)).not.toContainEqual(['start', '500 ms']);
   });
+
+  it('leaves out the unused start of a voice or group an in anchor places', () => {
+    const anchor = { in: { after: 'intro' } as never };
+    expect(voiceParams(voice({ start: 500, anchor }), false)).not.toContainEqual([
+      'start',
+      '500 ms',
+    ]);
+    expect(groupParams(group({ id: 'g', start: 500, anchor }))).not.toContainEqual([
+      'start',
+      '500 ms',
+    ]);
+  });
 });
 
 describe('groupParams', () => {
