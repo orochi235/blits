@@ -24,6 +24,23 @@ export function scaleOf(duration: number, width: number, labelWidth: number): Sc
   };
 }
 
+/** The score time under `x`, held to the score. */
+export const timeAt = (s: Scale, x: number, duration: number): number =>
+  Math.min(duration, Math.max(0, s.t(x)));
+
+/** Least room, in score units, between two of the ruler's labels. */
+export const TICK_ROOM = 36;
+const TICK_STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600];
+
+/** The ruler's labeled times, ms: whole seconds, as many as fit `span` units without overprinting. */
+export function rulerTicks(duration: number, span: number): number[] {
+  const perSecond = (span / Math.max(1, duration)) * 1000;
+  const step =
+    (TICK_STEPS.find((n) => n * perSecond >= TICK_ROOM) ??
+      Math.ceil(TICK_ROOM / perSecond / 3600) * 3600) * 1000;
+  return Array.from({ length: Math.floor(Math.max(0, duration) / step) + 1 }, (_, i) => i * step);
+}
+
 export function clipEnd(c: Clip): number {
   if (!Number.isFinite(c.passes)) return Number.POSITIVE_INFINITY;
   return c.start + (c.pass > 0 ? c.pass * c.passes : 0);
@@ -42,16 +59,21 @@ export interface Extent {
   fadeOut: number;
 }
 
-/** A bar over `e` with its fades as slopes; an open end runs flat to `viewEnd`. */
+/** A bar over `e` with its fades as slopes; an end past `viewEnd` is cut there at the height the
+ *  bar has reached, so an open end runs flat to it. */
 export function slopePolygon(e: Extent, s: Scale, top: number, h: number, viewEnd: number): string {
-  const open = !Number.isFinite(e.end);
   const end = Math.min(e.end, viewEnd);
-  const x0 = s.x(e.start);
-  const x1 = s.x(end);
-  const inX = s.x(e.start + e.fadeIn);
-  const outX = open ? x1 : s.x(end - e.fadeOut);
+  const outAt = Math.min(e.end - e.fadeOut, end);
+  const left = e.end > end ? Math.min(1, e.fadeOut > 0 ? (e.end - end) / e.fadeOut : 1) : 0;
   const fmt = (x: number, y: number) => `${Math.round(x * 100) / 100},${y}`;
-  return [fmt(x0, top + h), fmt(inX, top), fmt(outX, top), fmt(x1, top + h)].join(' ');
+  const points = [
+    fmt(s.x(e.start), top + h),
+    fmt(s.x(e.start + e.fadeIn), top),
+    fmt(s.x(outAt), top),
+    fmt(s.x(end), top + h * (1 - left)),
+    fmt(s.x(end), top + h),
+  ];
+  return points.filter((x, i) => x !== points[i - 1]).join(' ');
 }
 
 export function clipPolygon(c: Clip, s: Scale, top: number, h: number, viewEnd: number): string {

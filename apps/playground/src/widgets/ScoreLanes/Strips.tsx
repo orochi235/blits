@@ -1,6 +1,6 @@
 import { hueColor } from '@msb235/blits-panel';
 import { type PointerEvent, useId, useMemo, useRef } from 'react';
-import { clipPolygon, laneCount, RULER, scaleOf, WIDTH } from './geometry';
+import { clipPolygon, laneCount, RULER, scaleOf, timeAt, WIDTH } from './geometry';
 import type { ScoreLanesProps } from './index';
 import { Ruler } from './Ruler';
 import s from './ScoreLanes.module.css';
@@ -22,8 +22,7 @@ export function Strips(props: ScoreLanesProps) {
   const scrub = (e: PointerEvent) => {
     const box = svg.current?.getBoundingClientRect();
     if (!box) return;
-    const t = scale.t(((e.clientX - box.left) / box.width) * WIDTH);
-    onScrub(Math.min(duration, Math.max(0, t)));
+    onScrub(timeAt(scale, ((e.clientX - box.left) / box.width) * WIDTH, duration));
   };
   const rows = [
     ...clips.map((c) => ({ id: c.id, lane: c.lane, hue: c.hue, clip: c })),
@@ -38,7 +37,7 @@ export function Strips(props: ScoreLanesProps) {
       role="group"
       aria-label="score"
       onPointerDown={(e) => {
-        (e.target as Element).setPointerCapture(e.pointerId);
+        e.currentTarget.setPointerCapture(e.pointerId);
         held.current = true;
         scrub(e);
       }}
@@ -47,6 +46,9 @@ export function Strips(props: ScoreLanesProps) {
         held.current = false;
       }}
       onPointerCancel={() => {
+        held.current = false;
+      }}
+      onLostPointerCapture={() => {
         held.current = false;
       }}
     >

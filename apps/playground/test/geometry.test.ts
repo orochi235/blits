@@ -7,9 +7,11 @@ import {
   groupBrackets,
   laneCount,
   passLines,
+  rulerTicks,
   scaleOf,
   shownEnd,
   slopePolygon,
+  TICK_ROOM,
 } from '@pg/widgets/ScoreLanes/geometry';
 import { describe, expect, it } from 'vitest';
 
@@ -155,5 +157,24 @@ describe('slopePolygon', () => {
   it('runs an endless extent flat to the view end', () => {
     const e = { start: 0, end: Number.POSITIVE_INFINITY, fadeIn: 0, fadeOut: 300 };
     expect(slopePolygon(e, s, 0, 8, 600)).toBe('0,8 0,0 600,0 600,8');
+  });
+  it('keeps a fade-out that ends past the view end where it is, off the view', () => {
+    const e = { start: 100, end: 1200, fadeIn: 0, fadeOut: 100 };
+    expect(slopePolygon(e, s, 0, 8, 1000)).toBe('100,8 100,0 1000,0 1000,8');
+  });
+  it('cuts a fade-out that straddles the view end at the height it has reached', () => {
+    const e = { start: 100, end: 1100, fadeIn: 0, fadeOut: 400 };
+    expect(slopePolygon(e, s, 0, 8, 1000)).toBe('100,8 100,0 700,0 1000,6 1000,8');
+  });
+});
+
+describe('rulerTicks', () => {
+  it('labels every second where they fit', () => {
+    expect(rulerTicks(3000, 860)).toEqual([0, 1000, 2000, 3000]);
+  });
+  it('spaces the labels on a long score so they never overprint', () => {
+    const ticks = rulerTicks(60000, 860);
+    expect(ticks.slice(0, 3)).toEqual([0, 5000, 10000]);
+    expect(((ticks[1] as number) / 60000) * 860).toBeGreaterThanOrEqual(TICK_ROOM);
   });
 });

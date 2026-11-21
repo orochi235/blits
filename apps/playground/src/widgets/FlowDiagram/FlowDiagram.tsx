@@ -10,8 +10,9 @@ import {
   roundRectOutline,
 } from '@weasel-js/diagram';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { boxStyleOf, edgeStyleOf, portColorOf, rowsOf, styleOf } from './style';
-import type { Flow, FlowBox, FlowEdge, FlowEnd, FlowNode, FlowPortTone } from './types';
+import { edgesOf } from './edges';
+import { boxStyleOf, portColorOf, rowsOf, styleOf } from './style';
+import type { Flow, FlowBox, FlowEnd, FlowNode, FlowPortTone } from './types';
 
 // diagramScene sets text in sans-serif and title bars in Oswald; text paints blank in a family
 // that isn't registered.
@@ -19,23 +20,7 @@ registerCanvasFont('sans-serif');
 registerCanvasFont('Oswald');
 registerOutline('card', roundRectOutline(5));
 
-const endsOf = (e: { from: string; to: string; label?: string }) =>
-  `${e.from}\n${e.to}\n${e.label ?? ''}`;
-
 const COMPASS = ['n', 'e', 's', 'w'] as const;
-
-/** Where a flow edge leaves and meets its nodes: what a node acts on runs along the flow's axis, in
- *  at the near side and out at the far one; a parameter comes in across it. */
-const AXIS: Record<LayoutDirection, { out: string; in: string; param: string }> = {
-  down: { out: 's', in: 'n', param: 'w' },
-  up: { out: 'n', in: 's', param: 'w' },
-  right: { out: 'e', in: 'w', param: 'n' },
-  left: { out: 'w', in: 'e', param: 'n' },
-};
-const portsOf = (direction: LayoutDirection, e: Pick<FlowEdge, 'param' | 'port'>) => {
-  const a = AXIS[direction];
-  return { fromPort: a.out, toPort: e.port ?? (e.param ? a.param : a.in) };
-};
 
 function labelsOf(node: string, label: (node: string, port: string) => string | null) {
   const out: Record<string, string> = {};
@@ -101,7 +86,7 @@ export function FlowDiagram({
   const specs = useMemo(() => {
     const byId = new Map(flow.nodes.map((n) => [n.id, n]));
     const boxes = new Map((flow.boxes ?? []).map((b) => [b.id, b]));
-    const edges = new Map(flow.edges.map((e) => [endsOf(e), e]));
+    const edges = edgesOf(flow.edges, direction);
     const built = diagramScene(
       {
         nodes: flow.nodes.map((n) => {
@@ -115,12 +100,7 @@ export function FlowDiagram({
             ...(collapsed.has(n.id) ? { collapsed: true } : {}),
           };
         }),
-        edges: flow.edges.map((e) => ({
-          from: e.from,
-          to: e.to,
-          ...(e.timing ? {} : portsOf(direction, e)),
-          ...(e.label ? { label: e.label } : {}),
-        })),
+        edges: edges.specs,
         groups: [...boxes.values()].map((b) => ({ id: b.id, label: b.label, members: b.members })),
       },
       {
@@ -128,7 +108,7 @@ export function FlowDiagram({
         layoutOptions: { direction, order: 'barycenter', nodeGap: 40, rankGap: 56 },
         nodeStyle: (d) => styleOf(byId.get(d.id) as FlowNode),
         groupStyle: (g) => boxStyleOf(boxes.get(g.id) as FlowBox),
-        edgeStyle: (e) => edgeStyleOf(edges.get(endsOf(e)) ?? {}),
+        edgeStyle: edges.styleOf,
       },
     );
     stood.current = new Map(

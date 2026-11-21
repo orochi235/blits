@@ -1,4 +1,5 @@
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
+import { type KeyboardEvent, useId, useRef } from 'react';
+import { useDraft } from '../draft';
 import s from './CodePane.module.css';
 
 export interface CodePaneProps {
@@ -11,16 +12,16 @@ export interface CodePaneProps {
 }
 
 export function CodePane({ value, onCommit, error, errorLine, label, rows = 6 }: CodePaneProps) {
-  const [draft, setDraft] = useState(value);
+  const { draft, setDraft, commit } = useDraft(value, onCommit);
   const errorId = `${useId()}-error`;
   const gutter = useRef<HTMLOListElement>(null);
-  useEffect(() => setDraft(value), [value]);
-  const commit = () => {
-    if (draft !== value) onCommit(draft);
-  };
+  // Escape lets the next Tab move focus on, so the pane is no keyboard trap.
+  const release = useRef(false);
   const key = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    const released = release.current;
+    release.current = e.key === 'Escape';
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) commit();
-    if (e.key === 'Tab') {
+    if (e.key === 'Tab' && !e.shiftKey && !released) {
       e.preventDefault();
       const el = e.currentTarget;
       const at = el.selectionStart;

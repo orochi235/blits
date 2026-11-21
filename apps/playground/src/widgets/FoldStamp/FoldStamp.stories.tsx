@@ -44,10 +44,10 @@ export const Looks: StoryObj<typeof FoldStamp> = {
     <Rows
       rows={[
         ['default: glowing, hue', {}],
-        ['bold', { line: 'bold' }],
+        ['bold', { line: 'bold', encode: 'none' }],
         ['bold, hue', { line: 'bold', encode: 'hue' }],
         ['bold, opacity', { line: 'bold', encode: 'opacity' }],
-        ['glowing, hue', { line: 'glowing', encode: 'hue' }],
+        ['glowing, both', { line: 'glowing', encode: 'both' }],
         ['glowing, warm hue', { line: 'glowing', encode: 'hue', ramp: 'warm' }],
         ['fine', { line: 'fine' }],
       ]}

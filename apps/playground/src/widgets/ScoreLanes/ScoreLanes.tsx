@@ -2,7 +2,16 @@ import { hueColor } from '@msb235/blits-panel';
 import { type KeyboardEvent, type PointerEvent, useId, useMemo, useRef, useState } from 'react';
 import { ClipLane } from './ClipLane';
 import { dragEdit, groupDrop, type Handle } from './drag';
-import { blockEnd, groupBrackets, laneCount, RULER, scaleOf, shownEnd, WIDTH } from './geometry';
+import {
+  blockEnd,
+  groupBrackets,
+  laneCount,
+  RULER,
+  scaleOf,
+  shownEnd,
+  timeAt,
+  WIDTH,
+} from './geometry';
 import { HeaderLane } from './HeaderLane';
 import type { Clip, ClipEdit, Edge, ScoreLanesProps } from './index';
 import { activates, nudge } from './keys';
@@ -53,14 +62,13 @@ function Lanes(props: ScoreLanesProps) {
     if (preview.kind === 'fadeOut') return { ...c, fadeOut: preview.ms };
     return c;
   };
-  const scrubTo = (x: number) => {
-    const t = scale.t(x);
-    if (t >= 0) onScrub(Math.min(duration, t));
-  };
+  const scrubTo = (x: number) => onScrub(timeAt(scale, x, duration));
 
+  // The score holds the pointer, not the handle pressed: a drag can unmount that handle.
+  const capture = (e: PointerEvent) => svg.current?.setPointerCapture(e.pointerId);
   const begin = (e: PointerEvent, clip: Clip, handle: Handle) => {
     e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capture(e);
     onSelect(clip.id);
     const p = local(e);
     if (e.altKey && (handle === 'body' || handle === 'end'))
@@ -73,7 +81,7 @@ function Lanes(props: ScoreLanesProps) {
   };
   const beginScrub = (e: PointerEvent) => {
     e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capture(e);
     setDrag({ scrub: true });
     scrubTo(local(e).x);
   };
@@ -119,7 +127,7 @@ function Lanes(props: ScoreLanesProps) {
   const laneAt = (y: number) => Math.floor((y - RULER) / laneH);
   const beginGroup = (e: PointerEvent, clip: Clip) => {
     e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capture(e);
     onSelect(clip.id);
     const p = local(e);
     setDrag({ group: clip.id, label: clip.label, x: p.x, y: p.y });
@@ -174,6 +182,7 @@ function Lanes(props: ScoreLanesProps) {
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerCancel={reset}
+      onLostPointerCapture={reset}
       onPointerDown={() => onSelect(null)}
     >
       <defs>
