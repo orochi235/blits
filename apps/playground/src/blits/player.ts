@@ -188,7 +188,8 @@ export class Player {
     const ramp = this.ramping();
     this.lapped += length;
     this.seek(t);
-    if (this.rate !== rate) this.apply({ kind: 'rate', rate, over: 0 });
+    // Even unchanged: a host call after the seek back cuts the rate changes the tape holds ahead.
+    this.apply({ kind: 'rate', rate, over: 0 });
     if (ramp !== null) this.apply({ kind: 'rate', rate: ramp.rate, over: ramp.left });
     const first = this.samples[0]?.t ?? Number.POSITIVE_INFINITY;
     this.samples = [...kept.filter((s) => s.t < first), ...this.samples];
@@ -345,7 +346,9 @@ export class Player {
     const { transport } = this.built;
     if (op.kind === 'sync') {
       const before = transport.now;
-      const expect = this.lastNow === null ? Number.NaN : transport.time(op.at);
+      // A sync after a rebase carries the clock over the gap rather than moving it.
+      const rebased = this.ops.at(-1)?.kind === 'rebase';
+      const expect = this.lastNow === null ? Number.NaN : rebased ? before : transport.time(op.at);
       // The booker reads the host's clock during the sync.
       this.lastHost = op.at;
       transport.sync(op.at);
@@ -439,6 +442,8 @@ export class Player {
     for (const { now: _, ...op } of kept) this.apply(op);
     if (this.ops.length === 0) this.apply({ kind: 'sync', at: 0 });
     if (this.built.transport.now < t) this.apply({ kind: 'seek', to: t });
+    // The cut ops left the clock at the host time it first passed `t`; play on from now instead.
+    if (end >= 0) this.apply({ kind: 'rebase' });
   }
 
   private fresh(): Built {

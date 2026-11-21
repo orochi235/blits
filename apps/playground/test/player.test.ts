@@ -157,6 +157,40 @@ describe('Player', () => {
     }
   });
 
+  it('a lap drops rate changes that cancelled out within the lap before', () => {
+    const p = player();
+    play(p, 500);
+    p.setRate(0.5);
+    play(p, 1000);
+    p.setRate(1);
+    play(p, 3000);
+    p.lap(0, 3000);
+    while (p.t < 1500) {
+      step(p);
+      expect(p.rate).toBe(1);
+    }
+  });
+
+  it('a scrub back by replay while playing plays on from where it lands', () => {
+    const p = player();
+    p.seekBy = 'replay';
+    play(p, 1000);
+    p.seek(900);
+    // The frame after the replay takes up the time since, as a resume does, and the next plays on.
+    step(p);
+    expect(p.t).toBeCloseTo(900, 6);
+    step(p);
+    expect(p.t).toBeCloseTo(900 + FRAME, 6);
+  });
+
+  it('a frame after a rebase follows the score rather than reading as moved elsewhere', () => {
+    const p = player();
+    play(p, 500);
+    p.rebase();
+    p.sync(p.host + 2000);
+    expect(p.following).toBe(false);
+  });
+
   it('a scrub back replays a moved level at its current value', () => {
     const moved = player();
     moved.seekBy = 'replay';
