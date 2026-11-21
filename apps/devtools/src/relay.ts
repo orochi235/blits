@@ -5,8 +5,11 @@ import { TAB_PORT, TAG } from './names.js';
 const flag = globalThis as { blitsRelay?: true };
 if (!flag.blitsRelay) {
   flag.blitsRelay = true;
+  let ports = 0;
   chrome.runtime.onConnect.addListener((port) => {
     if (port.name !== TAB_PORT) return;
+    const id = ++ports;
+    window.postMessage({ source: TAG, hi: id }, '*');
     const up = (ev: MessageEvent<{ source?: unknown; up?: unknown }>) => {
       if (ev.source === window && ev.data?.source === TAG && typeof ev.data.up === 'string')
         port.postMessage(ev.data.up);
@@ -17,7 +20,7 @@ if (!flag.blitsRelay) {
     );
     port.onDisconnect.addListener(() => {
       removeEventListener('message', up);
-      window.postMessage({ source: TAG, bye: true }, '*');
+      window.postMessage({ source: TAG, bye: id }, '*');
     });
   });
 }
