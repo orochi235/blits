@@ -1,6 +1,6 @@
 import numeric from '@weasel-js/theme/numeric.module.css';
 import type { KeyboardEvent, PointerEvent } from 'react';
-import { type Scale, WIDTH } from './geometry';
+import { rulerTicks, type Scale, WIDTH } from './geometry';
 import { nudge, seconds } from './keys';
 import s from './ScoreLanes.module.css';
 
@@ -26,7 +26,7 @@ export function Ruler(p: RulerProps) {
     const dt = nudge(e);
     if (dt !== null) onScrub(Math.min(duration, Math.max(0, playhead + dt)));
   };
-  const ticks = Array.from({ length: Math.floor(duration / 1000) + 1 }, (_, i) => i * 1000);
+  const ticks = rulerTicks(duration, WIDTH - p.labelW);
   return (
     <g
       className={s.ruler}

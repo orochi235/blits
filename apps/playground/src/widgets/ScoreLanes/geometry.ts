@@ -28,6 +28,19 @@ export function scaleOf(duration: number, width: number, labelWidth: number): Sc
 export const timeAt = (s: Scale, x: number, duration: number): number =>
   Math.min(duration, Math.max(0, s.t(x)));
 
+/** Least room, in score units, between two of the ruler's labels. */
+export const TICK_ROOM = 36;
+const TICK_STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600];
+
+/** The ruler's labeled times, ms: whole seconds, as many as fit `span` units without overprinting. */
+export function rulerTicks(duration: number, span: number): number[] {
+  const perSecond = (span / Math.max(1, duration)) * 1000;
+  const step =
+    (TICK_STEPS.find((n) => n * perSecond >= TICK_ROOM) ??
+      Math.ceil(TICK_ROOM / perSecond / 3600) * 3600) * 1000;
+  return Array.from({ length: Math.floor(Math.max(0, duration) / step) + 1 }, (_, i) => i * step);
+}
+
 export function clipEnd(c: Clip): number {
   if (!Number.isFinite(c.passes)) return Number.POSITIVE_INFINITY;
   return c.start + (c.pass > 0 ? c.pass * c.passes : 0);
