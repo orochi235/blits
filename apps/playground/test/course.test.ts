@@ -1,7 +1,9 @@
+import { mix, watched } from '@msb235/blits';
 import { coursesOf } from '@pg/blits/course';
 import { FRAME } from '@pg/blits/frame';
+import { KIT } from '@pg/blits/kit';
 import { area, curve, spread, stops } from '@pg/widgets/ScoreLanes/track';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { comp, group, subjects, voice } from './helpers';
 
 const bob = voice({
@@ -93,5 +95,22 @@ describe('track paths', () => {
     expect(s[0]).toEqual({ at: 0, color: 'c0' });
     expect(s.at(-1)?.at).toBeLessThanOrEqual(1);
     expect(s.length).toBeLessThanOrEqual(61);
+  });
+});
+
+describe('coursesOf, when a mix throws', () => {
+  it('closes every mix it opened', () => {
+    const probe = mix(KIT);
+    const pull = vi.spyOn(Object.getPrototypeOf(probe), 'pull').mockImplementation(() => {
+      throw new Error('refused');
+    });
+    probe.close();
+    const open = watched().entries().length;
+    try {
+      expect(() => coursesOf(comp([bob], [group({ id: 'g' })]), subjects)).toThrow('refused');
+    } finally {
+      pull.mockRestore();
+    }
+    expect(watched().entries().length).toBe(open);
   });
 });

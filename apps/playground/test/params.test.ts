@@ -1,4 +1,4 @@
-import type { Voice } from '@pg/blits/composition';
+import type { FitStep, Voice } from '@pg/blits/composition';
 import { groupParams, levelParams, paramLine, voiceParams } from '@pg/blits/params';
 import { describe, expect, it } from 'vitest';
 import { group } from './helpers';
@@ -66,6 +66,18 @@ describe('voiceParams', () => {
     expect(voiceParams(v, false)).toContainEqual(['start', 'anchored']);
     expect(voiceParams(v, false)).not.toContainEqual(['start', '500 ms']);
   });
+
+  it('leaves out the unused start of a voice or group an in anchor places', () => {
+    const anchor = { in: { after: 'intro' } as never };
+    expect(voiceParams(voice({ start: 500, anchor }), false)).not.toContainEqual([
+      'start',
+      '500 ms',
+    ]);
+    expect(groupParams(group({ id: 'g', start: 500, anchor }))).not.toContainEqual([
+      'start',
+      '500 ms',
+    ]);
+  });
 });
 
 describe('groupParams', () => {
@@ -80,6 +92,13 @@ describe('groupParams', () => {
 });
 
 describe('levelParams and paramLine', () => {
+  it('shows an emptied fit list as no fit, apart from the unset default', () => {
+    const span = (fit?: FitStep[]) =>
+      groupParams(group({ id: 's', kind: 'span', span: fit === undefined ? {} : { fit } }));
+    expect(span([])).toContainEqual(['fit', 'none']);
+    expect(span().find(([k]) => k === 'fit')).toBeUndefined();
+  });
+
   it('gives a level its value and range, and a line of params', () => {
     const params = levelParams({ name: 'x', value: 0.5, min: 0, max: 1 });
     expect(params).toEqual([

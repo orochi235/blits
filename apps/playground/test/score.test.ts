@@ -84,6 +84,35 @@ describe('clipsOf', () => {
     const d = { ...c, voices: [v({ id: 'x', anchor: { start: { after: 'nobody' } } })] };
     expect(clipsOf(d, subjects).links).toEqual([]);
   });
+  it('an anchor naming a voice outside its group or score draws no link, as blits never finds it', () => {
+    const d = comp(
+      [
+        v({ id: 'b' }),
+        v({ id: 'a', owner: 'g', anchor: { start: { after: 'b' } } }),
+        v({ id: 'c', score: 's', anchor: { start: { after: 'b' } } }),
+        v({ id: 'e', owner: 'g', anchor: { start: { after: { name: 'b', score: 's' } } } }),
+        v({
+          id: 'f',
+          owner: 'g',
+          score: 's',
+          anchor: { start: { after: { name: 'c', score: 's' } } },
+        }),
+      ],
+      [group({ id: 'g' })],
+    );
+    expect(clipsOf(d, subjects).links).toEqual([
+      { from: { clip: 'f', edge: 'start' }, to: { clip: 'c', edge: 'end' } },
+    ]);
+  });
+  it('refuses a link to a voice outside its group', () => {
+    const d = comp([v({ id: 'b' }), v({ id: 'a', owner: 'g' })], [group({ id: 'g' })]);
+    const edit: ClipEdit = {
+      clip: 'a',
+      kind: 'link',
+      link: { from: { clip: 'a', edge: 'start' }, to: { clip: 'b', edge: 'end' } },
+    };
+    expect(applyEdit(d, edit)).toBe(d);
+  });
   it('a join anchor links from each voice it waits on, all or any', () => {
     const d = {
       ...c,

@@ -1,7 +1,7 @@
 import type { FlowPortTone } from '@pg/widgets/FlowDiagram/types';
-import { waitOn } from './anchor';
+import { answers, waitOn } from './anchor';
 import { blendOf, setBlend, withVoice } from './blend';
-import { type Composition, isExpr } from './composition';
+import { type Composition, type Group, isExpr, type Voice } from './composition';
 import { setGroup } from './groupEdits';
 import { underSpan } from './groups';
 import { load } from './load';
@@ -65,12 +65,15 @@ function placed(
   c: Composition,
   node: string,
   slot: 'start' | 'end',
-  name: string,
+  from: { name: string; score?: string; owner?: string },
   edge: 'start' | 'end',
 ): Composition {
   const id = idOf(node);
-  const item = c.voices.find((x) => x.id === id) ?? c.groups?.find((x) => x.id === id);
-  if (!item || item.name === name || (slot === 'start' && underSpan(c, id))) return c;
+  const item = itemOf(c, node);
+  if (!item || item.name === from.name || (slot === 'start' && underSpan(c, id))) return c;
+  // blits looks for a name only among the asker's siblings on its score.
+  if ('id' in from && !answers(item, from)) return c;
+  const { name } = from;
   const anchor = waitOn(item.anchor, slot, name, edge);
   if (JSON.stringify(anchor) === JSON.stringify(item.anchor)) return c;
   if ('patch' in item) return withVoice(c, { ...item, anchor });
@@ -99,13 +102,13 @@ export function wired(
   if (rf === 'signal') {
     if (rt === 'weight') next = weighted(c, to.node, code.get(from.node) ?? '');
   } else if (rf !== 'weight' && (rt === 'start' || rt === 'end')) {
-    const name = rf === 'mark' ? idOf(from.node) : itemName(c, from.node);
-    if (name !== undefined) next = placed(c, to.node, rt, name, rf === 'end' ? 'end' : 'start');
+    const source = rf === 'mark' ? { name: idOf(from.node) } : itemOf(c, from.node);
+    if (source !== undefined) next = placed(c, to.node, rt, source, rf === 'end' ? 'end' : 'start');
   }
   return next !== c && load(next) !== null ? next : null;
 }
 
-function itemName(c: Composition, node: string): string | undefined {
+function itemOf(c: Composition, node: string): Voice | Group | undefined {
   const id = idOf(node);
-  return (c.voices.find((x) => x.id === id) ?? c.groups?.find((x) => x.id === id))?.name;
+  return c.voices.find((x) => x.id === id) ?? c.groups?.find((x) => x.id === id);
 }

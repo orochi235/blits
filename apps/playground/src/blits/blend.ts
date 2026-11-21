@@ -3,7 +3,7 @@ import type { Composition, Expr, Voice } from './composition';
 /**
  * What `mix.blend` takes once for all its voices, so every member of a blend holds the same value.
  * A member keeps its own `id`, `hue`, and the `patch`, `name`, `tags`, and `hits` blits lets a
- * `BlendMember` carry; its `weight` is the blend's signal's.
+ * `BlendMember` carry; its `weight` is the blend's signal's. `marks` is shared since a member has none.
  */
 const SHARED = [
   'start',
@@ -21,6 +21,7 @@ const SHARED = [
   'owner',
   'hints',
   'score',
+  'marks',
 ] as const satisfies readonly (keyof Voice)[];
 
 export interface Blend {

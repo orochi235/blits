@@ -1,8 +1,10 @@
-import { watched } from '@msb235/blits';
+import { mix, watched } from '@msb235/blits';
 import { compile } from '@pg/blits/compile';
+import { alignTo } from '@pg/blits/follow';
 import { FRAME } from '@pg/blits/frame';
+import { KIT } from '@pg/blits/kit';
 import { Player } from '@pg/blits/player';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { comp, subjects, voice } from './helpers';
 
 const c = comp([
@@ -69,5 +71,22 @@ describe('a clock held elsewhere', () => {
     expect(p.following).toBe(false);
     expect(p.t).toBeGreaterThan(200);
     expect(p.t).toBeLessThan(260);
+  });
+});
+
+describe('alignTo', () => {
+  it('warns when a mix cannot seek back to the time it is brought to', () => {
+    const m = mix(KIT, { stepMs: FRAME });
+    m.sync(0);
+    m.sync(500);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(alignTo(m, 100, 'no history')).toBe(false);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toContain('no history');
+    } finally {
+      warn.mockRestore();
+      m.close();
+    }
   });
 });

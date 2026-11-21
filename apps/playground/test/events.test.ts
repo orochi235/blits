@@ -154,6 +154,18 @@ describe('the event log', () => {
     expect(sound.events.booked.length).toBeGreaterThan(0);
   });
 
+  it('keeps its tag filter across a player that replaces it', () => {
+    const old = play('sound');
+    const subs = subjectsOf(marksHits.stage);
+    const next = new Player(() => compile(marksHits, subs, { solos: true }), subs, {
+      levels: marksHits.levels,
+      from: old,
+    });
+    expect(next.events.tag).toBe('sound');
+    expect(next.events.booked.length).toBeGreaterThan(0);
+    expect(next.events.booked.every((b) => b.item.tags.includes('sound'))).toBe(true);
+  });
+
   it('starts over on a scrub back by replay', () => {
     const p = play();
     p.seek(100);

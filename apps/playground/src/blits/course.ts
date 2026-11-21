@@ -30,65 +30,68 @@ export function coursesOf(
   n = 241,
 ): Map<string, Track> {
   const built = compile(c, subjects, { solos: true });
-  const { mix, solos, handles, groupHandles } = built;
-  const weighed = [...handles, ...groupHandles];
-  const weights = new Map(weighed.map(([id]) => [id, [] as number[]]));
-  const values = new Map([...solos.keys()].map((id) => [id, NUMBERS.map(() => [] as number[])]));
-  const colors = new Map([...solos.keys()].map((id) => [id, [] as string[]]));
-  const at: number[] = [];
-  const one = subjects[subject] ?? subjects[0];
-  const last = Math.max(0, Math.floor(c.length / FRAME + 1e-9));
-  const frameOf = (k: number) => Math.round((k / Math.max(1, n - 1)) * last);
-  const columns = Player.columnsFor(subjects.length);
-  let k = 0;
-  // Every frame is played and pulled as the Player plays it: a handle's weight reads the last pull.
-  for (let f = 0; f <= last && k < n; f++) {
-    const host = f * FRAME;
-    for (const m of [mix, ...solos.values()]) {
-      m.sync(host);
-      m.pull(subjects, columns);
-    }
-    for (; k < n && frameOf(k) === f; k++) {
-      at.push(host);
-      for (const [id, h] of weighed) {
-        let w = 0;
-        for (const s of subjects) w = Math.max(w, h.weightOf(s));
-        weights.get(id)?.push(w);
+  try {
+    const { mix, solos, handles, groupHandles } = built;
+    const weighed = [...handles, ...groupHandles];
+    const weights = new Map(weighed.map(([id]) => [id, [] as number[]]));
+    const values = new Map([...solos.keys()].map((id) => [id, NUMBERS.map(() => [] as number[])]));
+    const colors = new Map([...solos.keys()].map((id) => [id, [] as string[]]));
+    const at: number[] = [];
+    const one = subjects[subject] ?? subjects[0];
+    const last = Math.max(0, Math.floor(c.length / FRAME + 1e-9));
+    const frameOf = (k: number) => Math.round((k / Math.max(1, n - 1)) * last);
+    const columns = Player.columnsFor(subjects.length);
+    let k = 0;
+    // Every frame is played and pulled as the Player plays it: a handle's weight reads the last pull.
+    for (let f = 0; f <= last && k < n; f++) {
+      const host = f * FRAME;
+      for (const m of [mix, ...solos.values()]) {
+        m.sync(host);
+        m.pull(subjects, columns);
       }
-      if (one === undefined) continue;
-      for (const [id, m] of solos) {
-        const pose = m.probe(one);
-        const rows = values.get(id);
-        NUMBERS.forEach(([, read], j) => {
-          rows?.[j]?.push(read(pose));
-        });
-        colors.get(id)?.push(pose.color ? css(pose.color) : 'transparent');
+      for (; k < n && frameOf(k) === f; k++) {
+        at.push(host);
+        for (const [id, h] of weighed) {
+          let w = 0;
+          for (const s of subjects) w = Math.max(w, h.weightOf(s));
+          weights.get(id)?.push(w);
+        }
+        if (one === undefined) continue;
+        for (const [id, m] of solos) {
+          const pose = m.probe(one);
+          const rows = values.get(id);
+          NUMBERS.forEach(([, read], j) => {
+            rows?.[j]?.push(read(pose));
+          });
+          colors.get(id)?.push(pose.color ? css(pose.color) : 'transparent');
+        }
       }
+      mix.drain();
+      for (const m of solos.values()) m.drain();
     }
-    mix.drain();
-    for (const m of solos.values()) m.drain();
-  }
-  const out = new Map<string, Track>();
-  for (const [id, w] of weights) {
-    const track: Track = { at, length: c.length, weights: w };
-    let range = 1e-9;
-    const rows = values.get(id);
-    NUMBERS.forEach(([name], j) => {
-      const row = rows?.[j];
-      if (!row || row.length === 0) return;
-      const r = Math.max(...row) - Math.min(...row);
-      if (!(r > range)) return;
-      range = r;
-      track.channel = name;
-      track.values = row;
-    });
-    const tint = colors.get(id);
-    if (track.channel === undefined && tint && new Set(tint).size > 1) {
-      track.channel = 'color';
-      track.colors = tint;
+    const out = new Map<string, Track>();
+    for (const [id, w] of weights) {
+      const track: Track = { at, length: c.length, weights: w };
+      let range = 1e-9;
+      const rows = values.get(id);
+      NUMBERS.forEach(([name], j) => {
+        const row = rows?.[j];
+        if (!row || row.length === 0) return;
+        const r = Math.max(...row) - Math.min(...row);
+        if (!(r > range)) return;
+        range = r;
+        track.channel = name;
+        track.values = row;
+      });
+      const tint = colors.get(id);
+      if (track.channel === undefined && tint && new Set(tint).size > 1) {
+        track.channel = 'color';
+        track.colors = tint;
+      }
+      out.set(id, track);
     }
-    out.set(id, track);
+    return out;
+  } finally {
+    close(built);
   }
-  close(built);
-  return out;
 }

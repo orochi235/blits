@@ -5,6 +5,23 @@ const obj = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Ar
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const str = (v: unknown): v is string => typeof v === 'string';
 
+/** Whether an anchor places a voice's or group's start, so blits ignores its `start`. */
+export const placesStart = (a: { start?: unknown; in?: unknown } | undefined): boolean =>
+  a?.start !== undefined || a?.in !== undefined;
+
+/**
+ * Whether blits finds `x` for an anchor of `asker`'s, as `timeOf` does: on the query's `score`, or
+ * the asker's, and where the query names none, only among the asker's siblings.
+ */
+export const answers = (
+  asker: { score?: string; owner?: string },
+  x: { score?: string; owner?: string },
+  score?: string,
+): boolean =>
+  x !== asker &&
+  x.score === (score ?? asker.score) &&
+  (score !== undefined || x.owner === asker.owner);
+
 /** A voice's own five marks, which a mark placed inside it cannot be named. */
 export const MARKS: readonly string[] = ['start', 'in', 'coast', 'out', 'end'] satisfies Mark[];
 const RESOLVERS = ['last', 'first', 'next', 'earliest', 'latest'];

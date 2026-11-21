@@ -1,4 +1,5 @@
 import type { Easing, Hit, Placement } from '@msb235/blits';
+import { placesStart } from './anchor';
 import type { Expr, Group, Hints, Level, PatchSource, SpanSettings, Voice } from './composition';
 
 /** One parameter as a node shows it: its name, then its value. */
@@ -54,7 +55,7 @@ function clockParams(x: Voice | Group): Param[] {
       if (at !== undefined) out.push([key, at]);
     }
   }
-  if (x.start !== 0 && x.anchor?.start === undefined) out.push(['start', ms(x.start)]);
+  if (x.start !== 0 && !placesStart(x.anchor)) out.push(['start', ms(x.start)]);
   if (x.rate !== 1) out.push(['rate', `${x.rate}×`]);
   if (x.seek !== undefined) out.push(['seek', ms(x.seek)]);
   if (typeof x.weight === 'number' && x.weight !== 1) out.push(['weight', String(x.weight)]);
@@ -92,7 +93,7 @@ function spanParams(s: SpanSettings | undefined): Param[] {
   if (s.share !== undefined) out.push(['share', String(s.share)]);
   if (s.priority !== undefined) out.push(['priority', String(s.priority)]);
   if (s.spill !== undefined) out.push(['spill', s.spill]);
-  if (s.fit?.length) out.push(['fit', s.fit.map((f) => f.kind).join(' → ')]);
+  if (s.fit) out.push(['fit', s.fit.map((f) => f.kind).join(' → ') || 'none']);
   return out;
 }
 

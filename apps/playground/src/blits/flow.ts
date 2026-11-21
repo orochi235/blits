@@ -216,8 +216,11 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       ? [['weight', b.field(g, 'weight', g.weight)]]
       : [];
     out.set(g.id, chain(id, g.hue, steps));
+  }
+  // After every chain, since a group can be listed before the group that owns it.
+  for (const g of comp.groups ?? []) {
     const owner = ownerOf(g);
-    if (owner !== undefined) b.edge(ownerOut(owner), id);
+    if (owner !== undefined) b.edge(ownerOut(owner), `group:${g.id}`);
   }
   const written = new Set<ChannelName>();
   const writes: [string, ChannelName][] = [];

@@ -1,5 +1,6 @@
 import type { Anchor, Handle, Mark, MarkName, Query } from '@msb235/blits';
 import type { Flow, FlowBox, FlowEdge, FlowNode, FlowTone } from '@pg/widgets/FlowDiagram/types';
+import { answers, placesStart } from './anchor';
 import type { Built } from './compile';
 import type { Composition, Group, Voice } from './composition';
 import { writesOf } from './flow';
@@ -55,9 +56,9 @@ const FIXED: Record<Slot, (t: number) => string> = {
 class Builder {
   readonly nodes = new Map<string, FlowNode>();
   readonly edges = new Map<string, TimingEdge>();
-  private readonly named: Map<string, Item>;
+  private readonly items: readonly Item[];
   constructor(private readonly c: Composition) {
-    this.named = new Map([...c.voices, ...(c.groups ?? [])].map((x) => [x.name, x]));
+    this.items = [...c.voices, ...(c.groups ?? [])];
   }
 
   node(n: FlowNode): string {
@@ -82,19 +83,17 @@ class Builder {
 
   /** The node `asker`'s anchor waits on for `q`: a voice, a group, a mark, or a query over voices. */
   source(q: string | Query, asker: Item, mark: MarkName, path: string): string {
-    const score = (typeof q === 'string' ? undefined : q.score) ?? (asker as Voice).score;
-    const within = (x: Item) => !isVoice(x) || x.score === score;
+    const score = typeof q === 'string' ? undefined : q.score;
     const plain = typeof q === 'string' || (!q.tag && !q.writes && !q.resolver);
     const name = typeof q === 'string' ? q : q.name;
     if (plain && name !== undefined) {
-      const x = this.named.get(name);
-      return x && x !== asker && within(x) ? nodeOf(x) : this.mark(name);
+      const x = this.items.find((x) => x.name === name && answers(asker, x, score));
+      return x ? nodeOf(x) : this.mark(name);
     }
     const query = q as Query;
     const found = this.c.voices.filter(
       (v) =>
-        v !== asker &&
-        within(v) &&
+        answers(asker, v, score) &&
         (query.name === undefined || v.name === query.name) &&
         (query.tag === undefined || (v.tags ?? []).includes(query.tag)) &&
         (query.writes === undefined || (writesOf(v.patch) as string[]).includes(query.writes)),
@@ -175,8 +174,7 @@ export function timingOf(c: Composition, faulted: ReadonlySet<string> = new Set(
   for (const v of c.voices) {
     const parts: string[] = [];
     const a = v.anchor ?? {};
-    if (a.start === undefined && a.in === undefined && !spanned.has(v.id))
-      parts.push(FIXED.start(v.start));
+    if (!placesStart(a) && !spanned.has(v.id)) parts.push(FIXED.start(v.start));
     for (const slot of SLOTS) {
       const at = a[slot];
       if (typeof at === 'number') parts.push(FIXED[slot](at));

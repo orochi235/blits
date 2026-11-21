@@ -127,6 +127,16 @@ describe('editing a blend', () => {
     expect(next.voices[0]?.patch).toBe(c.voices[0]?.patch);
   });
 
+  it("makes one member's marks every member's, since blits gives a blend member no marks of its own", () => {
+    const next = withVoice(three(), { ...member(1), marks: { peak: 200 } });
+    expect(next.voices.map((v) => v.marks)).toEqual([{ peak: 200 }, { peak: 200 }, { peak: 200 }]);
+    const stray = blended([member(0), member(1, { marks: { peak: 200 } })]);
+    const built = compile(stray, subjects);
+    expect(built.errors.map((e) => [e.voice, e.error])).toEqual([
+      ['m1', "a blend plays its voices by one spec: its marks is not m0's"],
+    ]);
+  });
+
   it('gives a voice that joins the fields the blend shares', () => {
     const c = blended([member(0, { rate: 3 }), voice({ id: 'x', patch: patchOf(7) })]);
     const next = withVoice(c, { ...(c.voices[1] as Voice), role: 'tone' });

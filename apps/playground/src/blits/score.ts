@@ -1,6 +1,6 @@
 import type { Anchor, Mark, MarkName, Query } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Header, Link, ScoreMark } from '@pg/widgets/ScoreLanes';
-import { MARKS, waitOn } from './anchor';
+import { answers, MARKS, waitOn } from './anchor';
 import { blendOf, syncBlend } from './blend';
 import { clipOf, freezeOf, passesOf, placeFrom, playOf, startsPartway, stopsOf } from './clip';
 import type { Built } from './compile';
@@ -17,25 +17,27 @@ const edgeOfMark = (m: MarkName): Edge => (m === 'start' || m === 'in' ? 'start'
 /** The mark a link meets in place of an edge: one placed inside the voice. */
 const innerMark = (m: MarkName) => (MARKS.includes(m) ? {} : { mark: m });
 
-/** The voice or group name and edge an anchor points at, when it selects by name alone. */
+/** The voice or group name, score, and edge an anchor points at, when it selects by name alone. */
 function targetOf(
   a: number | Anchor | undefined,
-): { name: string; edge: Edge; mark?: string } | null {
+): { name: string; score?: string; edge: Edge; mark?: string } | null {
   if (a === undefined || typeof a === 'number') return null;
-  const name = (q: unknown) => {
-    if (typeof q === 'string') return q;
-    const x = q as Query;
-    return x.tag || x.writes || x.resolver ? undefined : x.name;
-  };
-  let n: string | undefined;
+  let q: unknown;
   let edge: Edge;
-  if ('after' in a) [n, edge] = [name(a.after), 'end'];
-  else if ('with' in a) [n, edge] = [name(a.with), 'start'];
-  else if ('before' in a) [n, edge] = [name(a.before), 'start'];
-  else if ('of' in a) [n, edge] = [name(a.of), edgeOfMark(a.mark)];
+  if ('after' in a) [q, edge] = [a.after, 'end'];
+  else if ('with' in a) [q, edge] = [a.with, 'start'];
+  else if ('before' in a) [q, edge] = [a.before, 'start'];
+  else if ('of' in a) [q, edge] = [a.of, edgeOfMark(a.mark)];
   // A join waits on several voices, so it points at no one of them; `joinedLinks` draws those.
   else return null;
-  return n ? { name: n, edge, ...('of' in a ? innerMark(a.mark) : {}) } : null;
+  const x = typeof q === 'string' ? { name: q } : (q as Query);
+  if (x.name === undefined || x.tag || x.writes || x.resolver) return null;
+  return {
+    name: x.name,
+    ...(x.score !== undefined ? { score: x.score } : {}),
+    edge,
+    ...('of' in a ? innerMark(a.mark) : {}),
+  };
 }
 
 export interface ScoreOptions {
@@ -103,7 +105,7 @@ export function clipsOf(
       const a =
         edge === 'start' ? (v.anchor?.start ?? v.anchor?.in) : (v.anchor?.end ?? v.anchor?.out);
       const t = targetOf(a);
-      const to = t && named.find((x) => x.id !== v.id && x.name === t.name);
+      const to = t && named.find((x) => x.name === t.name && answers(v, x, t.score));
       if (t && to)
         links.push({
           from: { clip: v.id, edge },
@@ -198,12 +200,19 @@ function edited(
       return edit.hatch === null ? without(v, 'freeze') : { ...v, freeze: edit.hatch };
     case 'link': {
       const to = c.voices.find((x) => x.id === edit.link.to.clip);
-      if (!to || to.id === v.id) return v;
+      // blits looks for a name only among the asker's siblings on its score.
+      if (!to || !answers(v, to)) return v;
       if (edit.link.from.edge === 'start' && underSpan(c, v.id)) return v;
       const [mark, other]: [Mark, Mark] =
         edit.link.from.edge === 'start' ? ['start', 'in'] : ['end', 'out'];
       const now = targetOf(v.anchor?.[mark] ?? v.anchor?.[other]);
-      if (now?.name === to.name && now.edge === edit.link.to.edge && !now.mark) return v;
+      if (
+        now?.name === to.name &&
+        now.score === undefined &&
+        now.edge === edit.link.to.edge &&
+        !now.mark
+      )
+        return v;
       return { ...v, anchor: waitOn(v.anchor, edit.link.from.edge, to.name, edit.link.to.edge) };
     }
   }
