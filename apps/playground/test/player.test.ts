@@ -205,6 +205,13 @@ describe('Player', () => {
     expect(edited.moved.has('k')).toBe(false);
   });
 
+  it('a player taking over keeps the booker tag of the one it replaces', () => {
+    const old = new Player(() => compile(c, subjects), subjects, { levels: c.levels });
+    old.events.tag = 'lead';
+    const next = new Player(() => compile(c, subjects), subjects, { levels: c.levels, from: old });
+    expect(next.events.tag).toBe('lead');
+  });
+
   it('rebuild keeps the playhead and the pose', () => {
     const p = player();
     p.seek(500);

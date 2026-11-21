@@ -91,7 +91,7 @@ export class Player {
   constructor(
     private readonly build: () => Built,
     readonly subjects: readonly Subject[],
-    /** The composition's levels; `from`, a player this one replaces, hands over its sliders and playhead. */
+    /** The composition's levels; `from`, a player this one replaces, hands over its sliders, playhead and booker tag. */
     init?: { levels: readonly Level[]; from?: Player | null },
   ) {
     this.columns = Player.columnsFor(subjects.length);
@@ -99,6 +99,7 @@ export class Player {
     const from = init?.from;
     if (from) {
       this.at = from.at;
+      this.events.tag = from.events.tag;
       for (const [name, v] of from.slid) this.slid.set(name, v);
       this.authored = from.authored && new Map(from.authored);
     }
