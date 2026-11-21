@@ -11,6 +11,7 @@ import {
   PropertyControl,
   PropertyRow,
   prefFieldProps,
+  RowScope,
 } from '@weasel-js/ui';
 import { createContext, type ReactNode, useContext } from 'react';
 import { EaseField } from './EaseField';
@@ -123,20 +124,21 @@ export const noted =
     const field = prefFieldProps(row.pref, { value: row.value, setValue: row.setValue }, 'lab');
     if (!field) return null;
     return (
-      <PropertyRow
-        label={row.pref.name}
-        description={row.pref.description || undefined}
-        hint={row.disabled ? (off ?? hint) : hint}
-        disabled={row.disabled}
-        error={row.error}
-      >
-        <PropertyControl
-          {...field}
-          {...(field.kind === 'number' ? { onInput: () => {} } : {})}
-          name={row.pref.name}
+      <RowScope error={row.error}>
+        <PropertyRow
+          label={row.pref.name}
+          description={row.pref.description || undefined}
+          hint={row.disabled ? (off ?? hint) : hint}
           disabled={row.disabled}
-        />
-      </PropertyRow>
+        >
+          <PropertyControl
+            {...field}
+            {...(field.kind === 'number' ? { onInput: () => {} } : {})}
+            name={row.pref.name}
+            disabled={row.disabled}
+          />
+        </PropertyRow>
+      </RowScope>
     );
   };
 

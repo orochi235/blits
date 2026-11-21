@@ -16,11 +16,11 @@ import { Glyph } from '@pg/widgets/Glyph';
 import {
   type ConfigEntry,
   ControlPanel,
-  type LeafRenderer,
   f,
+  type LeafRenderer,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
-import { Button, PropertyControl, PropertyRow } from '@weasel-js/ui';
+import { Button, PropertyControl, PropertyRow, RowScope } from '@weasel-js/ui';
 import { useMemo } from 'react';
 import s from './App.module.css';
 import { actionRow, useLatest } from './CompositionControls';
@@ -118,43 +118,44 @@ export function RulesPanel({
       const options = rulesFor(ch);
       const kind = kit[ch].kind ?? 'custom';
       return (
-        <PropertyRow
-          group
-          layout="inline"
-          label={ch}
-          changed={!same(spec, DEFAULT_RULES[ch])}
-          // The kind only says more than the rule where the channel is not one plain number.
-          hint={kind !== spec.rule && !spec.bounds ? kind : undefined}
-        >
-          <span className={r.controls}>
-            {select(`${ch} rule`, spec.rule, options, (v) => {
-              const rule = v as NumberRule;
-              set(
-                ch,
-                (UNBOUNDED.includes(rule) ? { rule } : { ...spec, rule }) as Rules[typeof ch],
-              );
-            })}
-            {!UNBOUNDED.includes(spec.rule) && (
-              <PropertyControl
-                kind="boolean"
-                control="toggle"
-                name="bounds"
-                value={spec.bounds !== undefined}
-                onChange={(on: boolean) =>
-                  set(
-                    ch,
-                    withKey(
-                      spec,
-                      'bounds',
-                      on ? (DEFAULT_RULES[ch].bounds ?? [0, 1]) : undefined,
-                    ) as Rules[typeof ch],
-                  )
-                }
-              />
-            )}
-            {back(ch)}
-          </span>
-        </PropertyRow>
+        <RowScope changed={!same(spec, DEFAULT_RULES[ch])}>
+          <PropertyRow
+            group
+            layout="inline"
+            label={ch}
+            // The kind only says more than the rule where the channel is not one plain number.
+            hint={kind !== spec.rule && !spec.bounds ? kind : undefined}
+          >
+            <span className={r.controls}>
+              {select(`${ch} rule`, spec.rule, options, (v) => {
+                const rule = v as NumberRule;
+                set(
+                  ch,
+                  (UNBOUNDED.includes(rule) ? { rule } : { ...spec, rule }) as Rules[typeof ch],
+                );
+              })}
+              {!UNBOUNDED.includes(spec.rule) && (
+                <PropertyControl
+                  kind="boolean"
+                  control="toggle"
+                  name="bounds"
+                  value={spec.bounds !== undefined}
+                  onChange={(on: boolean) =>
+                    set(
+                      ch,
+                      withKey(
+                        spec,
+                        'bounds',
+                        on ? (DEFAULT_RULES[ch].bounds ?? [0, 1]) : undefined,
+                      ) as Rules[typeof ch],
+                    )
+                  }
+                />
+              )}
+              {back(ch)}
+            </span>
+          </PropertyRow>
+        </RowScope>
       );
     };
 
@@ -193,18 +194,20 @@ export function RulesPanel({
   const colorRow: LeafRenderer = () => {
     const spec: ColorRuleSpec = rules.color;
     return (
-      <PropertyRow group layout="inline" label="color" changed={!same(spec, DEFAULT_RULES.color)}>
-        <span className={r.controls}>
-          {select('color rule', spec.rule, COLOR_RULES, (v) =>
-            set('color', { ...spec, rule: v as ColorRuleSpec['rule'] }),
-          )}
-          <span className={r.to}>as</span>
-          {select('color type', spec.type, ['color', 'ink'], (v) =>
-            set('color', { ...spec, type: v as ColorRuleSpec['type'] }),
-          )}
-          {back('color')}
-        </span>
-      </PropertyRow>
+      <RowScope changed={!same(spec, DEFAULT_RULES.color)}>
+        <PropertyRow group layout="inline" label="color">
+          <span className={r.controls}>
+            {select('color rule', spec.rule, COLOR_RULES, (v) =>
+              set('color', { ...spec, rule: v as ColorRuleSpec['rule'] }),
+            )}
+            <span className={r.to}>as</span>
+            {select('color type', spec.type, ['color', 'ink'], (v) =>
+              set('color', { ...spec, type: v as ColorRuleSpec['type'] }),
+            )}
+            {back('color')}
+          </span>
+        </PropertyRow>
+      </RowScope>
     );
   };
 
