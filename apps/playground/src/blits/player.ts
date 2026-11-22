@@ -76,6 +76,8 @@ export class Player {
   // Where the transport's clock stood after the player's last sync of it; null before the first.
   private lastNow: number | null = null;
   private follows = false;
+  // A rebase waits in the transport until the next sync, whatever ops come between.
+  private rebased = false;
   private readonly scratch: Columns;
   // Slider moves outlive a rebuild: a replay plays them at their current value.
   private readonly slid = new Map<string, number>();
@@ -347,8 +349,9 @@ export class Player {
     if (op.kind === 'sync') {
       const before = transport.now;
       // A sync after a rebase carries the clock over the gap rather than moving it.
-      const rebased = this.ops.at(-1)?.kind === 'rebase';
-      const expect = this.lastNow === null ? Number.NaN : rebased ? before : transport.time(op.at);
+      const expect =
+        this.lastNow === null ? Number.NaN : this.rebased ? before : transport.time(op.at);
+      this.rebased = false;
       // The booker reads the host's clock during the sync.
       this.lastHost = op.at;
       transport.sync(op.at);
@@ -358,8 +361,10 @@ export class Player {
       const last = this.ops.at(-1);
       if (last?.kind === 'sync' && last.now === transport.now) this.ops.pop();
     } else if (op.kind === 'rate') transport.ramp(op.rate, op.over);
-    else if (op.kind === 'rebase') transport.rebase();
-    else {
+    else if (op.kind === 'rebase') {
+      transport.rebase();
+      this.rebased = true;
+    } else {
       try {
         transport.seek(op.to);
       } catch (err) {
@@ -456,6 +461,7 @@ export class Player {
     this.lastHost = 0;
     this.lastNow = null;
     this.follows = false;
+    this.rebased = false;
     this.isLive = false;
     this.samples = [];
     this.t = 0;

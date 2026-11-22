@@ -1,13 +1,16 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
+import { VoiceHandle } from '../src/handle.js';
 import { mix } from '../src/mixer.js';
 import { spring, tween } from '../src/motion.js';
+import { leftCount, MOST, type Past } from '../src/origin.js';
 import { HistoryMiss } from '../src/paging.js';
 import { patch } from '../src/patch.js';
 import { peak, slew } from '../src/signals.js';
 import { transport } from '../src/transport.js';
 import type { Described, Handle, Mix, MixOptions, Paged, VoiceSpec } from '../src/types.js';
+import type { Voice } from '../src/voice.js';
 import { memoryStore } from './store.js';
 
 interface Pose {
@@ -180,6 +183,36 @@ describe('voices paged out with a descriptor', () => {
     await t.prepare(240);
     t.seek(240);
     expect([...probes(one), ...probes(two)]).toEqual(seen.get(240));
+  });
+
+  // Past MOST clocks a staggered voice keeps only its latest half, so it has to page out the count
+  // let go, not the count it holds, or it comes back missing its latest clocks.
+  it('come back exactly after more rate changes than a voice keeps clocks for', async () => {
+    const frames = every(0, 6000, 16);
+    const store = memoryStore();
+    let h: Handle<Part> | undefined;
+    const clocksOf = () => [
+      ...((VoiceHandle.voiceOf(h as never) as Voice<Part, Pose>).clocks ?? []),
+    ];
+    let held: Past[] = [];
+    const run = play(
+      (m, t) => {
+        if (t === 0) h = cue(m, { kind: 'staggered', data: {} }).h;
+        else if (t < 4800) (h as { rate: number }).rate = (t / 16) % 2 === 0 ? 0.05 : 0.06;
+        else if (t === 4800) h?.fade({ over: 50 });
+        if (t === 4784) held = clocksOf();
+      },
+      frames,
+      opts(store),
+    );
+    expect(leftCount(held)).toBeGreaterThan(MOST);
+    expect([...store.held.values()].filter((p) => p.stream === 'voice')).toHaveLength(1);
+    for (const t of [4784, 4000]) {
+      await run.m.prepare(t);
+      run.m.seek(t);
+      if (t === 4784) expect(clocksOf()).toEqual(held);
+      expect(probes(run.m)).toEqual(run.poses.get(t));
+    }
   });
 
   // A motion subject met inside its stagger has no run until it is read once the stagger runs out,

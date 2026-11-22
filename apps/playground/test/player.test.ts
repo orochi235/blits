@@ -187,7 +187,25 @@ describe('Player', () => {
     const p = player();
     play(p, 500);
     p.rebase();
-    p.sync(p.host + 2000);
+    p.sync(p.host + FRAME);
+    expect(p.following).toBe(false);
+  });
+
+  it('a rebase still counts when a rate change comes before the next frame', () => {
+    const p = player();
+    play(p, 500);
+    p.rebase();
+    p.setRate(0.5);
+    p.sync(p.host + FRAME);
+    expect(p.following).toBe(false);
+  });
+
+  it('a replayed lap reads as following on the frame after it', () => {
+    const p = player();
+    p.seekBy = 'replay';
+    play(p, 2000);
+    p.lap(p.t % 2000, 2000);
+    step(p);
     expect(p.following).toBe(false);
   });
 
