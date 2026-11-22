@@ -167,14 +167,12 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   number cannot fix it, which needs numbers swapped between live subjects. Under history, roles or
   a bound `src/renumber.ts` still declines; extending it there needs tests proving each store it
   would carry.
-- **[agent] A crowd of tweens read half at a time goes idle and reads 5× slower than whole.**
-  `pull` over every other one of 10,000 one-subject tweens takes 1.65 ms a frame against 0.33 for
-  all of them (studio, shared, `bench/runs/2026-11-21-reorder-half.txt`, measured), and a profile
-  puts 72% in `foldWith`, the general path (`runs/2026-11-21-reorder-half-prof.txt`). Half the
-  subjects probed is under `SPARSE.other.stop` (0.6, `src/lane.ts`), so the crowd idles; the line
-  was not set on a crowd of motions, whose general path costs this much more (inferred).
 - **[agent] astv's glides (+8%) and progress clocks (+39%) since 0.8.0** are unexplained, at 1–2 µs
   a frame; `MOTION_ONLY=1 probes/blits-version-bench.sh <out> 0.7.1` in `~/src/astv` on a node.
+- **[agent] A crowd of tweens at 1,000 subjects read 10–15% at a time costs 4–7% more** since crowds
+  got lines of their own (2 µs a frame; msb-uai, 6 rounds, `bench/runs/2026-11-21-sparse-crowd-ab2/`,
+  measured): it stays filling inside the band where its crossover sits, 17% at 1k against 13% at 10k.
+  Accepted, as the line is set for 10k; a line by crowd size would remove it.
 - **[agent] Running back past a voice's end costs `own` and `keys` 1–3%** (`4a6cc4e`, accepted
   under the tuning bound, 2026-10-17).
 - **[agent] A probe pays for every channel in the kit, written or not**; skipping unwritten ones

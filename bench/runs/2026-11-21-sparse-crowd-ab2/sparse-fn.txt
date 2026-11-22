@@ -1,0 +1,75 @@
+# msb-uai (--quiet --max-cores 2): AB_BENCH=bench/sparse.mjs MODES=line FRAMES=600 bench/ab.sh a7702546 . 6 fn 10000 1 0.08 0.1 0.15 0.2 0.25
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+built the working tree
+== round 1/6 a7702546
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.140 ms/frame  p50   0.127  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.178 ms/frame  p50   0.159  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.239 ms/frame  p50   0.216  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.348 ms/frame  p50   0.304  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.543 ms/frame  p50   0.481  listed   2500
+== round 1/6 .
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.165 ms/frame  p50   0.136  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.183 ms/frame  p50   0.164  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.284 ms/frame  p50   0.237  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.370 ms/frame  p50   0.291  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.482 ms/frame  p50   0.366  listed   2500
+== round 2/6 .
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.139 ms/frame  p50   0.124  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.176 ms/frame  p50   0.157  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.243 ms/frame  p50   0.219  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.301 ms/frame  p50   0.264  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.402 ms/frame  p50   0.347  listed   2500
+== round 2/6 a7702546
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.141 ms/frame  p50   0.128  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.180 ms/frame  p50   0.155  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.255 ms/frame  p50   0.231  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.354 ms/frame  p50   0.305  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.474 ms/frame  p50   0.416  listed   2500
+== round 3/6 a7702546
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.143 ms/frame  p50   0.128  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.176 ms/frame  p50   0.160  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.249 ms/frame  p50   0.228  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.356 ms/frame  p50   0.304  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.510 ms/frame  p50   0.453  listed   2500
+== round 3/6 .
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.139 ms/frame  p50   0.126  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.178 ms/frame  p50   0.154  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.240 ms/frame  p50   0.220  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.309 ms/frame  p50   0.269  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.415 ms/frame  p50   0.366  listed   2500
+== round 4/6 .
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.141 ms/frame  p50   0.125  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.178 ms/frame  p50   0.163  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.242 ms/frame  p50   0.219  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.310 ms/frame  p50   0.264  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.406 ms/frame  p50   0.352  listed   2500
+== round 4/6 a7702546
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.147 ms/frame  p50   0.127  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.212 ms/frame  p50   0.156  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.258 ms/frame  p50   0.228  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.376 ms/frame  p50   0.323  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.553 ms/frame  p50   0.478  listed   2500
+== round 5/6 a7702546
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.138 ms/frame  p50   0.127  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.184 ms/frame  p50   0.164  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.257 ms/frame  p50   0.235  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.372 ms/frame  p50   0.325  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.496 ms/frame  p50   0.432  listed   2500
+== round 5/6 .
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.151 ms/frame  p50   0.134  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.184 ms/frame  p50   0.159  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.252 ms/frame  p50   0.233  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.333 ms/frame  p50   0.284  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.366 ms/frame  p50   0.305  listed   2500
+== round 6/6 .
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.135 ms/frame  p50   0.123  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.178 ms/frame  p50   0.156  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.249 ms/frame  p50   0.232  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.324 ms/frame  p50   0.277  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.380 ms/frame  p50   0.331  listed   2500
+== round 6/6 a7702546
+  1/5  sparse-fn-line@0.08 N=10000 V=1    0.138 ms/frame  p50   0.125  listed    800
+  2/5  sparse-fn-line@0.10 N=10000 V=1    0.181 ms/frame  p50   0.165  listed   1000
+  3/5  sparse-fn-line@0.15 N=10000 V=1    0.252 ms/frame  p50   0.227  listed   1500
+  4/5  sparse-fn-line@0.20 N=10000 V=1    0.382 ms/frame  p50   0.321  listed   2000
+  5/5  sparse-fn-line@0.25 N=10000 V=1    0.517 ms/frame  p50   0.455  listed   2500

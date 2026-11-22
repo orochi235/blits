@@ -1,0 +1,63 @@
+# msb-uai (--quiet --max-cores 2): AB_BENCH=bench/sparse.mjs MODES=line FRAMES=2000 bench/ab.sh a7702546 . 6 spring 1000 1 0.05 0.08 0.1 0.15
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+built the working tree
+== round 1/6 a7702546
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.014 ms/frame  p50   0.012  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.020 ms/frame  p50   0.018  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.032 ms/frame  p50   0.031  listed    150
+== round 1/6 .
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.012  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.018 ms/frame  p50   0.017  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.019 ms/frame  p50   0.018  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+== round 2/6 .
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.011  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.018 ms/frame  p50   0.017  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.018 ms/frame  p50   0.018  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+== round 2/6 a7702546
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.012  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.021 ms/frame  p50   0.019  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.024 ms/frame  p50   0.022  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.035 ms/frame  p50   0.032  listed    150
+== round 3/6 a7702546
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.014 ms/frame  p50   0.012  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.021 ms/frame  p50   0.019  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.035 ms/frame  p50   0.033  listed    150
+== round 3/6 .
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.012  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.018 ms/frame  p50   0.017  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.018 ms/frame  p50   0.018  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+== round 4/6 .
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.011  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.018 ms/frame  p50   0.016  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.018 ms/frame  p50   0.017  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+== round 4/6 a7702546
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.011  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.020 ms/frame  p50   0.017  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.023 ms/frame  p50   0.021  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.031 ms/frame  p50   0.030  listed    150
+== round 5/6 a7702546
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.014 ms/frame  p50   0.011  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.019 ms/frame  p50   0.017  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.023 ms/frame  p50   0.021  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.031 ms/frame  p50   0.030  listed    150
+== round 5/6 .
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.014 ms/frame  p50   0.011  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.018 ms/frame  p50   0.017  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.019 ms/frame  p50   0.018  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+== round 6/6 .
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.011  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.018 ms/frame  p50   0.017  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.018 ms/frame  p50   0.017  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+== round 6/6 a7702546
+  1/4  sparse-spring-line@0.05 N=1000 V=1    0.015 ms/frame  p50   0.011  listed     50
+  2/4  sparse-spring-line@0.08 N=1000 V=1    0.020 ms/frame  p50   0.019  listed     80
+  3/4  sparse-spring-line@0.10 N=1000 V=1    0.024 ms/frame  p50   0.022  listed    100
+  4/4  sparse-spring-line@0.15 N=1000 V=1    0.034 ms/frame  p50   0.032  listed    150

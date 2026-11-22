@@ -1,0 +1,99 @@
+# teitou (--quiet --max-cores 2): AB_BENCH=bench/sparse.mjs MODES=line FRAMES=600 bench/ab.sh a7702546 . 6 spring 10000 1 0.05 0.1 0.2 0.3 0.5 0.8 1
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+built the working tree
+== round 1/6 a7702546
+  1/7  sparse-spring-line@0.05 N=10000    0.087 ms/frame  p50   0.079  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.170 ms/frame  p50   0.165  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.407 ms/frame  p50   0.392  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.753 ms/frame  p50   0.765  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    1.335 ms/frame  p50   1.235  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.464 ms/frame  p50   0.428  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.505 ms/frame  p50   0.472  listed  10000
+== round 1/6 .
+  1/7  sparse-spring-line@0.05 N=10000    0.108 ms/frame  p50   0.095  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.121 ms/frame  p50   0.116  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.165 ms/frame  p50   0.159  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.219 ms/frame  p50   0.213  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.299 ms/frame  p50   0.291  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.434 ms/frame  p50   0.423  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.474 ms/frame  p50   0.467  listed  10000
+== round 2/6 .
+  1/7  sparse-spring-line@0.05 N=10000    0.099 ms/frame  p50   0.095  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.114 ms/frame  p50   0.114  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.165 ms/frame  p50   0.159  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.215 ms/frame  p50   0.208  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.298 ms/frame  p50   0.290  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.433 ms/frame  p50   0.426  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.478 ms/frame  p50   0.463  listed  10000
+== round 2/6 a7702546
+  1/7  sparse-spring-line@0.05 N=10000    0.087 ms/frame  p50   0.079  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.166 ms/frame  p50   0.162  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.412 ms/frame  p50   0.402  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.675 ms/frame  p50   0.690  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    1.076 ms/frame  p50   1.103  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.422 ms/frame  p50   0.417  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.463 ms/frame  p50   0.458  listed  10000
+== round 3/6 a7702546
+  1/7  sparse-spring-line@0.05 N=10000    0.087 ms/frame  p50   0.079  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.166 ms/frame  p50   0.163  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.413 ms/frame  p50   0.373  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.610 ms/frame  p50   0.604  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    1.033 ms/frame  p50   1.056  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.419 ms/frame  p50   0.417  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.466 ms/frame  p50   0.459  listed  10000
+== round 3/6 .
+  1/7  sparse-spring-line@0.05 N=10000    0.101 ms/frame  p50   0.097  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.116 ms/frame  p50   0.115  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.162 ms/frame  p50   0.157  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.211 ms/frame  p50   0.208  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.292 ms/frame  p50   0.287  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.422 ms/frame  p50   0.417  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.465 ms/frame  p50   0.457  listed  10000
+== round 4/6 .
+  1/7  sparse-spring-line@0.05 N=10000    0.096 ms/frame  p50   0.093  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.115 ms/frame  p50   0.114  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.166 ms/frame  p50   0.160  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.225 ms/frame  p50   0.216  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.292 ms/frame  p50   0.287  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.444 ms/frame  p50   0.441  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.458 ms/frame  p50   0.454  listed  10000
+== round 4/6 a7702546
+  1/7  sparse-spring-line@0.05 N=10000    0.082 ms/frame  p50   0.076  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.156 ms/frame  p50   0.155  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.359 ms/frame  p50   0.339  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.620 ms/frame  p50   0.616  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.907 ms/frame  p50   0.842  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.410 ms/frame  p50   0.409  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.451 ms/frame  p50   0.448  listed  10000
+== round 5/6 a7702546
+  1/7  sparse-spring-line@0.05 N=10000    0.082 ms/frame  p50   0.075  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.163 ms/frame  p50   0.162  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.352 ms/frame  p50   0.333  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.585 ms/frame  p50   0.505  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    1.241 ms/frame  p50   1.198  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.444 ms/frame  p50   0.425  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.495 ms/frame  p50   0.474  listed  10000
+== round 5/6 .
+  1/7  sparse-spring-line@0.05 N=10000    0.104 ms/frame  p50   0.098  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.119 ms/frame  p50   0.114  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.178 ms/frame  p50   0.161  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.229 ms/frame  p50   0.210  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.318 ms/frame  p50   0.296  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.432 ms/frame  p50   0.417  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.461 ms/frame  p50   0.453  listed  10000
+== round 6/6 .
+  1/7  sparse-spring-line@0.05 N=10000    0.099 ms/frame  p50   0.096  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.116 ms/frame  p50   0.114  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.162 ms/frame  p50   0.160  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.212 ms/frame  p50   0.208  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.298 ms/frame  p50   0.288  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.423 ms/frame  p50   0.417  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.452 ms/frame  p50   0.449  listed  10000
+== round 6/6 a7702546
+  1/7  sparse-spring-line@0.05 N=10000    0.081 ms/frame  p50   0.075  listed    500
+  2/7  sparse-spring-line@0.10 N=10000    0.159 ms/frame  p50   0.158  listed   1000
+  3/7  sparse-spring-line@0.20 N=10000    0.355 ms/frame  p50   0.335  listed   2000
+  4/7  sparse-spring-line@0.30 N=10000    0.583 ms/frame  p50   0.557  listed   3000
+  5/7  sparse-spring-line@0.50 N=10000    0.917 ms/frame  p50   0.855  listed   5000
+  6/7  sparse-spring-line@0.80 N=10000    0.415 ms/frame  p50   0.412  listed   8000
+  7/7  sparse-spring-line@1.00 N=10000    0.456 ms/frame  p50   0.452  listed  10000
