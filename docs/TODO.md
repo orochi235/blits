@@ -56,30 +56,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   merge on main, read within spread of the base, so no commit carries it. Any real effect is under
   about 2%, less than one build's run-to-run spread on this row (7–11 ms). Reopen only if a new
   run reads it above 3% again.
-- **[agent] Heatmap `pull` reads about 20% slower with lanes than without, and the gap is the
-  retargeted springs meeting the `ink` holds** (5,000 springs, three `ink` voices). Neither the
-  signal weights nor `ink` carries it: `one`'s signal branch is about 0.33 of 3.86 ms
-  (`runs/2026-11-21-heatmap-signal-split.txt`), and with const weights, after `4a7299d8`, each
-  part alone reads (studio, 5 rounds, ms, `runs/2026-11-21-heatmap-lanes-gap-after/split.txt`,
-  measured):
-
-  | Voices | Lanes on | Lanes off |
-  |---|---:|---:|
-  | spring and ink | 3.854 | 3.143 |
-  | ink alone | 1.359 | 1.649 |
-  | spring alone | 1.723 | 1.353 |
-
-  Together they cost 0.63 ms more on lanes than the two parts do, against 0.14 off. About 2,900
-  of the 5,000 springs have a retarget pending each frame (`runs/2026-11-21-heatmap-lanes-gap-count.txt`,
-  measured); a fill hands each to the general path (`move` owes it), so the general path still
-  runs 2,919 spring contributions a frame on lanes, beside the lane loop over all 5,000. Only with
-  the spring there does a lanes profile under `pull` show `readAll`, `copies` and `foldWith`
-  (`runs/2026-11-21-heatmap-lanes-gap-prof2/summary.txt`), so an owed subject read one at a time
-  with its ink values copied in looks like the interaction (inferred, not split) (2026-11-21).
-  Next: let a fill commit a due change itself where nothing is kept (no `history`), which
-  `6510b1b8` ruled out to keep a fill from changing motion state, or make an owed subject's read
-  cheaper. Profile `pull` alone with `bench/heatprof.sh` or `UNDER=pull bench/profsum.mjs`, not
-  the stress demo, which plays a lanes twin.
 - **[agent] A host probing into its own object under `retargets: true`** keeps two poses a
   subject in `Probes` (`src/trail.ts`), costing a 10,000-subject probe frame 8–22%, about 14 ns a
   probe: `keys` 1.033 against 1.172 ms, `tweens` 0.608 against 0.745 (measured: teitou, 7 rounds,

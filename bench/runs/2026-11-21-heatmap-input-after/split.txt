@@ -1,0 +1,21 @@
+# msb-uai Apple M3 Max 2026-11-21, onto --quiet --max-cores 1, fbe0fd06 plus the fill commit, uncommitted: bench/heatsplit.sh 5
+1/10 round 1 exp 0  1/1  spring/input/ink/on     read p50   2.346 ms  p90   2.582  step p50   0.781  load 9.68
+onto: progress 1/10
+2/10 round 1 exp 0  1/1  spring/input/ink/off    read p50   2.358 ms  p90   2.547  step p50   0.742  load 9.22
+onto: progress 2/10
+3/10 round 2 exp 0  1/1  spring/input/ink/off    read p50   2.397 ms  p90   2.578  step p50   0.837  load 9.22
+onto: progress 3/10
+4/10 round 2 exp 0  1/1  spring/input/ink/on     read p50   2.239 ms  p90   2.609  step p50   0.887  load 9.22
+onto: progress 4/10
+5/10 round 3 exp 0  1/1  spring/input/ink/on     read p50   2.345 ms  p90   2.860  step p50   0.902  load 8.73
+onto: progress 5/10
+6/10 round 3 exp 0  1/1  spring/input/ink/off    read p50   2.328 ms  p90   2.675  step p50   0.669  load 8.73
+onto: progress 6/10
+7/10 round 4 exp 0  1/1  spring/input/ink/off    read p50   2.335 ms  p90   2.646  step p50   0.893  load 8.11
+onto: progress 7/10
+8/10 round 4 exp 0  1/1  spring/input/ink/on     read p50   2.388 ms  p90   2.839  step p50   0.897  load 8.11
+onto: progress 8/10
+9/10 round 5 exp 0  1/1  spring/input/ink/on     read p50   2.324 ms  p90   2.627  step p50   0.753  load 7.70
+onto: progress 9/10
+10/10 round 5 exp 0  1/1  spring/input/ink/off    read p50   2.402 ms  p90   2.620  step p50   0.729  load 7.70
+onto: progress 10/10

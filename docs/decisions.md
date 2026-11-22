@@ -35,6 +35,10 @@ DevTools extension's are in their READMEs.
 
 ## Behavior
 
+- **A `pull`'s fill may commit a motion subject's due changes when the mix has no `history`**
+  (2026-11-21), reopening `6510b1b8`'s rule that a fill changes no motion state for that case
+  alone: only for a subject the pull is certain to read, and only changes already timed. Results
+  stay the same to the bit, lanes on or off, with seeks and replays (`bench/same.sh`).
 - **The two seek-back changes in `3fd3eac` stand** (2026-10-18): `weightOf` reads 0 after a seek
   back until the subject is probed again, and a write to the handle of a voice waiting for its cue
   after a seek back is ignored.

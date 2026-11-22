@@ -1,0 +1,81 @@
+# teitou Apple M5 Max 2026-11-21, onto --quiet --max-cores 1, fbe0fd06 plus 2026-11-21-heatmap-fill-commit-ab.diff: bench/heatsplit.sh 5
+1/40 round 1 exp 1  1/1  spring/const/ink/on     read p50   3.410 ms  p90   4.613  step p50   0.843  load 5.54
+onto: progress 1/40
+2/40 round 1 exp 0  1/1  spring/const/ink/on     read p50   1.869 ms  p90   2.543  step p50   0.731  load 5.33
+onto: progress 2/40
+3/40 round 1 exp 0  1/1  spring/const/ink/off    read p50   2.609 ms  p90   3.323  step p50   0.871  load 5.33
+onto: progress 3/40
+4/40 round 1 exp 1  1/1  spring/-/none/on        read p50   1.358 ms  p90   2.325  step p50   0.693  load 5.39
+onto: progress 4/40
+5/40 round 1 exp 0  1/1  spring/-/none/on        read p50   1.099 ms  p90   1.680  step p50   0.906  load 5.39
+onto: progress 5/40
+6/40 round 1 exp 0  1/1  spring/-/none/off       read p50   1.072 ms  p90   1.505  step p50   0.748  load 5.39
+onto: progress 6/40
+7/40 round 1 exp 0  1/1  none/const/ink/on       read p50   1.024 ms  p90   1.467  step p50   0.053  load 5.39
+onto: progress 7/40
+8/40 round 1 exp 0  1/1  none/const/ink/off      read p50   1.252 ms  p90   1.737  step p50   0.053  load 5.60
+onto: progress 8/40
+9/40 round 2 exp 0  1/1  spring/const/ink/on     read p50   2.901 ms  p90   4.081  step p50   0.995  load 5.60
+onto: progress 9/40
+10/40 round 2 exp 0  1/1  spring/const/ink/off    read p50   2.483 ms  p90   3.373  step p50   0.811  load 5.55
+onto: progress 10/40
+11/40 round 2 exp 1  1/1  spring/-/none/on        read p50   1.491 ms  p90   2.400  step p50   0.861  load 5.55
+onto: progress 11/40
+12/40 round 2 exp 0  1/1  spring/-/none/on        read p50   1.169 ms  p90   1.803  step p50   0.984  load 5.55
+onto: progress 12/40
+13/40 round 2 exp 0  1/1  spring/-/none/off       read p50   1.180 ms  p90   1.893  step p50   0.803  load 5.75
+onto: progress 13/40
+14/40 round 2 exp 0  1/1  none/const/ink/on       read p50   1.038 ms  p90   1.365  step p50   0.051  load 5.75
+onto: progress 14/40
+15/40 round 2 exp 0  1/1  none/const/ink/off      read p50   1.060 ms  p90   1.210  step p50   0.050  load 5.75
+onto: progress 15/40
+16/40 round 2 exp 1  1/1  spring/const/ink/on     read p50   3.310 ms  p90   4.782  step p50   0.872  load 6.01
+onto: progress 16/40
+17/40 round 3 exp 0  1/1  spring/const/ink/off    read p50   2.202 ms  p90   2.764  step p50   0.602  load 6.01
+onto: progress 17/40
+18/40 round 3 exp 1  1/1  spring/-/none/on        read p50   1.149 ms  p90   1.661  step p50   0.620  load 6.01
+onto: progress 18/40
+19/40 round 3 exp 0  1/1  spring/-/none/on        read p50   0.831 ms  p90   1.126  step p50   0.618  load 6.01
+onto: progress 19/40
+20/40 round 3 exp 0  1/1  spring/-/none/off       read p50   0.877 ms  p90   1.290  step p50   0.624  load 5.92
+onto: progress 20/40
+21/40 round 3 exp 0  1/1  none/const/ink/on       read p50   0.821 ms  p90   1.047  step p50   0.048  load 5.92
+onto: progress 21/40
+22/40 round 3 exp 0  1/1  none/const/ink/off      read p50   1.039 ms  p90   1.203  step p50   0.049  load 5.92
+onto: progress 22/40
+23/40 round 3 exp 1  1/1  spring/const/ink/on     read p50   3.044 ms  p90   4.121  step p50   0.844  load 5.69
+onto: progress 23/40
+24/40 round 3 exp 0  1/1  spring/const/ink/on     read p50   2.176 ms  p90   3.134  step p50   0.798  load 5.69
+onto: progress 24/40
+25/40 round 4 exp 1  1/1  spring/-/none/on        read p50   1.119 ms  p90   1.642  step p50   0.584  load 5.69
+onto: progress 25/40
+26/40 round 4 exp 0  1/1  spring/-/none/on        read p50   0.876 ms  p90   1.204  step p50   0.604  load 5.63
+onto: progress 26/40
+27/40 round 4 exp 0  1/1  spring/-/none/off       read p50   1.140 ms  p90   1.838  step p50   0.772  load 5.63
+onto: progress 27/40
+28/40 round 4 exp 0  1/1  none/const/ink/on       read p50   1.070 ms  p90   1.389  step p50   0.051  load 5.63
+onto: progress 28/40
+29/40 round 4 exp 0  1/1  none/const/ink/off      read p50   1.105 ms  p90   1.268  step p50   0.050  load 5.63
+onto: progress 29/40
+30/40 round 4 exp 1  1/1  spring/const/ink/on     read p50   3.424 ms  p90   4.557  step p50   0.907  load 5.42
+onto: progress 30/40
+31/40 round 4 exp 0  1/1  spring/const/ink/on     read p50   2.098 ms  p90   3.018  step p50   0.763  load 5.42
+onto: progress 31/40
+32/40 round 4 exp 0  1/1  spring/const/ink/off    read p50   2.229 ms  p90   2.829  step p50   0.681  load 5.47
+onto: progress 32/40
+33/40 round 5 exp 0  1/1  spring/-/none/on        read p50   0.966 ms  p90   1.350  step p50   0.790  load 5.47
+onto: progress 33/40
+34/40 round 5 exp 0  1/1  spring/-/none/off       read p50   1.167 ms  p90   1.741  step p50   0.734  load 5.47
+onto: progress 34/40
+35/40 round 5 exp 0  1/1  none/const/ink/on       read p50   1.018 ms  p90   1.385  step p50   0.055  load 5.47
+onto: progress 35/40
+36/40 round 5 exp 0  1/1  none/const/ink/off      read p50   1.580 ms  p90   2.174  step p50   0.055  load 6.31
+onto: progress 36/40
+37/40 round 5 exp 1  1/1  spring/const/ink/on     read p50   2.573 ms  p90   4.190  step p50   0.750  load 6.31
+onto: progress 37/40
+38/40 round 5 exp 0  1/1  spring/const/ink/on     read p50   3.362 ms  p90   4.240  step p50   1.005  load 6.53
+onto: progress 38/40
+39/40 round 5 exp 0  1/1  spring/const/ink/off    read p50   2.304 ms  p90   2.980  step p50   0.737  load 6.53
+onto: progress 39/40
+40/40 round 5 exp 1  1/1  spring/-/none/on        read p50   1.684 ms  p90   2.404  step p50   0.920  load 6.56
+onto: progress 40/40

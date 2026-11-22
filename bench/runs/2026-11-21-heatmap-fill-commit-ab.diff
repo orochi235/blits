@@ -1,0 +1,119 @@
+diff --git a/src/lanes.ts b/src/lanes.ts
+index 85109ff8..01041e52 100644
+--- a/src/lanes.ts
++++ b/src/lanes.ts
+@@ -211,6 +211,13 @@ export class Lanes<I, O> implements Watcher {
+   queuedFor: readonly Column[] | null = null;
+   queueFrom: Int32Array | null = null;
+   keeps = false;
++  /**
++   * By subject number, the `pull` certain to read the subject, while `pulling` is that pull's
++   * number, else 0: a fill may commit such a subject's motion changes, as that read would.
++   */
++  readBy = new Int32Array(0);
++  pulling = 0;
++  pullCount = 0;
+   now = Number.NaN;
+   filledAt = Number.NaN;
+   /** `reading.moved` and `reading.inputs` at the last fill: see `current`. */
+diff --git a/src/motions.ts b/src/motions.ts
+index b5bc2ed7..58ee0560 100644
+--- a/src/motions.ts
++++ b/src/motions.ts
+@@ -450,6 +450,18 @@ export class Motions<I> {
+     return true;
+   }
+ 
++  /**
++   * Whether a live `sample` of the subject changes nothing but its due changes, each of them
++   * already timed, so the stretches it leaves do not depend on when it runs within a frame.
++   */
++  settles(s: number): boolean {
++    const flags = this.runs[this.base(s) + RunField.FLAGS] as number;
++    if ((flags & OLDER) !== 0 && reading.horizon !== Number.POSITIVE_INFINITY) return false;
++    if ((flags & PENDING) === 0) return true;
++    const list = (this.pending as Change[][])[s] as Change[];
++    return (list[list.length - 1] as Change).at !== undefined;
++  }
++
+   /** Position and velocity at `at`, default the latest frame; undefined until there is one. */
+   read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
+     const s = this.known(subject);
+diff --git a/src/pull.ts b/src/pull.ts
+index 5659ec28..0203efde 100644
+--- a/src/pull.ts
++++ b/src/pull.ts
+@@ -1,3 +1,6 @@
++// biome-ignore lint/suspicious/noExplicitAny: scratch
++const EXP: number = Number((globalThis as any).process?.env?.BLITS_EXP ?? 0);
++
+ import { axesOf } from './channels.js';
+ import { copy } from './clone.js';
+ import type { Values } from './fold.js';
+@@ -141,10 +144,15 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
+     : live && mix.pulledVersion === version
+       ? mix.pulledRelinks
+       : -1;
++  if (EXP === 0 && lanes !== null && current && mix.opts.history === undefined)
++    markRead(mix, lanes, list);
+   try {
+     readAll(mix, list, columns, live, current, since, whole);
+   } finally {
+-    if (lanes !== null) lanes.pulls.flush(lanes);
++    if (lanes !== null) {
++      lanes.pulling = 0;
++      lanes.pulls.flush(lanes);
++    }
+   }
+   // Until a retarget asks for poses, none are kept, so the columns are, to give it a speed.
+   if (live && !mix.wantsPose && !mix.projecting) {
+@@ -157,6 +165,27 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
+   mix.pulledRelinks = relinks;
+ }
+ 
++/**
++ * Marks each subject `list` holds where the last pull read the same one, at the slot it read it
++ * at, which `current` says still holds, as one this pull reads for certain.
++ */
++function markRead<I, O>(mix: Mixer<I, O>, lanes: Lanes<I, O>, list: readonly I[]): void {
++  if (lanes.readBy.length < lanes.cap) {
++    const grown = new Int32Array(Math.max(64, lanes.cap * 2));
++    grown.set(lanes.readBy);
++    lanes.readBy = grown;
++  }
++  const marks = lanes.readBy;
++  const was = mix.pulled;
++  const slots = mix.pulledSlots;
++  const at = ++lanes.pullCount;
++  for (let n = 0; n < list.length; n++) {
++    const slot = slots[n] as number;
++    if (slot >= 0 && slot < marks.length && was[n] === list[n]) marks[slot] = at;
++  }
++  lanes.pulling = at;
++}
++
+ /**
+  * Reads every subject in `list` into the columns, kept apart from `pull` so a list long enough to
+  * compile the loop on the stack does not leave `pull`'s own code compiled before its tail had run:
+diff --git a/src/sample.ts b/src/sample.ts
+index 73748759..5c1bb52a 100644
+--- a/src/sample.ts
++++ b/src/sample.ts
+@@ -245,7 +245,16 @@ export function move<I, O>(
+     }
+     if (lanes.keeps) lanes.host.horizon(voice, delay);
+     else reading.horizon = Number.POSITIVE_INFINITY;
+-    if (!run.quiet(ms, elapsed)) {
++    // A subject the pull under way reads commits what its read would, at the same voice time.
++    if (
++      !run.quiet(ms, elapsed) &&
++      !(
++        lanes.pulling !== 0 &&
++        lanes.readBy[slot] === lanes.pulling &&
++        !lanes.keeps &&
++        run.settles(ms)
++      )
++    ) {
+       // Only this voice waits for the general path where it can fold there last: the subject's
+       // other voices still read the lanes.
+       const own = lanes.byId.get(voice.id);

@@ -211,6 +211,13 @@ export class Lanes<I, O> implements Watcher {
   queuedFor: readonly Column[] | null = null;
   queueFrom: Int32Array | null = null;
   keeps = false;
+  /**
+   * By subject number, the `pull` certain to read the subject, while `pulling` is that pull's
+   * number, else 0: a fill may commit such a subject's motion changes, as that read would.
+   */
+  readBy = new Int32Array(0);
+  pulling = 0;
+  pullCount = 0;
   now = Number.NaN;
   filledAt = Number.NaN;
   /** `reading.moved` and `reading.inputs` at the last fill: see `current`. */
