@@ -1,0 +1,16 @@
+# teitou: bench/runs/2026-11-21-stop-seat-same.sh (60d4ec5b against b2e157dc), every 1000th progress line kept
+== 1/3 plain
+comparing b2e157dc (b2e157dc5d00510ec04afe20ff449606304d1aaa) with this tree
+1000/2000  0 differ
+2000/2000  0 differ
+same: 2000 scenes
+== 2/3 seek
+comparing b2e157dc (b2e157dc5d00510ec04afe20ff449606304d1aaa) with this tree
+1000/2000  0 differ
+2000/2000  0 differ
+same: 2000 scenes
+== 3/3 lanesoff
+comparing b2e157dc (b2e157dc5d00510ec04afe20ff449606304d1aaa) with this tree
+1000/2000  0 differ
+2000/2000  0 differ
+same: 2000 scenes
