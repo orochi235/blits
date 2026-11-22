@@ -1,0 +1,134 @@
+# studio (shared node, --max-cores 1, quiet): FRAMES=2000 LINEAGE_BENCH=requalify.mjs bench/lineage.sh 8 a7702546 . -- '10000 1 quiet general'; LINEAGE_BENCH=reorder.mjs bench/lineage.sh 8 a7702546 . -- '10000 1 asc swap'
+
+built a7702546
+built .
+== round 1/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.336 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.676 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.724 ms/frame  rest   0.671  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.671 ms/frame
+== round 1/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.338 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.401 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.707 ms/frame  rest   0.367  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.367 ms/frame
+== round 2/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.343 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.408 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.732 ms/frame  rest   0.371  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.371 ms/frame
+== round 2/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.343 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.690 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.755 ms/frame  rest   0.683  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.683 ms/frame
+== round 3/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.340 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.689 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.727 ms/frame  rest   0.685  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.685 ms/frame
+== round 3/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.337 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.405 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.733 ms/frame  rest   0.369  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.369 ms/frame
+== round 4/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.339 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.402 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.715 ms/frame  rest   0.367  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.367 ms/frame
+== round 4/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.327 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.631 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.679 ms/frame  rest   0.625  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.625 ms/frame
+== round 5/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.327 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.619 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.693 ms/frame  rest   0.611  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.611 ms/frame
+== round 5/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.305 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.349 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.596 ms/frame  rest   0.322  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.322 ms/frame
+== round 6/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.305 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.358 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.622 ms/frame  rest   0.329  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.329 ms/frame
+== round 6/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.327 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.632 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.669 ms/frame  rest   0.628  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.628 ms/frame
+== round 7/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.326 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.632 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.701 ms/frame  rest   0.624  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.624 ms/frame
+== round 7/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.325 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.381 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.640 ms/frame  rest   0.353  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.353 ms/frame
+== round 8/8 .
+ 1/1  requalify-quiet       N=10000 V=1    0.327 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.378 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.625 ms/frame  rest   0.350  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.350 ms/frame
+== round 8/8 a7702546
+ 1/1  requalify-quiet       N=10000 V=1    0.327 ms/frame
+ 1/1  requalify-general     N=10000 V=1    0.631 ms/frame
+ 1/1  requalify-general-end N=10000 V=1    0.680 ms/frame  rest   0.625  ends 200
+ 1/1  requalify-general-rest N=10000 V=1    0.625 ms/frame
+built a7702546
+built .
+== round 1/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.327 ms/frame  p50   0.327  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.539 ms/frame  p50   0.517  listed  10000
+== round 1/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.302 ms/frame  p50   0.299  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.423 ms/frame  p50   0.405  listed  10000
+== round 2/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.299 ms/frame  p50   0.296  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.436 ms/frame  p50   0.414  listed  10000
+== round 2/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.322 ms/frame  p50   0.319  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.537 ms/frame  p50   0.508  listed  10000
+== round 3/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.306 ms/frame  p50   0.304  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.413 ms/frame  p50   0.405  listed  10000
+== round 3/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.303 ms/frame  p50   0.299  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.430 ms/frame  p50   0.409  listed  10000
+== round 4/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.297 ms/frame  p50   0.295  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.431 ms/frame  p50   0.412  listed  10000
+== round 4/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.325 ms/frame  p50   0.321  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.529 ms/frame  p50   0.507  listed  10000
+== round 5/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.302 ms/frame  p50   0.298  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.418 ms/frame  p50   0.401  listed  10000
+== round 5/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.299 ms/frame  p50   0.295  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.441 ms/frame  p50   0.415  listed  10000
+== round 6/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.300 ms/frame  p50   0.296  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.501 ms/frame  p50   0.471  listed  10000
+== round 6/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.310 ms/frame  p50   0.306  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.428 ms/frame  p50   0.409  listed  10000
+== round 7/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.303 ms/frame  p50   0.299  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.429 ms/frame  p50   0.409  listed  10000
+== round 7/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.321 ms/frame  p50   0.318  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.611 ms/frame  p50   0.578  listed  10000
+== round 8/8 .
+ 1/1  reorder-asc    N=10000 V=1    0.309 ms/frame  p50   0.306  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.445 ms/frame  p50   0.427  listed  10000
+== round 8/8 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.306 ms/frame  p50   0.305  listed  10000
+ 1/1  reorder-swap   N=10000 V=1    0.448 ms/frame  p50   0.431  listed  10000

@@ -21,8 +21,8 @@ the machine being used.
   bench/lineage.sh` compares builds on it, and `medians.mjs` reads it as `<form>-first` rows.
   `PROF=<dir>` profiles the first frame alone, read with `bench/profsum.mjs` (`INCL=1` for
   inclusive time), `bench/proftree.mjs` and `bench/lines.mjs`; `ALLOC=1` samples what it allocates.
-- `bench/requalify.mjs` times the frame a voice off lanes ends among a crowd, and `requalify`
-  itself; `bench/reorder.mjs` times `pull` over a list in another order than its numbers,
+- `bench/requalify.mjs` times the frame a voice off lanes ends among a crowd, the frames it does
+  not (`-rest`), and `requalify` itself; `bench/reorder.mjs` times `pull` over a list in another order than its numbers,
   `splice` and swap-remove churn among them. Both run under `LINEAGE_BENCH`, and `medians.mjs`
   reads them.
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
