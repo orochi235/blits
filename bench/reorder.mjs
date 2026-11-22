@@ -5,7 +5,8 @@
 // Forms: `asc` cue order; `rev` reversed; `shuf` shuffled once; `half` every other subject;
 // `swap` churn kept dense by swap-remove, which `pull` renumbers; `splice` churn kept in cue order
 // by removing the dropped subject and appending the new one, as `filter` then `push` does.
-// Lines read as bench/medians.mjs reads frame.mjs's. WARM=<frames> sets the untimed frames first. OUT=<file> appends one JSON line a form and round.
+// Rows `reorder-<form>`, read as bench/medians.mjs reads frame.mjs's. WARM=<frames> sets the
+// untimed frames first. OUT=<file> appends one JSON line a form and round.
 import { appendFileSync } from 'node:fs';
 import { kit, mix, sum, tween, vec } from '../dist/index.js';
 
@@ -94,7 +95,7 @@ for (const form of forms)
   for (let r = 0; r < rounds; r++) {
     const res = { form, n: N, round: r + 1, rounds, frames: FRAMES, ...round(form) };
     console.log(
-      `${String(r + 1).padStart(2)}/${rounds}  ${form.padEnd(6)} N=${N} V=1` +
+      `${String(r + 1).padStart(2)}/${rounds}  reorder-${form.padEnd(6)} N=${N} V=1` +
         `  ${res.ms.toFixed(3).padStart(7)} ms/frame  p50 ${res.p50.toFixed(3).padStart(7)}` +
         `  listed ${String(res.listed).padStart(6)}`,
     );

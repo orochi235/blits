@@ -1,0 +1,39 @@
+# studio (shared node, --max-cores 1): FRAMES=1500 node --cpu-prof bench/reorder.mjs 10000 1 half; profsum; INCL=1 profsum
+ 1/1  reorder-half   N=10000 V=1    1.513 ms/frame  p50   1.494  listed   5000
+total 2554.6 ms
+    714.6 ms  28.0%  contribution contribution.js:48
+    192.8 ms   7.5%  moved moved.js:10
+    151.6 ms   5.9%  weigh weigh.js:95
+    148.0 ms   5.8%  readAll pull.js:143
+    146.9 ms   5.7%  eased tweened.js:33
+    121.4 ms   4.8%  foldWith fold.js:169
+     90.9 ms   3.6%  apply fold.js:61
+     66.5 ms   2.6%  pullRun columns.js:9
+     65.6 ms   2.6%  prepare lanes.js:287
+     60.3 ms   2.4%  prime weigh.js:7
+     56.3 ms   2.2%  sample motions.js:278
+     47.0 ms   1.8%  capped weigh.js:51
+     43.3 ms   1.7%  read contribution.js:421
+     39.9 ms   1.6%  closed closed.js:165
+     39.7 ms   1.6%  writeValue pull.js:13
+total 2554.6 ms
+   2554.6 ms 100.0%  (root)
+   2380.8 ms  93.2%  evaluate
+   2379.3 ms  93.1%  run module_job:558
+   2377.8 ms  93.1%  (anonymous) reorder.mjs:1
+   2376.3 ms  93.0%  round reorder.mjs:22
+   2352.8 ms  92.1%  pull pull.js:63
+   2352.8 ms  92.1%  pull mixer.js:473
+   2328.3 ms  91.1%  readAll pull.js:143
+   1831.4 ms  71.7%  foldWith fold.js:169
+   1634.5 ms  64.0%  contribution contribution.js:48
+   1607.0 ms  62.9%  read contribution.js:421
+    500.6 ms  19.6%  moved moved.js:10
+    287.5 ms  11.3%  sample motions.js:278
+    249.2 ms   9.8%  weigh weigh.js:95
+    226.7 ms   8.9%  evaluate motions.js:562
+    207.6 ms   8.1%  closed closed.js:165
+    162.1 ms   6.3%  eased tweened.js:33
+    145.7 ms   5.7%  pullRun columns.js:9
+    113.3 ms   4.4%  prepare lanes.js:287
+    107.3 ms   4.2%  prime weigh.js:7
