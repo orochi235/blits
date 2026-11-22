@@ -224,6 +224,21 @@ describe('a read ahead past many known events', () => {
       if (t === 160) m.cue({ patch: ramp, start: 200 });
     }, 16));
 
+  // `target` reaches b only on its first ask, which the live mix made, so the read must take b's
+  // record from the live voice, past the stops before the saw starts where no copy read it.
+  it('meets a voice first read many stops on with the record the live voice holds', () => {
+    let asked = 0;
+    readsAhead((m, t) => {
+      if (t === 0) {
+        m.cue({ patch: drift() });
+        m.cue({ patch: saw, start: 300, target: (s) => s === a || asked++ === 0 });
+      }
+      if (t === 96) m.cue({ patch: ramp, start: 120 });
+      if (t === 160) m.cue({ patch: ramp, start: 200 });
+      if (t === 224) m.cue({ patch: ramp, start: 250 });
+    }, 32);
+  });
+
   // Each ask answers anew, so a read ahead that asked again for a subject would place it elsewhere.
   it('asks `stagger` for no subject the live mix had asked, one dropped on the way included', () => {
     const asks: Part[] = [];
