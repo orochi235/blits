@@ -1,0 +1,110 @@
+diff --git a/src/exp.ts b/src/exp.ts
+new file mode 100644
+index 00000000..ba7a9dba
+--- /dev/null
++++ b/src/exp.ts
+@@ -0,0 +1,4 @@
++// Scratch: a per-load split of `one`'s signal branch, gated by BLITS_EXP. Not for commit.
++// biome-ignore lint/suspicious/noExplicitAny: scratch
++export const EXP: number = Number((globalThis as any).process?.env?.BLITS_EXP ?? 0);
++export const pre = { w: new Float64Array(0), sink: 0 };
+diff --git a/src/fill.ts b/src/fill.ts
+index 3394ac6f..c1533788 100644
+--- a/src/fill.ts
++++ b/src/fill.ts
+@@ -1,3 +1,4 @@
++import { EXP, pre } from './exp.js';
+ import { runBounded } from './bound.js';
+ import { foldNumber, lerpNumber } from './channels.js';
+ import { passAt, phaseAt, same, silent, weighed } from './clock.js';
+@@ -184,7 +185,7 @@ export function signalled<I, O>(
+ ): boolean {
+   const arg = this.arg;
+   const fade = arg[Arg.FADE] as number;
+-  if (Number.isNaN(rec.probed)) {
++  if (EXP !== 5 && Number.isNaN(rec.probed)) {
+     this.late.push(slot);
+     return false;
+   }
+@@ -266,6 +267,25 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
+     runBounded(this, lane, voice.bound);
+     return;
+   }
++  if (EXP === 1) {
++    let sink = 0;
++    for (let p = 0; p < list.length; p++) {
++      const rec = lane.records[p];
++      if (rec === undefined) continue;
++      sink += rec.probed + rec.stepped;
++      if (this.subjects[list[p] as number] === undefined) sink++;
++    }
++    pre.sink += sink;
++  } else if ((EXP === 4 || EXP >= 8) && typeof voice.spec.weight === 'function') {
++    const signal = voice.spec.weight as (s: I, set: unknown) => number;
++    if (pre.w.length < this.cap) pre.w = new Float64Array(this.cap * 2);
++    for (let p = 0; p < list.length; p++) {
++      const slot = list[p] as number;
++      if (slot < 0) continue;
++      const subject = this.subjectAt(slot);
++      if (subject !== absent) pre.w[slot] = signal(subject, voice.setting);
++    }
++  }
+   for (let p = 0; p < list.length; p++) {
+     this.one(lane, p, list[p] as number);
+     // Its patch just made kept state: no further call this fill, the general path makes them.
+@@ -345,7 +365,9 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot:
+     arg[Arg.ELAPSED] = elapsed;
+     arg[Arg.PASS] = lane.pass;
+     arg[Arg.FADE] = lane.fade;
+-    if (!this.signalled(voice, slot, lane.records[p] as Subject<unknown>)) {
++    if (EXP === 9) {
++      arg[Arg.WEIGHT] = weighed((pre.w[slot] as number) * voice.weight, lane.fade, 1);
++    } else if (!this.signalled(voice, slot, lane.records[p] as Subject<unknown>)) {
+       data[o + Row.WEIGHT] = 0;
+       unband(lane.records[p]);
+       return false;
+diff --git a/src/hosts.ts b/src/hosts.ts
+index a954644b..dd6ed55c 100644
+--- a/src/hosts.ts
++++ b/src/hosts.ts
+@@ -1,3 +1,4 @@
++import { EXP, pre } from './exp.js';
+ import { release } from './arcs.js';
+ import { Book, type BookHost } from './book.js';
+ import { slotOf } from './chain.js';
+@@ -97,7 +98,15 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
+         arg[Arg.WEIGHT] = read * voice.weight;
+         return;
+       }
+-      mix.primeLaned(voice, held, arg);
++      if (EXP === 8) {
++        arg[Arg.WEIGHT] = (pre.w[slot] as number) * voice.weight;
++        return;
++      }
++      if (EXP === 7) {
++        arg[Arg.WEIGHT] = 0.3333 * voice.weight;
++        return;
++      }
++      if (EXP !== 2) mix.primeLaned(voice, held, arg);
+       const kept = reading.kept;
+       const base = mix.base(voice, subject, mix.now, held, slot);
+       if (reading.kept !== kept && !voice.keeping) stateful(mix, voice);
+diff --git a/src/weigh.ts b/src/weigh.ts
+index 069d202f..c2c54657 100644
+--- a/src/weigh.ts
++++ b/src/weigh.ts
+@@ -1,3 +1,4 @@
++import { EXP, pre } from './exp.js';
+ import { voiceEnvelope, weighed } from './clock.js';
+ import { elapsedThen, recordInput } from './history.js';
+ import { Arg } from './lane.js';
+@@ -175,7 +176,8 @@ export function base<I, O>(
+   this.sending.subject = subject;
+   const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
+   if (signal === null) return 1;
+-  const was = held.replay && last(held.replay, now, true);
++  if (EXP === 4 && slot >= 0) return pre.w[slot] as number;
++  const was = EXP !== 3 && held.replay && last(held.replay, now, true);
+   const base = was
+     ? was.value
+     : voice.blend === null
