@@ -1,4 +1,4 @@
-import { foldNumber, lerpNumber, type Numeric } from './channels.js';
+import { foldAxes, foldNumber, lerpNumber, type Numeric } from './channels.js';
 import type { Curve } from './easing.js';
 import { type Built, fraction, locate, shift } from './patch.js';
 
@@ -155,8 +155,7 @@ export class KeyRows {
       const base = slot * axes;
       if (k === -1 || k === n) {
         const at = first + (k === -1 ? 0 : n - 1) * stride + 1;
-        for (let a = 0; a < axes; a++)
-          values[base + a] = foldNumber(ch.op, values[base + a] as number, d[at + a] as number, w);
+        foldAxes(ch.op, values, base, d, at, axes, w);
         continue;
       }
       const b = first + k * stride;

@@ -53,7 +53,7 @@ export interface Numeric {
 /** A contribution's numbers widened to its channel's axes, into `out` or an array of its own. */
 export type Widen = (v: ArrayLike<number>, out: number[]) => ArrayLike<number>;
 
-/** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */
+/** The stock channels' arithmetic: their `merge` and `scale` are these, and `foldNumber` writes it out. */
 const add = (a: number, b: number): number => a + b;
 export const times = (v: number, w: number): number => v * w;
 const product = (a: number, b: number): number => a * b;
@@ -108,12 +108,38 @@ export function axesOf(channel: Channel<unknown>): number {
  * `'own'` channel, and an angle's `v` is taken the short way round first.
  */
 export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number): number {
-  if (op === 'sum') return add(acc, times(v, w));
-  if (op === 'mul') return product(acc, toward(v, w));
-  if (op === 'max') return larger(acc, times(v, w));
+  // Written out rather than through `add`/`times`: callers inline it then, 3–18% a keys or motion
+  // fill (bench/runs/2026-11-21-fold-sites.txt). channels.test.ts holds it to `merge`/`scale`.
+  if (op === 'sum') return acc + v * w;
+  if (op === 'mul') return acc * (1 + (v - 1) * w);
+  if (op === 'max') {
+    const s = v * w;
+    return acc > s ? acc : s;
+  }
   // A double on every branch: where `v` arrives untyped, a branch returning it as it came makes V8
   // box each other branch's result to merge them, 16 bytes a fold (bench/allocs.mjs, 2026-10-20).
   return +v;
+}
+
+/**
+ * `foldNumber` over `n` axes, folding `from[fromAt + a]` into `into[at + a]`, its op asked once
+ * rather than once an axis.
+ */
+export function foldAxes(
+  op: Numeric['op'],
+  into: Float64Array,
+  at: number,
+  from: Float64Array,
+  fromAt: number,
+  n: number,
+  w: number,
+): void {
+  if (op === 'sum')
+    for (let a = 0; a < n; a++)
+      into[at + a] = add(into[at + a] as number, times(from[fromAt + a] as number, w));
+  else
+    for (let a = 0; a < n; a++)
+      into[at + a] = foldNumber(op, into[at + a] as number, from[fromAt + a] as number, w);
 }
 
 /** The arithmetic `foldNumber` can apply for a channel in place of its `scale` and `merge`, if any. */

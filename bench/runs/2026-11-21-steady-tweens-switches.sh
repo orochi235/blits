@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# One build with experiment switches (BLITS_SW bits, src/sw.ts while it existed): 1 sums folded
+# To rerun: on 1a261955 apply 2026-11-21-steady-tweens-switches.diff (`patch -p1 <` it), which
+# puts back src/sw.ts and the switches; 1a261955's mid-fill flat clearing stays in, which the
+# original run (on a7702546 plus the uncommitted switches) lacked.
+# One build with experiment switches (BLITS_SW bits, src/sw.ts): 1 sums folded
 # inline in bareRows/runMotion, 2 Trail.record compares its list before storing, 4 a lane whose
 # every fade in is over weighs flat. Each variant and row in a process of its own, the order
 # reversed every other round, FRAMES=5000 (a short process runs on 1.5 cores, over onto's 1): rows

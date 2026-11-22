@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { foldNumber, kit, last, max, mul, numericOf, sum, vec } from '../src/channels.js';
+import { foldAxes, foldNumber, kit, last, max, mul, numericOf, sum, vec } from '../src/channels.js';
 import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
@@ -237,6 +237,20 @@ describe('numericOf and foldNumber', () => {
         const want = c.merge(acc, (c.scale as (v: number, w: number) => number)(v, w));
         expect(Object.is(foldNumber(op, acc, v, w), want)).toBe(true);
       }
+    }
+  });
+
+  it('folds each axis in foldAxes as foldNumber does, between the offsets it is given', () => {
+    const from = Float64Array.of(9, 0.1, -0.25, -0, 2.5, 9);
+    for (const op of ['sum', 'mul', 'max', 'last'] as const) {
+      const into = Float64Array.of(7, 0, 0.3, -0, -1.5, 7);
+      const want = [...into];
+      for (let a = 0; a < 4; a++)
+        want[1 + a] = foldNumber(op, into[1 + a] as number, from[1 + a] as number, 0.7);
+      foldAxes(op, into, 1, from, 1, 4, 0.7);
+      [...into].forEach((v, i) => {
+        expect(Object.is(v, want[i]), `${op} axis ${i}`).toBe(true);
+      });
     }
   });
 });

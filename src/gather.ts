@@ -1,5 +1,5 @@
 import { inside, leave, meetBound } from './bound.js';
-import { foldNumber, lerpNumber } from './channels.js';
+import { foldAxes, foldNumber, lerpNumber } from './channels.js';
 import { grown } from './grow.js';
 import { Arg, type Lane, type Laned, type Role, Row, WIDENED } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -182,8 +182,7 @@ function foldAt<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, slot: number): void {
       turnFrom(ch, into, base, values, base, w);
       continue;
     }
-    for (let a = 0; a < ch.axes; a++)
-      into[base + a] = foldNumber(ch.op, into[base + a] as number, values[base + a] as number, w);
+    foldAxes(ch.op, into, base, values, base, ch.axes, w);
   }
 }
 
@@ -350,8 +349,7 @@ export function foldRun<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, xs: Fl
   const w = this.arg[Arg.WEIGHT] as number;
   const values = ch.values;
   const base = slot * ch.axes;
-  for (let a = 0; a < ch.axes; a++)
-    values[base + a] = foldNumber(ch.op, values[base + a] as number, xs[a] as number, w);
+  foldAxes(ch.op, values, base, xs, 0, ch.axes, w);
 }
 
 /** Folds one channel's value into a subject's laned values, or its role, at `Arg.WEIGHT`. */

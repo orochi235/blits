@@ -1,5 +1,5 @@
 import { Sampled, unbareLane } from './bare.js';
-import { foldNumber } from './channels.js';
+import { foldAxes, foldNumber } from './channels.js';
 import { clampWeight, passAt, same, weighed } from './clock.js';
 import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -201,8 +201,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     if (folds && scalar === ch.scalar) {
       const values = ch.values;
       const base = slot * n;
-      for (let a = 0; a < n; a++)
-        values[base + a] = foldNumber(op, values[base + a] as number, xs[a] as number, w);
+      foldAxes(op, values, base, xs, 0, n, w);
     } else {
       arg[Arg.WEIGHT] = w;
       lanes.foldInto(ch, slot, run.value(ms, xs));
