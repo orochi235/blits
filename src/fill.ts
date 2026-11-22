@@ -2,7 +2,7 @@ import { runBounded } from './bound.js';
 import { foldNumber, lerpNumber } from './channels.js';
 import { passAt, phaseAt, same, silent, weighed } from './clock.js';
 import { flush } from './columns.js';
-import { crowdsUpTo, freshen } from './crowd.js';
+import { crowdsUpTo, freshen, reline } from './crowd.js';
 import { open as openRecord, shut as shutRecord } from './everyone.js';
 import { unband } from './fold.js';
 import { foldRole, gatherRole, runRole } from './gather.js';
@@ -75,6 +75,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
     }
     for (const c of lanes.crowds) {
       if (decide) {
+        reline(c);
         if (c.size >= 64) pace(lanes, c);
         else if (c.idle ? share >= c.line.start : share < c.line.stop) flip(lanes, c);
       }

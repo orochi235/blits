@@ -1,0 +1,39 @@
+# studio (--quiet --max-cores 2): AB_BENCH=bench/reorder.mjs bench/ab.sh a7702546 . 6 10000 1 asc half
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+built the working tree
+== round 1/6 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.310 ms/frame  p50   0.306  listed  10000
+ 1/1  reorder-half   N=10000 V=1    1.943 ms/frame  p50   1.555  listed   5000
+== round 1/6 .
+ 1/1  reorder-asc    N=10000 V=1    0.444 ms/frame  p50   0.311  listed  10000
+ 1/1  reorder-half   N=10000 V=1    0.405 ms/frame  p50   0.391  listed   5000
+== round 2/6 .
+ 1/1  reorder-asc    N=10000 V=1    0.584 ms/frame  p50   0.310  listed  10000
+ 1/1  reorder-half   N=10000 V=1    0.542 ms/frame  p50   0.391  listed   5000
+== round 2/6 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.391 ms/frame  p50   0.311  listed  10000
+ 1/1  reorder-half   N=10000 V=1    1.726 ms/frame  p50   1.578  listed   5000
+== round 3/6 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.308 ms/frame  p50   0.305  listed  10000
+ 1/1  reorder-half   N=10000 V=1    1.561 ms/frame  p50   1.530  listed   5000
+== round 3/6 .
+ 1/1  reorder-asc    N=10000 V=1    0.404 ms/frame  p50   0.310  listed  10000
+ 1/1  reorder-half   N=10000 V=1    0.561 ms/frame  p50   0.390  listed   5000
+== round 4/6 .
+ 1/1  reorder-asc    N=10000 V=1    0.387 ms/frame  p50   0.310  listed  10000
+ 1/1  reorder-half   N=10000 V=1    0.629 ms/frame  p50   0.389  listed   5000
+== round 4/6 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.376 ms/frame  p50   0.310  listed  10000
+ 1/1  reorder-half   N=10000 V=1    1.848 ms/frame  p50   1.573  listed   5000
+== round 5/6 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.372 ms/frame  p50   0.334  listed  10000
+ 1/1  reorder-half   N=10000 V=1    1.572 ms/frame  p50   1.522  listed   5000
+== round 5/6 .
+ 1/1  reorder-asc    N=10000 V=1    0.308 ms/frame  p50   0.306  listed  10000
+ 1/1  reorder-half   N=10000 V=1    0.386 ms/frame  p50   0.386  listed   5000
+== round 6/6 .
+ 1/1  reorder-asc    N=10000 V=1    0.309 ms/frame  p50   0.306  listed  10000
+ 1/1  reorder-half   N=10000 V=1    0.386 ms/frame  p50   0.386  listed   5000
+== round 6/6 a7702546
+ 1/1  reorder-asc    N=10000 V=1    0.332 ms/frame  p50   0.330  listed  10000
+ 1/1  reorder-half   N=10000 V=1    1.582 ms/frame  p50   1.536  listed   5000

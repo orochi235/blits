@@ -1,0 +1,51 @@
+# msb-uai (--quiet --max-cores 2): AB_BENCH=bench/sparse.mjs MODES=line FRAMES=600 bench/ab.sh a7702546 . 6 keys 10000 1 0.03 0.05 0.08
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+built the working tree
+== round 1/6 a7702546
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.108 ms/frame  p50   0.096  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.130 ms/frame  p50   0.117  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.213 ms/frame  p50   0.187  listed    800
+== round 1/6 .
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.118 ms/frame  p50   0.102  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.111 ms/frame  p50   0.109  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.131 ms/frame  p50   0.121  listed    800
+== round 2/6 .
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.109 ms/frame  p50   0.096  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.118 ms/frame  p50   0.111  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.131 ms/frame  p50   0.122  listed    800
+== round 2/6 a7702546
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.110 ms/frame  p50   0.098  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.135 ms/frame  p50   0.126  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.222 ms/frame  p50   0.195  listed    800
+== round 3/6 a7702546
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.108 ms/frame  p50   0.096  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.128 ms/frame  p50   0.117  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.214 ms/frame  p50   0.196  listed    800
+== round 3/6 .
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.110 ms/frame  p50   0.098  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.114 ms/frame  p50   0.111  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.129 ms/frame  p50   0.120  listed    800
+== round 4/6 .
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.109 ms/frame  p50   0.100  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.113 ms/frame  p50   0.108  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.124 ms/frame  p50   0.118  listed    800
+== round 4/6 a7702546
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.106 ms/frame  p50   0.097  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.134 ms/frame  p50   0.124  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.201 ms/frame  p50   0.187  listed    800
+== round 5/6 a7702546
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.113 ms/frame  p50   0.099  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.134 ms/frame  p50   0.124  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.213 ms/frame  p50   0.191  listed    800
+== round 5/6 .
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.111 ms/frame  p50   0.099  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.114 ms/frame  p50   0.110  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.119 ms/frame  p50   0.117  listed    800
+== round 6/6 .
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.107 ms/frame  p50   0.096  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.114 ms/frame  p50   0.111  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.132 ms/frame  p50   0.120  listed    800
+== round 6/6 a7702546
+  1/3  sparse-keys-line@0.03 N=10000 V=1    0.110 ms/frame  p50   0.098  listed    300
+  2/3  sparse-keys-line@0.05 N=10000 V=1    0.137 ms/frame  p50   0.124  listed    500
+  3/3  sparse-keys-line@0.08 N=10000 V=1    0.206 ms/frame  p50   0.187  listed    800

@@ -79,9 +79,9 @@ for (const line of readFileSync(file, 'utf8').split('\n')) {
     }
     continue;
   }
-  const row = /^\s*\d+\/\d+\s+(\S+)\s+N=\s*(\d+) V=(\d+)\s+([\d.]+) ms\/frame/.exec(line);
+  const row = /^\s*\d+\/\d+\s+(\S+)\s+N=\s*(\d+)(?: V=(\d+))?\s+([\d.]+) ms\/frame/.exec(line);
   if (row === null) continue;
-  const key = `${row[1]} N=${row[2]} V=${row[3]}`;
+  const key = `${row[1]} N=${row[2]} V=${row[3] ?? 1}`;
   const kb = /([\d.]+) kB\/frame/.exec(line);
   const at = rows.get(key) ?? new Map();
   rows.set(key, at);

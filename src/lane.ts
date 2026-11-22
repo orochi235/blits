@@ -156,8 +156,21 @@ export const WIDENED = doubles(5, 0);
  * every frame. Measured at 10k and 1k subjects (2026-10-02, one local machine): filling breaks even
  * with probing through the general path at about 19% probed for keys at both sizes, 71-77% for a
  * spring, and 63% (1k) to about 100% (10k) for a stateless fn.
+ *
+ * A crowd's line is the mean of its rows' `crowd` lines, by the row's kind. Crowds break even far
+ * lower (bench/sparse.mjs, 1k and 10k, 2026-11-21): tweens at 13-17%, other motion such as a spring
+ * at 6-7%, keys at 4-5%, and a fn at 11-12%.
  */
-export const SPARSE = { keys: { stop: 0.15, start: 0.25 }, other: { stop: 0.6, start: 0.8 } };
+export const SPARSE = {
+  keys: { stop: 0.15, start: 0.25 },
+  other: { stop: 0.6, start: 0.8 },
+  crowd: {
+    tween: { stop: 0.13, start: 0.22 },
+    motion: { stop: 0.07, start: 0.12 },
+    keys: { stop: 0.04, start: 0.08 },
+    fn: { stop: 0.12, start: 0.2 },
+  },
+};
 
 /** What pacing reads and sets: a lane's or a crowd's subjects, idle state and per-position numbers. */
 export interface Paced {

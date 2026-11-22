@@ -1,0 +1,99 @@
+# teitou (--quiet --max-cores 2): AB_BENCH=bench/sparse.mjs MODES=line FRAMES=600 bench/ab.sh a7702546 . 6 keys 10000 1 0.05 0.1 0.2 0.3 0.5 0.8 1
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+built the working tree
+== round 1/6 a7702546
+  1/7  sparse-keys-line@0.05 N=10000    0.124 ms/frame  p50   0.118  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.211 ms/frame  p50   0.204  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.476 ms/frame  p50   0.423  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.749 ms/frame  p50   0.688  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    1.170 ms/frame  p50   1.110  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.278 ms/frame  p50   0.257  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.289 ms/frame  p50   0.279  listed  10000
+== round 1/6 .
+  1/7  sparse-keys-line@0.05 N=10000    0.082 ms/frame  p50   0.081  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.093 ms/frame  p50   0.092  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.120 ms/frame  p50   0.118  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.152 ms/frame  p50   0.148  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    0.206 ms/frame  p50   0.198  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.267 ms/frame  p50   0.257  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.300 ms/frame  p50   0.290  listed  10000
+== round 2/6 .
+  1/7  sparse-keys-line@0.05 N=10000    0.087 ms/frame  p50   0.083  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.096 ms/frame  p50   0.093  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.122 ms/frame  p50   0.120  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.165 ms/frame  p50   0.158  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    0.203 ms/frame  p50   0.196  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.274 ms/frame  p50   0.263  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.300 ms/frame  p50   0.289  listed  10000
+== round 2/6 a7702546
+  1/7  sparse-keys-line@0.05 N=10000    0.126 ms/frame  p50   0.119  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.238 ms/frame  p50   0.225  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.463 ms/frame  p50   0.413  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.772 ms/frame  p50   0.705  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    1.337 ms/frame  p50   1.259  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.263 ms/frame  p50   0.257  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.293 ms/frame  p50   0.280  listed  10000
+== round 3/6 a7702546
+  1/7  sparse-keys-line@0.05 N=10000    0.122 ms/frame  p50   0.114  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.229 ms/frame  p50   0.215  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.512 ms/frame  p50   0.468  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.842 ms/frame  p50   0.814  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    1.200 ms/frame  p50   1.125  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.258 ms/frame  p50   0.256  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.302 ms/frame  p50   0.289  listed  10000
+== round 3/6 .
+  1/7  sparse-keys-line@0.05 N=10000    0.086 ms/frame  p50   0.085  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.100 ms/frame  p50   0.097  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.139 ms/frame  p50   0.122  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.154 ms/frame  p50   0.149  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    0.202 ms/frame  p50   0.195  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.268 ms/frame  p50   0.260  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.286 ms/frame  p50   0.279  listed  10000
+== round 4/6 .
+  1/7  sparse-keys-line@0.05 N=10000    0.108 ms/frame  p50   0.085  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.092 ms/frame  p50   0.091  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.124 ms/frame  p50   0.120  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.152 ms/frame  p50   0.148  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    0.209 ms/frame  p50   0.199  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.272 ms/frame  p50   0.263  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.287 ms/frame  p50   0.280  listed  10000
+== round 4/6 a7702546
+  1/7  sparse-keys-line@0.05 N=10000    0.124 ms/frame  p50   0.117  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.205 ms/frame  p50   0.198  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.429 ms/frame  p50   0.398  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.709 ms/frame  p50   0.640  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    1.415 ms/frame  p50   1.389  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.262 ms/frame  p50   0.257  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.282 ms/frame  p50   0.277  listed  10000
+== round 5/6 a7702546
+  1/7  sparse-keys-line@0.05 N=10000    0.125 ms/frame  p50   0.119  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.242 ms/frame  p50   0.224  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.529 ms/frame  p50   0.482  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.724 ms/frame  p50   0.667  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    1.172 ms/frame  p50   1.088  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.262 ms/frame  p50   0.257  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.293 ms/frame  p50   0.286  listed  10000
+== round 5/6 .
+  1/7  sparse-keys-line@0.05 N=10000    0.085 ms/frame  p50   0.082  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.094 ms/frame  p50   0.093  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.125 ms/frame  p50   0.120  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.149 ms/frame  p50   0.146  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    0.195 ms/frame  p50   0.193  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.260 ms/frame  p50   0.254  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.295 ms/frame  p50   0.274  listed  10000
+== round 6/6 .
+  1/7  sparse-keys-line@0.05 N=10000    0.081 ms/frame  p50   0.080  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.092 ms/frame  p50   0.092  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.118 ms/frame  p50   0.117  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.151 ms/frame  p50   0.148  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    0.204 ms/frame  p50   0.197  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.267 ms/frame  p50   0.258  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.289 ms/frame  p50   0.283  listed  10000
+== round 6/6 a7702546
+  1/7  sparse-keys-line@0.05 N=10000    0.124 ms/frame  p50   0.118  listed    500
+  2/7  sparse-keys-line@0.10 N=10000    0.211 ms/frame  p50   0.204  listed   1000
+  3/7  sparse-keys-line@0.20 N=10000    0.428 ms/frame  p50   0.393  listed   2000
+  4/7  sparse-keys-line@0.30 N=10000    0.652 ms/frame  p50   0.601  listed   3000
+  5/7  sparse-keys-line@0.50 N=10000    1.237 ms/frame  p50   1.173  listed   5000
+  6/7  sparse-keys-line@0.80 N=10000    0.261 ms/frame  p50   0.257  listed   8000
+  7/7  sparse-keys-line@1.00 N=10000    0.286 ms/frame  p50   0.278  listed  10000

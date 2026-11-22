@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, last, max, mul, sum, vec } from '../src/channels.js';
 import { color, oklab } from '../src/color.js';
+import type { Lanes } from '../src/lanes.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
@@ -1446,6 +1447,40 @@ describe('lanes go idle below a share of subjects probed and fill again above it
     // Still idle this frame, whatever is probed; then all probed last frame wakes it.
     expect(frame(64, parts)).toBe(40);
     expect(frame(80, few)).toBe(40);
+  });
+
+  it("keeps a crowd of tweens filling at half probed, and idles it below its rows' line", () => {
+    const parts = Array.from({ length: 200 }, (_, id) => ({ id }));
+    const cue = (m: Mix<Part, Pose>) => {
+      for (const part of parts)
+        m.cue({
+          patch: tween<Part, Pose>('crawl', { from: 0, to: part.id, ms: 1e4 }),
+          subjects: [part],
+        });
+    };
+    const on = mix<Part, Pose>(K, { lanes: true });
+    const off = mix<Part, Pose>(K, { lanes: false });
+    cue(on);
+    cue(off);
+    const crowd = () => (on as unknown as { lanes: Lanes<Part, Pose> }).lanes.crowds[0];
+    const frame = (t: number, probed: readonly Part[]): boolean | undefined => {
+      on.sync(t);
+      off.sync(t);
+      for (const part of probed) expect(on.probe(part).crawl).toBe(off.probe(part).crawl);
+      return crowd()?.idle;
+    };
+    const half = parts.filter((p) => p.id % 2 === 0);
+    const few = parts.filter((p) => p.id % 50 === 0);
+    frame(0, parts);
+    expect(frame(16, parts)).toBe(false);
+    // Half probed is above a tween crowd's line, where filling every row costs less than probing half.
+    frame(32, half);
+    expect(frame(48, half)).toBe(false);
+    // 2% probed is below it: the crowd idles, and the general path reads the 4 probed.
+    frame(64, few);
+    expect(frame(80, few)).toBe(true);
+    frame(96, parts);
+    expect(frame(112, half)).toBe(false);
   });
 });
 

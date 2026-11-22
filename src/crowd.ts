@@ -121,7 +121,8 @@ export class Crowd<I, O> implements Positions<I, O> {
   /** Each row's patch law, one array shared by every row whose law is the same. */
   laws: Float64Array[] = [];
   idle = false;
-  readonly line = SPARSE.other;
+  /** Where the crowd stops and starts filling, which `reline` keeps as the mean of its rows'. */
+  readonly line = { ...SPARSE.crowd.tween };
   /** Where the fill now under way has reached. */
   cursor = 0;
   /** Rows whose voices have left, kept in place until the crowd is compacted or rebuilt. */
@@ -211,6 +212,32 @@ export class Crowd<I, O> implements Positions<I, O> {
       if (m?.lodgedIn(old, at)) m.relodge(this.hot, at);
     }
   }
+}
+
+/** Sets a crowd's `line` to the mean of its rows' lines by kind, read from up to about 64 rows. */
+export function reline<I, O>(c: Crowd<I, O>): void {
+  const lines = SPARSE.crowd;
+  const step = Math.max(1, Math.floor(c.size / 64));
+  let stop = 0;
+  let start = 0;
+  let n = 0;
+  for (let p = 0; p < c.size; p += step) {
+    const f = c.hot[p * c.stride + Hot.FLAGS] as number;
+    const l =
+      (f & Flag.TWEEN) !== 0
+        ? lines.tween
+        : (f & Flag.MOTION) !== 0
+          ? lines.motion
+          : (f & Flag.FLAT) !== 0
+            ? lines.keys
+            : lines.fn;
+    stop += l.stop;
+    start += l.start;
+    n++;
+  }
+  if (n === 0) return;
+  c.line.stop = stop / n;
+  c.line.start = start / n;
 }
 
 /** Runs every crowd's rows whose voices come before voice `id`, from where each crowd reached. */

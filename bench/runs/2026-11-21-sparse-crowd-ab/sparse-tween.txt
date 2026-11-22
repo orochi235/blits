@@ -1,0 +1,99 @@
+# studio (--quiet --max-cores 2): AB_BENCH=bench/sparse.mjs MODES=line FRAMES=600 bench/ab.sh a7702546 . 6 tween 10000 1 0.05 0.1 0.2 0.3 0.5 0.8 1
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+built the working tree
+== round 1/6 a7702546
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.112 ms/frame  p50   0.104  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.237 ms/frame  p50   0.222  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.836 ms/frame  p50   0.819  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    1.186 ms/frame  p50   1.161  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    1.673 ms/frame  p50   1.648  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.394 ms/frame  p50   0.385  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.338 ms/frame  p50   0.338  listed  10000
+== round 1/6 .
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.120 ms/frame  p50   0.109  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.263 ms/frame  p50   0.241  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.367 ms/frame  p50   0.366  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    0.388 ms/frame  p50   0.384  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    0.397 ms/frame  p50   0.390  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.394 ms/frame  p50   0.386  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.345 ms/frame  p50   0.337  listed  10000
+== round 2/6 .
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.125 ms/frame  p50   0.107  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.265 ms/frame  p50   0.242  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.370 ms/frame  p50   0.364  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    0.389 ms/frame  p50   0.385  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    0.394 ms/frame  p50   0.389  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.391 ms/frame  p50   0.386  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.342 ms/frame  p50   0.339  listed  10000
+== round 2/6 a7702546
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.121 ms/frame  p50   0.107  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.248 ms/frame  p50   0.237  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.793 ms/frame  p50   0.774  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    1.232 ms/frame  p50   1.139  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    1.743 ms/frame  p50   1.675  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.387 ms/frame  p50   0.385  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.336 ms/frame  p50   0.335  listed  10000
+== round 3/6 a7702546
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.115 ms/frame  p50   0.107  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.227 ms/frame  p50   0.223  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.749 ms/frame  p50   0.727  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    1.150 ms/frame  p50   1.144  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    1.644 ms/frame  p50   1.630  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.386 ms/frame  p50   0.383  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.335 ms/frame  p50   0.335  listed  10000
+== round 3/6 .
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.115 ms/frame  p50   0.106  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.219 ms/frame  p50   0.216  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.360 ms/frame  p50   0.361  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    0.382 ms/frame  p50   0.382  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    0.390 ms/frame  p50   0.385  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.381 ms/frame  p50   0.381  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.333 ms/frame  p50   0.334  listed  10000
+== round 4/6 .
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.122 ms/frame  p50   0.112  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.248 ms/frame  p50   0.227  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.367 ms/frame  p50   0.366  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    0.381 ms/frame  p50   0.381  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    0.386 ms/frame  p50   0.386  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.381 ms/frame  p50   0.381  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.334 ms/frame  p50   0.334  listed  10000
+== round 4/6 a7702546
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.113 ms/frame  p50   0.104  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.223 ms/frame  p50   0.216  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.735 ms/frame  p50   0.725  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    1.162 ms/frame  p50   1.143  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    1.667 ms/frame  p50   1.650  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.382 ms/frame  p50   0.381  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.334 ms/frame  p50   0.334  listed  10000
+== round 5/6 a7702546
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.118 ms/frame  p50   0.109  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.226 ms/frame  p50   0.219  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.822 ms/frame  p50   0.804  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    1.122 ms/frame  p50   1.077  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    1.660 ms/frame  p50   1.639  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.373 ms/frame  p50   0.369  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.329 ms/frame  p50   0.324  listed  10000
+== round 5/6 .
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.111 ms/frame  p50   0.103  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.209 ms/frame  p50   0.207  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.358 ms/frame  p50   0.353  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    0.382 ms/frame  p50   0.383  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    0.383 ms/frame  p50   0.375  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.373 ms/frame  p50   0.372  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.326 ms/frame  p50   0.324  listed  10000
+== round 6/6 .
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.113 ms/frame  p50   0.103  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.210 ms/frame  p50   0.206  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.359 ms/frame  p50   0.354  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    0.387 ms/frame  p50   0.385  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    0.374 ms/frame  p50   0.373  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.373 ms/frame  p50   0.369  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.328 ms/frame  p50   0.324  listed  10000
+== round 6/6 a7702546
+  1/7  sparse-tween-line@0.05 N=10000 V=1    0.111 ms/frame  p50   0.103  listed    500
+  2/7  sparse-tween-line@0.10 N=10000 V=1    0.209 ms/frame  p50   0.206  listed   1000
+  3/7  sparse-tween-line@0.20 N=10000 V=1    0.734 ms/frame  p50   0.691  listed   2000
+  4/7  sparse-tween-line@0.30 N=10000 V=1    1.108 ms/frame  p50   1.070  listed   3000
+  5/7  sparse-tween-line@0.50 N=10000 V=1    1.599 ms/frame  p50   1.577  listed   5000
+  6/7  sparse-tween-line@0.80 N=10000 V=1    0.381 ms/frame  p50   0.381  listed   8000
+  7/7  sparse-tween-line@1.00 N=10000 V=1    0.329 ms/frame  p50   0.325  listed  10000

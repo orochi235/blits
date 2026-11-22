@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A crowd of one-subject voices read a part at a time keeps filling down to where filling stops
+  paying for its kind, rather than handing every subject to the general path below 60% read:
+  `pull` over every other one of 10,000 tweens takes 0.41 ms a frame from 1.58, and over a fifth of
+  10,000 keys voices 0.21 from 1.11 (studio, shared).
 - A host probing into its own object under `retargets: true` pays about 60% less for it: a
   10,000-subject probe frame of `tweens` costs 0.745 ms against 0.608 without the option, where it
   cost 0.951, and of `keys` 1.172 against 1.033, where it cost 1.372 (teitou).
