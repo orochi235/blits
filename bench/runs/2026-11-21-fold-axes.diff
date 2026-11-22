@@ -1,0 +1,129 @@
+diff --git a/src/channels.ts b/src/channels.ts
+index b703e981..ee2fe74b 100644
+--- a/src/channels.ts
++++ b/src/channels.ts
+@@ -116,6 +116,27 @@ export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number)
+   return +v;
+ }
+ 
++/**
++ * `foldNumber` over `n` axes, folding `from[fromAt + a]` into `into[at + a]`, its op asked once
++ * rather than once an axis.
++ */
++export function foldAxes(
++  op: Numeric['op'],
++  into: Float64Array,
++  at: number,
++  from: Float64Array,
++  fromAt: number,
++  n: number,
++  w: number,
++): void {
++  if (op === 'sum')
++    for (let a = 0; a < n; a++)
++      into[at + a] = add(into[at + a] as number, times(from[fromAt + a] as number, w));
++  else
++    for (let a = 0; a < n; a++)
++      into[at + a] = foldNumber(op, into[at + a] as number, from[fromAt + a] as number, w);
++}
++
+ /** The arithmetic `foldNumber` can apply for a channel in place of its `scale` and `merge`, if any. */
+ export function scalarOp(channel: Channel<unknown>): 'sum' | 'mul' | 'max' | undefined {
+   const n = numericOf(channel);
+diff --git a/src/gather.ts b/src/gather.ts
+index 49005913..5a29f8a1 100644
+--- a/src/gather.ts
++++ b/src/gather.ts
+@@ -1,5 +1,5 @@
+ import { inside, leave, meetBound } from './bound.js';
+-import { foldNumber, lerpNumber } from './channels.js';
++import { foldAxes, foldNumber, lerpNumber } from './channels.js';
+ import { grown } from './grow.js';
+ import { Arg, type Lane, type Laned, type Role, Row, WIDENED } from './lane.js';
+ import type { Lanes } from './lanes.js';
+@@ -182,8 +182,7 @@ function foldAt<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, slot: number): void {
+       turnFrom(ch, into, base, values, base, w);
+       continue;
+     }
+-    for (let a = 0; a < ch.axes; a++)
+-      into[base + a] = foldNumber(ch.op, into[base + a] as number, values[base + a] as number, w);
++    foldAxes(ch.op, into, base, values, base, ch.axes, w);
+   }
+ }
+ 
+@@ -350,8 +349,7 @@ export function foldRun<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, xs: Fl
+   const w = this.arg[Arg.WEIGHT] as number;
+   const values = ch.values;
+   const base = slot * ch.axes;
+-  for (let a = 0; a < ch.axes; a++)
+-    values[base + a] = foldNumber(ch.op, values[base + a] as number, xs[a] as number, w);
++  foldAxes(ch.op, values, base, xs, 0, ch.axes, w);
+ }
+ 
+ /** Folds one channel's value into a subject's laned values, or its role, at `Arg.WEIGHT`. */
+diff --git a/src/keyfill.ts b/src/keyfill.ts
+index 2ac050ab..0bbdb729 100644
+--- a/src/keyfill.ts
++++ b/src/keyfill.ts
+@@ -1,4 +1,4 @@
+-import { foldNumber } from './channels.js';
++import { foldAxes } from './channels.js';
+ import { clampWeight, frozenTime, phaseAt, same, weighed } from './clock.js';
+ import { unband } from './fold.js';
+ import { Arg, keepProbed, type Lane, type Laned, Per, Row, WIDENED } from './lane.js';
+@@ -79,13 +79,7 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
+       if (kind === Kind.NUMBERS) {
+         const values = ch.values;
+         const base = slot * axes;
+-        for (let a = 0; a < axes; a++)
+-          values[base + a] = foldNumber(
+-            ch.op,
+-            values[base + a] as number,
+-            nums[k + a] as number,
+-            w,
+-          );
++        foldAxes(ch.op, values, base, nums, k, axes, w);
+       } else if (kind === Kind.GATED) {
+         lanes.folding = lane;
+         lanes.rec = records[p] ?? null;
+diff --git a/src/keyrows.ts b/src/keyrows.ts
+index 92a390e4..530836c8 100644
+--- a/src/keyrows.ts
++++ b/src/keyrows.ts
+@@ -1,4 +1,4 @@
+-import { foldNumber, lerpNumber, type Numeric } from './channels.js';
++import { foldAxes, foldNumber, lerpNumber, type Numeric } from './channels.js';
+ import type { Curve } from './easing.js';
+ import { type Built, fraction, locate, shift } from './patch.js';
+ 
+@@ -155,8 +155,7 @@ export class KeyRows {
+       const base = slot * axes;
+       if (k === -1 || k === n) {
+         const at = first + (k === -1 ? 0 : n - 1) * stride + 1;
+-        for (let a = 0; a < axes; a++)
+-          values[base + a] = foldNumber(ch.op, values[base + a] as number, d[at + a] as number, w);
++        foldAxes(ch.op, values, base, d, at, axes, w);
+         continue;
+       }
+       const b = first + k * stride;
+diff --git a/src/sample.ts b/src/sample.ts
+index b5f189fd..42ab7296 100644
+--- a/src/sample.ts
++++ b/src/sample.ts
+@@ -1,5 +1,5 @@
+ import { Sampled, unbareLane } from './bare.js';
+-import { foldNumber } from './channels.js';
++import { foldAxes, foldNumber } from './channels.js';
+ import { clampWeight, passAt, same, weighed } from './clock.js';
+ import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
+ import type { Lanes } from './lanes.js';
+@@ -201,8 +201,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
+     if (folds && scalar === ch.scalar) {
+       const values = ch.values;
+       const base = slot * n;
+-      for (let a = 0; a < n; a++)
+-        values[base + a] = foldNumber(op, values[base + a] as number, xs[a] as number, w);
++      foldAxes(op, values, base, xs, 0, n, w);
+     } else {
+       arg[Arg.WEIGHT] = w;
+       lanes.foldInto(ch, slot, run.value(ms, xs));

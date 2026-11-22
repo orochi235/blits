@@ -1,4 +1,4 @@
-import { foldNumber } from './channels.js';
+import { foldAxes } from './channels.js';
 import { clampWeight, frozenTime, phaseAt, same, weighed } from './clock.js';
 import { unband } from './fold.js';
 import { Arg, keepProbed, type Lane, type Laned, Per, Row, WIDENED } from './lane.js';
@@ -79,13 +79,7 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
       if (kind === Kind.NUMBERS) {
         const values = ch.values;
         const base = slot * axes;
-        for (let a = 0; a < axes; a++)
-          values[base + a] = foldNumber(
-            ch.op,
-            values[base + a] as number,
-            nums[k + a] as number,
-            w,
-          );
+        foldAxes(ch.op, values, base, nums, k, axes, w);
       } else if (kind === Kind.GATED) {
         lanes.folding = lane;
         lanes.rec = records[p] ?? null;
