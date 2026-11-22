@@ -80,9 +80,13 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
 - **[agent] Steady `tweens^`/`weasel^` frame** (10k one-voice-per-subject tweens by `pull`): 0.235
   and 0.362 ms on studio against 0.03–0.05 for a hand loop. `tweens^` is 39% `bareRows`, 29%
   `pullRun` (about 1 ns a subject per check, none dominant); `weasel^` 58% `runMotion`.
-- **[agent] A voice over every subject cued among a crowd** (`swap`, 2.19 ms on msb-uai). Left per
-  subject: relinking its chain (`relink.ts`), the fill's `open`/`one`/`call`/`shut`, and the copy
-  out, which boxes every number into a host's `{}` out; `mix.pose()` gives the unboxed shape.
+- **[agent] A voice over every subject cued among a crowd** (`swap`, 1.97 ms on msb-uai,
+  2026-11-21). Measured, a profile's share of the probe loop (`runs/2026-11-21-swap-lines.txt`):
+  the fill's `one`/`call` 28%, the bench's own patch among it 8%; the chain lookup and relink 25%,
+  of which the `chains` WeakMap 6% and `sight` 4%; placing every subject on the new voice's lane 5%;
+  `meet` 6%; the fold 10%, its copy out 3%. A host's `{}` out costs 5% over `mix.pose()` (studio,
+  `runs/2026-11-21-swap-baseline.txt`), a host's cost. No one part leads, and each left is 1–3%
+  a line, under the row's run-to-run spread (inferred from the profile, not timed apart).
 - **[agent] A role costs about 20% over its voices played apart, a blend about 33%** (teitou,
   2026-10-26); `runRole` covers the inline case, everything else gathers then folds.
 - **[agent] Starting 10k one-subject tweens** takes a 28–31 ms first frame against 12–12.5 for fn

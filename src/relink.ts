@@ -1,8 +1,10 @@
 import type { Subject } from './subject.js';
 
-/** What `patch` needs of a voice: its place in voice order. */
+/** What `patch` needs of a voice: its place in voice order, and whether it shares one record. */
 interface Ordered {
   readonly id: number;
+  /** A voice sharing one record is in no chain, and never was: it shares from its cue alone. */
+  readonly sharing: boolean;
 }
 
 /** What `patch` asks a mix: a voice's record for a subject where a full relink would link it. */
@@ -53,6 +55,8 @@ export class Steps<V extends Ordered, I> {
     for (let k = version - this.from; k < list.length; k++) {
       const voice = list[k];
       if (voice === null || voice === undefined) return undefined;
+      const want = mix.linkable(voice, subject, slot);
+      if (want === null && voice.sharing) continue;
       let prev: Subject<unknown> | null = null;
       let at = head;
       while (at !== null && (at.voice as V).id < voice.id) {
@@ -60,7 +64,6 @@ export class Steps<V extends Ordered, I> {
         at = at.next;
       }
       const here = at !== null && at.voice === voice ? at : null;
-      const want = mix.linkable(voice, subject, slot);
       if (want === here) continue;
       const after = here === null ? at : here.next;
       if (want !== null) {

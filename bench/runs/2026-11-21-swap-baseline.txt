@@ -1,0 +1,55 @@
+# studio, 4eb821a3: FRAMES=5000 node bench/frame.mjs swap, 3 rounds each with a host's {} out and OUT=blank, then TOP=40 FRAMES=5000 bench/prof.sh swap
+== round 1 host
+ 1/1  swap       N= 10000 V=1     2.985 ms/frame    299 ns/subject·voice  p50    2.872  p99    4.378  worst   15.899  first    65.5 ms  gc  253  252.1 ms    2080.1 kB/frame
+== round 1 blank
+ 1/1  swap       N= 10000 V=1     2.821 ms/frame    282 ns/subject·voice  p50    2.706  p99    3.916  worst   18.908  first    62.7 ms  gc  200  237.0 ms    1738.0 kB/frame
+== round 2 host
+ 1/1  swap       N= 10000 V=1     2.910 ms/frame    291 ns/subject·voice  p50    2.798  p99    4.324  worst   16.091  first    63.7 ms  gc  252  234.6 ms    2080.6 kB/frame
+== round 2 blank
+ 1/1  swap       N= 10000 V=1     2.801 ms/frame    280 ns/subject·voice  p50    2.678  p99    3.897  worst   16.166  first    62.5 ms  gc  200  252.0 ms    1738.8 kB/frame
+== round 3 host
+ 1/1  swap       N= 10000 V=1     2.976 ms/frame    298 ns/subject·voice  p50    2.849  p99    4.308  worst   19.202  first    63.8 ms  gc  253  278.2 ms    2079.0 kB/frame
+== round 3 blank
+ 1/1  swap       N= 10000 V=1     2.834 ms/frame    283 ns/subject·voice  p50    2.717  p99    3.893  worst   19.946  first    68.8 ms  gc  200  256.7 ms    1737.3 kB/frame
+== profile
+ 1/1  swap       N= 10000 V=1     2.979 ms/frame    298 ns/subject·voice  p50    2.867  p99    4.360  worst   14.616  first    68.0 ms  gc  252  194.4 ms    2080.6 kB/frame
+  8.1%  patch  relink.js:30
+  7.8%  (program)  :0
+  7.2%  patch.writes  frame.mjs:67
+  5.9%  foldWith  fold.js:169
+  5.4%  get  store.js:20
+  5.4%  prepare  lanes.js:287
+  5.4%  one  fill.js:305
+  3.7%  bareRows  bare.js:16
+  3.2%  call  fill.js:456
+  3.2%  linkable  chain.js:106
+  2.7%  sight  everyone.js:90
+  2.6%  foldDelta  gather.js:278
+  2.5%  relink  chain.js:18
+  2.3%  add  lane.js:170
+  2.2%  meet  meet.js:70
+  1.8%  (garbage collector)  :0
+  1.8%  runEveryone  fill.js:285
+  1.6%  open  everyone.js:119
+  1.6%  copyLaned  :4
+  1.5%  probe  mixer.js:462
+  1.5%  linked  fold.js:148
+  1.5%  shut  everyone.js:141
+  1.3%  grown  grow.js:4
+  1.2%  foldNumber  channels.js:62
+  1.2%  opened  qualify.js:382
+  1.2%  primeLaned  weigh.js:28
+  1.0%  subjectAt  fill.js:215
+  0.9%  keepProbed  lane.js:8
+  0.9%  filled  copyout.js:11
+  0.9%  setBit  bits.js:10
+  0.8%  keep  pull.js:26
+  0.8%  ready  hosts.js:81
+  0.8%  get linked  voice.js:619
+  0.8%  get now  mixer.js:342
+  0.7%  hasBit  bits.js:3
+  0.6%  renew  lanes.js:230
+  0.6%  read  frame.mjs:701
+  0.6%  current  lanes.js:328
+  0.5%  filled  lanes.js:315
+  0.4%  run  fill.js:241
