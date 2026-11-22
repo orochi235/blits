@@ -210,7 +210,11 @@ function readAll<I, O>(
         slot = head.slot;
         // Numbered out of the list's order, as swap-remove leaves a subject: renumbered into it.
         const to = n === 0 ? 0 : (slots[n - 1] as number) + 1;
-        if (runs && slot >= 0 && slot !== to && to >= 0) {
+        // Unless the list shifted up past a removal, as `splice` leaves it: its numbers still run on
+        // from this one, and renumbering each subject after the gap would cost a pass of the list.
+        const d = slot - to;
+        const shifted = d > 0 && n + 1 < list.length && list[n + 1] === was[n + 1 + d];
+        if (runs && slot >= 0 && slot !== to && to >= 0 && !shifted) {
           if ((lanes as Lanes<I, O>).pulls.renumber(mix, subject, head, to)) {
             for (let j = was.indexOf(subject); j >= 0; j = was.indexOf(subject, j + 1))
               slots[j] = to;

@@ -1,0 +1,54 @@
+# msb-uai (shared, --max-cores 1): WARM=200 FRAMES=300 node --cpu-prof bench/reorder.mjs 10000 1 splice; profsum
+ 1/1  splice N=10000 listed  10000   13.521 ms/frame  p50  12.974
+total 6708.3 ms
+   4802.3 ms  71.6%  readAll pull.js:143
+    970.3 ms  14.5%  move numbers.js:89
+    237.0 ms   3.5%  renumber renumber.js:11
+    147.6 ms   2.2%  (garbage collector)
+     89.6 ms   1.3%  get store.js:20
+     72.3 ms   1.1%  bareRows bare.js:16
+     44.2 ms   0.7%  pullRun columns.js:9
+     30.1 ms   0.4%  (program)
+     16.7 ms   0.2%  prepare lanes.js:287
+     15.1 ms   0.2%  filled lanes.js:315
+     13.2 ms   0.2%  chain chain.js:13
+     11.5 ms   0.2%  pull pull.js:63
+     10.8 ms   0.2%  prime weigh.js:7
+      9.0 ms   0.1%  record trail.js:12
+      8.5 ms   0.1%  queueFor columns.js:107
+      7.7 ms   0.1%  (idle)
+      7.6 ms   0.1%  add columns.js:121
+      6.1 ms   0.1%  current lanes.js:328
+      5.8 ms   0.1%  cue cue.js:24
+      5.7 ms   0.1%  prune move.js:467
+      5.4 ms   0.1%  foldNumber channels.js:62
+      4.9 ms   0.1%  between tweened.js:29
+      4.5 ms   0.1%  left tweened.js:19
+      4.5 ms   0.1%  Voice voice.js:447
+      4.3 ms   0.1%  join rows.js:90
+total 6708.3 ms
+   6708.3 ms 100.0%  (root)
+   6488.3 ms  96.7%  evaluate
+   6485.3 ms  96.7%  run module_job:558
+   6483.8 ms  96.7%  (anonymous) reorder.mjs:1
+   6480.7 ms  96.6%  round reorder.mjs:21
+   6414.2 ms  95.6%  pull mixer.js:473
+   6412.7 ms  95.6%  pull pull.js:63
+   6384.1 ms  95.2%  readAll pull.js:143
+   1216.3 ms  18.1%  renumber renumber.js:11
+    970.3 ms  14.5%  move numbers.js:89
+    201.0 ms   3.0%  pullRun columns.js:9
+    147.6 ms   2.2%  (garbage collector)
+    134.7 ms   2.0%  begin lanes.js:338
+    111.5 ms   1.7%  chain chain.js:13
+    108.7 ms   1.6%  fillAll fill.js:38
+    101.2 ms   1.5%  runCrowd crowd.js:153
+    101.2 ms   1.5%  crowdsUpTo crowd.js:123
+     94.1 ms   1.4%  bareRows bare.js:16
+     89.6 ms   1.3%  get store.js:20
+     33.1 ms   0.5%  #getOrCreateModuleJobAfterResolve loader:529
+     33.1 ms   0.5%  afterResolve loader:613
+     33.1 ms   0.5%  getOrCreateModuleJob loader:603
+     33.1 ms   0.5%  syncLink module_job:261
+     33.1 ms   0.5%  link module_job:385
+     33.1 ms   0.5%  ModuleJob module_job:354

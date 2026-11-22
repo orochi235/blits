@@ -49,3 +49,53 @@ describe('pull renumbering a list kept dense by swap-remove', () => {
       expect(ordered).toBeGreaterThan(30);
     });
 });
+
+describe('pull reading a list kept in order by splice', () => {
+  it('reads what a probe reads, renumbering no run of subjects the list shifted up', () => {
+    const was = new Map<Mix<Part, Pose>, Map<unknown, number>>();
+    let kept = 0;
+    let most = 0;
+    agree(
+      (m) => {
+        const list = Array.from({ length: 24 }, (_, id) => ({ id }));
+        const hs: Handle<Part>[] = list.map((p) => m.cue({ patch: slide(p, 0), subjects: [p] }));
+        let next = 100;
+        return {
+          at: (t) => {
+            const f = t / 16;
+            if (f < 2) return;
+            // One subject leaves for good, those after it move up a place, and a new one joins the end.
+            const k = (f * 7) % list.length;
+            m.drop(list[k] as Part);
+            list.splice(k, 1);
+            const p = { id: next++ };
+            list.push(p);
+            hs.push(m.cue({ patch: slide(p, 1), subjects: [p] }));
+          },
+          read: () => list,
+          handles: () => [...hs.slice(0, 6), ...hs.slice(-3)],
+        };
+      },
+      frames(40),
+      (m) => {
+        const pulled = (m as unknown as { pulled: unknown[] }).pulled;
+        const at = numbers(m);
+        const before = was.get(m);
+        const now = new Map<unknown, number>();
+        let moved = 0;
+        pulled.forEach((s, i) => {
+          now.set(s, at[i] as number);
+          const had = before?.get(s);
+          if (had === undefined) return;
+          if (had === at[i]) kept++;
+          else moved++;
+        });
+        most = Math.max(most, moved);
+        was.set(m, now);
+      },
+    );
+    expect(kept).toBeGreaterThan(0);
+    // At most a couple a frame, not every subject after the gap (23 before).
+    expect(most).toBeLessThanOrEqual(2);
+  });
+});
