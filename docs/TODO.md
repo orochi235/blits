@@ -115,12 +115,18 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   (orochi, shared, `bench/runs/2026-11-21-cue-wide-share-ab.txt`, measured). A Set builds no
   faster and the stagger calls are 1.4 ms (`runs/2026-11-21-cue-wide-places.txt`). Left: the
   first such cue, and a list named for the first time in a mix. The gpu row is not re-timed;
-  nothing it runs changed.
-- **[agent] The first frame after three voices of 1M subjects each takes 4 to 7 seconds** (node,
-  `CUES=3 FIRST=1 bench/cue-wide.mjs`, a sync and a probe of every subject, orochi under load,
-  `bench/runs/2026-11-21-cue-wide-share-ab.txt`, 2026-11-21), about 2 µs a subject and voice. Not
-  profiled; shared lists may cut it (the two sides overlapped there). Profile it with `FIRST=1
-  PROF=<dir>` on a quiet node.
+  nothing it runs changed. The frame after such a cue costs 30 times the cue (next entry).
+- **[agent] The first frame after one voice of 1M subjects takes 1.15 s, after three 1.9–2.3 s**
+  (teitou, quiet, node, `CUES=1|3 FIRST=1 bench/cue-wide.mjs`: a sync and a probe of every
+  subject, `bench/runs/2026-11-22-cue-wide-numbers-ab.txt`, 2026-11-22). It is mostly per subject,
+  not per voice, and linear from 100k up (`runs/2026-11-22-cue-wide-first-scale.txt`). The profile
+  (`runs/2026-11-22-cue-wide-first-prof-tree/`) puts it in holding each subject weakly in many
+  places at once: the lanes numbering it (`Numbers.take`, a `WeakRef` and a registry cell, 16%),
+  a voice's `subjects` WeakMap (11%), `Filed`'s list and `seen` entries, the chain store, plus the
+  long group's `has` and collection (9%). A cell's unregister token cost 0.17 µs a subject and was
+  dropped on 2026-11-22 (1.35 s to 1.15 at one voice, measured). A `WeakRef` alone costs 0.12 µs
+  and a WeakMap entry 0.06 (`runs/2026-11-22-weakcost.txt`, measured). The lever left is fewer
+  subject-keyed maps a subject enters on its first read, as for a stop above; not tried.
 - **[agent] A stop grows with N** (0.52 µs at 1,000 subjects, 1.46 at 10,000, 2.41 at 40,000;
   msb-uai, 2026-11-21, `bench/runs/2026-11-21-row-alloc-restart.txt`) though nothing walks more.
   Every part of it grows (`bench/stopparts.mjs`, `runs/2026-11-21-row-alloc-stopparts.txt`;

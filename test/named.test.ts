@@ -1,5 +1,7 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
+import { VoiceHandle } from '../src/handle.js';
 import { mix } from '../src/mixer.js';
 import { Named, Recent } from '../src/named.js';
 import { patch } from '../src/patch.js';
@@ -115,5 +117,43 @@ describe('Named', () => {
       const b = Math.max(0, 50 - (i % 3) * 25) / 100;
       expect(out.x).toBeCloseTo(a + b, 9);
     }
+  });
+
+  it("never changes one voice's shared list through another's fades, drops, end or its caller's array", () => {
+    type Cell = { i: number };
+    const cells = range(2000).map((i) => ({ i }));
+    const m = mix<Cell, { x: number }>(kit({ x: sum() }), {
+      history: { ms: 5000, every: 50, tape },
+    });
+    m.sync(0);
+    const ramp = patch(100, (ph) => ({ x: ph }), { writes: ['x'] });
+    const given = cells.slice();
+    const a = m.cue({ patch: ramp, subjects: given, stagger: (c) => c.i % 7 });
+    const b = m.cue({ patch: ramp, subjects: cells.slice(), loop: true });
+    const listOf = (h: unknown) =>
+      (VoiceHandle.voiceOf(h as VoiceHandle<Cell, { x: number }>)?.named as Named<Cell>)?.list;
+    const shared = listOf(b);
+    expect(listOf(a)).toBe(shared);
+    const before = shared.slice();
+    const out = { x: 0 };
+    m.sync(16);
+    for (const c of cells) m.probe(c, out);
+    a.fade({ subject: cells[3] as Cell, over: 0 });
+    a.fade({ subject: cells[1999] as Cell, over: 10 });
+    m.drop(cells[5] as Cell);
+    given[7] = { i: -7 };
+    given.length = 10;
+    m.sync(40);
+    for (const c of cells) m.probe(c, out);
+    a.fade({ over: 0 });
+    m.sync(200);
+    for (const c of cells) m.probe(c, out);
+    m.seek(16);
+    m.sync(250);
+    expect(shared).toEqual(before);
+    expect(listOf(b)).toBe(shared);
+    const named = VoiceHandle.voiceOf(b as VoiceHandle<Cell, { x: number }>)?.named as Named<Cell>;
+    for (const c of [cells[3], cells[5], cells[7], cells[1999]] as Cell[])
+      expect(named.has(c)).toBe(true);
   });
 });

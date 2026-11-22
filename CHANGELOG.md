@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- The first frame that reads many new object subjects costs less: the lanes number each subject
+  without an unregister token, which cost about 0.17 µs a subject. The frame after one voice over
+  1M subjects is cued takes 1.15 s from 1.35 (node, teitou).
 - A voice naming the same long list of subjects as another voice of its mix cued recently shares
   that voice's list instead of building its own: cueing three voices over 1M subjects, as a
   scene with a move, a bob and a staggered nudge does, takes about 6 ms for each after the first,

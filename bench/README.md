@@ -40,7 +40,8 @@ the machine being used.
   in node, the mixer row of `bench/gpu-cue.mjs` on any node; `CUES=k` cues k on one mix, as
   gpu-reach's `MIX=owned` does, and `FIRST=1` times the frame after. `bench/cuewide.sh` builds
   sides in a `--kind build` job and runs them interleaved; `bench/places.mjs` times building a
-  lookup of 1M subjects each way `Named` could.
+  lookup of 1M subjects each way `Named` could, and `bench/weakcost.mjs` holding 1M weakly each
+  way `Numbers` and `Store` do.
 - `bench/restart.mjs` times a stop (a fade and a `drop`) among N one-subject tweens read by `pull`,
   in weasel's shape; `LINEAGE_BENCH=restart.mjs bench/lineage.sh` compares builds on it.
   `bench/stopparts.mjs` times a stop's parts and `bench/stopprof.sh` profiles it.
