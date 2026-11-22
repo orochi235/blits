@@ -1,0 +1,16 @@
+# studio (shared node, --max-cores 1): node bench/reorder.mjs 10000 5 asc half rev
+ 1/5  reorder-asc    N=10000 V=1    0.331 ms/frame  p50   0.329  listed  10000
+ 2/5  reorder-asc    N=10000 V=1    0.332 ms/frame  p50   0.330  listed  10000
+ 3/5  reorder-asc    N=10000 V=1    0.335 ms/frame  p50   0.333  listed  10000
+ 4/5  reorder-asc    N=10000 V=1    0.333 ms/frame  p50   0.332  listed  10000
+ 5/5  reorder-asc    N=10000 V=1    0.308 ms/frame  p50   0.306  listed  10000
+ 1/5  reorder-half   N=10000 V=1    1.649 ms/frame  p50   1.632  listed   5000
+ 2/5  reorder-half   N=10000 V=1    1.643 ms/frame  p50   1.623  listed   5000
+ 3/5  reorder-half   N=10000 V=1    1.677 ms/frame  p50   1.658  listed   5000
+ 4/5  reorder-half   N=10000 V=1    1.647 ms/frame  p50   1.628  listed   5000
+ 5/5  reorder-half   N=10000 V=1    1.638 ms/frame  p50   1.622  listed   5000
+ 1/5  reorder-rev    N=10000 V=1    0.383 ms/frame  p50   0.377  listed  10000
+ 2/5  reorder-rev    N=10000 V=1    0.378 ms/frame  p50   0.373  listed  10000
+ 3/5  reorder-rev    N=10000 V=1    0.379 ms/frame  p50   0.377  listed  10000
+ 4/5  reorder-rev    N=10000 V=1    0.385 ms/frame  p50   0.379  listed  10000
+ 5/5  reorder-rev    N=10000 V=1    0.378 ms/frame  p50   0.375  listed  10000

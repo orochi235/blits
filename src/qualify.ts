@@ -309,8 +309,9 @@ export function open<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): number {
 
 /**
  * Takes the voices `touch` named on or off their crowds, each as it now stands; false at the
- * first that cannot be, which needs a qualify: one that leaves a lane or the general path, which
- * may open a channel, or one that joins anything but a crowd on a laned channel. Neither a voice
+ * first that cannot be, which needs a qualify: a role member leaving a lane, one leaving the
+ * general path where a voice still present writes one of its channels, which may open, or one that
+ * joins anything but a crowd on a laned channel. Neither a voice
  * that fits joining laned channels nor a laned one leaving moves the fixed point `qualify` finds.
  * A crowd a quarter empty rows is compacted.
  */
@@ -326,6 +327,7 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     lanes.touched = touched;
     return false;
   };
+  const left: Voice<I, O>[] = [];
   for (const v of touched) {
     const known = v.id <= lanes.known;
     if (v.id > lanes.known) lanes.known = v.id;
@@ -344,7 +346,11 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
       if (!relane(lanes, lane)) return qualify();
       continue;
     }
-    if (v.state === 'done') return qualify();
+    if (v.state === 'done') {
+      if (v.spec.role !== undefined) return qualify();
+      left.push(v);
+      continue;
+    }
     // A role's members are on lanes together or not at all, so one joining may move the others.
     if (v.spec.role !== undefined) return qualify();
     const laned = v.slots.some((slot) => lanes.bySlot[slot] !== undefined);
@@ -361,9 +367,31 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     if (crowdable(v)) join(lanes, v, undefined, undefined, lanes.crowds);
     else enlane(lanes, v);
   }
+  if (left.length > 0 && !leftAlone(lanes, left)) return qualify();
   compactSparse(lanes);
   // As a qualify leaving nothing on lanes: no fill comes to let go of what the last probes held.
   if (lanes.lanes.length === 0 && lanes.crowds.every((c) => c.dead === c.size)) lanes.subjects = [];
+  return true;
+}
+
+/**
+ * Whether voices that ended off lanes leave the fixed point `qualify` finds where it stands: none
+ * writes a numeric channel any voice still present writes, so no channel they closed opens for
+ * another. Sets whether the lanes are whole again, as a qualify would.
+ */
+function leftAlone<I, O>(lanes: Lanes<I, O>, left: readonly Voice<I, O>[]): boolean {
+  const host = lanes.host;
+  const closed = new Set<number>();
+  for (const v of left)
+    for (const s of v.slots)
+      if (numericOf(host.channels[s] as Channel<unknown>) !== undefined) closed.add(s);
+  let whole = true;
+  for (const v of host.voices) {
+    if (v.state === 'done' || v.holding !== null) continue;
+    if (v.offLane !== undefined) whole = false;
+    if (closed.size > 0) for (const s of v.slots) if (closed.has(s)) return false;
+  }
+  lanes.whole = whole;
   return true;
 }
 

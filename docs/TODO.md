@@ -123,10 +123,33 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
 - **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
   it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
   the benches still cue the deprecated `lerp: 'oklch'`.
-- **[agent] A voice leaving the general path or a lane** still requalifies every voice.
-- **[agent] Churn under other reorderings**: `pull` renumbers a swapped-in subject into the freed
-  slot, but not for sorted, reversed or filtered lists, nor under history, roles or a bound
-  (`src/renumber.ts` declines).
+- **[agent] A voice leaving the general path still requalifies every voice where a voice still
+  present writes one of its channels, and so does a role member leaving a lane.** A requalify
+  costs 1.4 to 2.9 ms at 10,000 crowded voices (`bench/requalify.mjs` `direct`, teitou, a shared
+  node's spread). One ending alone on its channels has skipped it since 2026-11-21: a frame one
+  ends reads 0.52 ms, from 3.74 (`bench/runs/2026-11-21-requalify-reorder-ab.txt`, measured).
+  Where its channel stays written, a channel it closed may open, so skipping needs the remaining
+  writers shown off lanes for reasons of their own. Not built.
+- **[agent] While any voice plays off lanes, `pull` reads every subject one at a time.** One
+  stateful 40 ms voice on one subject, on a channel 10,000 crowded tweens do not write, cued every
+  tenth frame: the frames it does not end on average 0.29 ms against 0.17 with none cued (`general`
+  `rest` against `quiet`, `bench/runs/2026-11-21-requalify-baseline.txt`, measured), and it plays
+  in about three of those nine, so a frame it plays in costs more (inferred). The cause is inferred
+  from the code: `lanes.whole` is false while it plays, and `pullRun` reads nothing then.
+- **[agent] Churn under other reorderings.** `pull` renumbers a swapped-in subject into the freed
+  number, and since 2026-11-21 leaves a list shifted up by `splice` as numbered (`reorder-splice`
+  9.73 to 0.60 ms a frame at 10,000 subjects, measured). Left: that 0.60 against 0.18 in order is
+  every subject after the gap missing the position `pull` remembered it at and read alone (inferred
+  from `readAll`, not profiled since). A shuffled list reads 0.24 against 0.18 (measured); a free
+  number cannot fix it, which needs numbers swapped between live subjects. Under history, roles or
+  a bound `src/renumber.ts` still declines; extending it there needs tests proving each store it
+  would carry.
+- **[agent] A crowd of tweens read half at a time goes idle and reads 5× slower than whole.**
+  `pull` over every other one of 10,000 one-subject tweens takes 1.65 ms a frame against 0.33 for
+  all of them (studio, shared, `bench/runs/2026-11-21-reorder-half.txt`, measured), and a profile
+  puts 72% in `foldWith`, the general path (`runs/2026-11-21-reorder-half-prof.txt`). Half the
+  subjects probed is under `SPARSE.other.stop` (0.6, `src/lane.ts`), so the crowd idles; the line
+  was not set on a crowd of motions, whose general path costs this much more (inferred).
 - **[agent] The finder commit `4350a86` made the glow rows 8–15% slower**, cause not found, left
   there by the owner's call (2026-10-29). Profiling, GC traces and pretenuring flags are in
   `bench/runs/2026-10-28-finder-*.txt`; the record layout is the one lead not tested.

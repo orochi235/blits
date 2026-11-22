@@ -11,6 +11,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A host probing into its own object under `retargets: true` pays about 60% less for it: a
   10,000-subject probe frame of `tweens` costs 0.745 ms against 0.608 without the option, where it
   cost 0.951, and of `keys` 1.172 against 1.033, where it cost 1.372 (teitou).
+- A voice ending that ran off lanes, on channels no other voice writes, no longer has the mix
+  recheck every voice for lanes: a frame where one ends among 10,000 one-subject tweens read by
+  `pull` takes 0.5 ms, from 3.7 (teitou).
+- `pull` over a list kept in order by removing a subject and appending the next, as `filter` then
+  `push` does, no longer renumbers every subject after the gap: 0.6 ms a frame at 10,000 subjects,
+  from 9.7 (teitou).
 - Cueing a staggered voice over many subjects takes about half as long: at 1M subjects, 35 ms on the
   stock mixer from 71, and 41 on the gpu engine from 76 (teitou). A stagger answering `undefined`
   now delays its subject by 0 everywhere; the general path used to ask it again.
