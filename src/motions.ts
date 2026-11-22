@@ -171,10 +171,20 @@ export class Motions<I> {
     const known = this.known(subject);
     if (known !== undefined) return known;
     const first = this.firsts?.get(subject);
-    const seg = first?.stretches[0] ?? this.fresh(subject);
+    const seg = first?.stretches[0];
+    if (seg !== undefined) {
+      const s = this.take(subject);
+      this.runs[this.base(s) + RunField.FLAGS] = (first as Run).flags;
+      this.write(s, seg);
+      return s;
+    }
+    const x = this.shape.from(subject);
+    const v = this.shape.velocity(subject, x);
+    const to = this.shape.aim(x, v, null, subject, false);
+    const ms = this.started(subject, x, v, to);
     const s = this.take(subject);
     this.runs[this.base(s) + RunField.FLAGS] = first?.flags ?? this.freshFlags;
-    this.write(s, seg);
+    this.writeRun(s, 0, ms, x, v, to, undefined);
     return s;
   }
 
@@ -192,6 +202,14 @@ export class Motions<I> {
     const x = this.shape.from(subject);
     const v = this.shape.velocity(subject, x);
     const to = this.shape.aim(x, v, null, subject, false);
+    return { at: 0, ms: this.started(subject, x, v, to), x0: x, v0: v, to };
+  }
+
+  /**
+   * Checks a first stretch's axes and kind, sets the patch's axes at its first subject and makes
+   * room for a run; returns the stretch's ms.
+   */
+  private started(subject: I, x: number[], v: number[], to: number[]): number {
     const n = this.n < 0 ? x.length : this.n;
     this.check(x, n);
     this.check(v, n);
@@ -202,7 +220,7 @@ export class Motions<I> {
     if (this.n < 0) this.size(n);
     this.grow(1);
     this.freshFlags = scalar ? SCALAR : 0;
-    return { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to };
+    return this.shape.ms?.(subject) ?? 0;
   }
 
   /** The run a subject the patch has not met starts with, as plain data, made once until a release. */
@@ -559,21 +577,34 @@ export class Motions<I> {
   }
 
   write(s: number, seg: Segment): void {
+    this.writeRun(s, seg.at, seg.ms, seg.x0, seg.v0, seg.to, seg.change);
+  }
+
+  /** `write`, given the stretch's fields rather than a stretch. */
+  writeRun(
+    s: number,
+    at: number,
+    ms: number,
+    x0: readonly number[],
+    v0: readonly number[],
+    to: readonly number[],
+    cause: Change | undefined,
+  ): void {
     const n = this.n;
     const b = this.base(s);
     this.watcher?.stretchChanged(this.watchId, s);
     this.listener?.(s);
-    if (seg.change !== undefined || this.causes !== null) {
+    if (cause !== undefined || this.causes !== null) {
       this.causes ??= [];
-      this.causes[s] = seg.change;
+      this.causes[s] = cause;
     }
-    this.runs[b + RunField.AT] = seg.at;
+    this.runs[b + RunField.AT] = at;
     this.runs[b + RunField.FLAGS] = (this.runs[b + RunField.FLAGS] as number) & ~LANDED;
-    this.runs[b + RunField.MS] = seg.ms;
+    this.runs[b + RunField.MS] = ms;
     for (let i = 0; i < n; i++) {
-      this.runs[b + RunField.X0 + i] = seg.x0[i] as number;
-      this.runs[b + RunField.X0 + n + i] = seg.v0[i] as number;
-      this.runs[b + RunField.X0 + 2 * n + i] = seg.to[i] as number;
+      this.runs[b + RunField.X0 + i] = x0[i] as number;
+      this.runs[b + RunField.X0 + n + i] = v0[i] as number;
+      this.runs[b + RunField.X0 + 2 * n + i] = to[i] as number;
     }
   }
 
