@@ -34,10 +34,6 @@ Owner tags:
   remove it in the release after the one that ships `{ axes, cell }`. `bench/frame.mjs`,
   `bench/recaddr.mjs` and `bench/plotleak.mjs` still call the old shape, since older builds an A/B
   runs them against throw for `{ cell }`; move them to `{ cell }` with the removal.
-- **[agent] Two copies of blits loaded together** share what each knows of its patches and
-  channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
-  widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
-  release carrying it.
 - **[maintainer] A ticker has no single teardown** (filed 2026-11-15 from automated review).
   `ticker()` (`src/ticker.ts`) gives a remover per `add`, `after` and `hold`, and `stop()` only
   cancels the waiting frame: every mix's `onWake` subscription stays, so a mix waking restarts the
@@ -102,10 +98,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
 - **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
   more; inferred to be first touches of each object of the voice and each array of its crowd row.
-- **[agent] `carry`'s walk past read-ahead copies that never read a voice is untested:** answering
-  none in place of its fallback still passed `test/readahead.test.ts` (2026-11-12). Since the
-  copies share one store (`Along` in `src/store.ts`), it runs only where the copy just before has not
-  read the subject, so a test needs a voice first met many stops on.
 - **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
   it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
   the benches still cue the deprecated `lerp: 'oklch'`.

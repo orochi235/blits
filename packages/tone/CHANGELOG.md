@@ -11,6 +11,10 @@ section here.
 - `attach` on a cancelled driver throws, as `wire` does, where it kept the subject and never
   played it.
 
+### Changed
+
+- `@msb235/blits` is a peer at `^1.3.0`, where it was `^1.0.0`: the first engine with `bind`.
+
 ## 0.12.5
 
 ### Changed

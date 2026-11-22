@@ -35,6 +35,10 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
 - **`onto test` runs the suite only, not lint**, and release.yml lints before it publishes, so an
   agent's unformatted file stops a release. Run `npx biome check .` on a merge before calling it
   done (a 1.3.0 publish run failed on four bench JSON files, 2026-11-12).
+- **A companion that starts calling a new engine export raises its `@msb235/blits` peer floor in
+  the same change.** The release checks only that a range takes the new engine, not that it leaves
+  out engines too old to run the package; quarks, tone and rapier shipped calling `bind` on
+  `^1.0.0` and `^1.1.0` (fixed 2026-11-21).
 - **WebGPU tests need a real browser**, so `onto test` leaves them out. Send them with
   `onto do --kind test --node teitou -- npm run test:gpu`.
 - **Explainer source may import only from under `site/src/explainers`**, and blits only as

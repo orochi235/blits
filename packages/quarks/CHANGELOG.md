@@ -4,6 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Changed
+
+- `@msb235/blits` is a peer at `^1.3.0`, where it was `^1.0.0`: the first engine with `bind`.
+
 ## 0.17.4
 
 ### Changed
