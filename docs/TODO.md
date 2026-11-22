@@ -184,8 +184,9 @@ built and what is deliberately not offered.
   needs new random sparks, which a voice cannot make.
 - **[maintainer] Should the built-on page's Libraries table list every consumer?** It names
   klieg, magicsmoke, weasel and agnew; the README's status names nine. Which are public decides it.
-- **[agent] CI never runs `test:bundles`, `test:gpu`, the playground's, the panel's or the
-  DevTools extension's smoke tests**; only the site's smoke test runs (`site.yml`).
+- **[maintainer] CI never runs `test:gpu`.** It needs real WebGPU, which GitHub's hosted runners
+  don't have; it would take a self-hosted runner with a GPU. The other smoke tests run in
+  `smoke.yml`.
 - **[maintainer] Channel nodes shaped by their fold rule** (parked 2026-11-05). The outline is the
   region the rule sweeps: `sum` leans, `mul` and `min` lower the top, `max` raises the bottom,
   `last` narrows to a funnel. `node spikes/fold-shapes/shapes.mjs > shapes.svg` draws the sketch;

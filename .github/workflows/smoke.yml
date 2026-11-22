@@ -1,0 +1,44 @@
+name: Smoke
+
+# The bundle guard and the browser smoke tests that `site.yml` doesn't run. `test:gpu` stays out:
+# it needs real WebGPU, which GitHub's hosted runners don't have.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: bundles
+            run: npm run test:bundles
+          - name: playground
+            run: npm run playground:smoke
+          - name: panel
+            run: npm run smoke -w @msb235/blits-panel
+          - name: devtools
+            run: npm run smoke -w @blits/devtools
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - if: matrix.name != 'bundles'
+        run: npx playwright install --with-deps chromium
+      - run: ${{ matrix.run }}
