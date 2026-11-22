@@ -1,0 +1,535 @@
+# msb-uai Apple M3 Max 2026-11-21 rev a7702546 FRAMES=5000 interval 50us
+== run 1/3 tweens^
+ 1/1  tweens^    N= 10000 V=1     0.227 ms/frame     23 ns/subject·voice  p50    0.216  p99    0.322  worst    1.878  first   111.3 ms  gc    1    0.8 ms       7.3 kB/frame
+total 1417.4 ms
+    488.0 ms  34.4%  bareRows bare.js:16
+    292.9 ms  20.7%  pullRun columns.js:9
+    114.5 ms   8.1%  foldNumber channels.js:62
+     79.8 ms   5.6%  record trail.js:13
+     52.6 ms   3.7%  (garbage collector)
+     42.6 ms   3.0%  keepProbed lane.js:9
+     37.0 ms   2.6%  readAll pull.js:143
+     31.0 ms   2.2%  rests columns.js:179
+     21.4 ms   1.5%  copies columns.js:208
+     14.1 ms   1.0%  compileSourceTextModule utils:338
+     12.8 ms   0.9%  read
+     12.4 ms   0.9%  set store.js:25
+     10.5 ms   0.7%  get backs voice.js:508
+      7.6 ms   0.5%  bare crowd.js:11
+      7.5 ms   0.5%  linkable chain.js:106
+      7.4 ms   0.5%  (idle)
+      6.6 ms   0.5%  moveTo move.js:39
+      6.1 ms   0.4%  prime weigh.js:7
+      5.7 ms   0.4%  insertById sorted.js:37
+      5.7 ms   0.4%  internalModuleStat
+      5.4 ms   0.4%  early move.js:571
+      5.3 ms   0.4%  pace fill.js:137
+      5.3 ms   0.4%  rested turns.js:130
+      5.2 ms   0.4%  clock bare.js:6
+      5.0 ms   0.4%  left tweened.js:19
+bareRows  bare.js
+  9.3%     79  values[base + a] = foldNumber(op, values[base + a], hot[g + a], w);
+  3.8%     78  for (let a = 0; a < n; a++)
+  3.0%     32  for (; p < list.length; p++) {
+  2.0%     87  values[base + a] = foldNumber(op, values[base + a], between(hot[x + a], hot[g + a], share), w);
+  2.0%     35  if ((bounded && hot[h + 7 /* Hot.ID */] >= id) || !bare(f))
+  1.8%     74  const base = slot * n;
+  1.8%     53  const landed = ready && now >= hot[h + 8 /* Hot.LANDED */];
+  1.8%     60  keepProbed(data, o, per, q, fills);
+  1.3%     33  const h = p * H;
+  1.3%     76  const g = x + 2 * n;
+  1.3%     34  const f = hot[h + 0 /* Hot.FLAGS */];
+  1.0%     41  const slot = list[p];
+  0.7%     42  const q = slot * 6 /* Per.SLOT */;
+  0.7%     61  const w = hot[h + 4 /* Hot.WEIGHT */];
+  0.7%     43  if (probed &&
+  0.6%     86  for (let a = 0; a < n; a++)
+  0.6%     62  data[o + 2 /* Row.WEIGHT */] = w;
+  0.6%     69  hot[h + 8 /* Hot.LANDED */] = Number.POSITIVE_INFINITY;
+  0.6%     71  if (w <= 0)
+  0.6%     55  if (!landed) {
+pullRun  columns.js
+  3.1%     40  if (was[n] !== subject)
+  2.5%     46  per[o + 0 /* Per.FILLED */] >= busy ||
+  2.2%     59  if (slot !== first + (n - start)) {
+  2.0%     38  for (; n < list.length; n++) {
+  2.0%     55  per[o + 3 /* Per.LANE_PROBE */] = ++lanes.probes;
+  1.9%     42  const slot = slots[n];
+  1.9%     47  per[o + 2 /* Per.IDLE */] !== 0 ||
+  1.7%     48  per[o + 1 /* Per.SEEN */] < wide ||
+  1.2%     56  per[o + 5 /* Per.LANE_FILL */] = fills;
+  0.9%     39  const subject = list[n];
+  0.7%     43  const o = slot * 6 /* Per.SLOT */;
+  0.7%     49  (owing && lanes.owes(slot)))
+  0.6%     51  if (!unprobed &&
+  0.5%     58  subjects[slot] = subject;
+  0.5%     44  if (slot < 0 ||
+  0.4%     60  if (first >= 0) {
+  0.0%     10  const ready = lanes.filled(now, version) ? 1 /* Begin.READY */ : lanes.begin(now, version);
+  0.0%     75  add(lanes, first, start, n - start);
+  0.0%     82  lanes.holding = true;
+  0.0%     57  if (holds)
+pull  mixer.js
+  0.0%    475  pull(this, subjects, into);
+pull  pull.js
+  0.1%    122  readAll(mix, list, columns, live, current, since, whole);
+  0.0%     64  const columns = columnsOf(mix, into);
+  0.0%    131  mix.pullTrail.record(now, list, columns);
+  0.0%     71  for (const c of columns) {
+  0.0%    108  heads.length = list.length;
+  0.0%     66  const now = mix.now;
+  0.0%    130  mix.pullTrail ??= new Trail();
+  0.0%    126  lanes.pulls.flush(lanes);
+  0.0%    134  const unchanged = live && mix.version === version && mix.relinks === relinks;
+flush  columns.js
+  0.0%    169  rests(lanes, c, runs);
+  0.0%    171  copies(lanes, c, ch.values, runs);
+  0.0%    167  const ch = lanes.bySlot[c.slot];
+  0.0%    173  for (let r = 0; r < runs; r++)
+  0.0%    176  }
+copies  columns.js
+  1.6%    236  out.set(values.subarray(base, base + span), at);
+  0.0%    215  for (let r = 0; r < runs; r++) {
+== run 1/3 weasel^
+ 1/1  weasel^    N= 10000 V=1     0.290 ms/frame     29 ns/subject·voice  p50    0.282  p99    0.370  worst    3.889  first    27.4 ms  gc    3    0.8 ms       5.9 kB/frame
+total 1568.5 ms
+    766.4 ms  48.9%  runMotion sample.js:13
+    287.3 ms  18.3%  pullRun columns.js:9
+    104.1 ms   6.6%  foldNumber channels.js:62
+     89.7 ms   5.7%  record trail.js:13
+     56.8 ms   3.6%  keepProbed lane.js:9
+     33.3 ms   2.1%  rests columns.js:179
+     31.3 ms   2.0%  readAll pull.js:143
+     25.8 ms   1.6%  times channels.js:20
+     22.7 ms   1.4%  copies columns.js:208
+     16.1 ms   1.0%  same clock.js:89
+     12.2 ms   0.8%  compileSourceTextModule utils:338
+      8.7 ms   0.6%  (garbage collector)
+      8.3 ms   0.5%  (idle)
+      5.8 ms   0.4%  rested turns.js:130
+      4.6 ms   0.3%  pace fill.js:137
+      4.4 ms   0.3%  between tweened.js:29
+      4.3 ms   0.3%  open
+      3.8 ms   0.2%  weighed clock.js:100
+      3.7 ms   0.2%  left tweened.js:19
+      3.6 ms   0.2%  (anonymous) frame.mjs:1
+      3.5 ms   0.2%  run fill.js:241
+      2.8 ms   0.2%  (program)
+      2.6 ms   0.2%  get store.js:20
+      2.5 ms   0.2%  fillAll fill.js:38
+      2.2 ms   0.1%  internalModuleStat
+pullRun  columns.js
+  2.6%     40  if (was[n] !== subject)
+  2.0%     46  per[o + 0 /* Per.FILLED */] >= busy ||
+  1.7%     38  for (; n < list.length; n++) {
+  1.7%     59  if (slot !== first + (n - start)) {
+  1.6%     47  per[o + 2 /* Per.IDLE */] !== 0 ||
+  1.6%     55  per[o + 3 /* Per.LANE_PROBE */] = ++lanes.probes;
+  1.4%     42  const slot = slots[n];
+  1.3%     48  per[o + 1 /* Per.SEEN */] < wide ||
+  1.1%     39  const subject = list[n];
+  0.9%     56  per[o + 5 /* Per.LANE_FILL */] = fills;
+  0.7%     43  const o = slot * 6 /* Per.SLOT */;
+  0.5%     49  (owing && lanes.owes(slot)))
+  0.4%     58  subjects[slot] = subject;
+  0.3%     51  if (!unprobed &&
+  0.3%     44  if (slot < 0 ||
+  0.2%     60  if (first >= 0) {
+  0.0%     75  add(lanes, first, start, n - start);
+  0.0%     28  queueFor(lanes, columns, slots);
+  0.0%     77  lanes.distinct +=
+  0.0%      9  export function pullRun(lanes, slots, list, was, since, from, columns, now, version) {
+runMotion  sample.js
+  7.6%    157  values[base + a] = foldNumber(op, values[base + a], runs[g + a], w);
+  3.6%    141  if (own && folds && scalar === ch.scalar) {
+  3.3%     53  for (let p = 0; p < list.length; p++) {
+  3.1%    124  b = run.origin + ms * run.stride;
+  2.9%     74  if (!lane.weighed || !same(since, lane.weighedSince)) {
+  2.8%    110  data[o + 2 /* Row.WEIGHT */] = w;
+  2.7%    103  if (fade !== fadeOf || base !== baseOf || fade === 0 || base === 0) {
+  1.9%    165  values[base + a] = foldNumber(op, values[base + a], between(runs[x + a], runs[g + a], share), w);
+  1.6%    150  const base = slot * n;
+  1.4%    155  if (elapsed >= landed[p]) {
+  1.4%    156  for (let a = 0; a < n; a++)
+  1.3%     60  keepProbed(data, o, per, q, fills);
+  1.2%    125  const f = run.runs[b + 1 /* RunField.FLAGS */];
+  1.0%     59  const q = slot * 6 /* Per.SLOT */;
+  1.0%    102  const base = voice.weight;
+  1.0%     50  let fadeOf = Number.NaN;
+  0.9%     66  const elapsed = elapsedNow - delay;
+  0.9%    142  if (data[o + 5 /* Row.SAMPLED */] !== -2 /* Sampled.BARE */) {
+  0.9%     96  else if (parts)
+  0.8%     65  const delay = data[o + 0 /* Row.DELAY */];
+pull  mixer.js
+  0.0%    475  pull(this, subjects, into);
+pull  pull.js
+  0.0%    122  readAll(mix, list, columns, live, current, since, whole);
+  0.0%     64  const columns = columnsOf(mix, into);
+  0.0%    131  mix.pullTrail.record(now, list, columns);
+  0.0%     71  for (const c of columns) {
+  0.0%    107  was.length = list.length;
+  0.0%    106  was.push(UNREAD);
+flush  columns.js
+  0.0%    169  rests(lanes, c, runs);
+  0.0%    165  for (let k = 0; k < columns.length; k++) {
+copies  columns.js
+  1.4%    236  out.set(values.subarray(base, base + span), at);
+  0.0%    208  function copies(lanes, c, values, runs) {
+  0.0%    216  const first = slots[r];
+== run 2/3 tweens^
+ 1/1  tweens^    N= 10000 V=1     0.239 ms/frame     24 ns/subject·voice  p50    0.230  p99    0.330  worst    2.279  first    62.1 ms  gc    1    2.0 ms       6.9 kB/frame
+total 1365.1 ms
+    519.6 ms  38.1%  bareRows bare.js:16
+    299.9 ms  22.0%  pullRun columns.js:9
+    117.9 ms   8.6%  foldNumber channels.js:62
+     84.3 ms   6.2%  record trail.js:13
+     46.6 ms   3.4%  keepProbed lane.js:9
+     36.1 ms   2.6%  rests columns.js:179
+     34.1 ms   2.5%  readAll pull.js:143
+     20.3 ms   1.5%  copies columns.js:208
+     17.3 ms   1.3%  (garbage collector)
+     12.1 ms   0.9%  compileSourceTextModule utils:338
+      9.0 ms   0.7%  (idle)
+      8.5 ms   0.6%  bare crowd.js:11
+      5.7 ms   0.4%  rested turns.js:130
+      5.2 ms   0.4%  clock bare.js:6
+      5.1 ms   0.4%  prime weigh.js:7
+      4.7 ms   0.3%  between tweened.js:29
+      4.5 ms   0.3%  pace fill.js:137
+      4.5 ms   0.3%  left tweened.js:19
+      4.1 ms   0.3%  open
+      3.4 ms   0.2%  runCrowd crowd.js:153
+      3.2 ms   0.2%  (program)
+      3.2 ms   0.2%  requalify qualify.js:43
+      2.6 ms   0.2%  times channels.js:20
+      2.5 ms   0.2%  begin lanes.js:338
+      2.5 ms   0.2%  internalModuleStat
+bareRows  bare.js
+  9.4%     79  values[base + a] = foldNumber(op, values[base + a], hot[g + a], w);
+  3.8%     78  for (let a = 0; a < n; a++)
+  2.9%     32  for (; p < list.length; p++) {
+  2.4%     87  values[base + a] = foldNumber(op, values[base + a], between(hot[x + a], hot[g + a], share), w);
+  2.0%     35  if ((bounded && hot[h + 7 /* Hot.ID */] >= id) || !bare(f))
+  1.8%     60  keepProbed(data, o, per, q, fills);
+  1.8%     74  const base = slot * n;
+  1.7%     53  const landed = ready && now >= hot[h + 8 /* Hot.LANDED */];
+  1.2%     76  const g = x + 2 * n;
+  1.2%     34  const f = hot[h + 0 /* Hot.FLAGS */];
+  1.1%     33  const h = p * H;
+  1.1%     41  const slot = list[p];
+  0.8%     42  const q = slot * 6 /* Per.SLOT */;
+  0.7%     43  if (probed &&
+  0.7%     55  if (!landed) {
+  0.6%     69  hot[h + 8 /* Hot.LANDED */] = Number.POSITIVE_INFINITY;
+  0.6%     73  const values = ch.values;
+  0.6%     62  data[o + 2 /* Row.WEIGHT */] = w;
+  0.6%     75  const x = h + 12 /* Hot.X0 */;
+  0.6%     61  const w = hot[h + 4 /* Hot.WEIGHT */];
+pullRun  columns.js
+  3.1%     40  if (was[n] !== subject)
+  2.6%     46  per[o + 0 /* Per.FILLED */] >= busy ||
+  2.0%     38  for (; n < list.length; n++) {
+  1.9%     59  if (slot !== first + (n - start)) {
+  1.9%     47  per[o + 2 /* Per.IDLE */] !== 0 ||
+  1.8%     55  per[o + 3 /* Per.LANE_PROBE */] = ++lanes.probes;
+  1.7%     42  const slot = slots[n];
+  1.6%     48  per[o + 1 /* Per.SEEN */] < wide ||
+  1.2%     56  per[o + 5 /* Per.LANE_FILL */] = fills;
+  1.1%     39  const subject = list[n];
+  0.8%     43  const o = slot * 6 /* Per.SLOT */;
+  0.7%     49  (owing && lanes.owes(slot)))
+  0.5%     51  if (!unprobed &&
+  0.5%     44  if (slot < 0 ||
+  0.4%     58  subjects[slot] = subject;
+  0.3%     60  if (first >= 0) {
+  0.0%     10  const ready = lanes.filled(now, version) ? 1 /* Begin.READY */ : lanes.begin(now, version);
+  0.0%     45  (!current && !(unlinked[slot] <= since)) ||
+  0.0%     29  room(lanes, lanes.queued + list.length - from);
+  0.0%     75  add(lanes, first, start, n - start);
+pull  mixer.js
+  0.0%    475  pull(this, subjects, into);
+pull  pull.js
+  0.0%     64  const columns = columnsOf(mix, into);
+  0.0%     71  for (const c of columns) {
+  0.0%    122  readAll(mix, list, columns, live, current, since, whole);
+  0.0%    131  mix.pullTrail.record(now, list, columns);
+  0.0%    107  was.length = list.length;
+  0.0%    106  was.push(UNREAD);
+  0.0%    108  heads.length = list.length;
+flush  columns.js
+  0.0%    169  rests(lanes, c, runs);
+  0.0%    165  for (let k = 0; k < columns.length; k++) {
+  0.0%    171  copies(lanes, c, ch.values, runs);
+  0.0%    159  export function flush(lanes) {
+  0.0%    166  const c = columns[k];
+  0.0%    176  }
+copies  columns.js
+  1.5%    236  out.set(values.subarray(base, base + span), at);
+== run 2/3 weasel^
+ 1/1  weasel^    N= 10000 V=1     0.307 ms/frame     31 ns/subject·voice  p50    0.302  p99    0.367  worst    3.532  first    26.7 ms  gc    2    0.5 ms       6.1 kB/frame
+total 1653.9 ms
+    801.6 ms  48.5%  runMotion sample.js:13
+    308.6 ms  18.7%  pullRun columns.js:9
+    113.5 ms   6.9%  foldNumber channels.js:62
+     88.5 ms   5.3%  record trail.js:13
+     65.9 ms   4.0%  keepProbed lane.js:9
+     34.5 ms   2.1%  rests columns.js:179
+     33.2 ms   2.0%  readAll pull.js:143
+     30.8 ms   1.9%  times channels.js:20
+     20.3 ms   1.2%  copies columns.js:208
+     16.4 ms   1.0%  same clock.js:89
+     13.0 ms   0.8%  compileSourceTextModule utils:338
+      8.3 ms   0.5%  (garbage collector)
+      7.9 ms   0.5%  (idle)
+      6.7 ms   0.4%  pace fill.js:137
+      6.7 ms   0.4%  rested turns.js:130
+      4.7 ms   0.3%  open
+      4.4 ms   0.3%  run fill.js:241
+      4.4 ms   0.3%  weighed clock.js:100
+      4.1 ms   0.2%  (anonymous) frame.mjs:1
+      3.6 ms   0.2%  between tweened.js:29
+      3.3 ms   0.2%  left tweened.js:19
+      2.9 ms   0.2%  fillAll fill.js:38
+      2.4 ms   0.1%  pull pull.js:63
+      2.3 ms   0.1%  (program)
+      2.3 ms   0.1%  internalModuleStat
+pullRun  columns.js
+  2.6%     40  if (was[n] !== subject)
+  2.2%     46  per[o + 0 /* Per.FILLED */] >= busy ||
+  1.9%     59  if (slot !== first + (n - start)) {
+  1.6%     55  per[o + 3 /* Per.LANE_PROBE */] = ++lanes.probes;
+  1.6%     38  for (; n < list.length; n++) {
+  1.4%     42  const slot = slots[n];
+  1.4%     47  per[o + 2 /* Per.IDLE */] !== 0 ||
+  1.3%     48  per[o + 1 /* Per.SEEN */] < wide ||
+  0.9%     39  const subject = list[n];
+  0.9%     56  per[o + 5 /* Per.LANE_FILL */] = fills;
+  0.6%     49  (owing && lanes.owes(slot)))
+  0.6%     43  const o = slot * 6 /* Per.SLOT */;
+  0.5%     58  subjects[slot] = subject;
+  0.5%     51  if (!unprobed &&
+  0.4%     44  if (slot < 0 ||
+  0.2%     60  if (first >= 0) {
+  0.0%     75  add(lanes, first, start, n - start);
+  0.0%     10  const ready = lanes.filled(now, version) ? 1 /* Begin.READY */ : lanes.begin(now, version);
+  0.0%     45  (!current && !(unlinked[slot] <= since)) ||
+  0.0%     57  if (holds)
+runMotion  sample.js
+  7.8%    157  values[base + a] = foldNumber(op, values[base + a], runs[g + a], w);
+  3.6%    141  if (own && folds && scalar === ch.scalar) {
+  3.4%     53  for (let p = 0; p < list.length; p++) {
+  3.3%    124  b = run.origin + ms * run.stride;
+  3.1%     74  if (!lane.weighed || !same(since, lane.weighedSince)) {
+  2.9%    110  data[o + 2 /* Row.WEIGHT */] = w;
+  2.8%    103  if (fade !== fadeOf || base !== baseOf || fade === 0 || base === 0) {
+  1.9%    165  values[base + a] = foldNumber(op, values[base + a], between(runs[x + a], runs[g + a], share), w);
+  1.6%    150  const base = slot * n;
+  1.3%    156  for (let a = 0; a < n; a++)
+  1.3%    155  if (elapsed >= landed[p]) {
+  1.1%     60  keepProbed(data, o, per, q, fills);
+  1.1%    142  if (data[o + 5 /* Row.SAMPLED */] !== -2 /* Sampled.BARE */) {
+  1.0%     59  const q = slot * 6 /* Per.SLOT */;
+  1.0%    102  const base = voice.weight;
+  0.9%    125  const f = run.runs[b + 1 /* RunField.FLAGS */];
+  0.9%     50  let fadeOf = Number.NaN;
+  0.9%     65  const delay = data[o + 0 /* Row.DELAY */];
+  0.9%     72  if (!flat) {
+  0.9%     66  const elapsed = elapsedNow - delay;
+pull  mixer.js
+  0.0%    475  pull(this, subjects, into);
+pull  pull.js
+  0.0%    122  readAll(mix, list, columns, live, current, since, whole);
+  0.0%    131  mix.pullTrail.record(now, list, columns);
+  0.0%     64  const columns = columnsOf(mix, into);
+  0.0%     71  for (const c of columns) {
+  0.0%    107  was.length = list.length;
+  0.0%    106  was.push(UNREAD);
+  0.0%    130  mix.pullTrail ??= new Trail();
+  0.0%    126  lanes.pulls.flush(lanes);
+  0.0%    108  heads.length = list.length;
+  0.0%     73  if (fits < room) {
+  0.0%    129  if (live && !mix.wantsPose && !mix.projecting) {
+  0.0%     67  if (mix.scratch === undefined)
+flush  columns.js
+  0.0%    165  for (let k = 0; k < columns.length; k++) {
+  0.0%    169  rests(lanes, c, runs);
+  0.0%    171  copies(lanes, c, ch.values, runs);
+copies  columns.js
+  1.2%    236  out.set(values.subarray(base, base + span), at);
+  0.0%    210  const rows = lanes.queueRows;
+== run 3/3 tweens^
+ 1/1  tweens^    N= 10000 V=1     0.235 ms/frame     23 ns/subject·voice  p50    0.223  p99    0.337  worst    2.434  first    62.3 ms  gc    1    2.2 ms       6.1 kB/frame
+total 1343.2 ms
+    511.2 ms  38.1%  bareRows bare.js:16
+    293.4 ms  21.8%  pullRun columns.js:9
+    112.0 ms   8.3%  foldNumber channels.js:62
+     83.8 ms   6.2%  record trail.js:13
+     46.2 ms   3.4%  keepProbed lane.js:9
+     34.8 ms   2.6%  rests columns.js:179
+     33.5 ms   2.5%  readAll pull.js:143
+     19.5 ms   1.5%  copies columns.js:208
+     16.9 ms   1.3%  (garbage collector)
+     12.9 ms   1.0%  compileSourceTextModule utils:338
+      8.8 ms   0.7%  bare crowd.js:11
+      8.5 ms   0.6%  (idle)
+      6.8 ms   0.5%  rested turns.js:130
+      6.4 ms   0.5%  clock bare.js:6
+      5.8 ms   0.4%  left tweened.js:19
+      5.3 ms   0.4%  pace fill.js:137
+      4.5 ms   0.3%  prime weigh.js:7
+      3.9 ms   0.3%  open
+      3.6 ms   0.3%  times channels.js:20
+      3.5 ms   0.3%  between tweened.js:29
+      3.5 ms   0.3%  requalify qualify.js:43
+      3.3 ms   0.2%  runCrowd crowd.js:153
+      2.7 ms   0.2%  fillAll fill.js:38
+      2.6 ms   0.2%  pull pull.js:63
+      2.6 ms   0.2%  take numbers.js:40
+bareRows  bare.js
+  9.3%     79  values[base + a] = foldNumber(op, values[base + a], hot[g + a], w);
+  3.7%     78  for (let a = 0; a < n; a++)
+  2.9%     32  for (; p < list.length; p++) {
+  2.6%     87  values[base + a] = foldNumber(op, values[base + a], between(hot[x + a], hot[g + a], share), w);
+  2.0%     35  if ((bounded && hot[h + 7 /* Hot.ID */] >= id) || !bare(f))
+  1.9%     60  keepProbed(data, o, per, q, fills);
+  1.8%     74  const base = slot * n;
+  1.6%     53  const landed = ready && now >= hot[h + 8 /* Hot.LANDED */];
+  1.2%     34  const f = hot[h + 0 /* Hot.FLAGS */];
+  1.2%     33  const h = p * H;
+  1.2%     41  const slot = list[p];
+  1.1%     76  const g = x + 2 * n;
+  0.7%     86  for (let a = 0; a < n; a++)
+  0.6%     69  hot[h + 8 /* Hot.LANDED */] = Number.POSITIVE_INFINITY;
+  0.6%     75  const x = h + 12 /* Hot.X0 */;
+  0.6%     42  const q = slot * 6 /* Per.SLOT */;
+  0.6%     73  const values = ch.values;
+  0.6%     71  if (w <= 0)
+  0.5%     62  data[o + 2 /* Row.WEIGHT */] = w;
+  0.5%     61  const w = hot[h + 4 /* Hot.WEIGHT */];
+pullRun  columns.js
+  3.1%     40  if (was[n] !== subject)
+  2.4%     46  per[o + 0 /* Per.FILLED */] >= busy ||
+  1.9%     38  for (; n < list.length; n++) {
+  1.9%     47  per[o + 2 /* Per.IDLE */] !== 0 ||
+  1.9%     55  per[o + 3 /* Per.LANE_PROBE */] = ++lanes.probes;
+  1.8%     59  if (slot !== first + (n - start)) {
+  1.8%     48  per[o + 1 /* Per.SEEN */] < wide ||
+  1.7%     42  const slot = slots[n];
+  1.1%     56  per[o + 5 /* Per.LANE_FILL */] = fills;
+  1.1%     39  const subject = list[n];
+  0.8%     43  const o = slot * 6 /* Per.SLOT */;
+  0.7%     49  (owing && lanes.owes(slot)))
+  0.5%     44  if (slot < 0 ||
+  0.5%     58  subjects[slot] = subject;
+  0.5%     51  if (!unprobed &&
+  0.3%     60  if (first >= 0) {
+  0.0%     45  (!current && !(unlinked[slot] <= since)) ||
+  0.0%     75  add(lanes, first, start, n - start);
+  0.0%     82  lanes.holding = true;
+  0.0%     77  lanes.distinct +=
+pull  mixer.js
+  0.0%    475  pull(this, subjects, into);
+pull  pull.js
+  0.0%    122  readAll(mix, list, columns, live, current, since, whole);
+  0.0%     64  const columns = columnsOf(mix, into);
+  0.0%    131  mix.pullTrail.record(now, list, columns);
+  0.0%    108  heads.length = list.length;
+  0.0%     71  for (const c of columns) {
+  0.0%    107  was.length = list.length;
+  0.0%    112  const current = live && mix.pulledVersion === version && mix.pulledRelinks === relinks;
+  0.0%    106  was.push(UNREAD);
+  0.0%     97  const slots = new Int32Array(Math.max(64, list.length)).fill(-1);
+  0.0%    129  if (live && !mix.wantsPose && !mix.projecting) {
+flush  columns.js
+  0.0%    171  copies(lanes, c, ch.values, runs);
+copies  columns.js
+  1.4%    236  out.set(values.subarray(base, base + span), at);
+  0.0%    215  for (let r = 0; r < runs; r++) {
+== run 3/3 weasel^
+ 1/1  weasel^    N= 10000 V=1     0.288 ms/frame     29 ns/subject·voice  p50    0.280  p99    0.351  worst    3.518  first    27.4 ms  gc    2    0.5 ms       6.5 kB/frame
+total 1551.8 ms
+    764.2 ms  49.2%  runMotion sample.js:13
+    289.0 ms  18.6%  pullRun columns.js:9
+    101.3 ms   6.5%  foldNumber channels.js:62
+     88.0 ms   5.7%  record trail.js:13
+     53.6 ms   3.5%  keepProbed lane.js:9
+     32.3 ms   2.1%  readAll pull.js:143
+     31.0 ms   2.0%  rests columns.js:179
+     27.5 ms   1.8%  times channels.js:20
+     17.9 ms   1.2%  copies columns.js:208
+     16.7 ms   1.1%  same clock.js:89
+     12.2 ms   0.8%  compileSourceTextModule utils:338
+      8.5 ms   0.6%  (garbage collector)
+      7.5 ms   0.5%  (idle)
+      7.1 ms   0.5%  rested turns.js:130
+      4.4 ms   0.3%  run fill.js:241
+      4.3 ms   0.3%  pace fill.js:137
+      4.3 ms   0.3%  left tweened.js:19
+      4.0 ms   0.3%  between tweened.js:29
+      3.9 ms   0.3%  (anonymous) frame.mjs:1
+      3.6 ms   0.2%  weighed clock.js:100
+      3.0 ms   0.2%  open
+      2.3 ms   0.1%  fillAll fill.js:38
+      2.0 ms   0.1%  pull pull.js:63
+      1.9 ms   0.1%  progress tweened.js:15
+      1.9 ms   0.1%  get store.js:20
+pullRun  columns.js
+  2.8%     40  if (was[n] !== subject)
+  2.0%     46  per[o + 0 /* Per.FILLED */] >= busy ||
+  1.8%     47  per[o + 2 /* Per.IDLE */] !== 0 ||
+  1.8%     59  if (slot !== first + (n - start)) {
+  1.5%     38  for (; n < list.length; n++) {
+  1.5%     55  per[o + 3 /* Per.LANE_PROBE */] = ++lanes.probes;
+  1.4%     48  per[o + 1 /* Per.SEEN */] < wide ||
+  1.4%     42  const slot = slots[n];
+  1.0%     39  const subject = list[n];
+  0.9%     56  per[o + 5 /* Per.LANE_FILL */] = fills;
+  0.7%     43  const o = slot * 6 /* Per.SLOT */;
+  0.7%     49  (owing && lanes.owes(slot)))
+  0.4%     51  if (!unprobed &&
+  0.4%     58  subjects[slot] = subject;
+  0.3%     44  if (slot < 0 ||
+  0.2%     60  if (first >= 0) {
+  0.0%     10  const ready = lanes.filled(now, version) ? 1 /* Begin.READY */ : lanes.begin(now, version);
+  0.0%     75  add(lanes, first, start, n - start);
+  0.0%     77  lanes.distinct +=
+  0.0%     80  : lastStamped(per, slots, from, n, stamp);
+runMotion  sample.js
+  8.0%    157  values[base + a] = foldNumber(op, values[base + a], runs[g + a], w);
+  3.7%    141  if (own && folds && scalar === ch.scalar) {
+  3.3%     53  for (let p = 0; p < list.length; p++) {
+  3.2%    110  data[o + 2 /* Row.WEIGHT */] = w;
+  2.9%    124  b = run.origin + ms * run.stride;
+  2.7%    103  if (fade !== fadeOf || base !== baseOf || fade === 0 || base === 0) {
+  2.6%     74  if (!lane.weighed || !same(since, lane.weighedSince)) {
+  1.8%    165  values[base + a] = foldNumber(op, values[base + a], between(runs[x + a], runs[g + a], share), w);
+  1.5%    150  const base = slot * n;
+  1.5%    155  if (elapsed >= landed[p]) {
+  1.4%    156  for (let a = 0; a < n; a++)
+  1.3%     60  keepProbed(data, o, per, q, fills);
+  1.2%    125  const f = run.runs[b + 1 /* RunField.FLAGS */];
+  1.1%     59  const q = slot * 6 /* Per.SLOT */;
+  1.1%     50  let fadeOf = Number.NaN;
+  1.0%    102  const base = voice.weight;
+  1.0%    142  if (data[o + 5 /* Row.SAMPLED */] !== -2 /* Sampled.BARE */) {
+  0.9%     66  const elapsed = elapsedNow - delay;
+  0.8%     65  const delay = data[o + 0 /* Row.DELAY */];
+  0.8%     96  else if (parts)
+pull  mixer.js
+  0.0%    475  pull(this, subjects, into);
+pull  pull.js
+  0.0%    122  readAll(mix, list, columns, live, current, since, whole);
+  0.0%    131  mix.pullTrail.record(now, list, columns);
+  0.0%     71  for (const c of columns) {
+  0.0%    108  heads.length = list.length;
+  0.0%     64  const columns = columnsOf(mix, into);
+  0.0%    130  mix.pullTrail ??= new Trail();
+  0.0%    106  was.push(UNREAD);
+  0.0%    111  const live = !Number.isNaN(now);
+  0.0%    107  was.length = list.length;
+  0.0%     91  const whole = lanes !== null && !mix.wantsPose;
+flush  columns.js
+  0.0%    169  rests(lanes, c, runs);
+copies  columns.js
+  1.2%    236  out.set(values.subarray(base, base + span), at);
+  0.0%    234  const span = counts[r] * axes;

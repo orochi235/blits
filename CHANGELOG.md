@@ -16,6 +16,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   since committing a change no longer builds the stretch it replaces only to let it go: 5,000
   springs, about 2,900 of them retargeted a frame, read through `pull` in 0.86 ms from 1.39, and
   1.07 from 1.66 on lanes (teitou).
+- A steady frame of 10,000 one-subject tweens read by `pull` costs about 15% less (0.228 ms from
+  0.270, 0.179 from 0.207 once landed), and one tween over 10,000 subjects with a fade in about 20%
+  less once every subject's fade in is over (0.237 from 0.294) (msb-uai).
 - A host probing into its own object under `retargets: true` pays about 60% less for it: a
   10,000-subject probe frame of `tweens` costs 0.745 ms against 0.608 without the option, where it
   cost 0.951, and of `keys` 1.172 against 1.033, where it cost 1.372 (teitou).

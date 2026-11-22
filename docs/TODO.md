@@ -85,9 +85,18 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   probe: `keys` 1.033 against 1.172 ms, `tweens` 0.608 against 0.745 (measured: teitou, 7 rounds,
   `RETARGETS=1`, `bench/runs/2026-11-21-probes-retargets-after.txt`; 18–57% before the per-kit
   noter). What is left is finding the row and turning its halves over; no hot spot (inferred).
-- **[agent] Steady `tweens^`/`weasel^` frame** (10k one-voice-per-subject tweens by `pull`): 0.235
-  and 0.362 ms on studio against 0.03–0.05 for a hand loop. `tweens^` is 39% `bareRows`, 29%
-  `pullRun` (about 1 ns a subject per check, none dominant); `weasel^` 58% `runMotion`.
+- **[agent] Steady `tweens^`/`weasel^` frame** (10k one-voice-per-subject tweens by `pull`, and
+  one tween voice over 10k subjects): 0.228 and 0.237 ms on msb-uai in flight, 0.179 for `tweens^`
+  landed, against 0.03–0.05 for a hand loop (measured, 2026-11-21, `FRAMES=5000`,
+  `runs/2026-11-21-steady-tweens-sum.txt`), from 0.270, 0.294 and 0.207 by folding a bare tween's
+  sum inline and weighing a lane flat once every fade in is over. What is left, from profiles before
+  that change (`runs/2026-11-21-steady-tweens-prof{,-inflight}/`, measured): `bareRows` 45% of
+  `tweens^` in flight, of it about a fifth the fold line; `pullRun` 17–21%, spread over its
+  per-subject checks and stamps, which `bench/README.md` lists as tried; `Trail.record` 6%, copying
+  the list and every column for a retarget that may never come; `runMotion` 49% of `weasel^`, no line
+  over 8%. The other `foldNumber` call sites (`keyfill`, `keyrows`, `gather`, the general `one`) may
+  gain as these did, since the call stayed out of line here (inferred from the 12–15% this saved);
+  not timed.
 - **[agent] A voice over every subject cued among a crowd** (`swap`, 1.97 ms on msb-uai,
   2026-11-21). Measured, a profile's share of the probe loop (`runs/2026-11-21-swap-lines.txt`):
   the fill's `one`/`call` 28%, the bench's own patch among it 8%; the chain lookup and relink 25%,

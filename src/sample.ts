@@ -36,6 +36,8 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   const arg = lanes.arg;
   const n = run.n;
   const op = ch.op;
+  // `foldNumber`'s sum written out, its op asked once a fill rather than once an axis.
+  const sum = op === 'sum';
   if (n > 0) lane.room(list.length, n);
   const samples = lane.samples;
   const landed = lane.landed;
@@ -153,13 +155,24 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       // A bare position's stretch tells the lane before it changes, and a sample's progress rounds
       // monotonically in voice time, so one seen landed folds its `to` as it is at any later time.
       if (elapsed >= (landed[p] as number)) {
-        for (let a = 0; a < n; a++)
-          values[base + a] = foldNumber(op, values[base + a] as number, runs[g + a] as number, w);
+        if (sum)
+          for (let a = 0; a < n; a++)
+            values[base + a] = (values[base + a] as number) + (runs[g + a] as number) * w;
+        else
+          for (let a = 0; a < n; a++)
+            values[base + a] = foldNumber(op, values[base + a] as number, runs[g + a] as number, w);
         continue;
       }
       const u = progress(elapsed, runs[b + RunField.AT] as number, runs[b + RunField.MS] as number);
       const share = left(ease, u);
       if (u >= 1) landed[p] = elapsed;
+      if (sum) {
+        for (let a = 0; a < n; a++)
+          values[base + a] =
+            (values[base + a] as number) +
+            between(runs[x + a] as number, runs[g + a] as number, share) * w;
+        continue;
+      }
       for (let a = 0; a < n; a++)
         values[base + a] = foldNumber(
           op,

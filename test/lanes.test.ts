@@ -826,6 +826,22 @@ describe('lanes give motion voices the pose the general path gives', () => {
     );
   });
 
+  it('for staggered fades in, once some subjects have climbed theirs and others have not', () => {
+    // A lane weighs every subject alike only once its latest fade in is over; until then each
+    // subject still climbing its own must weigh as the general path does.
+    agree(
+      (m) => {
+        const t = tween<Part, Pose>('crawl', { from: 0, to: crawlTo, ms: 5000 });
+        m.cue({ patch: t, stagger: (p) => p.id * 120, fade: { in: 100 }, weight: 0.7 });
+        m.cue({ patch: pulse(), stagger: (p) => p.id * 90, fade: { in: 150 }, loop: true });
+      },
+      {
+        times: [0, 50, 110, 130, 240, 360, 470, 500, 540, 600, 650, 700, 750, 1000, 1600],
+        probe: (t, part) => part.id < 4 || t >= 500,
+      },
+    );
+  });
+
   it('for a vector spring and a glide on separate channels', () => {
     agree(
       (m, parts) => {

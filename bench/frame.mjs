@@ -98,7 +98,8 @@ const settle = () => spring('position', { from: [0, 0, 0], to: (s) => [s.seed, 1
 
 // The same shape as a tween, long enough to stay in flight for the whole run, and as weasel's
 // animator wrote it before there was one: a `fn` looking each subject's endpoints up per call.
-const LONG = 10000;
+// LONG=<ms> keeps a long row's tweens in flight past FRAMES=5000 (83 s), for a profile of the in-flight frame.
+const LONG = Number(process.env.LONG ?? 10000);
 const smooth = (u) => u * u * (3 - 2 * u);
 const glideTo = () =>
   tween('position', { from: [0, 0, 0], to: (s) => [s.seed, 1, 0], ms: LONG, ease: smooth });

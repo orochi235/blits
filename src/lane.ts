@@ -254,8 +254,13 @@ export class Lane<I, O> implements Positions<I, O> {
   weighed = false;
   weighedSince = 0;
   fade = 1;
-  /** Whether the voice has no fade in or out this fill, so its envelope is 1 for every subject. */
+  /** Whether its envelope is 1 for every subject this fill: no fade out, and no fade in or all climbed. */
   flat = false;
+  /**
+   * The latest `Row.SINCE` any position was given, or NaN once one was given NaN: once its fade in
+   * is over every earlier one's is, so a fill past it weighs every subject alike.
+   */
+  latestSince = Number.NEGATIVE_INFINITY;
   /** The fill that last ran it, so what it remembers within one fill is that fill's. */
   ran = -1;
   /** The voice's clock at this fill, set before `one` runs its subjects. */
@@ -359,6 +364,7 @@ export class Lane<I, O> implements Positions<I, O> {
     const o = p * Row.STRIDE;
     this.data[o + Row.DELAY] = held.delay;
     this.data[o + Row.SINCE] = held.shown;
+    this.since(held.shown);
     this.data[o + Row.WEIGHT] = 0;
     this.data[o + Row.PROBED] = 0;
     this.data[o + Row.MSLOT] = -1;
@@ -377,6 +383,17 @@ export class Lane<I, O> implements Positions<I, O> {
     this.list[p] = to;
     this.at[to] = p + 1;
     this.at[from] = 0;
+  }
+
+  /**
+   * Takes a position's `Row.SINCE` into `latestSince`. One later than every other, met mid-fill, may
+   * still be climbing a fade in this fill weighed flat without it.
+   */
+  since(shown: number): void {
+    if (!(shown <= this.latestSince)) {
+      this.latestSince = Number.isNaN(this.latestSince) ? Number.NaN : shown;
+      if ((this.voice.fade.in ?? 0) > 0) this.flat = false;
+    }
   }
 
   /** A subject lost its number: the last position moves into its place. */
