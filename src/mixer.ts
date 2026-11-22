@@ -37,6 +37,7 @@ import { Lanes } from './lanes.js';
 import { hostOf, listed, readingAt } from './marks.js';
 import type { Motions } from './motions.js';
 import { nextFrame } from './move.js';
+import { Recent } from './named.js';
 import { call, listen, onSeek } from './onseek.js';
 import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
@@ -333,6 +334,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly roleScratch: RoleScratch<I, O>[] = [];
   roleDepth = 0;
   readonly slotOf = new Map<string, number>();
+  /** The long lists this mix's voices named last, for one naming the same to share. */
+  readonly recent = new Recent<I>();
   lanes: Lanes<I, O> | null;
   /** The sharing hooks of the lanes this entry was built with, which a projection's copy keeps. */
   share: Share | null;

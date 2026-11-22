@@ -2,6 +2,10 @@ import type { Store } from './store.js';
 
 /** Past this many, a subject is looked up in a map of places rather than down the list. */
 const FEW = 8;
+/** The fewest subjects a list names to be shared by a later voice of its mix naming the same. */
+const SHARED = 1024;
+/** How many long lists a mix holds for sharing, the most recent first. */
+const KEPT = 4;
 
 /**
  * The subjects a voice's `subjects` names, once each in the order first named. Most voices name
@@ -19,11 +23,16 @@ export class Named<I> {
   readonly latest: number = 0;
   readonly soonest: number = 0;
 
-  constructor(subjects: Iterable<I>, stagger?: (subject: I) => number) {
+  constructor(subjects: Iterable<I>, stagger?: (subject: I) => number, recent?: Recent<I>) {
     // An array of distinct subjects, as nearly every voice names, is copied, a long one placed as it is.
     const short = Array.isArray(subjects) && distinct(subjects);
-    const placed = short || !Array.isArray(subjects) ? null : placesOf(subjects);
-    if (short || placed !== null) {
+    const same = short || !Array.isArray(subjects) ? undefined : recent?.find(subjects);
+    const placed =
+      short || same !== undefined || !Array.isArray(subjects) ? null : placesOf(subjects);
+    if (same !== undefined) {
+      this.list = same.list;
+      this.places = same.places;
+    } else if (short || placed !== null) {
       this.list = (subjects as I[]).slice();
       this.places = placed;
     } else {
@@ -44,6 +53,8 @@ export class Named<I> {
       this.list = list.slice();
       this.places = places;
     }
+    if (same === undefined && this.places !== null && this.list.length >= SHARED)
+      recent?.keep(this);
     if (stagger) {
       const ordered = new Float64Array(this.list.length);
       let latest = 0;
@@ -88,6 +99,36 @@ export class Named<I> {
       if (s === subject || (Number.isNaN(s as number) && Number.isNaN(subject as number))) return i;
     }
     return undefined;
+  }
+}
+
+/**
+ * The long lists a mix's voices named last, held weakly. A voice naming the same subjects in the
+ * same order shares one's list and map of places, where building its own map of a million subjects
+ * would cost a frame or more.
+ */
+export class Recent<I> {
+  private readonly held: WeakRef<Named<I>>[] = [];
+
+  /** A list held here naming exactly `subjects`, in order; undefined where none does. */
+  find(subjects: readonly I[]): Named<I> | undefined {
+    const n = subjects.length;
+    if (n < SHARED) return undefined;
+    for (const ref of this.held) {
+      const named = ref.deref();
+      if (named === undefined || named.list.length !== n) continue;
+      const list = named.list;
+      let i = 0;
+      while (i < n && list[i] === subjects[i]) i++;
+      if (i === n) return named;
+    }
+    return undefined;
+  }
+
+  keep(named: Named<I>): void {
+    const held = this.held;
+    if (held.length === KEPT) held.pop();
+    held.unshift(new WeakRef(named));
   }
 }
 
