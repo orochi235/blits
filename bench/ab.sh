@@ -5,7 +5,8 @@
 # its own bench/frame.mjs, so a row must exist in both, unless AB_BENCH names one file both run.
 # A revision of `.` is the working tree as it stands, for a tree synced to a node with its changes
 # uncommitted. AB_EACH=1 runs each named row in a process of its own, so no row's numbers depend on
-# the rows before it. AB_NODE_FLAGS passes V8 flags to both sides' node. Prints each run's rows as they finish, and the full sha each side was built from.
+# the rows before it. AB_NODE_FLAGS passes V8 flags to both sides' node, and AB_NODE_FLAGS_A and
+# AB_NODE_FLAGS_B to one side's, so one commit named both ways (`. <its sha>`) compares two flag sets. Prints each run's rows as they finish, and the full sha each side was built from.
 # On a fleet node only commits the node fetched exist, and `HEAD` is the node's base, not the commit
 # synced, so a revision naming HEAD is refused while the tree has uncommitted changes (bench/rev.sh):
 # name a sha the node has, or compare `.` with one. `onto do --ref $(git rev-parse HEAD)` sends
@@ -36,17 +37,19 @@ for rev in "$a" "$b"; do
   echo "built $label"
 done
 
+flagsOf() { if [[ "$1" == "$a" ]]; then echo "${AB_NODE_FLAGS:-} ${AB_NODE_FLAGS_A:-}"; else echo "${AB_NODE_FLAGS:-} ${AB_NODE_FLAGS_B:-}"; fi; }
+
 for ((r = 1; r <= rounds; r++)); do
   if ((r % 2)); then order=("$a" "$b"); else order=("$b" "$a"); fi
   for rev in "${order[@]}"; do
     if [[ -n "${AB_EACH:-}" ]]; then
       for row in "$@"; do
         echo "== round $r/$rounds $rev"
-        (cd "$(dirOf "$rev")" && node ${AB_NODE_FLAGS:-} bench/frame.mjs "$row")
+        (cd "$(dirOf "$rev")" && node $(flagsOf "$rev") bench/frame.mjs "$row")
       done
       continue
     fi
     echo "== round $r/$rounds $rev"
-    (cd "$(dirOf "$rev")" && node ${AB_NODE_FLAGS:-} bench/frame.mjs "$@")
+    (cd "$(dirOf "$rev")" && node $(flagsOf "$rev") bench/frame.mjs "$@")
   done
 done

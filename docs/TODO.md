@@ -154,9 +154,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   puts 72% in `foldWith`, the general path (`runs/2026-11-21-reorder-half-prof.txt`). Half the
   subjects probed is under `SPARSE.other.stop` (0.6, `src/lane.ts`), so the crowd idles; the line
   was not set on a crowd of motions, whose general path costs this much more (inferred).
-- **[agent] The finder commit `4350a86` made the glow rows 8–15% slower**, cause not found, left
-  there by the owner's call (2026-10-29). Profiling, GC traces and pretenuring flags are in
-  `bench/runs/2026-10-28-finder-*.txt`; the record layout is the one lead not tested.
 - **[agent] astv's glides (+8%) and progress clocks (+39%) since 0.8.0** are unexplained, at 1–2 µs
   a frame; `MOTION_ONLY=1 probes/blits-version-bench.sh <out> 0.7.1` in `~/src/astv` on a node.
 - **[agent] Running back past a voice's end costs `own` and `keys` 1–3%** (`4a6cc4e`, accepted

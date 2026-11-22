@@ -2,6 +2,7 @@
 # bench/recaddr.mjs at each of several revisions: the first record of each lane in full (each field
 # with its representation), then one address line per record.
 #   bench/recaddr.sh <frames> <records> <rev>...
+# bench/recgaps.mjs reduces the output to the gaps between successive records.
 set -euo pipefail
 frames="$1"; records="$2"; shift 2
 root="$(git rev-parse --show-toplevel)"

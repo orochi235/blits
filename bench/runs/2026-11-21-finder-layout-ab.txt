@@ -1,0 +1,147 @@
+# msb-uai quiet, 2 cores, job 7562770c: AB_EACH=1 FRAMES=5000 AB_NODE_FLAGS_B=--single-threaded-gc bench/ab.sh . a7702546 7 glowb^ glowbn^ glowbp^ ('.' is main a7702546 under default GC, which lays records out less contiguously; a7702546 under --single-threaded-gc, which lays them out contiguously: 2026-11-21-finder-recaddr-gcthreads.txt)
+  waiting for room
+msb-uai  chosen: 3.4 cores free, 18.5G available (bash -c npm ci --silent >/dev/null 2>&1…: no past runs)
+  keiei    needs 1.0G, has 0.3G (5.8G reported, 5.2G swapped, warning pressure)
+  orochi   has 0.0 of its 12 cores free, too few to start on
+  studio   queued jobs already hold 9.0 of this node's 9.0 cores
+  teitou   has 0.0 of its 18 cores free, too few to start on
+  fleet    2.3 cores spare: 7.7 free on 5 nodes, 3.4 wanted by 1 queued job, 2 held back for quick jobs
+  cost     no past runs to size it against the fleet's 2.3 cores spare
+  base   a7702546
+  delta  5 file(s), 0 deleted
+  sent   4 new file(s), 1 already there
+  updated blits-wt1 on msb-uai at a7702546 + 5 uncommitted file(s)
+  loaded 2.0s: sync blits apply 0.7s, sync blits check 0.6s, sync blits upload 0.1s, start 0.1s, sync blits diff 0.1s, gate 0.0s
+  job    7562770c on msb-uai
+
+onto: agent-a9cff65a497c24284 is already set up
+onto: playwright-browsers-790bd7c0596f is already set up
+######## main default (a7702546 as '.') against main --single-threaded-gc (a7702546), FRAMES=5000
+built the working tree
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+built a7702546 (a77025462d774c00c2dd80323bc681b95b652313)
+== round 1/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     1.051 ms/frame     53 ns/subject·voice  p50    1.010  p99    2.068  worst   12.453  first    47.7 ms  gc  122   50.1 ms     897.7 kB/frame
+== round 1/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     1.016 ms/frame     51 ns/subject·voice  p50    0.986  p99    1.788  worst   12.310  first    29.5 ms  gc  122   54.0 ms     893.4 kB/frame
+== round 1/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     0.939 ms/frame     47 ns/subject·voice  p50    0.903  p99    1.834  worst   11.579  first    31.0 ms  gc  128   54.7 ms     901.3 kB/frame
+== round 1/7 a7702546
+ 1/1  glowb^     N= 10000 V=2     1.027 ms/frame     51 ns/subject·voice  p50    0.917  p99    1.774  worst   11.574  first    30.8 ms  gc   73   53.5 ms     895.7 kB/frame
+== round 1/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     1.126 ms/frame     56 ns/subject·voice  p50    1.002  p99    1.929  worst   15.748  first    31.6 ms  gc   73   66.0 ms     891.3 kB/frame
+== round 1/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     1.137 ms/frame     57 ns/subject·voice  p50    1.009  p99    2.102  worst   15.731  first    39.1 ms  gc   73   83.1 ms     900.2 kB/frame
+== round 2/7 a7702546
+ 1/1  glowb^     N= 10000 V=2     1.089 ms/frame     54 ns/subject·voice  p50    0.972  p99    1.758  worst   12.561  first    30.2 ms  gc   73   51.5 ms     895.0 kB/frame
+== round 2/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     1.059 ms/frame     53 ns/subject·voice  p50    0.935  p99    1.737  worst   15.181  first    30.2 ms  gc   73   66.8 ms     892.7 kB/frame
+== round 2/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     1.088 ms/frame     54 ns/subject·voice  p50    0.968  p99    1.729  worst   15.176  first    37.1 ms  gc   73   65.7 ms     901.2 kB/frame
+== round 2/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     0.997 ms/frame     50 ns/subject·voice  p50    0.968  p99    1.556  worst   10.313  first    26.5 ms  gc  123   49.1 ms     896.5 kB/frame
+== round 2/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     0.937 ms/frame     47 ns/subject·voice  p50    0.906  p99    1.421  worst   13.728  first    26.0 ms  gc  122   51.4 ms     892.9 kB/frame
+== round 2/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     1.064 ms/frame     53 ns/subject·voice  p50    1.032  p99    1.798  worst   12.493  first    32.7 ms  gc  122   46.6 ms     901.2 kB/frame
+== round 3/7 .
+ 1/1  glowb^     N= 10000 V=2     0.840 ms/frame     42 ns/subject·voice  p50    0.808  p99    1.384  worst   11.344  first    26.7 ms  gc  120   50.6 ms     897.3 kB/frame
+== round 3/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     0.932 ms/frame     47 ns/subject·voice  p50    0.904  p99    1.457  worst   13.284  first    27.5 ms  gc  122   51.7 ms     893.1 kB/frame
+== round 3/7 .
+ 1/1  glowbp^    N= 10000 V=2     0.992 ms/frame     50 ns/subject·voice  p50    0.954  p99    1.858  worst   16.093  first    31.1 ms  gc  121   44.9 ms     901.1 kB/frame
+== round 3/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     0.965 ms/frame     48 ns/subject·voice  p50    0.844  p99    1.686  worst   12.011  first    29.3 ms  gc   73   51.9 ms     895.5 kB/frame
+== round 3/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     1.093 ms/frame     55 ns/subject·voice  p50    0.978  p99    1.756  worst   15.393  first    30.9 ms  gc   73  121.7 ms     892.2 kB/frame
+== round 3/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     1.032 ms/frame     52 ns/subject·voice  p50    0.903  p99    1.767  worst   12.810  first    36.6 ms  gc   73   78.7 ms     900.5 kB/frame
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+== round 4/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     0.931 ms/frame     47 ns/subject·voice  p50    0.810  p99    1.588  worst   14.705  first    29.9 ms  gc   73   64.7 ms     895.9 kB/frame
+== round 4/7 a7702546
+ 1/1  glowbn^    N= 10000 V=2     1.008 ms/frame     50 ns/subject·voice  p50    0.884  p99    1.722  worst   14.776  first    31.8 ms  gc   72   59.3 ms     891.7 kB/frame
+== round 4/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     1.043 ms/frame     52 ns/subject·voice  p50    0.923  p99    1.683  worst   15.159  first    35.1 ms  gc   78   77.8 ms     900.5 kB/frame
+== round 4/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     0.830 ms/frame     41 ns/subject·voice  p50    0.801  p99    1.349  worst   12.295  first    26.5 ms  gc  122   47.6 ms     896.7 kB/frame
+== round 4/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     0.913 ms/frame     46 ns/subject·voice  p50    0.886  p99    1.361  worst   13.446  first    26.1 ms  gc  123   47.4 ms     892.9 kB/frame
+== round 4/7 .
+ 1/1  glowbp^    N= 10000 V=2     0.896 ms/frame     45 ns/subject·voice  p50    0.856  p99    1.468  worst   12.079  first    29.6 ms  gc  122   38.8 ms     901.9 kB/frame
+== round 5/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     0.930 ms/frame     47 ns/subject·voice  p50    0.904  p99    1.365  worst   10.334  first    23.4 ms  gc  122   41.1 ms     896.5 kB/frame
+== round 5/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     0.855 ms/frame     43 ns/subject·voice  p50    0.825  p99    1.299  worst   11.607  first    23.5 ms  gc  123   40.6 ms     893.0 kB/frame
+== round 5/7 .
+ 1/1  glowbp^    N= 10000 V=2     0.895 ms/frame     45 ns/subject·voice  p50    0.854  p99    1.914  worst    9.833  first    26.6 ms  gc  120   46.3 ms     900.4 kB/frame
+== round 5/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     1.027 ms/frame     51 ns/subject·voice  p50    0.892  p99    2.084  worst   15.472  first    28.5 ms  gc   73   61.3 ms     896.0 kB/frame
+== round 5/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     1.026 ms/frame     51 ns/subject·voice  p50    0.880  p99    1.940  worst   27.863  first    29.8 ms  gc   73   66.2 ms     892.0 kB/frame
+== round 5/7 a7702546
+ 1/1  glowbp^    N= 10000 V=2     1.047 ms/frame     52 ns/subject·voice  p50    0.897  p99    2.670  worst   15.449  first    34.0 ms  gc   78  129.5 ms     900.6 kB/frame
+== round 6/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     0.944 ms/frame     47 ns/subject·voice  p50    0.824  p99    1.664  worst   13.133  first    27.8 ms  gc   73  116.8 ms     896.4 kB/frame
+== round 6/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     0.965 ms/frame     48 ns/subject·voice  p50    0.845  p99    1.639  worst   15.006  first    27.8 ms  gc   78   66.8 ms     892.4 kB/frame
+== round 6/7 a7702546
+ 1/1  glowbp^    N= 10000 V=2     1.077 ms/frame     54 ns/subject·voice  p50    0.948  p99    1.942  worst   13.265  first    35.0 ms  gc   73  106.7 ms     900.0 kB/frame
+== round 6/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     1.006 ms/frame     50 ns/subject·voice  p50    0.979  p99    1.555  worst   12.796  first    25.3 ms  gc  123   49.9 ms     896.3 kB/frame
+== round 6/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     0.972 ms/frame     49 ns/subject·voice  p50    0.947  p99    1.515  worst   12.793  first    25.9 ms  gc  122   48.4 ms     892.4 kB/frame
+== round 6/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     0.975 ms/frame     49 ns/subject·voice  p50    0.947  p99    1.633  worst   10.900  first    30.0 ms  gc  128   49.5 ms     900.5 kB/frame
+== round 7/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     0.970 ms/frame     48 ns/subject·voice  p50    0.940  p99    1.514  worst   13.487  first    25.5 ms  gc  121   51.5 ms     896.6 kB/frame
+== round 7/7 .
+ 1/1  glowbn^    N= 10000 V=2     0.961 ms/frame     48 ns/subject·voice  p50    0.927  p99    1.663  worst   13.472  first    27.5 ms  gc  121   50.2 ms     892.5 kB/frame
+== round 7/7 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     1.075 ms/frame     54 ns/subject·voice  p50    0.930  p99    2.607  worst   65.317  first    31.1 ms  gc  125  139.1 ms     902.1 kB/frame
+== round 7/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowb^     N= 10000 V=2     1.123 ms/frame     56 ns/subject·voice  p50    0.941  p99    2.317  worst   45.808  first    36.8 ms  gc   73   79.1 ms     895.9 kB/frame
+== round 7/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn^    N= 10000 V=2     0.970 ms/frame     49 ns/subject·voice  p50    0.841  p99    1.653  worst   14.820  first    29.6 ms  gc   73   62.0 ms     892.7 kB/frame
+== round 7/7 a7702546
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbp^    N= 10000 V=2     1.052 ms/frame     53 ns/subject·voice  p50    0.933  p99    1.775  worst   15.593  first    32.0 ms  gc   73   77.1 ms     900.8 kB/frame
