@@ -149,6 +149,12 @@ export class Lanes<I, O> implements Watcher {
   readonly copies: boolean[] = [];
   /** Whether every voice in the mix is on a lane, so a filled subject has nothing left to fold. */
   whole = false;
+  /**
+   * While not `whole`: whether a voice off lanes may reach any subject, one naming none; and by
+   * subject number, 1 where one naming its subjects may, else 0. All 0 while `whole`.
+   */
+  offAll = true;
+  off = new Uint8Array(0);
   cap = 0;
   epochs = 0;
   /** The latest epoch of a lane over every subject, which every subject meets on its next probe. */
@@ -288,7 +294,13 @@ export class Lanes<I, O> implements Watcher {
     this.per[slot * Per.SLOT + Per.GENERAL_PROBE] = 0;
     this.per[slot * Per.SLOT + Per.LANE_FILL] = 0;
     if (this.filling) this.late.push(slot);
+    this.off[slot] = this.whole ? 0 : 1;
     return slot;
+  }
+
+  /** Whether a subject the lanes filled has nothing left to fold: no voice off lanes reaches it. */
+  alone(slot: number): boolean {
+    return this.whole || (!this.offAll && this.off[slot] === 0);
   }
 
   release(slot: number): void {
@@ -308,6 +320,7 @@ export class Lanes<I, O> implements Watcher {
     if (!this.sought(slot)) return false;
     this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
     if (this.filling) this.late.push(slot);
+    this.off[slot] = this.whole ? 0 : 1;
     return true;
   }
 
@@ -542,6 +555,9 @@ export class Lanes<I, O> implements Watcher {
     this.owed.grow(cap);
     this.placed.grow(cap);
     this.unlinked = grown(this.unlinked, cap);
+    const off = new Uint8Array(cap);
+    off.set(this.off);
+    this.off = off;
     for (const ch of this.laned) ch.values = grown(ch.values, cap * ch.axes);
     this.cap = cap;
   }

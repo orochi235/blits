@@ -1,9 +1,9 @@
 // What a voice leaving the general path costs a crowd: N one-subject tweens read by `pull` each
 // frame, and every EVERY frames a stateful `fn` voice on `gain`, which the tweens do not write, is
 // cued on one subject for MS ms. Its cue takes it off lanes without a qualify, and since 2026-11-21
-// so does its end, which requalified every voice before. Prints, per form, the mean frame, and the mean of frames a voice ended on against
-// the rest (row `requalify-<form>-end`); `direct` times one `requalify` itself on the steady crowd,
-// in ms. Lines read as bench/medians.mjs reads frame.mjs's. Needs `npx tsc -b` first.
+// so does its end, which requalified every voice before. Prints, per form, the mean frame, and the
+// mean of frames a voice ended on and of the rest (rows `requalify-<form>-end` and `-rest`);
+// `direct` times one `requalify` itself on the steady crowd, in ms. Lines read as bench/medians.mjs reads frame.mjs's. Needs `npx tsc -b` first.
 //   node bench/requalify.mjs [N] [rounds] [forms...]   forms: quiet general direct
 // OUT=<file> appends one JSON line a form and round.
 import { appendFileSync } from 'node:fs';
@@ -98,7 +98,10 @@ for (const form of forms)
     if (form === 'direct') row('direct', res.us / 1000);
     else {
       row(form, res.ms);
-      if (res.ends > 0) row(`${form}-end`, res.endMs, `  rest ${f3(res.restMs)}  ends ${res.ends}`);
+      if (res.ends > 0) {
+        row(`${form}-end`, res.endMs, `  rest ${f3(res.restMs)}  ends ${res.ends}`);
+        row(`${form}-rest`, res.restMs);
+      }
     }
     if (OUT !== undefined) appendFileSync(OUT, `${JSON.stringify(res)}\n`);
   }

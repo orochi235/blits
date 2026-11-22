@@ -3,11 +3,11 @@ import type { Lanes } from './lanes.js';
 import { type Column, clampRun } from './pull.js';
 
 /**
- * For a `pull` of a list it read last time in the same order, with every voice on a lane, where
- * each position's remembered chain head was current when the mix's `relinks` read `since`: what
- * `prepare` and `writeLater` do for each subject from position `from`, while the subject reads
- * from the lanes and its head has not been made stale since; returns the first position that does
- * not, or the list's length.
+ * For a `pull` of a list it read last time in the same order, with no voice off lanes but those
+ * naming their subjects, where each position's remembered chain head was current when the mix's
+ * `relinks` read `since`: what `prepare` and `writeLater` do for each subject from position
+ * `from`, while the subject reads from the lanes alone and its head has not been made stale since;
+ * returns the first position that does not, or the list's length.
  */
 export function pullRun<I, O>(
   lanes: Lanes<I, O>,
@@ -21,7 +21,9 @@ export function pullRun<I, O>(
   version: number,
 ): number {
   const ready = lanes.filled(now, version) ? Begin.READY : lanes.begin(now, version);
-  if (ready !== Begin.READY || !lanes.whole) return from;
+  if (ready !== Begin.READY || (!lanes.whole && lanes.offAll)) return from;
+  // Off lanes, a voice naming its subjects leaves only those to the general path.
+  const off = lanes.whole ? null : lanes.off;
   const per = lanes.per;
   const fills = lanes.fills;
   const busy = lanes.busyFill;
@@ -58,7 +60,8 @@ export function pullRun<I, O>(
       (per[o + Per.FILLED] as number) >= busy ||
       per[o + Per.IDLE] !== 0 ||
       (per[o + Per.SEEN] as number) < wide ||
-      (owing && lanes.owes(slot))
+      (owing && lanes.owes(slot)) ||
+      (off !== null && off[slot] !== 0)
     )
       break;
     if (

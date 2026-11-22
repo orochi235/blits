@@ -134,12 +134,14 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   ends reads 0.52 ms, from 3.74 (`bench/runs/2026-11-21-requalify-reorder-ab.txt`, measured).
   Where its channel stays written, a channel it closed may open, so skipping needs the remaining
   writers shown off lanes for reasons of their own. Not built.
-- **[agent] While any voice plays off lanes, `pull` reads every subject one at a time.** One
-  stateful 40 ms voice on one subject, on a channel 10,000 crowded tweens do not write, cued every
-  tenth frame: the frames it does not end on average 0.29 ms against 0.17 with none cued (`general`
-  `rest` against `quiet`, `bench/runs/2026-11-21-requalify-baseline.txt`, measured), and it plays
-  in about three of those nine, so a frame it plays in costs more (inferred). The cause is inferred
-  from the code: `lanes.whole` is false while it plays, and `pullRun` reads nothing then.
+- **[agent] While a voice naming no subjects plays off lanes, every subject still reads one at a
+  time,** and `atRest` reads a subject from the lanes only while every voice is on one
+  (`restsLaned` asks `lanes.whole`, not `Lanes.alone`). Since 2026-11-21 a voice off lanes naming
+  its subjects sends only those to the general path: one 40 ms stateful voice cued every tenth
+  frame among 10,000 crowded tweens, the frames it does not end read 0.353 ms against 0.625 before
+  and 0.327 with none cued (studio, shared, 8 rounds, U 0,
+  `bench/runs/2026-11-21-offlane-named-ab.txt`, measured). Neither leftover is timed; a voice
+  over every subject off lanes may leave nothing for the lanes to save (inferred).
 - **[agent] Churn under other reorderings.** `pull` renumbers a swapped-in subject into the freed
   number, and since 2026-11-21 leaves a list shifted up by `splice` as numbered (`reorder-splice`
   9.73 to 0.60 ms a frame at 10,000 subjects, measured). Left: that 0.60 against 0.18 in order is
