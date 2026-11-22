@@ -1,0 +1,51 @@
+# studio (shared node, --quiet --max-cores 2): AB_EACH=1 AB_BENCH=bench/frame.mjs FRAMES=5000 bench/ab.sh 164d27f9 . 6 keys:10000:3 fn:10000:3; second half of the job is -bounded.txt: EVERY=1 MS=1e9 FRAMES=2000 LINEAGE_BENCH=requalify.mjs bench/lineage.sh 6 164d27f9 . -- "10000 1 within" (. = c19bc717)
+built 164d27f9 (164d27f99d7d8419041def3819fc3fd7827d4c2f)
+built the working tree
+== round 1/6 164d27f9
+ 1/1  keys       N= 10000 V=3     1.600 ms/frame     53 ns/subject·voice  p50    1.587  p99    1.903  worst    2.218  first    25.0 ms  gc   98    9.8 ms     161.9 kB/frame
+== round 1/6 164d27f9
+ 1/1  fn         N= 10000 V=3     4.531 ms/frame    151 ns/subject·voice  p50    4.440  p99    5.836  worst   16.647  first    31.4 ms  gc  398  313.1 ms    2431.8 kB/frame
+== round 1/6 .
+ 1/1  keys       N= 10000 V=3     1.652 ms/frame     55 ns/subject·voice  p50    1.680  p99    1.995  worst   21.411  first    26.6 ms  gc   98   10.4 ms     163.1 kB/frame
+== round 1/6 .
+ 1/1  fn         N= 10000 V=3     3.886 ms/frame    130 ns/subject·voice  p50    3.867  p99    4.803  worst   16.967  first    32.1 ms  gc  409  274.1 ms    2431.4 kB/frame
+== round 2/6 .
+ 1/1  keys       N= 10000 V=3     1.625 ms/frame     54 ns/subject·voice  p50    1.626  p99    1.948  worst    3.211  first    27.6 ms  gc   49    6.2 ms     162.7 kB/frame
+== round 2/6 .
+ 1/1  fn         N= 10000 V=3     3.859 ms/frame    129 ns/subject·voice  p50    3.803  p99    4.867  worst   19.454  first    32.1 ms  gc  399  278.4 ms    2431.7 kB/frame
+== round 2/6 164d27f9
+ 1/1  keys       N= 10000 V=3     1.463 ms/frame     49 ns/subject·voice  p50    1.399  p99    1.837  worst    2.056  first    24.1 ms  gc   49    5.6 ms     162.6 kB/frame
+== round 2/6 164d27f9
+ 1/1  fn         N= 10000 V=3     3.696 ms/frame    123 ns/subject·voice  p50    3.548  p99    4.704  worst   18.112  first    30.6 ms  gc  398  254.1 ms    2431.9 kB/frame
+== round 3/6 164d27f9
+ 1/1  keys       N= 10000 V=3     1.576 ms/frame     53 ns/subject·voice  p50    1.568  p99    1.870  worst    3.905  first    28.9 ms  gc   98   10.1 ms     161.9 kB/frame
+== round 3/6 164d27f9
+ 1/1  fn         N= 10000 V=3     3.801 ms/frame    127 ns/subject·voice  p50    3.738  p99    4.840  worst   16.575  first    31.8 ms  gc  398  272.0 ms    2432.0 kB/frame
+== round 3/6 .
+ 1/1  keys       N= 10000 V=3     1.496 ms/frame     50 ns/subject·voice  p50    1.447  p99    1.856  worst    6.697  first    29.1 ms  gc   98    8.7 ms     163.1 kB/frame
+== round 3/6 .
+ 1/1  fn         N= 10000 V=3    11.442 ms/frame    381 ns/subject·voice  p50    5.232  p99   91.572  worst  179.287  first    31.4 ms  gc  399 3436.2 ms    2430.5 kB/frame
+== round 4/6 .
+ 1/1  keys       N= 10000 V=3     4.088 ms/frame    136 ns/subject·voice  p50    1.948  p99   40.505  worst  112.765  first   143.8 ms  gc   49  143.4 ms     162.0 kB/frame
+== round 4/6 .
+ 1/1  fn         N= 10000 V=3     6.109 ms/frame    204 ns/subject·voice  p50    3.324  p99   51.546  worst  161.644  first    71.1 ms  gc  193 1272.0 ms    2433.3 kB/frame
+== round 4/6 164d27f9
+ 1/1  keys       N= 10000 V=3     1.920 ms/frame     64 ns/subject·voice  p50    1.827  p99    3.625  worst   46.123  first    28.0 ms  gc   49    6.6 ms     162.7 kB/frame
+== round 4/6 164d27f9
+ 1/1  fn         N= 10000 V=3     4.660 ms/frame    155 ns/subject·voice  p50    4.461  p99    6.813  worst   48.759  first    36.8 ms  gc  399  358.0 ms    2431.6 kB/frame
+== round 5/6 164d27f9
+ 1/1  keys       N= 10000 V=3     1.695 ms/frame     56 ns/subject·voice  p50    1.695  p99    2.059  worst    2.362  first    27.1 ms  gc   98   10.3 ms     161.6 kB/frame
+== round 5/6 164d27f9
+ 1/1  fn         N= 10000 V=3     3.890 ms/frame    130 ns/subject·voice  p50    3.849  p99    4.916  worst   15.998  first    32.3 ms  gc  399  262.3 ms    2430.7 kB/frame
+== round 5/6 .
+ 1/1  keys       N= 10000 V=3     1.714 ms/frame     57 ns/subject·voice  p50    1.723  p99    2.273  worst    5.338  first    26.8 ms  gc   98   11.1 ms     162.3 kB/frame
+== round 5/6 .
+ 1/1  fn         N= 10000 V=3     3.439 ms/frame    115 ns/subject·voice  p50    3.384  p99    4.689  worst   22.856  first    37.2 ms  gc  399  267.3 ms    2429.5 kB/frame
+== round 6/6 .
+ 1/1  keys       N= 10000 V=3     1.705 ms/frame     57 ns/subject·voice  p50    1.691  p99    2.109  worst    8.903  first    28.5 ms  gc   98   11.8 ms     161.6 kB/frame
+== round 6/6 .
+ 1/1  fn         N= 10000 V=3     3.933 ms/frame    131 ns/subject·voice  p50    3.883  p99    4.941  worst   15.490  first    32.0 ms  gc  399  266.6 ms    2431.4 kB/frame
+== round 6/6 164d27f9
+ 1/1  keys       N= 10000 V=3     1.707 ms/frame     57 ns/subject·voice  p50    1.657  p99    2.925  worst   61.830  first    24.4 ms  gc   49    5.9 ms     163.5 kB/frame
+== round 6/6 164d27f9
+ 1/1  fn         N= 10000 V=3     4.177 ms/frame    139 ns/subject·voice  p50    3.789  p99   13.534  worst   71.170  first    36.2 ms  gc  408  511.1 ms    2430.1 kB/frame

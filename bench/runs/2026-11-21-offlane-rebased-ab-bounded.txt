@@ -1,0 +1,39 @@
+# studio (shared node, --quiet --max-cores 2): AB_EACH=1 AB_BENCH=bench/frame.mjs FRAMES=5000 bench/ab.sh 164d27f9 . 6 keys:10000:3 fn:10000:3; then EVERY=1 MS=1e9 FRAMES=2000 LINEAGE_BENCH=requalify.mjs bench/lineage.sh 6 164d27f9 . -- "10000 1 within" (. = c19bc717) (this file: the second half)
+built 164d27f9
+built .
+== round 1/6 164d27f9
+ 1/1  requalify-within      N=10000 V=1    1.987 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.987 ms/frame
+== round 1/6 .
+ 1/1  requalify-within      N=10000 V=1    0.400 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.400 ms/frame
+== round 2/6 .
+ 1/1  requalify-within      N=10000 V=1    0.432 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.432 ms/frame
+== round 2/6 164d27f9
+ 1/1  requalify-within      N=10000 V=1    1.899 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.899 ms/frame
+== round 3/6 164d27f9
+ 1/1  requalify-within      N=10000 V=1    2.091 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    2.091 ms/frame
+== round 3/6 .
+ 1/1  requalify-within      N=10000 V=1    0.349 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.349 ms/frame
+== round 4/6 .
+ 1/1  requalify-within      N=10000 V=1    0.343 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.343 ms/frame
+== round 4/6 164d27f9
+ 1/1  requalify-within      N=10000 V=1    1.900 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.900 ms/frame
+== round 5/6 164d27f9
+ 1/1  requalify-within      N=10000 V=1    2.049 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    2.049 ms/frame
+== round 5/6 .
+ 1/1  requalify-within      N=10000 V=1    0.354 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.354 ms/frame
+== round 6/6 .
+ 1/1  requalify-within      N=10000 V=1    0.342 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.342 ms/frame
+== round 6/6 164d27f9
+ 1/1  requalify-within      N=10000 V=1    2.042 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    2.042 ms/frame
