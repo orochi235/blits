@@ -103,7 +103,7 @@ export class Lanes<I, O> implements Watcher {
   crowds: Crowd<I, O>[] = [];
   readonly seats = new Map<number, Seat<I, O>>();
   /** Which crowd voices' rows are placed on each subject. */
-  readonly placed = new Placed();
+  readonly placed = new Placed<Voice<I, O>>();
   /**
    * By subject number, the mix's `relinks` when the subject's chain was last made stale by itself,
    * so `pull` tells a head it remembers is stale without reading the head.
@@ -546,13 +546,20 @@ export class Lanes<I, O> implements Watcher {
     this.live--;
     for (const lane of this.lanes) lane.remove(slot);
     const placed = this.placed;
-    for (let id = placed.any(slot); id !== 0; id = placed.any(slot)) {
-      const s = this.seats.get(id);
-      if (s !== undefined && s.crowd.list[s.row] === slot) unplace(this, s.crowd, s.row);
-      else placed.remove(slot, id);
+    for (let v = placed.any(slot); v !== undefined; v = placed.any(slot)) {
+      const s = this.seatFor(v);
+      if (s !== undefined && s.crowd.list[s.row] === slot && s.crowd.voices[s.row] === v)
+        unplace(this, s.crowd, s.row);
+      else placed.remove(slot, v);
     }
     if (slot < this.cap) this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
     this.subjects[slot] = undefined;
+  }
+
+  /** `voice`'s seat here: the one it holds where it is these lanes', else the one kept by its id. */
+  seatFor(voice: Voice<I, O>): Seat<I, O> | undefined {
+    const s = voice.seat;
+    return s !== null && s.lanes === this ? s : this.seats.get(voice.id);
   }
 
   grow(size: number): void {
