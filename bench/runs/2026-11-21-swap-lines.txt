@@ -1,0 +1,208 @@
+# msb-uai, 4eb821a3: 2 x FRAMES=5000 node --cpu-prof --cpu-prof-interval 100 bench/frame.mjs swap, then TOP=14 node bench/lines.mjs on relink, fill and fold functions
+ 1/1  swap       N= 10000 V=1     2.202 ms/frame    220 ns/subject·voice  p50    2.129  p99    3.276  worst   14.424  first    59.7 ms  gc  252  127.8 ms    2080.4 kB/frame
+ 1/1  swap       N= 10000 V=1     2.310 ms/frame    231 ns/subject·voice  p50    2.237  p99    3.419  worst   14.061  first    60.2 ms  gc  252  129.2 ms    2079.5 kB/frame
+patch  relink.js
+  2.7%     40  while (at !== null && at.voice.id < voice.id) {
+  2.3%     45  const want = mix.linkable(voice, subject, slot);
+  1.2%     34  for (let k = version - this.from; k < list.length; k++) {
+  0.7%     35  const voice = list[k];
+  0.4%     36  if (voice === null || voice === undefined)
+  0.4%     31  if (!(version >= this.from))
+  0.4%     44  const here = at !== null && at.voice === voice ? at : null;
+  0.3%     42  at = at.next;
+  0.2%     32  return undefined;
+  0.2%     30  patch(head, version, mix, subject, slot) {
+  0.0%     46  if (want === here)
+  0.0%     59  return head;
+relink  chain.js
+  0.9%     28  : this.steps.patch(was.voice === null ? null : was, was.version, this, subject, slot);
+  0.5%     24  const sought = was !== undefined && slot >= 0 && lanes?.renew(slot) === true;
+  0.3%     20  const slot = was !== undefined ? was.slot : lanes !== null ? lanes.number(subject) : -1;
+  0.2%     32  head.version = this.version;
+  0.2%     33  if (was !== undefined && was !== head) {
+  0.2%     26  let first = was === undefined || sought
+  0.2%     43  if (was !== head) {
+  0.1%     31  const head = first ?? stub();
+  0.1%     30  first = linkAll(this, subject, slot, was ?? null);
+  0.1%     42  head.slot = slot;
+  0.1%     36  was.roles = null;
+  0.0%     21  if (was === undefined && slot >= 0)
+  0.0%     19  const lanes = this.lanes;
+  0.0%     46  this.chains.set(subject, head);
+linkable  chain.js
+  2.0%    113  this.share.sight(voice, slot, this.lanes.cap);
+  0.9%    110  if (voice.sharing && this.share.everyoneOf(this, voice) !== null) {
+  0.5%    107  if (!voice.linked)
+  0.3%    112  if (slot >= 0)
+  0.0%    116  const held = this.held(voice, subject, slot, guess);
+  0.0%    117  return held.reaches ? held : null;
+  0.0%    108  return null;
+  0.0%      1  import { wholeRecord } from './record.js';
+sight  everyone.js
+  1.2%     94  voice.sighted = setBit(bits, slot, (cap >>> 5) + 1);
+  0.5%     92  if (hasBit(bits, slot))
+  0.2%     95  voice.seen++;
+  0.0%     96  }
+  0.0%     93  return;
+one  fill.js
+  2.7%    312  keepProbed(data, o, this.per, slot * 6 /* Per.SLOT */, this.fills);
+  0.6%    366  this.rec = lane.records[p] ?? null;
+  0.4%    322  : raw > voice.span
+  0.4%    334  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  0.4%    391  if (Number.isNaN(rec.probed) && !this.meeting && !lane.every) {
+  0.3%    342  const since = data[o + 1 /* Row.SINCE */];
+  0.3%    305  export function one(lane, p, slot) {
+  0.3%    306  const host = this.host;
+  0.2%    313  if (this.lately >= 0 && this.unread(slot))
+  0.2%    315  const delay = data[o + 0 /* Row.DELAY */];
+  0.2%    401  return true;
+  0.1%    349  if (typeof voice.spec.weight === 'function') {
+  0.1%    396  arg[1 /* Arg.ELAPSED */] = elapsed;
+  0.1%    403  arg[2 /* Arg.PHASE */] = lane.phase;
+call  fill.js
+  0.8%    480  host.ready(voice, subject, rec);
+  0.4%    486  if (voice.unchecked)
+  0.4%    489  rec.delta = delta;
+  0.3%    485  const delta = voice.patch.at(phase, subject, voice.setting);
+  0.2%    462  const subject = this.subjectAt(slot);
+  0.2%    466  if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
+  0.2%    497  this.foldDelta(chans, slot, delta);
+  0.2%    463  if (subject === absent)
+  0.2%    494  if (reading.kept !== kept && !voice.keeping)
+  0.2%    479  const kept = reading.kept;
+  0.2%    471  if (silent(voice, w)) {
+  0.2%    492  if (this.keeps)
+  0.1%    490  rec.probed = this.now;
+  0.1%    481  if (this.keeps)
+ready  hosts.js
+  0.3%     84  voice.setting.weight = arg[0 /* Arg.WEIGHT */];
+  0.2%     85  mix.sending.voice = voice;
+  0.1%     86  mix.sending.subject = subject;
+  0.1%     82  const arg = mix.lanes.arg;
+  0.0%     87  },
+runEveryone  fill.js
+  1.4%    293  this.one(lane, p, slot);
+  0.3%    290  for (let p = 0; p < list.length; p++) {
+  0.2%    291  const slot = list[p];
+  0.1%    295  if (voice.keeping)
+  0.0%    292  open(voice, rec, slot);
+  0.0%    297  shut(voice, rec, slot, cap);
+  0.0%    299  }
+  0.0%    286  const voice = lane.voice;
+  0.0%    285  export function runEveryone(lane) {
+open  
+  0.0%    779  
+  0.0%    780  
+open  qualify.js
+  0.0%    296  export function open(lanes, v) {
+open  everyone.js
+  0.4%    126  if (stamps === null || o >= stamps.length) {
+  0.3%    125  rec.stepped = rec.since;
+  0.2%    134  rec.seeks = stamps[o + 1 /* Stamp.SEEKS */];
+  0.2%    133  rec.probed = at;
+  0.2%    120  if (voice.built !== null)
+  0.1%    132  const at = stamps[o + 0 /* Stamp.PROBED */];
+  0.0%    122  const stamps = voice.stamps;
+  0.0%    129  rec.delta = null;
+  0.0%    123  const o = slot * 2 /* Stamp.SIZE */;
+  0.0%    138  : (voice.deltas[slot] ?? null);
+  0.0%    136  rec.delta = Number.isNaN(at)
+  0.0%    139  }
+shut  everyone.js
+  0.5%    155  voice.deltas[slot] = rec.delta;
+  0.4%    153  stamps[o + 0 /* Stamp.PROBED */] = rec.probed;
+  0.2%    146  if (stamps === null || o >= stamps.length) {
+  0.1%    144  let stamps = voice.stamps;
+  0.1%    154  stamps[o + 1 /* Stamp.SEEKS */] = rec.seeks;
+  0.1%    145  const o = slot * 2 /* Stamp.SIZE */;
+  0.0%    142  if (voice.built !== null)
+  0.0%    149  stamps = grown(stamps, Math.max(slot + 1, cap) * 2 /* Stamp.SIZE */, Number.NaN);
+  0.0%    156  }
+  0.0%    143  return;
+  0.0%    151  voice.deltas ??= [];
+opened  qualify.js
+  1.3%    388  placeAll(lanes, lane);
+  0.0%    384  lane.epoch = open(lanes, v);
+  0.0%    386  lane.reserve(lanes.live, lanes.cap);
+  0.0%    387  if (placesAll(lanes, lane))
+placeAll  qualify.js
+  0.1%    416  if (lane.idle)
+  0.1%    413  if (!numbers.has(slot))
+  0.0%    412  for (let slot = 0; slot < size; slot++) {
+  0.0%    408  function placeAll(lanes, lane) {
+  0.0%    415  lane.add(slot, rec);
+  0.0%    409  const rec = lane.voice.everyone;
+add  departed.js
+  0.0%     24  for (let i = 0; i < voiceMarks.length; i++) {
+  0.0%     56  this.all.add(d);
+  0.0%     26  marks[mark] = markOf(mix, voice, mark);
+  0.0%     42  const scope = this.scopeOf(d.score, d.owner);
+  0.0%     37  tags: voice.spec.tags ?? none,
+add  lane.js
+  0.5%    189  this.records[p] = held;
+  0.4%    190  this.deltas[p] = null;
+  0.3%    182  this.data[o + 0 /* Row.DELAY */] = held.delay;
+  0.2%    172  this.list.push(slot);
+  0.2%    183  this.data[o + 1 /* Row.SINCE */] = held.shown;
+  0.2%    176  if ((p + 1) * 8 /* Row.STRIDE */ > this.data.length) {
+  0.2%    173  if (slot >= this.at.length)
+  0.1%    175  this.at[slot] = p + 1;
+  0.1%    186  this.data[o + 4 /* Row.MSLOT */] = -1;
+  0.1%    171  const p = this.list.length;
+  0.1%    187  this.data[o + 5 /* Row.SAMPLED */] = -1;
+  0.1%    184  this.data[o + 2 /* Row.WEIGHT */] = 0;
+  0.1%    185  this.data[o + 3 /* Row.PROBED */] = 0;
+  0.0%    174  this.at = grownInts(this.at, Math.max(slot + 1, this.at.length * 2, 64));
+add  channels.js
+  0.0%     19  const add = (a, b) => a + b;
+meet  meet.js
+  0.5%     78  for (let i = dense.length - 1; i >= 0; i--) {
+  0.4%     71  const seen = lanes.per[slot * 6 /* Per.SLOT */ + 1 /* Per.SEEN */];
+  0.2%    117  return lane;
+  0.2%     70  export function meet(lanes, slot, subject, head, lane) {
+  0.1%     80  if (lane.epoch <= from)
+  0.1%     79  const lane = dense[i];
+  0.1%     76  lanes.metCrowd = false;
+  0.1%     72  const from = seen < 0 ? -1 - seen : seen;
+  0.0%     73  lanes.per[slot * 6 /* Per.SLOT */ + 1 /* Per.SEEN */] = lanes.epochs;
+  0.0%     87  lane.add(slot, held);
+  0.0%     96  for (const voice of naming) {
+  0.0%     84  const held = lanes.host.meet(lane.voice, subject, head, slot);
+  0.0%     97  const lane = lanes.byId.get(voice.id);
+  0.0%     94  const naming = seen < 0 ? lanes.host.naming(subject) : undefined;
+meet  hosts.js
+  0.2%     61  return mix.held(voice, subject, slot);
+  0.0%     58  for (let held = head; held !== null; held = held.next)
+  0.0%     57  meet: (voice, subject, head, slot) => {
+foldWith  fold.js
+  1.8%    206  if (this.detours === 0) {
+  1.5%    174  if (skip?.[i])
+  1.3%    173  for (let i = 0; i < this.names.length; i++) {
+  0.6%    187  if (Array.isArray(held) && held !== rest && held.length === rest.length) {
+  0.3%    172  const skip = laned ? lanes.copies : null;
+  0.3%    200  l.copy(head.slot, pose);
+  0.3%    181  if (pose[key] !== undefined)
+  0.3%    169  export function foldWith(subject, out, head, laned, dry, except) {
+  0.2%    176  const channel = this.channels[i];
+  0.2%    204  return pose;
+  0.1%    194  if (head === null)
+  0.1%    203  else if (l.whole)
+  0.1%    171  const lanes = this.lanes;
+  0.1%    177  const rest = channel.rest;
+linked  fold.js
+  1.0%    165  head !== null && lanes?.prepare(head.slot, subject, this.version, head) === true;
+  0.2%    154  lanes.laned.length === 0 &&
+  0.1%    164  this.linkedLaned =
+  0.1%    150  const lanes = this.lanes;
+  0.1%    155  lanes.frameAt === this.now &&
+  0.1%    152  if (head !== null &&
+  0.0%    149  const head = Number.isNaN(this.now) ? null : this.chain(subject);
+probe  mixer.js
+  0.5%    465  const folded = this.foldWith(subject, out ?? this.pose(), head, this.linkedLaned, false);
+  0.3%    467  this.keep(subject, pose, out, head);
+  0.2%    462  probe(subject, out) {
+  0.2%    466  const pose = (this.bounded.length === 0 ? folded : this.clamp(folded));
+  0.2%    471  return pose;
+  0.2%    463  this.looked = true;
+  0.1%    469  if (this.restStamps !== null && !(this.linkedLaned && this.restsLaned()))
+  0.0%    464  const head = this.linked(subject);
