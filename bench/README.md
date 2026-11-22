@@ -20,7 +20,7 @@ the machine being used.
 - `bench/start.mjs` times cueing N one-subject voices and the first two frames; `LINEAGE_BENCH=start.mjs
   bench/lineage.sh` compares builds on it, and `medians.mjs` reads it as `<form>-first` rows.
   `PROF=<dir>` profiles the first frame alone, read with `bench/profsum.mjs` (`INCL=1` for
-  inclusive time), `bench/proftree.mjs` and `bench/lines.mjs`; `ALLOC=1` samples what it allocates.
+  inclusive time, `UNDER=<function>` for only the samples under it, such as `UNDER=pull`), `bench/proftree.mjs` and `bench/lines.mjs`; `ALLOC=1` samples what it allocates.
 - `bench/requalify.mjs` times the frame a voice off lanes ends among a crowd, and `requalify`
   itself; `bench/reorder.mjs` times `pull` over a list in another order than its numbers,
   `splice` and swap-remove churn among them. Both run under `LINEAGE_BENCH`, and `medians.mjs`

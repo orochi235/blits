@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Reading motion patches retargeted every frame takes about a third less time without `history`,
+  since committing a change no longer builds the stretch it replaces only to let it go: 5,000
+  springs, about 2,900 of them retargeted a frame, read through `pull` in 0.86 ms from 1.39, and
+  1.07 from 1.66 on lanes (teitou).
 - A host probing into its own object under `retargets: true` pays about 60% less for it: a
   10,000-subject probe frame of `tweens` costs 0.745 ms against 0.608 without the option, where it
   cost 0.951, and of `keys` 1.172 against 1.033, where it cost 1.372 (teitou).
