@@ -57,6 +57,9 @@ DevTools extension's are in their READMEs.
   to be deprecated: klieg's lighting and wod's transitions are unbounded by design.
 - **`numeric@1` kept its version when lanes took `color({ lerp: 'oklch' })`** (2026-10-25): an older
   copy folds that channel as `'own'`, which is correct.
+- **The finder commit `4350a86` keeps its 10–13% cost on the glow rows** (accepted 2026-10-29;
+  re-measured 2026-11-21). Profiles, GC traces, pretenuring flags and record layout were all ruled
+  out (`bench/README.md`, "Tried and backed out"); no lead is left.
 
 ## Releases
 
