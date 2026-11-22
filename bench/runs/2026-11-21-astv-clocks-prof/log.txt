@@ -1,0 +1,13 @@
+# teitou astv eeee2a36 PROF=20 MOTION_FLAGS='--frames 200000' bench/astv-motion.sh 3 rounds progress clocks 0.7.1 0.8.1 b2e157dc
+built 0.7.1 (npm)
+built 0.8.1 (npm)
+built b2e157dc (b2e157dc5d00510ec04afe20ff449606304d1aaa)
+1/9 round 1 build 0.7.1  1/1  mean      1.0µs  p50      0.5µs  p95      2.7µs  p99      9.9µs  heap    9.3MB  progress clocks, restarted every 1 s
+2/9 round 1 build 0.8.1  1/1  mean      1.5µs  p50      0.6µs  p95      2.9µs  p99     14.5µs  heap   21.7MB  progress clocks, restarted every 1 s
+3/9 round 1 build b2e157dc  1/1  mean      1.3µs  p50      0.6µs  p95      4.1µs  p99     15.3µs  heap   31.4MB  progress clocks, restarted every 1 s
+4/9 round 2 build 0.8.1  1/1  mean      1.2µs  p50      0.5µs  p95      3.6µs  p99     12.5µs  heap   23.4MB  progress clocks, restarted every 1 s
+5/9 round 2 build b2e157dc  1/1  mean      1.3µs  p50      0.5µs  p95      4.2µs  p99     14.3µs  heap   24.9MB  progress clocks, restarted every 1 s
+6/9 round 2 build 0.7.1  1/1  mean      0.9µs  p50      0.5µs  p95      2.5µs  p99      9.8µs  heap   38.6MB  progress clocks, restarted every 1 s
+7/9 round 3 build b2e157dc  1/1  mean      1.3µs  p50      0.5µs  p95      4.4µs  p99     15.6µs  heap   31.7MB  progress clocks, restarted every 1 s
+8/9 round 3 build 0.7.1  1/1  mean      1.1µs  p50      0.5µs  p95      4.1µs  p99     12.9µs  heap    9.0MB  progress clocks, restarted every 1 s
+9/9 round 3 build 0.8.1  1/1  mean      1.1µs  p50      0.5µs  p95      3.6µs  p99     12.8µs  heap   29.9MB  progress clocks, restarted every 1 s

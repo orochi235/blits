@@ -1,0 +1,156 @@
+# teitou astv eeee2a36 bench/astv-motion.sh 10 rounds glides,clocks 0.7.1 0.8.0 0.8.1 1.2.0 1.4.0 b2e157dc
+npm warn install-scripts 26 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   wake@0.1.0 (prepare: npm run build)
+npm warn install-scripts   @tree-sitter-grammars/tree-sitter-lua@0.4.1 (install: node-gyp-build)
+npm warn install-scripts   @tree-sitter-grammars/tree-sitter-toml@0.7.0 (install: node-gyp-build)
+npm warn install-scripts   @tree-sitter-grammars/tree-sitter-yaml@0.7.1 (install: node-gyp-build)
+npm warn install-scripts   esbuild@0.28.2 (postinstall: node install.js)
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts   tree-sitter-bash@0.25.1 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-c@0.24.1 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-c-sharp@0.23.5 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-cpp@0.23.4 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-c@0.23.6 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-css@0.25.0 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-go@0.25.0 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-html@0.23.2 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-java@0.23.5 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-javascript@0.25.0 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-json@0.24.8 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-make@1.1.1 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-objc@3.0.2 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-c@0.23.6 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-php@0.24.2 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-python@0.25.0 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-ruby@0.23.1 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-rust@0.24.0 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-typescript@0.23.2 (install: node-gyp-build)
+npm warn install-scripts   tree-sitter-javascript@0.23.1 (install: node-gyp-build)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+built 0.7.1 (npm)
+built 0.8.0 (npm)
+built 0.8.1 (npm)
+built 1.2.0 (npm)
+built 1.4.0 (npm)
+built b2e157dc (b2e157dc5d00510ec04afe20ff449606304d1aaa)
+1/120 round 1 build 0.7.1  1/1  mean      8.0µs  p50      4.5µs  p95     19.5µs  p99     53.2µs  heap   22.5MB  glides, 20 documents every 500 ms
+2/120 round 1 build 0.7.1  1/1  mean      1.3µs  p50      0.6µs  p95      2.2µs  p99     14.1µs  heap   -1.3MB  progress clocks, restarted every 1 s
+3/120 round 1 build 0.8.0  1/1  mean     15.6µs  p50     10.5µs  p95     43.1µs  p99     70.9µs  heap   33.8MB  glides, 20 documents every 500 ms
+4/120 round 1 build 0.8.0  1/1  mean      2.4µs  p50      1.3µs  p95      4.5µs  p99     21.1µs  heap   -0.1MB  progress clocks, restarted every 1 s
+5/120 round 1 build 0.8.1  1/1  mean     10.8µs  p50      5.9µs  p95     35.9µs  p99     60.7µs  heap   33.3MB  glides, 20 documents every 500 ms
+6/120 round 1 build 0.8.1  1/1  mean      1.6µs  p50      0.7µs  p95      3.5µs  p99     19.5µs  heap    0.2MB  progress clocks, restarted every 1 s
+7/120 round 1 build 1.2.0  1/1  mean     10.6µs  p50      6.0µs  p95     32.0µs  p99     57.5µs  heap   29.5MB  glides, 20 documents every 500 ms
+8/120 round 1 build 1.2.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.6µs  p99     21.2µs  heap    0.6MB  progress clocks, restarted every 1 s
+9/120 round 1 build 1.4.0  1/1  mean     11.2µs  p50      5.8µs  p95     34.5µs  p99     66.7µs  heap   28.5MB  glides, 20 documents every 500 ms
+10/120 round 1 build 1.4.0  1/1  mean      1.6µs  p50      0.7µs  p95      2.9µs  p99     22.1µs  heap    0.3MB  progress clocks, restarted every 1 s
+11/120 round 1 build b2e157dc  1/1  mean     10.1µs  p50      6.0µs  p95     34.8µs  p99     57.0µs  heap   30.2MB  glides, 20 documents every 500 ms
+12/120 round 1 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      3.5µs  p99     24.8µs  heap    0.0MB  progress clocks, restarted every 1 s
+13/120 round 2 build 0.8.0  1/1  mean     10.7µs  p50      6.6µs  p95     33.2µs  p99     56.3µs  heap   29.0MB  glides, 20 documents every 500 ms
+14/120 round 2 build 0.8.0  1/1  mean      2.3µs  p50      1.3µs  p95      5.0µs  p99     21.5µs  heap    0.3MB  progress clocks, restarted every 1 s
+15/120 round 2 build 0.8.1  1/1  mean     11.0µs  p50      6.3µs  p95     35.4µs  p99     60.5µs  heap   32.6MB  glides, 20 documents every 500 ms
+16/120 round 2 build 0.8.1  1/1  mean      1.6µs  p50      0.7µs  p95      2.9µs  p99     18.2µs  heap    0.6MB  progress clocks, restarted every 1 s
+17/120 round 2 build 1.2.0  1/1  mean     11.1µs  p50      6.2µs  p95     31.7µs  p99     57.7µs  heap   28.5MB  glides, 20 documents every 500 ms
+18/120 round 2 build 1.2.0  1/1  mean      1.8µs  p50      0.8µs  p95      4.2µs  p99     23.8µs  heap   -0.1MB  progress clocks, restarted every 1 s
+19/120 round 2 build 1.4.0  1/1  mean     10.5µs  p50      5.6µs  p95     32.5µs  p99     57.6µs  heap   30.4MB  glides, 20 documents every 500 ms
+20/120 round 2 build 1.4.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.1µs  p99     23.2µs  heap   14.3MB  progress clocks, restarted every 1 s
+21/120 round 2 build b2e157dc  1/1  mean     11.2µs  p50      6.8µs  p95     35.0µs  p99     60.0µs  heap   31.5MB  glides, 20 documents every 500 ms
+22/120 round 2 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      3.2µs  p99     24.9µs  heap    0.3MB  progress clocks, restarted every 1 s
+23/120 round 2 build 0.7.1  1/1  mean     10.9µs  p50      6.0µs  p95     27.9µs  p99     62.5µs  heap   27.0MB  glides, 20 documents every 500 ms
+24/120 round 2 build 0.7.1  1/1  mean      1.2µs  p50      0.7µs  p95      2.5µs  p99     15.4µs  heap   13.5MB  progress clocks, restarted every 1 s
+25/120 round 3 build 0.8.1  1/1  mean     12.7µs  p50      6.3µs  p95     43.5µs  p99     78.7µs  heap   21.3MB  glides, 20 documents every 500 ms
+26/120 round 3 build 0.8.1  1/1  mean      1.7µs  p50      0.7µs  p95      3.9µs  p99     20.9µs  heap    0.6MB  progress clocks, restarted every 1 s
+27/120 round 3 build 1.2.0  1/1  mean     10.1µs  p50      6.0µs  p95     35.5µs  p99     58.9µs  heap   30.7MB  glides, 20 documents every 500 ms
+28/120 round 3 build 1.2.0  1/1  mean      1.8µs  p50      0.7µs  p95      4.3µs  p99     25.4µs  heap    0.2MB  progress clocks, restarted every 1 s
+29/120 round 3 build 1.4.0  1/1  mean     10.4µs  p50      6.2µs  p95     34.6µs  p99     60.0µs  heap   29.8MB  glides, 20 documents every 500 ms
+30/120 round 3 build 1.4.0  1/1  mean      1.7µs  p50      0.8µs  p95      3.3µs  p99     22.7µs  heap    0.4MB  progress clocks, restarted every 1 s
+31/120 round 3 build b2e157dc  1/1  mean     10.6µs  p50      6.1µs  p95     36.7µs  p99     58.2µs  heap   30.6MB  glides, 20 documents every 500 ms
+32/120 round 3 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      2.9µs  p99     23.0µs  heap    0.3MB  progress clocks, restarted every 1 s
+33/120 round 3 build 0.7.1  1/1  mean     11.9µs  p50      6.2µs  p95     28.4µs  p99     61.3µs  heap   26.9MB  glides, 20 documents every 500 ms
+34/120 round 3 build 0.7.1  1/1  mean      1.2µs  p50      0.6µs  p95      2.4µs  p99     14.8µs  heap   13.4MB  progress clocks, restarted every 1 s
+35/120 round 3 build 0.8.0  1/1  mean     14.6µs  p50      8.6µs  p95     47.3µs  p99     79.0µs  heap   31.3MB  glides, 20 documents every 500 ms
+36/120 round 3 build 0.8.0  1/1  mean      2.3µs  p50      1.3µs  p95      4.4µs  p99     18.5µs  heap   -0.3MB  progress clocks, restarted every 1 s
+37/120 round 4 build 1.2.0  1/1  mean      9.9µs  p50      6.0µs  p95     32.9µs  p99     56.3µs  heap   30.4MB  glides, 20 documents every 500 ms
+38/120 round 4 build 1.2.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.3µs  p99     21.1µs  heap    0.3MB  progress clocks, restarted every 1 s
+39/120 round 4 build 1.4.0  1/1  mean     10.2µs  p50      6.1µs  p95     33.7µs  p99     55.9µs  heap   30.8MB  glides, 20 documents every 500 ms
+40/120 round 4 build 1.4.0  1/1  mean      1.7µs  p50      0.7µs  p95      3.7µs  p99     22.9µs  heap    0.2MB  progress clocks, restarted every 1 s
+41/120 round 4 build b2e157dc  1/1  mean     10.0µs  p50      6.0µs  p95     34.8µs  p99     56.8µs  heap   30.1MB  glides, 20 documents every 500 ms
+42/120 round 4 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      3.2µs  p99     24.5µs  heap    0.3MB  progress clocks, restarted every 1 s
+43/120 round 4 build 0.7.1  1/1  mean     10.9µs  p50      6.5µs  p95     29.4µs  p99     64.5µs  heap   29.7MB  glides, 20 documents every 500 ms
+44/120 round 4 build 0.7.1  1/1  mean      1.3µs  p50      0.6µs  p95      2.3µs  p99     13.8µs  heap   -0.8MB  progress clocks, restarted every 1 s
+45/120 round 4 build 0.8.0  1/1  mean     15.1µs  p50     10.7µs  p95     44.1µs  p99     69.7µs  heap   32.6MB  glides, 20 documents every 500 ms
+46/120 round 4 build 0.8.0  1/1  mean      2.3µs  p50      1.3µs  p95      5.0µs  p99     19.8µs  heap   -0.4MB  progress clocks, restarted every 1 s
+47/120 round 4 build 0.8.1  1/1  mean     11.1µs  p50      6.2µs  p95     35.6µs  p99     59.0µs  heap   30.0MB  glides, 20 documents every 500 ms
+48/120 round 4 build 0.8.1  1/1  mean      1.6µs  p50      0.7µs  p95      3.3µs  p99     16.9µs  heap    0.3MB  progress clocks, restarted every 1 s
+49/120 round 5 build 1.4.0  1/1  mean      9.8µs  p50      6.0µs  p95     32.7µs  p99     57.5µs  heap   30.0MB  glides, 20 documents every 500 ms
+50/120 round 5 build 1.4.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.2µs  p99     21.2µs  heap    0.0MB  progress clocks, restarted every 1 s
+51/120 round 5 build b2e157dc  1/1  mean     11.7µs  p50      6.7µs  p95     38.8µs  p99     65.0µs  heap   30.5MB  glides, 20 documents every 500 ms
+52/120 round 5 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      2.8µs  p99     23.8µs  heap   -0.0MB  progress clocks, restarted every 1 s
+53/120 round 5 build 0.7.1  1/1  mean     10.7µs  p50      6.0µs  p95     29.4µs  p99     61.2µs  heap   29.7MB  glides, 20 documents every 500 ms
+54/120 round 5 build 0.7.1  1/1  mean      1.3µs  p50      0.6µs  p95      3.0µs  p99     13.5µs  heap   -1.2MB  progress clocks, restarted every 1 s
+55/120 round 5 build 0.8.0  1/1  mean     14.0µs  p50      8.8µs  p95     43.0µs  p99     68.1µs  heap   33.7MB  glides, 20 documents every 500 ms
+56/120 round 5 build 0.8.0  1/1  mean      2.4µs  p50      1.3µs  p95      4.9µs  p99     22.4µs  heap   -0.4MB  progress clocks, restarted every 1 s
+57/120 round 5 build 0.8.1  1/1  mean     10.4µs  p50      5.7µs  p95     34.8µs  p99     63.7µs  heap   30.3MB  glides, 20 documents every 500 ms
+58/120 round 5 build 0.8.1  1/1  mean      1.7µs  p50      0.7µs  p95      3.4µs  p99     19.6µs  heap    0.3MB  progress clocks, restarted every 1 s
+59/120 round 5 build 1.2.0  1/1  mean      8.6µs  p50      4.3µs  p95     29.7µs  p99     54.6µs  heap   28.5MB  glides, 20 documents every 500 ms
+60/120 round 5 build 1.2.0  1/1  mean      1.7µs  p50      0.7µs  p95      3.7µs  p99     23.0µs  heap    0.4MB  progress clocks, restarted every 1 s
+61/120 round 6 build b2e157dc  1/1  mean     11.1µs  p50      6.9µs  p95     36.5µs  p99     62.5µs  heap   30.5MB  glides, 20 documents every 500 ms
+62/120 round 6 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      3.3µs  p99     24.5µs  heap    0.1MB  progress clocks, restarted every 1 s
+63/120 round 6 build 0.7.1  1/1  mean      7.4µs  p50      4.1µs  p95     16.2µs  p99     55.1µs  heap   20.1MB  glides, 20 documents every 500 ms
+64/120 round 6 build 0.7.1  1/1  mean      1.2µs  p50      0.6µs  p95      2.2µs  p99     13.6µs  heap   -1.4MB  progress clocks, restarted every 1 s
+65/120 round 6 build 0.8.0  1/1  mean     15.2µs  p50     10.2µs  p95     41.0µs  p99     68.4µs  heap   33.2MB  glides, 20 documents every 500 ms
+66/120 round 6 build 0.8.0  1/1  mean      2.3µs  p50      1.3µs  p95      5.2µs  p99     21.3µs  heap    0.7MB  progress clocks, restarted every 1 s
+67/120 round 6 build 0.8.1  1/1  mean     11.4µs  p50      6.5µs  p95     40.7µs  p99     69.7µs  heap   31.0MB  glides, 20 documents every 500 ms
+68/120 round 6 build 0.8.1  1/1  mean      1.8µs  p50      0.7µs  p95      4.4µs  p99     22.6µs  heap    0.8MB  progress clocks, restarted every 1 s
+69/120 round 6 build 1.2.0  1/1  mean     10.8µs  p50      6.1µs  p95     36.6µs  p99     65.4µs  heap   28.1MB  glides, 20 documents every 500 ms
+70/120 round 6 build 1.2.0  1/1  mean      2.0µs  p50      0.7µs  p95      5.4µs  p99     28.4µs  heap    0.2MB  progress clocks, restarted every 1 s
+71/120 round 6 build 1.4.0  1/1  mean      8.9µs  p50      4.6µs  p95     25.0µs  p99     56.5µs  heap   27.8MB  glides, 20 documents every 500 ms
+72/120 round 6 build 1.4.0  1/1  mean      1.7µs  p50      0.7µs  p95      3.3µs  p99     23.3µs  heap    0.2MB  progress clocks, restarted every 1 s
+73/120 round 7 build 0.7.1  1/1  mean      7.7µs  p50      3.9µs  p95     22.2µs  p99     55.5µs  heap   20.1MB  glides, 20 documents every 500 ms
+74/120 round 7 build 0.7.1  1/1  mean      1.3µs  p50      0.6µs  p95      2.2µs  p99     14.0µs  heap   -1.2MB  progress clocks, restarted every 1 s
+75/120 round 7 build 0.8.0  1/1  mean     14.8µs  p50     10.8µs  p95     41.2µs  p99     61.1µs  heap   33.3MB  glides, 20 documents every 500 ms
+76/120 round 7 build 0.8.0  1/1  mean      2.3µs  p50      1.3µs  p95      4.5µs  p99     20.5µs  heap   -0.2MB  progress clocks, restarted every 1 s
+77/120 round 7 build 0.8.1  1/1  mean     10.8µs  p50      5.8µs  p95     35.7µs  p99     57.6µs  heap   30.1MB  glides, 20 documents every 500 ms
+78/120 round 7 build 0.8.1  1/1  mean      1.5µs  p50      0.7µs  p95      3.1µs  p99     18.5µs  heap    0.4MB  progress clocks, restarted every 1 s
+79/120 round 7 build 1.2.0  1/1  mean      9.6µs  p50      5.9µs  p95     32.4µs  p99     57.7µs  heap   30.7MB  glides, 20 documents every 500 ms
+80/120 round 7 build 1.2.0  1/1  mean      1.7µs  p50      0.7µs  p95      3.3µs  p99     23.8µs  heap    0.4MB  progress clocks, restarted every 1 s
+81/120 round 7 build 1.4.0  1/1  mean      9.8µs  p50      5.8µs  p95     33.6µs  p99     56.8µs  heap   30.0MB  glides, 20 documents every 500 ms
+82/120 round 7 build 1.4.0  1/1  mean      1.5µs  p50      0.7µs  p95      3.0µs  p99     22.3µs  heap    0.4MB  progress clocks, restarted every 1 s
+83/120 round 7 build b2e157dc  1/1  mean     11.0µs  p50      6.1µs  p95     34.6µs  p99     58.0µs  heap   30.5MB  glides, 20 documents every 500 ms
+84/120 round 7 build b2e157dc  1/1  mean      1.6µs  p50      0.7µs  p95      2.7µs  p99     23.1µs  heap   -0.1MB  progress clocks, restarted every 1 s
+85/120 round 8 build 0.8.0  1/1  mean     14.1µs  p50      9.0µs  p95     39.7µs  p99     64.6µs  heap   32.6MB  glides, 20 documents every 500 ms
+86/120 round 8 build 0.8.0  1/1  mean      2.2µs  p50      1.3µs  p95      4.8µs  p99     20.8µs  heap   -0.3MB  progress clocks, restarted every 1 s
+87/120 round 8 build 0.8.1  1/1  mean     11.4µs  p50      6.4µs  p95     36.3µs  p99     62.2µs  heap   32.1MB  glides, 20 documents every 500 ms
+88/120 round 8 build 0.8.1  1/1  mean      1.5µs  p50      0.7µs  p95      3.2µs  p99     17.6µs  heap    0.3MB  progress clocks, restarted every 1 s
+89/120 round 8 build 1.2.0  1/1  mean     11.3µs  p50      6.3µs  p95     33.3µs  p99     63.6µs  heap   29.0MB  glides, 20 documents every 500 ms
+90/120 round 8 build 1.2.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.1µs  p99     21.4µs  heap   14.2MB  progress clocks, restarted every 1 s
+91/120 round 8 build 1.4.0  1/1  mean      9.9µs  p50      5.7µs  p95     33.2µs  p99     55.3µs  heap   29.8MB  glides, 20 documents every 500 ms
+92/120 round 8 build 1.4.0  1/1  mean      1.6µs  p50      0.7µs  p95      2.8µs  p99     22.3µs  heap    0.2MB  progress clocks, restarted every 1 s
+93/120 round 8 build b2e157dc  1/1  mean     10.3µs  p50      6.3µs  p95     34.3µs  p99     57.5µs  heap   30.1MB  glides, 20 documents every 500 ms
+94/120 round 8 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      3.0µs  p99     24.6µs  heap   -0.2MB  progress clocks, restarted every 1 s
+95/120 round 8 build 0.7.1  1/1  mean     10.2µs  p50      6.1µs  p95     26.9µs  p99     60.4µs  heap   29.2MB  glides, 20 documents every 500 ms
+96/120 round 8 build 0.7.1  1/1  mean      1.3µs  p50      0.6µs  p95      2.3µs  p99     13.7µs  heap   -1.2MB  progress clocks, restarted every 1 s
+97/120 round 9 build 0.8.1  1/1  mean      7.9µs  p50      4.0µs  p95     28.8µs  p99     56.5µs  heap   23.9MB  glides, 20 documents every 500 ms
+98/120 round 9 build 0.8.1  1/1  mean      1.7µs  p50      0.7µs  p95      4.1µs  p99     20.1µs  heap    0.7MB  progress clocks, restarted every 1 s
+99/120 round 9 build 1.2.0  1/1  mean     10.9µs  p50      5.9µs  p95     35.9µs  p99     67.8µs  heap   29.4MB  glides, 20 documents every 500 ms
+100/120 round 9 build 1.2.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.2µs  p99     22.1µs  heap    0.4MB  progress clocks, restarted every 1 s
+101/120 round 9 build 1.4.0  1/1  mean     10.3µs  p50      6.2µs  p95     34.0µs  p99     58.0µs  heap   30.7MB  glides, 20 documents every 500 ms
+102/120 round 9 build 1.4.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.6µs  p99     22.0µs  heap    0.2MB  progress clocks, restarted every 1 s
+103/120 round 9 build b2e157dc  1/1  mean     10.5µs  p50      6.1µs  p95     36.1µs  p99     61.0µs  heap   29.9MB  glides, 20 documents every 500 ms
+104/120 round 9 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      2.8µs  p99     21.8µs  heap   -0.1MB  progress clocks, restarted every 1 s
+105/120 round 9 build 0.7.1  1/1  mean      9.6µs  p50      6.0µs  p95     26.6µs  p99     58.6µs  heap   36.7MB  glides, 20 documents every 500 ms
+106/120 round 9 build 0.7.1  1/1  mean      1.3µs  p50      0.6µs  p95      2.5µs  p99     14.0µs  heap   -1.2MB  progress clocks, restarted every 1 s
+107/120 round 9 build 0.8.0  1/1  mean     15.2µs  p50     10.1µs  p95     44.0µs  p99     74.9µs  heap   30.7MB  glides, 20 documents every 500 ms
+108/120 round 9 build 0.8.0  1/1  mean      2.5µs  p50      1.3µs  p95      5.3µs  p99     21.5µs  heap    0.5MB  progress clocks, restarted every 1 s
+109/120 round 10 build 1.2.0  1/1  mean     10.1µs  p50      5.8µs  p95     33.8µs  p99     59.8µs  heap   30.8MB  glides, 20 documents every 500 ms
+110/120 round 10 build 1.2.0  1/1  mean      1.6µs  p50      0.7µs  p95      3.3µs  p99     22.1µs  heap   14.4MB  progress clocks, restarted every 1 s
+111/120 round 10 build 1.4.0  1/1  mean      9.7µs  p50      6.0µs  p95     33.4µs  p99     55.4µs  heap   30.0MB  glides, 20 documents every 500 ms
+112/120 round 10 build 1.4.0  1/1  mean      1.9µs  p50      0.7µs  p95      4.1µs  p99     27.5µs  heap    0.3MB  progress clocks, restarted every 1 s
+113/120 round 10 build b2e157dc  1/1  mean     11.0µs  p50      6.8µs  p95     37.2µs  p99     61.7µs  heap   29.7MB  glides, 20 documents every 500 ms
+114/120 round 10 build b2e157dc  1/1  mean      1.8µs  p50      0.7µs  p95      3.0µs  p99     24.9µs  heap    0.3MB  progress clocks, restarted every 1 s
+115/120 round 10 build 0.7.1  1/1  mean     10.9µs  p50      6.2µs  p95     28.4µs  p99     60.1µs  heap   27.6MB  glides, 20 documents every 500 ms
+116/120 round 10 build 0.7.1  1/1  mean      1.3µs  p50      0.6µs  p95      2.2µs  p99     13.5µs  heap   -1.4MB  progress clocks, restarted every 1 s
+117/120 round 10 build 0.8.0  1/1  mean     15.1µs  p50     10.6µs  p95     42.0µs  p99     64.9µs  heap   30.7MB  glides, 20 documents every 500 ms
+118/120 round 10 build 0.8.0  1/1  mean      2.3µs  p50      1.3µs  p95      4.3µs  p99     17.6µs  heap   -0.4MB  progress clocks, restarted every 1 s
+119/120 round 10 build 0.8.1  1/1  mean     10.2µs  p50      6.2µs  p95     35.2µs  p99     56.1µs  heap   34.1MB  glides, 20 documents every 500 ms
+120/120 round 10 build 0.8.1  1/1  mean      1.7µs  p50      0.7µs  p95      3.5µs  p99     20.5µs  heap    0.1MB  progress clocks, restarted every 1 s

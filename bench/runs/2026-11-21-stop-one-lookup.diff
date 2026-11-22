@@ -1,0 +1,48 @@
+diff --git a/src/chain.ts b/src/chain.ts
+index d2a213ba..8b11dc64 100644
+--- a/src/chain.ts
++++ b/src/chain.ts
+@@ -63,9 +63,12 @@ export function relink<I, O>(
+  */
+ export function headOf<I, O>(mix: Mixer<I, O>, subject: I): Subject<unknown> | undefined {
+   const head = mix.chains.get(subject);
+-  return head !== undefined && head.slot >= 0 && mix.lanes?.sought(head.slot) === true
+-    ? undefined
+-    : head;
++  return head !== undefined && headIs(mix, head) ? head : undefined;
++}
++
++/** Whether the record `chains` holds is a chain as last linked, not one a seek kept for its number. */
++export function headIs<I, O>(mix: Mixer<I, O>, head: Subject<unknown>): boolean {
++  return !(head.slot >= 0 && mix.lanes?.sought(head.slot) === true);
+ }
+ 
+ /** The number lanes give a subject by its chain as last linked, or -1 where it has none. */
+diff --git a/src/drop.ts b/src/drop.ts
+index 37fd888d..96ee4f79 100644
+--- a/src/drop.ts
++++ b/src/drop.ts
+@@ -1,4 +1,4 @@
+-import { headOf, unlink } from './chain.js';
++import { headIs, unlink } from './chain.js';
+ import { leaveVoice, unrecord } from './fade.js';
+ import { goneIndex } from './gone.js';
+ import { releasing } from './history.js';
+@@ -12,13 +12,13 @@ import type { Voice } from './voice.js';
+ 
+ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
+   this.frame = nextFrame();
+-  const head = headOf(this, subject);
+-  // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
+-  if (head !== undefined) unlink(this, head);
++  // Asked once: a cold lookup in a map as large as the mix's subjects is most of what it costs.
+   const chained = this.chains.get(subject);
++  // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
++  if (chained !== undefined && headIs(this, chained)) unlink(this, chained);
+   if (chained !== undefined && !this.projecting) this.probes?.release(chained);
+   // A number a seek carried over is released even where its chain is not linked since.
+-  const slot = this.chains.get(subject)?.slot ?? -1;
++  const slot = chained?.slot ?? -1;
+   if (slot >= 0 && this.lanes !== null) this.lanes.release(slot);
+   // A read ahead's copy reads the live mix's poses, and so hides one where the mix deletes it.
+   if (this.projecting && !(this.lastPoses instanceof Masked))

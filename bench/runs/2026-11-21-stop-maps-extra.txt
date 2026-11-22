@@ -1,0 +1,97 @@
+# teitou (Apple M5 Max): bench/runs/2026-11-21-stop-maps-extra.sh 8, built from b2e157dc with f439e5be's drop change uncommitted
+== round 1/8 extra 0
+extra 0  N=  1000  stop 0.628 us each
+extra 0  N= 10000  stop 2.255 us each
+extra 0  N= 40000  stop 3.423 us each
+== round 1/8 extra 1
+extra 1  N=  1000  stop 0.675 us each
+extra 1  N= 10000  stop 2.280 us each
+extra 1  N= 40000  stop 3.861 us each
+== round 1/8 extra 2
+extra 2  N=  1000  stop 0.817 us each
+extra 2  N= 10000  stop 2.707 us each
+extra 2  N= 40000  stop 3.670 us each
+== round 2/8 extra 2
+extra 2  N=  1000  stop 0.733 us each
+extra 2  N= 10000  stop 2.584 us each
+extra 2  N= 40000  stop 3.757 us each
+== round 2/8 extra 1
+extra 1  N=  1000  stop 0.699 us each
+extra 1  N= 10000  stop 2.302 us each
+extra 1  N= 40000  stop 3.827 us each
+== round 2/8 extra 0
+extra 0  N=  1000  stop 0.680 us each
+extra 0  N= 10000  stop 2.099 us each
+extra 0  N= 40000  stop 3.597 us each
+== round 3/8 extra 0
+extra 0  N=  1000  stop 0.671 us each
+extra 0  N= 10000  stop 2.208 us each
+extra 0  N= 40000  stop 3.328 us each
+== round 3/8 extra 1
+extra 1  N=  1000  stop 0.899 us each
+extra 1  N= 10000  stop 2.754 us each
+extra 1  N= 40000  stop 3.856 us each
+== round 3/8 extra 2
+extra 2  N=  1000  stop 0.670 us each
+extra 2  N= 10000  stop 2.466 us each
+extra 2  N= 40000  stop 3.730 us each
+== round 4/8 extra 2
+extra 2  N=  1000  stop 0.795 us each
+extra 2  N= 10000  stop 2.665 us each
+extra 2  N= 40000  stop 4.072 us each
+== round 4/8 extra 1
+extra 1  N=  1000  stop 0.729 us each
+extra 1  N= 10000  stop 2.252 us each
+extra 1  N= 40000  stop 3.376 us each
+== round 4/8 extra 0
+extra 0  N=  1000  stop 0.609 us each
+extra 0  N= 10000  stop 2.261 us each
+extra 0  N= 40000  stop 3.129 us each
+== round 5/8 extra 0
+extra 0  N=  1000  stop 0.670 us each
+extra 0  N= 10000  stop 2.281 us each
+extra 0  N= 40000  stop 3.242 us each
+== round 5/8 extra 1
+extra 1  N=  1000  stop 0.568 us each
+extra 1  N= 10000  stop 1.980 us each
+extra 1  N= 40000  stop 3.452 us each
+== round 5/8 extra 2
+extra 2  N=  1000  stop 0.680 us each
+extra 2  N= 10000  stop 2.352 us each
+extra 2  N= 40000  stop 3.527 us each
+== round 6/8 extra 2
+extra 2  N=  1000  stop 0.555 us each
+extra 2  N= 10000  stop 2.093 us each
+extra 2  N= 40000  stop 3.341 us each
+== round 6/8 extra 1
+extra 1  N=  1000  stop 0.567 us each
+extra 1  N= 10000  stop 2.195 us each
+extra 1  N= 40000  stop 3.658 us each
+== round 6/8 extra 0
+extra 0  N=  1000  stop 0.500 us each
+extra 0  N= 10000  stop 2.131 us each
+extra 0  N= 40000  stop 3.572 us each
+== round 7/8 extra 0
+extra 0  N=  1000  stop 0.630 us each
+extra 0  N= 10000  stop 1.888 us each
+extra 0  N= 40000  stop 3.104 us each
+== round 7/8 extra 1
+extra 1  N=  1000  stop 0.519 us each
+extra 1  N= 10000  stop 2.127 us each
+extra 1  N= 40000  stop 3.242 us each
+== round 7/8 extra 2
+extra 2  N=  1000  stop 0.572 us each
+extra 2  N= 10000  stop 2.117 us each
+extra 2  N= 40000  stop 3.529 us each
+== round 8/8 extra 2
+extra 2  N=  1000  stop 0.590 us each
+extra 2  N= 10000  stop 2.207 us each
+extra 2  N= 40000  stop 3.554 us each
+== round 8/8 extra 1
+extra 1  N=  1000  stop 0.687 us each
+extra 1  N= 10000  stop 2.264 us each
+extra 1  N= 40000  stop 3.988 us each
+== round 8/8 extra 0
+extra 0  N=  1000  stop 0.561 us each
+extra 0  N= 10000  stop 1.783 us each
+extra 0  N= 40000  stop 3.138 us each

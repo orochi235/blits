@@ -123,14 +123,23 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   PROF=<dir>` on a quiet node.
 - **[agent] A stop grows with N** (0.52 µs at 1,000 subjects, 1.46 at 10,000, 2.41 at 40,000;
   msb-uai, 2026-11-21, `bench/runs/2026-11-21-row-alloc-restart.txt`) though nothing walks more.
-  Every part of it grows, none by much more than the rest (`bench/stopparts.mjs`,
-  `runs/2026-11-21-row-alloc-stopparts.txt`; `bench/stopprof.sh`,
-  `runs/2026-11-21-row-alloc-stopprof.txt`): the fade 0.36 to 1.03 µs, `Numbers.release` 0.33 to
-  0.96, `Lanes.forget` 0.06 to 0.29, the map deletes in `drop` (`Store.delete`) 0.02 to 0.25. The
-  bench's own swap-remove, which indexes two arrays and nothing else, grows 0.04 to 0.27 µs too, so
-  the growth is cold memory, each distinct object and map a stop touches costing a miss (inferred
-  from that, not counted). A lever would be fewer of them per subject, such as one record holding
-  what `chains`, `lastPoses` and `restStamps` keep by subject in maps of their own. Not tried.
+  Every part of it grows (`bench/stopparts.mjs`, `runs/2026-11-21-row-alloc-stopparts.txt`;
+  `bench/stopprof.sh`, `runs/2026-11-21-row-alloc-stopprof.txt`), and so does the bench's own
+  two-array swap-remove, so the growth is read as cold memory (inferred). Counted with
+  `bench/stopmaps.mjs` (`runs/2026-11-21-stop-maps-count.txt`, measured): a stop touches three maps
+  holding an entry per subject or voice, `chains`, `named`'s lists and the lanes' `seats`, and a
+  steady frame none. `lastPoses`, `restStamps` and `strays` are empty in this shape, so folding them
+  into `chains` would save it nothing. One or two more such maps cost a stop 0.3–0.45 µs at 40,000
+  (teitou, 8 rounds, `runs/2026-11-21-stop-maps-extra.txt`; noisy, two read less than one). `seats` left the stop on 2026-11-21: a
+  stop reads a crowd voice's seat off the voice, 2.765 against 3.040 µs at 40,000 (msb-uai,
+  `--quiet` on a loaded node, 16 rounds, U 74.5 of 256, `runs/2026-11-21-stop-seat-ab3.txt`;
+  2.825 against 3.035 on teitou, `-stop-seat-ab2.txt`); steady frames did not move
+  (`-stop-seat-ab.txt`). Left: `named`'s list. Sharing one entry with the chain head was tried and backed out
+  (2026-11-21): a stop at 40,000 read 7% less, but `churn` 19% and `tween-` 4% more, as every
+  general-path probe reads the head through one more object (studio, `runs/2026-11-21-stop-kept-ab.txt`).
+  Moving the list onto the head itself would avoid that load but has to follow the head through
+  every relink (not tried). The fade's growth (0.36 to 1.03 µs) touches no map: it is
+  the voice, its handle and its patch read cold (inferred).
 - **[agent] A voice leaving the general path still requalifies every voice where a voice still
   present writes one of its channels, and so does a role member leaving a lane.** A requalify
   costs 1.4 to 2.9 ms at 10,000 crowded voices (`bench/requalify.mjs` `direct`, teitou, a shared
@@ -154,8 +163,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   number cannot fix it, which needs numbers swapped between live subjects. Under history, roles or
   a bound `src/renumber.ts` still declines; extending it there needs tests proving each store it
   would carry.
-- **[agent] astv's glides (+8%) and progress clocks (+39%) since 0.8.0** are unexplained, at 1–2 µs
-  a frame; `MOTION_ONLY=1 probes/blits-version-bench.sh <out> 0.7.1` in `~/src/astv` on a node.
 - **[agent] Running back past a voice's end costs `own` and `keys` 1–3%** (`4a6cc4e`, accepted
   under the tuning bound, 2026-10-17).
 - **[agent] A probe pays for every channel in the kit, written or not**; skipping unwritten ones

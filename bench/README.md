@@ -41,6 +41,12 @@ the machine being used.
   gpu-reach's `MIX=owned` does, and `FIRST=1` times the frame after. `bench/cuewide.sh` builds
   sides in a `--kind build` job and runs them interleaved; `bench/places.mjs` times building a
   lookup of 1M subjects each way `Named` could.
+- `bench/restart.mjs` times a stop (a fade and a `drop`) among N one-subject tweens read by `pull`,
+  in weasel's shape; `LINEAGE_BENCH=restart.mjs bench/lineage.sh` compares builds on it.
+  `bench/stopparts.mjs` times a stop's parts and `bench/stopprof.sh` profiles it.
+  `bench/stopmaps.mjs` counts the Maps, WeakMaps and Sets a stop and a steady frame touch, by caller,
+  and `bench/stopextra.mjs` times a stop with extra subject-keyed maps of its own (`EXTRA=k`), the
+  most that folding one of the mix's away could save.
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
   releases included, and `bench/lineage.mjs` tables it.
 
@@ -121,6 +127,25 @@ shown equal on the record, or those fields cached on its `Ahead`, which grows it
 read saves. A narrower inexact skip made 403 of 2,000 `SAME_SEEK=1` scenes differ and failed 7
 tests. Not built.
 
+## astv's motion bench against 0.7.1
+
+`bench/astv-motion.sh` runs cases of astv's `motion.bench.ts` on any blits builds, published or
+commits, turn about, and `bench/astv-motion.mjs` tables them. Measured on teitou, 10 rounds, astv at
+`eeee2a36` (2026-11-21, `runs/2026-11-21-astv-remeasure/`), mean µs a frame, median of rounds:
+
+| Case | 0.7.1 | 0.8.0 | 0.8.1 | 1.2.0 | 1.4.0 | `b2e157dc` |
+|---|---:|---:|---:|---:|---:|---:|
+| Glides, 20 documents | 10.48 | 14.95 | 10.91 | 10.38 | 10.04 | 10.81 |
+| Progress clocks | 1.29 | 2.31 | 1.62 | 1.66 | 1.65 | 1.71 |
+
+Glides sit level with 0.7.1; its runs spread 7.4 to 12.0 on one build. Progress clocks cost about
+0.4 µs a frame more, every run of 0.7.1 at or under 1.33 and every later one at or over 1.51.
+Profiles of that case (`runs/2026-11-21-astv-clocks-prof/`, 3 runs a build of 200,000 frames)
+put the gap in many small per-sync costs from features added since, none over a fifth of it:
+`DueQueue.takeEvery`'s three `length` writes, `Filed.off` unfiling each retired clock's voice,
+`tick` pushing a history frame, `Departed.add`'s marks, `shownAt`, `shed`, and a probe's fold
+split into `contribution`, with GC up a third (measured). No one change brings it back (inferred).
+
 ## Tried and backed out
 
 Each moved no number outside run-to-run spread, or cost more than it saved. The ledger holds the
@@ -152,6 +177,7 @@ rows where one was timed.
 | A public `keys` read into a reused out object (2026-10-08) | slower than `at` (0.87 against 0.78 ms); V8 removes `at`'s fresh object |
 | Writing `pullRun`'s `LANE_PROBE`/`LANE_FILL` once per run | not tried, and not to try: every pace loop reads them by slot, so it would make a second place for the answer |
 | Writing the trail's subject list only where a subject moved (2026-11-11) | `tweens^` +4% (`bench/runs/2026-11-11-trail-list-ab.txt`) |
+| Skipping `DueQueue.takeEvery`'s `length` writes when they change nothing, the largest single share of astv's progress-clock gap (2026-11-21) | progress clocks 1.805 against 1.758 µs (U 45), glides 11.12 against 11.86 µs (U 19, slower), busy stage level (teitou, 10 rounds, `runs/2026-11-21-astv-every-length-ab/`) |
 | Three variants of `levelsOf`'s delay hash (2026-11-11) | none faster than about 2 ns a subject |
 | Copying each fn result into a delta the record owns, to end the finder commit's pretenuring (2026-10-29) | GC pauses fell, `glowb^` 14% slower; the pauses are 8 µs of a 100 µs loss |
 | Building records with a class (`new`) | layout and time unchanged |
@@ -161,6 +187,9 @@ rows where one was timed.
 | Running a role inline past members yet to start, done or idle, not only when every member plays (2026-11-21) | `rolewait` 3.797 against 3.679 ms, U 20 at 9 rounds on a shared node; gathering then folding costs about what inline does there (`runs/2026-11-21-role-inline-waiting.{txt,diff}`, the diff also holding the ink change) |
 | `Trail.record` comparing its list with the one it holds before storing each subject (2026-11-21) | `tweens^` 0.283 against 0.282 ms, `weasel^` 0.307 against 0.299 (msb-uai, 8 rounds, `runs/2026-11-21-steady-tweens-switches.txt`) |
 | A cheaper read for a subject owing a laned voice to the general path: an upper bound that queued its lane values with no pose and read the owed voice without folding it, so not correct (2026-11-21) | heatmap `spring/const/ink/on` 2.707 against 2.952 ms (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-owed-bounds.{txt,diff}`); not built, since a pull's fill committing the retarget leaves nothing owed there (2.153 in the same job) |
+| `drop` looking a subject's chain up once rather than three times (2026-11-21, `runs/2026-11-21-stop-one-lookup.diff`) | a stop at 40,000 subjects 2.505 against 2.615 µs, U 31.5 at 10 rounds, and 1.510 against 1.440 at 10,000 (msb-uai, `runs/2026-11-21-stop-seat-ab.txt`): the second and third lookups likely hit what the first brought in (inferred) |
+| A subject's chain head and `named`'s list in one map entry, through a store over a shared `Kept` record (2026-11-21, `runs/2026-11-21-stop-kept.diff`) | a stop at 40,000 subjects 3.445 against 3.720 µs, U 21 at 10 rounds, but `churn` 1.372 against 1.156 ms (U 92) and `tween-` 2.103 against 2.015 (U 90): every general-path probe reads the head through one more object (studio, `runs/2026-11-21-stop-kept-ab.txt`) |
+| `Lanes`' probe methods (`prepare`, `filled`, `current`, `begin`) moved out of the class body and installed on its prototype (2026-11-21) | `probed` 2.598 against 2.391 ms, U 52 of 64 at 8 rounds, then 2.635 against 2.635, U 43 of 100 at 10 (studio, `runs/2026-11-21-lanes-split-ab.txt`, `-ab2.txt`): not shown either way, so they stay in the class |
 | Touching every record a lane reads in a pass before its loop, to take a suspected cache miss out of `one` (2026-11-21) | heatmap lanes `pull` 3.800 against 3.709 ms, slower (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-signal-split.txt`) |
 | Building `Named`'s lookup of a long list as a `Set`, from its constructor or a loop, in place of the map of places; batching `stagger`'s calls (2026-11-21) | not built: at 1M subjects a Set reads 69.4 and 66.6 ms against the map's 72.4, and keeps no place to read a delay by; the stagger loop alone is 1.4 ms (studio, 15 rounds, `runs/2026-11-21-cue-wide-places.txt`). A lookup in a built map costs 40 ns a subject, so a table of 1M is cache-bound however it is filled |
 
