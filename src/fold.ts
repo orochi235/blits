@@ -247,7 +247,7 @@ export function foldWith<I, O>(
     const l = lanes as Lanes<I, O>;
     l.copy(head.slot, pose);
     if (l.owes(head.slot)) owed = head.slot;
-    else if (l.whole) return pose as O;
+    else if (l.alone(head.slot)) return pose as O;
   }
   if (this.detours === 0) {
     const now = this.now;

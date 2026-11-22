@@ -155,6 +155,7 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     .filter((l) => l.voice.named === null && l.epoch > 0)
     .sort((a, b) => a.epoch - b.epoch);
   lanes.whole = kept.length + crowded === present.length;
+  markOff(lanes);
   lanes.byId.clear();
   for (const lane of kept) lanes.byId.set(lane.voice.id, lane);
   // With no lane left no fill comes to let go of the subjects the last probes held.
@@ -361,6 +362,7 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     if (!laned && (!fits || (callsOff && crowdable(v) && calls(v, lanes.host.channels)))) {
       v.offLane = why ?? 'calls';
       lanes.whole = false;
+      markReach(lanes, v);
       continue;
     }
     if (known || !fits || !laned || v.slots.some((slot) => lanes.bySlot[slot] === undefined))
@@ -393,7 +395,29 @@ function leftAlone<I, O>(lanes: Lanes<I, O>, left: readonly Voice<I, O>[]): bool
     if (closed.size > 0) for (const s of v.slots) if (closed.has(s)) return false;
   }
   lanes.whole = whole;
+  markOff(lanes);
   return true;
+}
+
+/** Marks afresh, by subject number, where a voice off lanes may reach: see `Lanes.off`. */
+function markOff<I, O>(lanes: Lanes<I, O>): void {
+  lanes.off.fill(0);
+  lanes.offAll = false;
+  if (lanes.whole) return;
+  for (const v of lanes.host.voices)
+    if (v.state !== 'done' && v.holding === null && v.offLane !== undefined) markReach(lanes, v);
+}
+
+/** Marks every subject numbered that a voice off lanes may reach. */
+function markReach<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
+  if (v.named === null) {
+    lanes.offAll = true;
+    return;
+  }
+  for (const subject of v.named.list) {
+    const slot = lanes.host.slotOf(subject);
+    if (slot >= 0 && slot < lanes.cap) lanes.off[slot] = 1;
+  }
 }
 
 /** A lane's voice started playing: its epoch, and room up front where it reaches every subject. */
