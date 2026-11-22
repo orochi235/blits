@@ -1,4 +1,5 @@
 import { inBound } from './bound.js';
+import { slotOf } from './chain.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, restsAt } from './fold.js';
@@ -115,6 +116,7 @@ export function contribution<I, O>(
   if (reading.kept !== keptAtWeigh && !voice.keeping) stateful(this, voice);
   setting.weight = weight;
   held.weight = weight;
+  if (voice.bound !== null && !Object.is(weight, 0)) noteRead(this, voice, subject, held);
 
   if (held.probed === now && held.delta && held.seeks === voice.seeks) {
     if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
@@ -454,6 +456,21 @@ export function isRest<I, O>(this: Mixer<I, O>, delta: Record<string, unknown>):
   return true;
 }
 
+/** Keeps a record a bounded voice off lanes gave a weight other than 0: see `Bound.reads`. */
+function noteRead<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+): void {
+  const b = voice.bound;
+  if (b === null || b.reads === null || mix.projecting) return;
+  const slot = slotOf(mix, subject);
+  // A record of a subject with no number cannot be marked: every subject reads it from now on.
+  if (slot < 0) b.reads = null;
+  else b.reads.set(held, slot);
+}
+
 /** Whether the voice's bound leaves `subject` out, where its signal reads 0 unread. */
 function outsideBound<I, O>(
   mix: Mixer<I, O>,
@@ -488,6 +505,7 @@ export function read<I, O>(
       voice.keepOn = held;
       this.w = outsideBound(this, voice, subject, held) ? 0 : this.weigh(voice, subject, now, held);
       held.weight = this.w;
+      if (voice.bound !== null && !Object.is(this.w, 0)) noteRead(this, voice, subject, held);
       if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
       return held.delta;
     }

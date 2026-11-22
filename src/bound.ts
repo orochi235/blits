@@ -4,6 +4,7 @@ import { keepProbed, type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Places } from './places.js';
+import type { Subject } from './subject.js';
 import type { Ball, Finder, Setting, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
 import { production, warnOnce } from './warn.js';
@@ -56,6 +57,12 @@ export class Bound<I, O> {
   frames = 0;
   /** The `frames` count a finder's check last ran at. */
   checkedAt = -1;
+  /**
+   * Off lanes, every record the general path gave a weight other than 0, with its subject's number:
+   * with the subjects within, all a read can change. Null where reads it cannot see may have, as on
+   * a lane, or where nothing marks from it, as with no lanes.
+   */
+  reads: Map<Subject<unknown>, number> | null = null;
 
   constructor(
     readonly mix: Mixer<I, O>,
@@ -96,6 +103,41 @@ export function confine<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (area === undefined) return;
   voice.bound = new Bound(mix, voice, area);
   if (area === own) voice.bound.checks = false;
+  // Outside, a read writes weight 0 and nothing else only without these.
+  if (
+    voice.named === null &&
+    mix.lanes !== null &&
+    mix.opts.history === undefined &&
+    spec.role === undefined &&
+    spec.from !== 'current' &&
+    voice.patch.step === undefined
+  )
+    voice.bound.reads = new Map();
+}
+
+/**
+ * Leaves in `places.found` every index within the bound this frame, as `inBound` finds them, and
+ * returns how many.
+ */
+export function foundIn<I, O>(b: Bound<I, O>): number {
+  const places = b.mix.places as Places<I>;
+  if (b.finder === null) {
+    snap(b, b.mix);
+    return places.query(b.x, b.y, b.z, b.r, b.r2);
+  }
+  if (b.markedIn !== b.mix.frame) {
+    const count = findAll(b);
+    if (b.markedIn !== b.mix.frame) mark(b, places, count);
+    return count;
+  }
+  const stamp = b.marks;
+  const hitAt = b.hitAt;
+  if (places.found.length < places.n)
+    places.found = new Int32Array(Math.max(places.n, places.found.length * 2));
+  let count = 0;
+  for (let i = 0; i < hitAt.length; i++) if (hitAt[i] === stamp) places.found[count++] = i;
+  places.count = count;
+  return count;
 }
 
 function snap<I, O>(b: Bound<I, O>, mix: Mixer<I, O>): void {

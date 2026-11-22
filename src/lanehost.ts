@@ -8,7 +8,7 @@ export interface LaneHost<I, O> {
   readonly channels: readonly Channel<unknown>[];
   readonly names: readonly string[];
   /** The mix itself, for its clock: a getter V8 does not inline would box `now` on return. */
-  readonly clock: { readonly now: number };
+  readonly clock: { readonly now: number; readonly frame: number };
   /** Why a voice's patch and spec cannot run on a lane, its channels aside; undefined where they can. */
   unfit(voice: Voice<I, O>): OffLane | undefined;
   /** The voice's record for a subject this probe has already linked it to, from `head` if there. */

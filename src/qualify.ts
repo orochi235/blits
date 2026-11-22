@@ -6,6 +6,7 @@ import { crowdable } from './hosts.js';
 import { Lane, type Laned, Per, type Role } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
+import { markOff, markReach } from './off.js';
 import { bury, compactSparse, join, regroup, retouchRow, sameCrowds } from './rows.js';
 import { settle } from './sample.js';
 import { seated, seatOf } from './seat.js';
@@ -120,6 +121,7 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
       lane.made = lanes.probes;
     }
     v.laned = true;
+    if (v.bound !== null) v.bound.reads = null;
     if (lane.epoch === 0 && v.state !== 'pending') opened(lanes, lane);
     kept.push(lane);
   }
@@ -399,27 +401,6 @@ function leftAlone<I, O>(lanes: Lanes<I, O>, left: readonly Voice<I, O>[]): bool
   return true;
 }
 
-/** Marks afresh, by subject number, where a voice off lanes may reach: see `Lanes.off`. */
-function markOff<I, O>(lanes: Lanes<I, O>): void {
-  lanes.off.fill(0);
-  lanes.offAll = false;
-  if (lanes.whole) return;
-  for (const v of lanes.host.voices)
-    if (v.state !== 'done' && v.holding === null && v.offLane !== undefined) markReach(lanes, v);
-}
-
-/** Marks every subject numbered that a voice off lanes may reach. */
-function markReach<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
-  if (v.named === null) {
-    lanes.offAll = true;
-    return;
-  }
-  for (const subject of v.named.list) {
-    const slot = lanes.host.slotOf(subject);
-    if (slot >= 0 && slot < lanes.cap) lanes.off[slot] = 1;
-  }
-}
-
 /** A lane's voice started playing: its epoch, and room up front where it reaches every subject. */
 function opened<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
   const v = lane.voice;
@@ -471,6 +452,7 @@ function enlane<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
   const lane = new Lane<I, O>(v);
   lane.made = lanes.probes;
   v.laned = true;
+  if (v.bound !== null) v.bound.reads = null;
   if (v.state !== 'pending') opened(lanes, lane);
   lane.chans = v.slots.map((s) => lanes.bySlot[s] as Laned);
   lane.values = lane.chans.map(() => undefined);

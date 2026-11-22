@@ -31,6 +31,7 @@ export function renumber<I, O>(
     lanes.roles.length > 0 ||
     lanes.owed.any() ||
     lanes.lanes.some((lane) => lane.voice.bound !== null) ||
+    lanes.offBounds.length > 0 ||
     !lanes.numbers.move(from, to)
   )
     return false;

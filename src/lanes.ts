@@ -43,6 +43,7 @@ import {
 } from './lanevoices.js';
 import { meet } from './meet.js';
 import { type absent, Numbers } from './numbers.js';
+import { markBounds } from './off.js';
 import { Owed } from './owed.js';
 import { Placed } from './placed.js';
 import type { Column } from './pull.js';
@@ -121,12 +122,13 @@ export class Lanes<I, O> implements Watcher {
   readonly copies: boolean[] = [];
   /** Whether every voice in the mix is on a lane, so a filled subject has nothing left to fold. */
   whole = false;
-  /**
-   * While not `whole`: whether a voice off lanes may reach any subject, one naming none; and by
-   * subject number, 1 where one naming its subjects may, else 0. All 0 while `whole`.
-   */
+  /** Where a voice off lanes may reach, any subject or by subject number: see `markOff`. */
   offAll = true;
+  offWide = true;
   off = new Uint8Array(0);
+  offBounds: Voice<I, O>[] = [];
+  boundsAt = Number.NaN;
+  boundSlots: number[] = [];
   cap = 0;
   epochs = 0;
   /** The latest epoch of a lane over every subject, which every subject meets on its next probe. */
@@ -271,6 +273,7 @@ export class Lanes<I, O> implements Watcher {
     const now = this.host.clock.now;
     if (!this.filled(now, version) && this.begin(now, version) === Begin.GENERAL)
       return this.general(slot);
+    if (this.offBounds.length > 0 && this.boundsAt !== this.host.clock.frame) markBounds(this);
     if (slot < 0) return false;
     if (!this.probedThisFrame(slot)) this.distinct++;
     const probe = ++this.probes;

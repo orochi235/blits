@@ -548,7 +548,10 @@ export class Mixer<I, O> implements Mix<I, O> {
     ) as O;
     this.keep(subject, pose, out, head);
     // Where the lanes answer `atRest` from their own values, there is nothing to keep.
-    if (this.restStamps !== null && !(this.linkedLaned && this.restsLaned()))
+    if (
+      this.restStamps !== null &&
+      !(this.linkedLaned && this.restsLaned((head as Subject<unknown>).slot))
+    )
       this.restStamps.set(subject, 2 * this.restsKey() + (this.rests(pose) ? 1 : 0));
     return pose;
   }

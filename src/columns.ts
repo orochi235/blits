@@ -1,5 +1,6 @@
 import { Begin, Per } from './lane.js';
 import type { Lanes } from './lanes.js';
+import { markBounds } from './off.js';
 import { type Column, clampRun } from './pull.js';
 
 /**
@@ -21,8 +22,11 @@ export function pullRun<I, O>(
   version: number,
 ): number {
   const ready = lanes.filled(now, version) ? Begin.READY : lanes.begin(now, version);
-  if (ready !== Begin.READY || (!lanes.whole && lanes.offAll)) return from;
-  // Off lanes, a voice naming its subjects leaves only those to the general path.
+  if (ready !== Begin.READY) return from;
+  if (!lanes.whole && lanes.offBounds.length > 0 && lanes.boundsAt !== lanes.host.clock.frame)
+    markBounds(lanes);
+  if (!lanes.whole && lanes.offAll) return from;
+  // Off lanes, a voice naming its subjects or bounded leaves only those it reaches to the general path.
   const off = lanes.whole ? null : lanes.off;
   const per = lanes.per;
   const fills = lanes.fills;

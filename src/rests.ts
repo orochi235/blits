@@ -12,10 +12,10 @@ export function atRest<I, O>(this: Mixer<I, O>, subject: I): boolean {
   const head = this.linked(subject);
   const laned = this.linkedLaned;
   const lanes = this.lanes as Lanes<I, O>;
-  // Every voice on lanes and nothing to clamp: the pose a fold would make is the lanes' values.
-  if (laned && this.restsLaned()) {
+  // No voice off lanes reaching it and nothing to clamp: the pose a fold would make is the lanes' values.
+  if (laned) {
     const slot = (head as Subject<unknown>).slot;
-    if (!lanes.owes(slot)) return lanes.rests(slot);
+    if (this.restsLaned(slot) && !lanes.owes(slot)) return lanes.rests(slot);
   }
   // A probe this frame answers for the pose it gave the host.
   const since = (this.restStamps.get(subject) ?? Number.NaN) - 2 * this.restsKey();
@@ -91,8 +91,9 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
   return motion.landed();
 }
 
-export function restsLaned<I, O>(this: Mixer<I, O>): boolean {
-  return (this.lanes as Lanes<I, O>).whole && this.bounded.length === 0;
+/** Whether the lanes' values alone say if the subject at `slot` rests: see `Lanes.alone`. */
+export function restsLaned<I, O>(this: Mixer<I, O>, slot: number): boolean {
+  return this.bounded.length === 0 && (this.lanes as Lanes<I, O>).alone(slot);
 }
 
 export function restsKey<I, O>(this: Mixer<I, O>): number {
