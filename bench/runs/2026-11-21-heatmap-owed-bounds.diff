@@ -1,0 +1,83 @@
+diff --git a/src/motions.ts b/src/motions.ts
+index b5bc2ed7..e92beaae 100644
+--- a/src/motions.ts
++++ b/src/motions.ts
+@@ -450,6 +450,18 @@ export class Motions<I> {
+     return true;
+   }
+ 
++  /**
++   * Whether a live `sample` at `t` changes the subject's state only by committing changes that
++   * already carry their time, so the result is the same whenever it runs.
++   */
++  settles(s: number, t: number): boolean {
++    const flags = this.runs[this.base(s) + RunField.FLAGS] as number;
++    if ((flags & OLDER) !== 0 && reading.horizon !== Number.POSITIVE_INFINITY) return false;
++    if ((flags & PENDING) === 0) return true;
++    const list = (this.pending as Change[][])[s] as Change[];
++    return (list[list.length - 1] as Change).at !== undefined;
++  }
++
+   /** Position and velocity at `at`, default the latest frame; undefined until there is one. */
+   read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
+     const s = this.known(subject);
+diff --git a/src/pull.ts b/src/pull.ts
+index 5659ec28..1ae7b23a 100644
+--- a/src/pull.ts
++++ b/src/pull.ts
+@@ -1,11 +1,13 @@
+ import { axesOf } from './channels.js';
+ import { copy } from './clone.js';
++import { EXP } from './exp.js';
+ import type { Values } from './fold.js';
+ import type { Lanes } from './lanes.js';
+ import type { Mixer } from './mixer.js';
+ import type { Subject } from './subject.js';
+ import { Probes, Trail } from './trail.js';
+ import type { Channel, Columns } from './types.js';
++import type { Voice } from './voice.js';
+ 
+ /** What `pull` remembers at a position it has read no subject at. */
+ const UNREAD: unknown = Symbol('unread');
+@@ -234,6 +236,17 @@ function readAll<I, O>(
+       (lanes as Lanes<I, O>).pulls.writeLater(lanes as Lanes<I, O>, slot, columns, n, slots);
+       continue;
+     }
++    if (EXP === 1 && laned && whole && (lanes as Lanes<I, O>).alone(slot)) {
++      (lanes as Lanes<I, O>).pulls.writeLater(lanes as Lanes<I, O>, slot, columns, n, slots);
++      const h = heads[n] as Subject<unknown>;
++      for (let held: Subject<unknown> | null = h; held !== null; held = held.next) {
++        const voice = held.voice as Voice<I, O> | null;
++        if (voice === null || !mix.owedBy(slot, voice)) continue;
++        mix.read(voice, subject, now, false, held);
++        (lanes as Lanes<I, O>).paid(voice.id, slot, held.weight);
++      }
++      continue;
++    }
+     const head = live ? (heads[n] as Subject<unknown>) : null;
+     const folded = mix.foldWith(subject, scratch, head, laned, false);
+     const pose = (mix.bounded.length === 0 ? folded : mix.clamp(folded as Values)) as Values;
+diff --git a/src/sample.ts b/src/sample.ts
+index 73748759..f2d5ff33 100644
+--- a/src/sample.ts
++++ b/src/sample.ts
+@@ -1,6 +1,7 @@
+ import { Sampled, unbareLane } from './bare.js';
+ import { foldNumber } from './channels.js';
+ import { clampWeight, passAt, same, weighed } from './clock.js';
++import { EXP } from './exp.js';
+ import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
+ import type { Lanes } from './lanes.js';
+ import { owableAlone } from './meet.js';
+@@ -245,7 +246,7 @@ export function move<I, O>(
+     }
+     if (lanes.keeps) lanes.host.horizon(voice, delay);
+     else reading.horizon = Number.POSITIVE_INFINITY;
+-    if (!run.quiet(ms, elapsed)) {
++    if (!run.quiet(ms, elapsed) && !(EXP === 2 && !lanes.keeps && run.settles(ms, elapsed))) {
+       // Only this voice waits for the general path where it can fold there last: the subject's
+       // other voices still read the lanes.
+       const own = lanes.byId.get(voice.id);
+// Scratch: BLITS_EXP switches. Not for commit.
+// biome-ignore lint/suspicious/noExplicitAny: scratch
+export const EXP: number = Number((globalThis as any).process?.env?.BLITS_EXP ?? 0);

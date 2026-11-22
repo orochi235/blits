@@ -1170,6 +1170,44 @@ describe('lanes give motion voices the pose the general path gives', () => {
       expect(seen[1]).toEqual(seen[0]);
     });
 
+  // A pull's fill commits a retarget due for a subject the pull reads, as the read would.
+  for (const history of [false, true])
+    for (const read of [['a', 'b'], ['b'], ['b', 'a']])
+      it(`pulled ${read.join(',')} past a due retarget, then seeked back, history ${history}`, () => {
+        const seen = [false, true].map((lanes) => {
+          const s = spring<Part, Pose>('crawl', { from: 0, to: 100 });
+          const m = mix<Part, Pose>(K, { lanes, history: history ? { ms: 5000 } : undefined });
+          const h = m.cue({ patch: s });
+          const parts = { a: { id: 0 }, b: { id: 1 } } as Record<string, Part>;
+          const both = [parts.a, parts.b] as Part[];
+          const out = new Float64Array(2);
+          const reads: number[] = [];
+          for (const t of [0, 16, 500, 516]) {
+            m.sync(t);
+            m.pull(both, { crawl: out });
+            reads.push(...out);
+          }
+          s.to(parts.a as Part, -50, 300);
+          s.to(parts.b as Part, 400, 200);
+          for (const t of [600, 616]) {
+            m.sync(t);
+            m.pull(
+              read.map((k) => parts[k] as Part),
+              { crawl: out },
+            );
+            reads.push(...out);
+          }
+          h.seek(200);
+          for (const t of [632, 648]) {
+            m.sync(t);
+            m.pull(both, { crawl: out });
+            reads.push(...out);
+          }
+          return reads;
+        });
+        expect(seen[1]).toEqual(seen[0]);
+      });
+
   for (const steps of [
     [],
     ['seek'],

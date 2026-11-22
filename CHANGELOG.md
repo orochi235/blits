@@ -8,6 +8,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Motion patches retargeted every frame no longer read slower through `pull` on lanes than off,
+  without `history`: a pull's fill commits the changes due for the subjects it reads, where it used
+  to hand each to the general path. 5,000 springs, about 2,900 of them retargeted a frame, under
+  three `ink` holds read 2.11 ms from 2.64, against 2.58 off lanes, and the stress demo's heatmap
+  reads 2.35 ms on lanes against 2.36 off, where it read 3.71 against 3.09 (msb-uai).
 - `pull` over a crowd on lanes no longer reads every subject through the general path while a voice
   naming its subjects plays off lanes, only the subjects it names: with one such voice among 10,000
   one-subject tweens, a frame takes 0.35 ms against 0.33 with none, where it took 0.63 (studio,

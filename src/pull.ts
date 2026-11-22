@@ -141,10 +141,14 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
     : live && mix.pulledVersion === version
       ? mix.pulledRelinks
       : -1;
+  if (lanes !== null && current && mix.opts.history === undefined) markRead(mix, lanes, list);
   try {
     readAll(mix, list, columns, live, current, since, whole);
   } finally {
-    if (lanes !== null) lanes.pulls.flush(lanes);
+    if (lanes !== null) {
+      lanes.pulling = 0;
+      lanes.pulls.flush(lanes);
+    }
   }
   // Until a retarget asks for poses, none are kept, so the columns are, to give it a speed.
   if (live && !mix.wantsPose && !mix.projecting) {
@@ -155,6 +159,27 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   const unchanged = live && mix.version === version && mix.relinks === relinks;
   mix.pulledVersion = unchanged ? version : Number.NaN;
   mix.pulledRelinks = relinks;
+}
+
+/**
+ * Marks each subject `list` holds where the last pull read the same one, at the slot it read it
+ * at, which `current` says still holds, as one this pull reads for certain.
+ */
+function markRead<I, O>(mix: Mixer<I, O>, lanes: Lanes<I, O>, list: readonly I[]): void {
+  if (lanes.readBy.length < lanes.cap) {
+    const grown = new Int32Array(Math.max(64, lanes.cap * 2));
+    grown.set(lanes.readBy);
+    lanes.readBy = grown;
+  }
+  const marks = lanes.readBy;
+  const was = mix.pulled;
+  const slots = mix.pulledSlots;
+  const at = ++lanes.pullCount;
+  for (let n = 0; n < list.length; n++) {
+    const slot = slots[n] as number;
+    if (slot >= 0 && slot < marks.length && was[n] === list[n]) marks[slot] = at;
+  }
+  lanes.pulling = at;
 }
 
 /**

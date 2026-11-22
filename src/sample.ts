@@ -217,9 +217,11 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
 /**
  * A motion voice's value for a subject, sampled from the patch's state as its `at` would, but only
  * where that sample changes nothing: one with a change to stamp, commit or let go of goes to the
- * general path, which samples it if and when a probe asks, as it would with no lanes. A probe
- * this frame already read keeps the value it read, as the general path's record would. The
- * subject's voice time, delay and weight are in `Arg`.
+ * general path, which samples it if and when a probe asks, as it would with no lanes. Without
+ * history, a subject the pull under way reads for certain commits its timed due changes here, as
+ * that read would at the same voice time (2026-11-21). A probe this frame already read keeps the
+ * value it read, as the general path's record would. The subject's voice time, delay and weight
+ * are in `Arg`.
  */
 export function move<I, O>(
   lanes: Lanes<I, O>,
@@ -257,7 +259,15 @@ export function move<I, O>(
     }
     if (lanes.keeps) lanes.host.horizon(voice, delay);
     else reading.horizon = Number.POSITIVE_INFINITY;
-    if (!run.quiet(ms, elapsed)) {
+    if (
+      !run.quiet(ms, elapsed) &&
+      !(
+        lanes.pulling !== 0 &&
+        lanes.readBy[slot] === lanes.pulling &&
+        !lanes.keeps &&
+        run.settles(ms)
+      )
+    ) {
       // Only this voice waits for the general path where it can fold there last: the subject's
       // other voices still read the lanes.
       const own = lanes.byId.get(voice.id);

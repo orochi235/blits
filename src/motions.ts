@@ -450,6 +450,18 @@ export class Motions<I> {
     return true;
   }
 
+  /**
+   * Whether a live `sample` of the subject changes nothing but its due changes, each of them
+   * already timed, so the stretches it leaves do not depend on when it runs within a frame.
+   */
+  settles(s: number): boolean {
+    const flags = this.runs[this.base(s) + RunField.FLAGS] as number;
+    if ((flags & OLDER) !== 0 && reading.horizon !== Number.POSITIVE_INFINITY) return false;
+    if ((flags & PENDING) === 0) return true;
+    const list = (this.pending as Change[][])[s] as Change[];
+    return (list[list.length - 1] as Change).at !== undefined;
+  }
+
   /** Position and velocity at `at`, default the latest frame; undefined until there is one. */
   read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
     const s = this.known(subject);
