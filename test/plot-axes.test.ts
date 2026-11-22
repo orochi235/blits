@@ -156,10 +156,29 @@ describe('plot options', () => {
     );
     expect(() => m.plot(['a'], new Float64Array(2), { cell: 0 })).toThrow(/cell/);
   });
-  it('throws for the old shape, a cell as the third argument', () => {
-    const m = plain<string, Pose>(K);
-    // @ts-expect-error: cell is an option, plot(subjects, xy, { cell }).
-    expect(() => m.plot(['a'], new Float64Array(2), 2)).toThrow(/\{ cell \}/);
+  it('takes the old shape, a cell as the third argument, with one warning a mix', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const reads = () => {
+      const m = plain<string, Pose>(K);
+      const xy = new Float64Array([0, 0, 5, 5]);
+      m.plot(['a', 'b'], xy, 2);
+      m.plot(['a', 'b'], xy, 2);
+      const glow = m.cue({
+        patch: glowPatch() as never,
+        weight: m.around({ x: 0, y: 0, r: 2 }),
+        loop: true,
+      });
+      m.sync(0);
+      m.probe('a');
+      m.probe('b');
+      return [glow.weightOf('a'), glow.weightOf('b')];
+    };
+    expect(reads()).toEqual([1, 0]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/plot\(subjects, xy, \{ cell \}\)/);
+    reads();
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(() => plain<string, Pose>(K).plot(['a'], new Float64Array(2), 0)).toThrow(/cell/);
   });
 });
 

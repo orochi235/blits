@@ -471,6 +471,8 @@ export interface Mix<I, O, H = unknown> {
    * `axes` numbers a subject.
    */
   plot(subjects: readonly I[], xy: Float64Array, opts?: PlotOptions): void;
+  /** @deprecated `cell` is an option now: `plot(subjects, xy, { cell })`. */
+  plot(subjects: readonly I[], xy: Float64Array, cell: number): void;
   /** Says the host wrote new positions into the array it gave `plot`. The next frame reads them. */
   moved(): void;
   /**

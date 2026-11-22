@@ -287,7 +287,7 @@ describe('within is refused', () => {
     const m = mix<Dot, Pose>(K);
     const dots = grid();
     expect(() => m.plot(dots, new Float64Array(3))).toThrow(/two numbers a subject/);
-    expect(() => m.plot(dots, xyOf(dots), { cell: 0 })).toThrow(/cell/);
+    expect(() => m.plot(dots, xyOf(dots), 0)).toThrow(/cell/);
   });
 });
 

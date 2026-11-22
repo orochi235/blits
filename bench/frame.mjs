@@ -547,7 +547,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       xy[2 * j] = subjects[j].x;
       xy[2 * j + 1] = subjects[j].y;
     }
-  if (bounded) m.plot(subjects, xy, { cell: RADIUS });
+  if (bounded) m.plot(subjects, xy, RADIUS);
   const aim = () => {
     const a = t / 2000;
     pointer.x = side / 2 + (side / 3) * Math.cos(a);
