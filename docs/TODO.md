@@ -34,10 +34,6 @@ Owner tags:
   remove it in the release after the one that ships `{ axes, cell }`. `bench/frame.mjs`,
   `bench/recaddr.mjs` and `bench/plotleak.mjs` still call the old shape, since older builds an A/B
   runs them against throw for `{ cell }`; move them to `{ cell }` with the removal.
-- **[agent] Two copies of blits loaded together** share what each knows of its patches and
-  channels (`src/shared.ts`). quarks, tone and the panel take blits as a peer, so their ranges must
-  widen with each engine minor; quarks, tone and rapier call `bind`, so they must rise to the
-  release carrying it.
 - **[maintainer] A ticker has no single teardown** (filed 2026-11-15 from automated review).
   `ticker()` (`src/ticker.ts`) gives a remover per `add`, `after` and `hold`, and `stop()` only
   cancels the waiting frame: every mix's `onWake` subscription stays, so a mix waking restarts the
