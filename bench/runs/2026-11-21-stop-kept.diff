@@ -1,0 +1,127 @@
+diff --git a/src/filed.ts b/src/filed.ts
+index a20bd773..3f3f16d0 100644
+--- a/src/filed.ts
++++ b/src/filed.ts
+@@ -63,7 +63,7 @@ const AT_ONCE = FLOOR;
+  * is taken off its subjects a bounded share each sync.
+  */
+ export class Filed<I, V extends Filer<I>> {
+-  private readonly lists = new Store<I, (V | Group<V>)[]>();
++  private readonly lists: Store<I, (V | Group<V>)[]>;
+   /** Groups a voice may still join, by how many subjects they name. */
+   private readonly groups = new Map<number, Group<V>[]>();
+   /** Groups listed under some subject: while none are, every list holds only voices. */
+@@ -77,7 +77,12 @@ export class Filed<I, V extends Filer<I>> {
+   /** Per subject, how many long groups had been made when `get` last asked them about it. */
+   private seen = new Store<I, number>();
+ 
+-  constructor(private readonly slot: GroupSlot = 'group') {}
++  constructor(
++    private readonly slot: GroupSlot = 'group',
++    lists?: Store<I, (V | Group<V>)[]>,
++  ) {
++    this.lists = lists ?? new Store();
++  }
+ 
+   /** The voices naming `subject`, in voice order; undefined where none do. Not to be changed. */
+   get(subject: I): V[] | undefined {
+diff --git a/src/kept.ts b/src/kept.ts
+new file mode 100644
+index 00000000..2cf77061
+--- /dev/null
++++ b/src/kept.ts
+@@ -0,0 +1,62 @@
++import { Store } from './store.js';
++import type { Subject } from './subject.js';
++
++/** What a mix keeps per subject in one entry: its chain head and the voices naming it. */
++export class Kept {
++  head: Subject<unknown> | undefined = undefined;
++  list: unknown[] | undefined = undefined;
++}
++
++/** A subject's chain head, kept in the entry it shares with `named`'s list. */
++export class Heads<I> extends Store<I, Subject<unknown>> {
++  constructor(private readonly kept: Store<I, Kept>) {
++    super();
++  }
++
++  override get(key: I): Subject<unknown> | undefined {
++    return this.kept.get(key)?.head;
++  }
++
++  override set(key: I, value: Subject<unknown>): void {
++    let k = this.kept.get(key);
++    if (k === undefined) {
++      k = new Kept();
++      this.kept.set(key, k);
++    }
++    k.head = value;
++  }
++
++  override delete(key: I): void {
++    const k = this.kept.get(key);
++    if (k === undefined) return;
++    k.head = undefined;
++    if (k.list === undefined) this.kept.delete(key);
++  }
++}
++
++/** The voices naming a subject, kept in the entry it shares with its chain head. */
++export class Lists<I, V> extends Store<I, V[]> {
++  constructor(private readonly kept: Store<I, Kept>) {
++    super();
++  }
++
++  override get(key: I): V[] | undefined {
++    return this.kept.get(key)?.list as V[] | undefined;
++  }
++
++  override set(key: I, value: V[]): void {
++    let k = this.kept.get(key);
++    if (k === undefined) {
++      k = new Kept();
++      this.kept.set(key, k);
++    }
++    k.list = value;
++  }
++
++  override delete(key: I): void {
++    const k = this.kept.get(key);
++    if (k === undefined) return;
++    k.list = undefined;
++    if (k.head === undefined) this.kept.delete(key);
++  }
++}
+diff --git a/src/mixer.ts b/src/mixer.ts
+index 40765a01..fbc8fda5 100644
+--- a/src/mixer.ts
++++ b/src/mixer.ts
+@@ -33,6 +33,7 @@ import { GoneIndex } from './gone.js';
+ import type { HandleHost } from './handle.js';
+ import { held, shownOf, sinceOf, unreachedOf } from './held.js';
+ import { book, laneHost } from './hosts.js';
++import { Heads, type Kept, Lists } from './kept.js';
+ import { Lanes } from './lanes.js';
+ import { hostOf, listed, readingAt } from './marks.js';
+ import type { Motions } from './motions.js';
+@@ -250,7 +251,9 @@ export class Mixer<I, O> implements Mix<I, O> {
+    * where none does. Relinked when `version` moves, or when a voice naming the subject marks its
+    * head stale: see `changed` in `chain.ts`.
+    */
+-  chains = new Store<I, Subject<unknown>>();
++  /** Per subject, its chain head and the voices naming it, in one entry: see `Kept`. */
++  readonly kept = new Store<I, Kept>();
++  chains: Store<I, Subject<unknown>> = new Heads<I>(this.kept);
+   /** How many subjects `chains` holds a chain for. */
+   chained = 0;
+   version = 0;
+@@ -260,7 +263,7 @@ export class Mixer<I, O> implements Mix<I, O> {
+   readonly primed = new Float64Array(Primed.SIZE);
+   readonly steps = new Steps<Voice<I, O>, I>();
+   /** Per subject, the voices whose `subjects` name it, in voice order. */
+-  named = new Filed<I, Voice<I, O>>();
++  named = new Filed<I, Voice<I, O>>('group', new Lists(this.kept));
+   /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
+   readonly parters = new Set<Voice<I, O>>();
+   /** What an anchor can still find of voices that left without history, or past its reach. */

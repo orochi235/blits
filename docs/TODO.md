@@ -124,9 +124,11 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   stop reads a crowd voice's seat off the voice, 2.765 against 3.040 µs at 40,000 (msb-uai,
   `--quiet` on a loaded node, 16 rounds, U 74.5 of 256, `runs/2026-11-21-stop-seat-ab3.txt`;
   2.825 against 3.035 on teitou, `-stop-seat-ab2.txt`); steady frames did not move
-  (`-stop-seat-ab.txt`). Left: `named`'s list, which could ride on one per-subject record with the chain head, at
-  the cost of a load more on every probe that looks a chain up, so it wants `probed` and the probe
-  rows timed beside the stop (not built). The fade's growth (0.36 to 1.03 µs) touches no map: it is
+  (`-stop-seat-ab.txt`). Left: `named`'s list. Sharing one entry with the chain head was tried and backed out
+  (2026-11-21): a stop at 40,000 read 7% less, but `churn` 19% and `tween-` 4% more, as every
+  general-path probe reads the head through one more object (studio, `runs/2026-11-21-stop-kept-ab.txt`).
+  Moving the list onto the head itself would avoid that load but has to follow the head through
+  every relink (not tried). The fade's growth (0.36 to 1.03 µs) touches no map: it is
   the voice, its handle and its patch read cold (inferred).
 - **[agent] A voice leaving the general path still requalifies every voice where a voice still
   present writes one of its channels, and so does a role member leaving a lane.** A requalify
