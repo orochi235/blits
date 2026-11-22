@@ -93,6 +93,13 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   against 17. What is left is per row: each crowd row's arrays, seat and `seats` entry, and the
   first stretch `Motions.fresh` builds as objects before writing it into the row. `Voice`'s boxed
   doubles are made at cue, outside this frame.
+- **[agent] Cueing a staggered voice naming 1M subjects takes 71 ms on the stock mixer, 76 on
+  the gpu engine** (teitou, Chromium, 60 cues a row, `bench/runs/2026-11-21-gpu-cue.txt`,
+  2026-11-21): over four frames' time in one call. About two thirds is `Named` (`src/named.ts`),
+  which past 8 subjects builds a `Set` of the list and, with a stagger, a `Map` from each subject to
+  its delay beside the `Float64Array` of the same delays. The rest of `cue` takes about a fifth and
+  collection 8–10%. The gpu engine's share is about 5 ms: the level hash (4.1 ms in Chromium) and
+  the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
 - **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
   more; inferred to be first touches of each object of the voice and each array of its crowd row.
 - **[agent] `carry`'s walk past read-ahead copies that never read a voice is untested:** answering
@@ -120,11 +127,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
 
 ## gpu engine
 
-- **[agent] Cueing a staggered voice naming 1M subjects is untimed.** Its start and end frames
-  on the gpu engine now cost 0.13–0.19 ms and 0.10–0.17 ms of sync and fold
-  (`bench/runs/2026-11-12-gpu-codes-copy.txt`), because the level hash (about 2 ms at 1M, from the
-  hash bench) and the codes buffer moved to `cue`; a voice cued to start at once pays the same
-  total in one frame.
 - **[agent] A channel a new stock kind or a staggered shader patch writes is null while its
   kernel compiles.** A compiled kernel stands in for everything else (`src/gpu/stand-in.ts`), and a
   shader patch playing at one time for every subject folds from its `at`; a staggered one would need

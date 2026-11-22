@@ -1,0 +1,3 @@
+onto: plan 2
+ 1/2 mixer stagger   1000000  median    73.170 ms  p95    94.715 ms  max    94.715 ms at frame     7  frames 15  wall    2.8 s
+ 2/2 gpu   stagger   1000000  median    75.515 ms  p95    83.315 ms  max    83.315 ms at frame     7  frames 15  wall    2.8 s
