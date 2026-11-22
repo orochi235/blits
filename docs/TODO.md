@@ -147,9 +147,6 @@ built and what is deliberately not offered.
   are offered.
 - **[maintainer] Recording level moves** as a composition field, so they save, share and undo.
 - **[maintainer] A booker with its own clock, and link drags on group headers** — wanted or not.
-- **[agent] Under "replay from 0", the score holds one frame at each loop and edit.** A replay
-  leaves the Player's last host time at the record's, so the next real frame reads as a stall and
-  its rebase drops that frame's time (`fresh()` and `sync` in `src/blits/player.ts`).
 - **[agent] A rate set from the debug panel is not in the Player's record**, so a replay drops it;
   the playground's own rate control is recorded.
 - **[waiting] Three unnamed mixes on the playground's debug panel come from weasel** (seen

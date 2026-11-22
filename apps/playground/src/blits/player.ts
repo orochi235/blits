@@ -126,7 +126,7 @@ export class Player {
     }
     if (init) this.author(init.levels);
     this.built = this.fresh();
-    if (from) this.replay(from.ops, from.t);
+    if (from) this.replay(from.ops, from.t, from.lastHost);
     else this.apply({ kind: 'sync', at: 0 });
     this.emit();
   }
@@ -437,9 +437,10 @@ export class Player {
 
   /**
    * Builds afresh and does `ops` again while they leave the clock at or before `t`, then seeks the
-   * rest of the way: what playback showed, short of live changes.
+   * rest of the way: what playback showed, short of live changes. `host` is the host time playback
+   * last synced at, which the replay leaves the clock standing at, so the next frame plays on.
    */
-  private replay(ops: readonly Op[], t: number): void {
+  private replay(ops: readonly Op[], t: number, host = this.lastHost): void {
     const kept = ops.slice();
     const end = kept.findIndex((o) => o.now > t);
     if (end >= 0) kept.length = end;
@@ -449,6 +450,10 @@ export class Player {
     if (this.built.transport.now < t) this.apply({ kind: 'seek', to: t });
     // The cut ops left the clock at the host time it first passed `t`; play on from now instead.
     if (end >= 0) this.apply({ kind: 'rebase' });
+    if (host > this.lastHost) {
+      if (end < 0) this.apply({ kind: 'rebase' });
+      this.apply({ kind: 'sync', at: host });
+    }
   }
 
   private fresh(): Built {

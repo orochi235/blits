@@ -175,12 +175,29 @@ describe('Player', () => {
     const p = player();
     p.seekBy = 'replay';
     play(p, 1000);
+    const host = p.host;
     p.seek(900);
-    // The frame after the replay takes up the time since, as a resume does, and the next plays on.
-    step(p);
-    expect(p.t).toBeCloseTo(900, 6);
-    step(p);
+    // The replay's syncs were at the record's host times; the next real frame is one past the last.
+    p.sync(host + FRAME);
     expect(p.t).toBeCloseTo(900 + FRAME, 6);
+    expect(p.following).toBe(false);
+    p.sync(host + 2 * FRAME);
+    expect(p.t).toBeCloseTo(900 + 2 * FRAME, 6);
+  });
+
+  it('a replay at each lap and edit plays straight on, holding no frame', () => {
+    const p = player();
+    p.seekBy = 'replay';
+    play(p, 2000);
+    const host = p.host;
+    const t = p.t;
+    p.rebuild();
+    p.sync(host + FRAME);
+    expect(p.t).toBeCloseTo(t + FRAME, 6);
+    p.lap(p.t % 2000, 2000);
+    const at = p.t;
+    p.sync(host + 2 * FRAME);
+    expect(p.t).toBeCloseTo(at + FRAME, 6);
   });
 
   it('a frame after a rebase follows the score rather than reading as moved elsewhere', () => {
