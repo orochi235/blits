@@ -22,7 +22,7 @@ for (let j = 0; j < N; j++) {
 const m = mix(kit({ gain: mul(), dark: max() }));
 const R = 8;
 const pointer = { x: 0, y: 0, r: R };
-m.plot(subjects, xy, R);
+m.plot(subjects, xy, { cell: R });
 m.cue({
   patch: patch(
     180,

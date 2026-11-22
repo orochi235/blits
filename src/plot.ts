@@ -2,33 +2,22 @@ import { confine } from './bound.js';
 import type { Mixer } from './mixer.js';
 import { Places } from './places.js';
 import type { PlotOptions } from './types.js';
-import { production, warnOnce } from './warn.js';
+import { production } from './warn.js';
 
 const NUMBERS = ['', 'one number', 'two numbers', 'three numbers'];
 
-/** By mix, what the old `plot` shape warns about, once. */
-const oldShape = new WeakMap<object, object>();
-
 /**
  * `Mix.plot`: the mix's subjects and their positions, `axes` numbers a subject side by side in
- * `xy`, read in place. A number for `opts` is the old shape, `cell` alone, kept for one release.
+ * `xy`, read in place.
  */
 export function plot<I, O>(
   this: Mixer<I, O>,
   subjects: readonly I[],
   xy: Float64Array,
-  opts?: PlotOptions | number,
+  o?: PlotOptions,
 ): void {
-  let o: PlotOptions | undefined = opts as PlotOptions | undefined;
-  if (typeof opts === 'number') {
-    let about = oldShape.get(this);
-    if (about === undefined) {
-      about = {};
-      oldShape.set(this, about);
-    }
-    warnOnce(about, "plot's cell is an option now: plot(subjects, xy, { cell })");
-    o = { cell: opts };
-  }
+  if (typeof o === 'number')
+    throw new TypeError("blits: plot's cell is an option: plot(subjects, xy, { cell })");
   const axes = o?.axes ?? 2;
   if (axes !== 1 && axes !== 2 && axes !== 3)
     throw new RangeError(`blits: plot's axes is 1, 2 or 3, not ${axes}`);
