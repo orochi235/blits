@@ -111,6 +111,25 @@ shown equal on the record, or those fields cached on its `Ahead`, which grows it
 read saves. A narrower inexact skip made 403 of 2,000 `SAME_SEEK=1` scenes differ and failed 7
 tests. Not built.
 
+## astv's motion bench against 0.7.1
+
+`bench/astv-motion.sh` runs cases of astv's `motion.bench.ts` on any blits builds, published or
+commits, turn about, and `bench/astv-motion.mjs` tables them. Measured on teitou, 10 rounds, astv at
+`eeee2a36` (2026-11-21, `runs/2026-11-21-astv-remeasure/`), mean µs a frame, median of rounds:
+
+| Case | 0.7.1 | 0.8.0 | 0.8.1 | 1.2.0 | 1.4.0 | `b2e157dc` |
+|---|---:|---:|---:|---:|---:|---:|
+| Glides, 20 documents | 10.48 | 14.95 | 10.91 | 10.38 | 10.04 | 10.81 |
+| Progress clocks | 1.29 | 2.31 | 1.62 | 1.66 | 1.65 | 1.71 |
+
+Glides sit level with 0.7.1; its runs spread 7.4 to 12.0 on one build. Progress clocks cost about
+0.4 µs a frame more, every run of 0.7.1 at or under 1.33 and every later one at or over 1.51.
+Profiles of that case (`runs/2026-11-21-astv-clocks-prof/`, 3 runs a build of 200,000 frames)
+put the gap in many small per-sync costs from features added since, none over a fifth of it:
+`DueQueue.takeEvery`'s three `length` writes, `Filed.off` unfiling each retired clock's voice,
+`tick` pushing a history frame, `Departed.add`'s marks, `shownAt`, `shed`, and a probe's fold
+split into `contribution`, with GC up a third (measured). No one change brings it back (inferred).
+
 ## Tried and backed out
 
 Each moved no number outside run-to-run spread, or cost more than it saved. The ledger holds the
@@ -142,6 +161,7 @@ rows where one was timed.
 | A public `keys` read into a reused out object (2026-10-08) | slower than `at` (0.87 against 0.78 ms); V8 removes `at`'s fresh object |
 | Writing `pullRun`'s `LANE_PROBE`/`LANE_FILL` once per run | not tried, and not to try: every pace loop reads them by slot, so it would make a second place for the answer |
 | Writing the trail's subject list only where a subject moved (2026-11-11) | `tweens^` +4% (`bench/runs/2026-11-11-trail-list-ab.txt`) |
+| Skipping `DueQueue.takeEvery`'s `length` writes when they change nothing, the largest single share of astv's progress-clock gap (2026-11-21) | progress clocks 1.805 against 1.758 µs (U 45), glides 11.12 against 11.86 µs (U 19, slower), busy stage level (teitou, 10 rounds, `runs/2026-11-21-astv-every-length-ab/`) |
 | Three variants of `levelsOf`'s delay hash (2026-11-11) | none faster than about 2 ns a subject |
 | Copying each fn result into a delta the record owns, to end the finder commit's pretenuring (2026-10-29) | GC pauses fell, `glowb^` 14% slower; the pauses are 8 µs of a 100 µs loss |
 | Building records with a class (`new`) | layout and time unchanged |

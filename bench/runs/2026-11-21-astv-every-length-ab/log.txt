@@ -1,0 +1,63 @@
+# teitou astv eeee2a36 bench/astv-motion.sh 10 rounds clocks,glides,busy b2e157dc . (takeEvery length guards)
+built b2e157dc (b2e157dc5d00510ec04afe20ff449606304d1aaa)
+built the tree
+1/60 round 1 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      3.1µs  p99     24.0µs  heap    0.1MB  progress clocks, restarted every 1 s
+2/60 round 1 build b2e157dc  1/1  mean      9.2µs  p50      4.8µs  p95     32.9µs  p99     56.7µs  heap   27.8MB  glides, 20 documents every 500 ms
+3/60 round 1 build b2e157dc  1/1  mean    324.1µs  p50    267.6µs  p95    646.9µs  p99   1436.8µs  heap  248.1MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+4/60 round 1 build .  1/1  mean      1.7µs  p50      0.7µs  p95      2.8µs  p99     24.6µs  heap   -0.1MB  progress clocks, restarted every 1 s
+5/60 round 1 build .  1/1  mean     11.5µs  p50      6.5µs  p95     37.4µs  p99     61.3µs  heap   28.9MB  glides, 20 documents every 500 ms
+6/60 round 1 build .  1/1  mean    323.8µs  p50    266.7µs  p95    647.8µs  p99   1426.9µs  heap  272.0MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+7/60 round 2 build .  1/1  mean      1.8µs  p50      0.7µs  p95      3.4µs  p99     27.1µs  heap    0.3MB  progress clocks, restarted every 1 s
+8/60 round 2 build .  1/1  mean     11.7µs  p50      7.1µs  p95     38.3µs  p99     62.5µs  heap   29.2MB  glides, 20 documents every 500 ms
+9/60 round 2 build .  1/1  mean    325.2µs  p50    268.7µs  p95    660.3µs  p99   1415.3µs  heap  272.9MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+10/60 round 2 build b2e157dc  1/1  mean      1.8µs  p50      0.7µs  p95      3.7µs  p99     25.9µs  heap   -0.0MB  progress clocks, restarted every 1 s
+11/60 round 2 build b2e157dc  1/1  mean     11.8µs  p50      7.2µs  p95     41.7µs  p99     63.7µs  heap   30.4MB  glides, 20 documents every 500 ms
+12/60 round 2 build b2e157dc  1/1  mean    339.2µs  p50    279.2µs  p95    691.7µs  p99   1431.4µs  heap  271.7MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+13/60 round 3 build b2e157dc  1/1  mean      2.1µs  p50      0.7µs  p95      4.7µs  p99     28.7µs  heap    0.4MB  progress clocks, restarted every 1 s
+14/60 round 3 build b2e157dc  1/1  mean     11.2µs  p50      6.3µs  p95     39.3µs  p99     63.8µs  heap   30.2MB  glides, 20 documents every 500 ms
+15/60 round 3 build b2e157dc  1/1  mean    325.1µs  p50    266.6µs  p95    670.5µs  p99   1453.7µs  heap  253.5MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+16/60 round 3 build .  1/1  mean      1.8µs  p50      0.7µs  p95      3.4µs  p99     26.0µs  heap    0.5MB  progress clocks, restarted every 1 s
+17/60 round 3 build .  1/1  mean     12.5µs  p50      6.2µs  p95     40.0µs  p99     64.8µs  heap   28.2MB  glides, 20 documents every 500 ms
+18/60 round 3 build .  1/1  mean    335.8µs  p50    276.1µs  p95    700.6µs  p99   1459.8µs  heap  274.4MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+19/60 round 4 build .  1/1  mean      1.6µs  p50      0.7µs  p95      3.1µs  p99     24.0µs  heap    0.2MB  progress clocks, restarted every 1 s
+20/60 round 4 build .  1/1  mean     10.8µs  p50      6.4µs  p95     37.4µs  p99     58.9µs  heap   28.1MB  glides, 20 documents every 500 ms
+21/60 round 4 build .  1/1  mean    308.4µs  p50    260.5µs  p95    609.3µs  p99   1340.9µs  heap  273.6MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+22/60 round 4 build b2e157dc  1/1  mean      1.7µs  p50      0.7µs  p95      3.6µs  p99     24.5µs  heap    0.3MB  progress clocks, restarted every 1 s
+23/60 round 4 build b2e157dc  1/1  mean     10.2µs  p50      5.9µs  p95     35.6µs  p99     57.4µs  heap   30.5MB  glides, 20 documents every 500 ms
+24/60 round 4 build b2e157dc  1/1  mean    304.0µs  p50    256.6µs  p95    616.8µs  p99   1346.9µs  heap  248.7MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+25/60 round 5 build b2e157dc  1/1  mean      1.8µs  p50      0.7µs  p95      3.6µs  p99     25.2µs  heap    0.1MB  progress clocks, restarted every 1 s
+26/60 round 5 build b2e157dc  1/1  mean     11.1µs  p50      7.1µs  p95     39.3µs  p99     64.2µs  heap   30.4MB  glides, 20 documents every 500 ms
+27/60 round 5 build b2e157dc  1/1  mean    319.0µs  p50    263.8µs  p95    655.6µs  p99   1352.7µs  heap  276.2MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+28/60 round 5 build .  1/1  mean      1.7µs  p50      0.7µs  p95      3.6µs  p99     25.4µs  heap    0.4MB  progress clocks, restarted every 1 s
+29/60 round 5 build .  1/1  mean     12.2µs  p50      7.1µs  p95     38.8µs  p99     66.6µs  heap   30.1MB  glides, 20 documents every 500 ms
+30/60 round 5 build .  1/1  mean    321.9µs  p50    265.2µs  p95    662.4µs  p99   1368.4µs  heap  272.1MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+31/60 round 6 build .  1/1  mean      2.0µs  p50      0.7µs  p95      4.5µs  p99     27.4µs  heap    0.5MB  progress clocks, restarted every 1 s
+32/60 round 6 build .  1/1  mean     12.5µs  p50      7.0µs  p95     40.3µs  p99     71.3µs  heap   25.5MB  glides, 20 documents every 500 ms
+33/60 round 6 build .  1/1  mean    318.9µs  p50    263.7µs  p95    644.9µs  p99   1388.6µs  heap  245.3MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+34/60 round 6 build b2e157dc  1/1  mean      1.9µs  p50      0.7µs  p95      3.9µs  p99     26.9µs  heap    0.2MB  progress clocks, restarted every 1 s
+35/60 round 6 build b2e157dc  1/1  mean     11.5µs  p50      6.3µs  p95     38.0µs  p99     63.4µs  heap   29.9MB  glides, 20 documents every 500 ms
+36/60 round 6 build b2e157dc  1/1  mean    335.7µs  p50    273.3µs  p95    679.5µs  p99   1452.4µs  heap  303.7MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+37/60 round 7 build b2e157dc  1/1  mean      1.8µs  p50      0.7µs  p95      3.5µs  p99     25.4µs  heap    0.3MB  progress clocks, restarted every 1 s
+38/60 round 7 build b2e157dc  1/1  mean     11.2µs  p50      7.1µs  p95     37.8µs  p99     59.8µs  heap   30.1MB  glides, 20 documents every 500 ms
+39/60 round 7 build b2e157dc  1/1  mean    390.2µs  p50    315.2µs  p95    801.0µs  p99   1588.0µs  heap  274.8MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+40/60 round 7 build .  1/1  mean      2.3µs  p50      0.7µs  p95      4.3µs  p99     35.3µs  heap    0.3MB  progress clocks, restarted every 1 s
+41/60 round 7 build .  1/1  mean     12.5µs  p50      7.2µs  p95     43.8µs  p99     74.7µs  heap   29.9MB  glides, 20 documents every 500 ms
+42/60 round 7 build .  1/1  mean    338.1µs  p50    273.5µs  p95    691.4µs  p99   1440.5µs  heap  271.8MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+43/60 round 8 build .  1/1  mean      1.7µs  p50      0.7µs  p95      3.7µs  p99     25.6µs  heap    0.5MB  progress clocks, restarted every 1 s
+44/60 round 8 build .  1/1  mean     11.0µs  p50      7.0µs  p95     37.5µs  p99     58.7µs  heap   30.2MB  glides, 20 documents every 500 ms
+45/60 round 8 build .  1/1  mean    327.7µs  p50    267.1µs  p95    669.8µs  p99   1451.0µs  heap  271.7MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+46/60 round 8 build b2e157dc  1/1  mean      1.8µs  p50      0.7µs  p95      3.7µs  p99     25.0µs  heap    0.3MB  progress clocks, restarted every 1 s
+47/60 round 8 build b2e157dc  1/1  mean     10.7µs  p50      6.4µs  p95     36.2µs  p99     57.7µs  heap   29.9MB  glides, 20 documents every 500 ms
+48/60 round 8 build b2e157dc  1/1  mean    329.3µs  p50    270.4µs  p95    676.4µs  p99   1361.8µs  heap  274.9MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+49/60 round 9 build b2e157dc  1/1  mean      1.8µs  p50      0.7µs  p95      3.6µs  p99     25.7µs  heap    0.2MB  progress clocks, restarted every 1 s
+50/60 round 9 build b2e157dc  1/1  mean     10.5µs  p50      6.1µs  p95     36.1µs  p99     59.1µs  heap   30.2MB  glides, 20 documents every 500 ms
+51/60 round 9 build b2e157dc  1/1  mean    318.3µs  p50    261.0µs  p95    648.2µs  p99   1431.0µs  heap  272.5MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+52/60 round 9 build .  1/1  mean      2.8µs  p50      0.8µs  p95      7.5µs  p99     44.8µs  heap    0.1MB  progress clocks, restarted every 1 s
+53/60 round 9 build .  1/1  mean     11.5µs  p50      6.1µs  p95     42.5µs  p99     77.2µs  heap   27.7MB  glides, 20 documents every 500 ms
+54/60 round 9 build .  1/1  mean    333.2µs  p50    270.8µs  p95    677.9µs  p99   1417.2µs  heap  253.6MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+55/60 round 10 build .  1/1  mean      1.8µs  p50      0.7µs  p95      3.4µs  p99     26.4µs  heap    0.2MB  progress clocks, restarted every 1 s
+56/60 round 10 build .  1/1  mean     12.0µs  p50      6.3µs  p95     36.6µs  p99     58.4µs  heap   30.1MB  glides, 20 documents every 500 ms
+57/60 round 10 build .  1/1  mean    332.6µs  p50    271.4µs  p95    673.3µs  p99   1421.6µs  heap  247.4MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail
+58/60 round 10 build b2e157dc  1/1  mean      1.9µs  p50      0.8µs  p95      3.7µs  p99     27.5µs  heap    0.1MB  progress clocks, restarted every 1 s
+59/60 round 10 build b2e157dc  1/1  mean     11.8µs  p50      7.0µs  p95     38.2µs  p99     64.4µs  heap   26.0MB  glides, 20 documents every 500 ms
+60/60 round 10 build b2e157dc  1/1  mean    321.3µs  p50    263.9µs  p95    656.1µs  p99   1410.2µs  heap  270.3MB  a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail

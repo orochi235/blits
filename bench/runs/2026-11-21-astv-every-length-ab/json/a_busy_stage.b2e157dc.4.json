@@ -1,0 +1,13 @@
+{
+  "frames": 3600,
+  "results": {
+    "a busy stage: 4 windows landing, 200 labels, 20 orbs a second, glides, clocks, the rail": {
+      "mean": 0.30401010944444484,
+      "p50": 0.2565829999998641,
+      "p95": 0.6167500000001382,
+      "p99": 1.3469169999998485,
+      "max": 1.8588749999998981,
+      "heapMB": 248.71215057373047
+    }
+  }
+}

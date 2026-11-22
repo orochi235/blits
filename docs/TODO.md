@@ -144,8 +144,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   number cannot fix it, which needs numbers swapped between live subjects. Under history, roles or
   a bound `src/renumber.ts` still declines; extending it there needs tests proving each store it
   would carry.
-- **[agent] astv's glides (+8%) and progress clocks (+39%) since 0.8.0** are unexplained, at 1–2 µs
-  a frame; `MOTION_ONLY=1 probes/blits-version-bench.sh <out> 0.7.1` in `~/src/astv` on a node.
 - **[agent] Running back past a voice's end costs `own` and `keys` 1–3%** (`4a6cc4e`, accepted
   under the tuning bound, 2026-10-17).
 - **[agent] A probe pays for every channel in the kit, written or not**; skipping unwritten ones
