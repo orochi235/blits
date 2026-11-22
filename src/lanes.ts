@@ -585,9 +585,11 @@ export class Lanes<I, O> implements Watcher {
     }
     const lane = this.byId.get(id);
     if (lane === undefined) return;
+    lane.latestSince = Number.NEGATIVE_INFINITY;
     for (let q = 0; q < lane.list.length; q++) {
       const held = lane.records[q];
       if (held !== undefined) lane.data[q * Row.STRIDE + Row.SINCE] = held.shown;
+      lane.since(lane.data[q * Row.STRIDE + Row.SINCE] as number);
     }
   }
 

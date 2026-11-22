@@ -43,6 +43,8 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
   const lately = lanes.lately;
   const now = lanes.now;
   const op = ch.op;
+  // `foldNumber`'s sum written out, its op asked once a fill rather than once an axis.
+  const sum = op === 'sum';
   // Ids are finite, so a fill running to the end need not read each row's.
   const bounded = id !== Number.POSITIVE_INFINITY;
   for (; p < list.length; p++) {
@@ -93,13 +95,24 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
     const x = h + Hot.X0;
     const g = x + 2 * n;
     if (landed) {
-      for (let a = 0; a < n; a++)
-        values[base + a] = foldNumber(op, values[base + a] as number, hot[g + a] as number, w);
+      if (sum)
+        for (let a = 0; a < n; a++)
+          values[base + a] = (values[base + a] as number) + (hot[g + a] as number) * w;
+      else
+        for (let a = 0; a < n; a++)
+          values[base + a] = foldNumber(op, values[base + a] as number, hot[g + a] as number, w);
       continue;
     }
     const u = progress(elapsed, hot[h + Hot.AT] as number, hot[h + Hot.MS] as number);
     const share = left(c.eases[p] as Curve, u);
     if (u >= 1 && (hot[h + Hot.RATE] as number) > 0) hot[h + Hot.LANDED] = now;
+    if (sum) {
+      for (let a = 0; a < n; a++)
+        values[base + a] =
+          (values[base + a] as number) +
+          between(hot[x + a] as number, hot[g + a] as number, share) * w;
+      continue;
+    }
     for (let a = 0; a < n; a++)
       values[base + a] = foldNumber(
         op,

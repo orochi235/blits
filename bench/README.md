@@ -15,6 +15,8 @@ the machine being used.
 - `bench/frame.mjs` takes `form:n:v` for a row its list does not hold, such as `fns-:10000:1`, and
   `OUT=blank` to probe into a pose of the mix's own (`mix.pose()`) rather than a host's `{}`.
   `RETARGETS=1` gives the mix `retargets: true`, so each probe keeps its pose in `Probes`.
+  `LONG=<ms>` sets the long tween rows' length (10 s): `LONG=1e9` keeps `tweens^` and `weasel^` in
+  flight through `FRAMES=5000`, `LONG=1` lands `tweens^` on its first frame.
 - `node bench/medians.mjs <output>` reduces a run to medians; `node bench/allocs.mjs <row>` lists
   the functions that allocate.
 - `bench/start.mjs` times cueing N one-subject voices and the first two frames; `LINEAGE_BENCH=start.mjs
@@ -74,6 +76,9 @@ the machine being used.
   before v0.16.0, which has no `ink`, cannot run them. On one build `ink()` read `hues` 17% and
   `hues^` 46% slower than the old channel, before ink folded as a sum
   (`runs/2026-11-21-ink-fold-sum.txt`).
+- **A short `bench/frame.mjs` process runs on about 1.5 cores** (V8's compiler and collector
+  threads), so `onto do --max-cores 1` stops a job of default 300-frame runs. Run rows at
+  `FRAMES=5000`, and build in a `--kind build` job of its own (2026-11-21).
 - **The heatmap stress demo plays a lanes twin**, so profile `bench/heatmap.mjs` with
   `bench/heatprof.sh` (`INLINE=off`, `LINES`, `CALLERS`), not `bench/stressprof.sh heatmap`.
 
@@ -134,6 +139,7 @@ rows where one was timed.
 | A segment lookup shared by keys tracks whose stops sit at the same phases: a 256-slot memo, phase to segment, on a timing interned across patches (2026-11-11) | 98% of the stress rig's searches hit it, yet `read` p50 0.955 against 0.953 ms without (teitou, 7 rounds, `runs/2026-11-11-timing-memo-ab/`): a 9-stop binary search costs what the lookup does |
 | Folding the lane signal read: `call` skipping its second `primeLaned` after `host.signal`, which calls the signal without `base` (2026-11-12) | heatmap lanes `pull` 5.216 against 5.248 ms (studio, 7 rounds, `runs/2026-11-12-heatmap-signal-fold-ab.txt`); `one`'s self time moved to the next line, so it is not call overhead |
 | Running a role inline past members yet to start, done or idle, not only when every member plays (2026-11-21) | `rolewait` 3.797 against 3.679 ms, U 20 at 9 rounds on a shared node; gathering then folding costs about what inline does there (`runs/2026-11-21-role-inline-waiting.{txt,diff}`, the diff also holding the ink change) |
+| `Trail.record` comparing its list with the one it holds before storing each subject (2026-11-21) | `tweens^` 0.283 against 0.282 ms, `weasel^` 0.307 against 0.299 (msb-uai, 8 rounds, `runs/2026-11-21-steady-tweens-switches.txt`) |
 | Touching every record a lane reads in a pass before its loop, to take a suspected cache miss out of `one` (2026-11-21) | heatmap lanes `pull` 3.800 against 3.709 ms, slower (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-signal-split.txt`) |
 
 A lane switching a band off at weight 0 costs the `glowl` rows about 3% (teitou, 2026-10-10,

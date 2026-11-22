@@ -228,11 +228,13 @@ export function reset<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   lane.read = false;
   lane.weighed = false;
   // With no fade in or out the envelope is 1 for every subject, which is what it would return.
+  // So is a fade in that every subject has climbed: none started later than `latestSince`.
   lane.flat =
-    !((voice.fade.in ?? 0) > 0) &&
     voice.out === null &&
     voice.back === null &&
-    voice.owner === null;
+    voice.owner === null &&
+    (!((voice.fade.in ?? 0) > 0) ||
+      (!Number.isNaN(lane.latestSince) && this.host.envelope(voice, lane.latestSince) === 1));
   lane.fade = 1;
 }
 
