@@ -8,7 +8,7 @@ import type { Voice } from './voice.js';
  * and kept under history for a seek back to give again.
  */
 export function delayOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): number {
-  const known = voice.named?.delays?.get(subject);
+  const known = voice.named?.delayOf(subject);
   if (known !== undefined) return known;
   return staggerMet(mix, voice, subject, asked);
 }
@@ -42,7 +42,7 @@ export function delayAhead<I, O>(
   subject: I,
   hold: boolean,
 ): number {
-  const known = voice.named?.delays?.get(subject);
+  const known = voice.named?.delayOf(subject);
   if (known !== undefined) return known;
   const kept = voice.staggers;
   const next = kept?.next(subject);
