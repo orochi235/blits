@@ -1,0 +1,32 @@
+# teitou (Apple M5 Max, apple metal-3), 2026-11-21, headless Chromium 153, node v26.13.0
+# onto do --kind bench --node teitou --gui --solo -- ROWS=gpu:1000000,mixer:1000000,gpu:100000,mixer:100000 \
+#   FRAMES=30 WARM=5 bench/gpu-ab.sh 9c0e3c5d bench/gpu-cue.mjs bench/runs/2026-11-21-named-places-cue/cue
+# a is 9c0e3c5d (src as at 769c03e7), b the tree: `Named` keeps one Map from subject to its place in
+# the list, in place of a Set of the list and a Map from subject to stagger answer, and reads a
+# subject's delay from the Float64Array by that place; a long array is placed in one pass of `set`,
+# falling back to the deduping walk only where the map comes out shorter than the array.
+# Raw records: 2026-11-21-named-places-cue/cue-{a1,b1,b2,a2}.jsonl; progress lines: cue.log.
+#
+# `cue` ms, both runs a side (60 cues), median (range):
+#   gpu   1M     a 75.7 (63.6-87.7)   b 40.6 (32.3-53.3)   ratio 0.536
+#   mixer 1M     a 71.2 (62.6-91.0)   b 35.1 (27.9-44.0)   ratio 0.494
+#   gpu   100k   a  9.3 ( 5.4-17.9)   b  6.7 ( 2.7-10.9)   ratio 0.726
+#   mixer 100k   a  9.2 ( 4.8-19.1)   b  6.1 ( 2.3-11.8)   ratio 0.660
+# The 100k rows read noisier here than in 2026-11-21-gpu-cue.txt (a 5.8-7.8 ms there).
+#
+# An earlier step, the one Map built by the deduping walk (`get` then `set` per subject), read gpu 1M
+# 76.4 -> 44.6, mixer 1M 74.6 -> 40.2, gpu 100k 6.7 -> 3.4, mixer 100k 5.8 -> 2.9 ms on the same
+# command. Its raw records were deleted before commit; these medians are from its digest.
+#
+# Profiles of b, repeats 8, 12 and 16 at 1M (PROFILE=8,12,16 ROWS=mixer:1000000,gpu:1000000 FRAMES=15
+# WARM=5 node bench/gpu-cue.mjs; raw prof-*.cpuprofile), self time over the three:
+#   mixer 177.4 ms: Named 53.6%, the rest of cue inlined into its caller 32.8%, GC 13.3%
+#   gpu   190.9 ms: Named 50.6%, the rest of cue inlined 36.0%, GC 6.7%, levelsOf's hash 6.0%
+#
+# CPU check, msb-uai, onto do --kind bench --solo -- LINEAGE_BENCH=start.mjs bench/lineage.sh 8 9c0e3c5d . \
+#   -- "10000 9 fns named tweens"   (10k one-subject voices; raw 2026-11-21-named-places-start/start.log)
+# medians of the 8 rounds' medians, ms:
+#   fns     cue a 6.3  b 6.2   first frame a 13.1  b 14.1 (a 12.7-14.2, b 12.8-15.2)
+#   named   cue a 3.8  b 3.5   first frame a 22.4  b 20.9
+#   tweens  cue a 7.5  b 7.3   first frame a 24.0  b 24.6
+# No cue slower; the first frames overlap round to round.

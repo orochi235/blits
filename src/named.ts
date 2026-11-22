@@ -1,52 +1,66 @@
 import type { Store } from './store.js';
 
-/** Past this many, `has` looks in a set rather than down the list. */
+/** Past this many, a subject is looked up in a map of places rather than down the list. */
 const FEW = 8;
 
 /**
  * The subjects a voice's `subjects` names, once each in the order first named. Most voices name
- * one, which a `Set` per voice spends its smallest table on.
+ * one, which a `Map` per voice spends its smallest table on.
  */
 export class Named<I> {
   readonly list: readonly I[];
-  private readonly set: Set<I> | null;
-  /** Each subject's `stagger` answer, asked at cue; null for a voice with no stagger. */
-  readonly delays: Map<I, number> | null = null;
-  /** The same answers in `list` order; null for a voice with no stagger. */
+  /** Each subject's place in `list`; null for a list of `FEW` or fewer, searched instead. */
+  private readonly places: Map<I, number> | null;
+  /** Each subject's `stagger` answer, asked at cue, in `list` order; null for a voice with no stagger. */
   readonly ordered: Float64Array | null = null;
   /** Whether every one of `ordered` is a finite number. */
   readonly finite: boolean = true;
-  /** The longest of `delays`, 0 at least, and the least, 0 at most: a voice's bounds at cue. */
+  /** The longest of `ordered`, 0 at least, and the least, 0 at most: a voice's bounds at cue. */
   readonly latest: number = 0;
   readonly soonest: number = 0;
 
   constructor(subjects: Iterable<I>, stagger?: (subject: I) => number) {
-    // An array of distinct subjects, as nearly every voice names, is copied without iterating it.
-    if (Array.isArray(subjects) && distinct(subjects)) {
-      this.list = subjects.slice();
-      this.set = null;
-      if (stagger) [this.delays, this.ordered] = delaysOf(this.list, stagger);
-      [this.latest, this.soonest, this.finite] = boundsOf(this.ordered);
-      return;
-    }
-    const list: I[] = [];
-    let set: Set<I> | null = null;
-    for (const s of subjects) {
-      if (set !== null) {
-        if (!set.has(s)) {
-          set.add(s);
+    // An array of distinct subjects, as nearly every voice names, is copied, a long one placed as it is.
+    const short = Array.isArray(subjects) && distinct(subjects);
+    const placed = short || !Array.isArray(subjects) ? null : placesOf(subjects);
+    if (short || placed !== null) {
+      this.list = (subjects as I[]).slice();
+      this.places = placed;
+    } else {
+      const list: I[] = [];
+      let places: Map<I, number> | null = null;
+      for (const s of subjects) {
+        if (places !== null) {
+          if (places.get(s) === undefined) {
+            places.set(s, list.length);
+            list.push(s);
+          }
+        } else if (!list.includes(s)) {
           list.push(s);
+          if (list.length > FEW) places = new Map(list.map((x, i) => [x, i]));
         }
-      } else if (!list.includes(s)) {
-        list.push(s);
-        if (list.length > FEW) set = new Set(list);
       }
+      // Exactly as long as it is: a list grown by push keeps room for 17.
+      this.list = list.slice();
+      this.places = places;
     }
-    // Exactly as long as it is: a list grown by push keeps room for 17.
-    this.list = list.slice();
-    this.set = set;
-    if (stagger) [this.delays, this.ordered] = delaysOf(this.list, stagger);
-    [this.latest, this.soonest, this.finite] = boundsOf(this.ordered);
+    if (stagger) {
+      const ordered = new Float64Array(this.list.length);
+      let latest = 0;
+      let soonest = 0;
+      let finite = true;
+      for (let i = 0; i < ordered.length; i++) {
+        const d = stagger(this.list[i] as I) ?? 0;
+        ordered[i] = d;
+        if (d > latest) latest = d;
+        if (d < soonest) soonest = d;
+        if (!Number.isFinite(d)) finite = false;
+      }
+      this.ordered = ordered;
+      this.latest = latest;
+      this.soonest = soonest;
+      this.finite = finite;
+    }
   }
 
   get size(): number {
@@ -54,35 +68,34 @@ export class Named<I> {
   }
 
   has(subject: I): boolean {
-    return this.set === null ? this.list.includes(subject) : this.set.has(subject);
+    return this.places === null ? this.list.includes(subject) : this.places.has(subject);
+  }
+
+  /** `subject`'s `stagger` answer as asked at cue; undefined where it has none or is not named. */
+  delayOf(subject: I): number | undefined {
+    const o = this.ordered;
+    if (o === null) return undefined;
+    const i = this.placeOf(subject);
+    return i === undefined ? undefined : o[i];
+  }
+
+  private placeOf(subject: I): number | undefined {
+    if (this.places !== null) return this.places.get(subject);
+    const list = this.list;
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      // As `includes` compares, so NaN finds NaN.
+      if (s === subject || (Number.isNaN(s as number) && Number.isNaN(subject as number))) return i;
+    }
+    return undefined;
   }
 }
 
-function delaysOf<I>(
-  list: readonly I[],
-  stagger: (subject: I) => number,
-): [Map<I, number>, Float64Array] {
-  const delays = new Map<I, number>();
-  const ordered = new Float64Array(list.length);
-  for (let i = 0; i < list.length; i++) {
-    const s = list[i] as I;
-    const d = stagger(s);
-    delays.set(s, d);
-    ordered[i] = d ?? 0;
-  }
-  return [delays, ordered];
-}
-
-function boundsOf(delays: Float64Array | null): [number, number, boolean] {
-  let latest = 0;
-  let soonest = 0;
-  let finite = true;
-  for (const delay of delays ?? []) {
-    if (delay > latest) latest = delay;
-    if (delay < soonest) soonest = delay;
-    if (!Number.isFinite(delay)) finite = false;
-  }
-  return [latest, soonest, finite];
+/** Each subject's place in `subjects`; null where one is named twice, as the map then holds fewer. */
+function placesOf<I>(subjects: readonly I[]): Map<I, number> | null {
+  const places = new Map<I, number>();
+  for (let i = 0; i < subjects.length; i++) places.set(subjects[i] as I, i);
+  return places.size === subjects.length ? places : null;
 }
 
 /** Whether a short array names no subject twice, as `includes` compares; a long one says no. */

@@ -94,13 +94,13 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   against 17. What is left is per row: each crowd row's arrays, seat and `seats` entry, and the
   first stretch `Motions.fresh` builds as objects before writing it into the row. `Voice`'s boxed
   doubles are made at cue, outside this frame.
-- **[agent] Cueing a staggered voice naming 1M subjects takes 71 ms on the stock mixer, 76 on
-  the gpu engine** (teitou, Chromium, 60 cues a row, `bench/runs/2026-11-21-gpu-cue.txt`,
-  2026-11-21): over four frames' time in one call. About two thirds is `Named` (`src/named.ts`),
-  which past 8 subjects builds a `Set` of the list and, with a stagger, a `Map` from each subject to
-  its delay beside the `Float64Array` of the same delays. The rest of `cue` takes about a fifth and
-  collection 8–10%. The gpu engine's share is about 5 ms: the level hash (4.1 ms in Chromium) and
-  the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
+- **[agent] Cueing a staggered voice naming 1M subjects takes 35 ms on the stock mixer, 41 on
+  the gpu engine** (teitou, Chromium, 60 cues a row, `bench/runs/2026-11-21-named-places.txt`,
+  2026-11-21), down from 71 and 76 by `Named` keeping one map of places in place of a `Set` and a
+  delay `Map`. Still two frames in one call. About half is `Named` (`src/named.ts`): its map of
+  1M places and the stagger asked per subject. The rest of `cue`, inlined so the profile can't
+  split it, is a third, and collection 7–13%. The gpu engine's share is about 5 ms: the level
+  hash (4.1 ms in Chromium) and the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
 - **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
   more; inferred to be first touches of each object of the voice and each array of its crowd row.
 - **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding

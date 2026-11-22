@@ -127,7 +127,7 @@ export class Answers<I> {
     for (let i = 0; i < n; i++) {
       const s = list[i] as I;
       let delay: number | null;
-      if (named !== null) delay = named.has(s) ? (named.delays?.get(s) ?? 0) : null;
+      if (named !== null) delay = named.has(s) ? (named.delayOf(s) ?? 0) : null;
       else delay = this.unnamed(voice, s, known as Store<I, number | null>, sought);
       if (delay === null) {
         all = false;

@@ -1,0 +1,27 @@
+a is 9c0e3c5d (9c0e3c5ddf6a80247abb4d93889b03ce919d61b5), b the working tree
+== a1
+fatal: not a git repository (or any of the parent directories): .git
+onto: plan 4
+ 1/4 gpu   stagger   1000000  median    76.360 ms  p95    83.450 ms  max    84.385 ms at frame    20  frames 30  wall    4.8 s
+ 2/4 mixer stagger   1000000  median    71.340 ms  p95    88.845 ms  max    90.955 ms at frame     7  frames 30  wall    4.7 s
+ 3/4 gpu   stagger    100000  median     8.355 ms  p95    15.490 ms  max    17.885 ms at frame    19  frames 30  wall    2.2 s
+ 4/4 mixer stagger    100000  median     9.740 ms  p95    15.775 ms  max    19.110 ms at frame    32  frames 30  wall    2.2 s
+== b1
+onto: plan 4
+ 1/4 gpu   stagger   1000000  median    40.500 ms  p95    47.350 ms  max    53.330 ms at frame    19  frames 30  wall    3.7 s
+ 2/4 mixer stagger   1000000  median    34.180 ms  p95    41.380 ms  max    42.475 ms at frame    12  frames 30  wall    3.3 s
+ 3/4 gpu   stagger    100000  median     6.980 ms  p95    10.580 ms  max    10.905 ms at frame    31  frames 30  wall    2.1 s
+ 4/4 mixer stagger    100000  median     6.120 ms  p95     8.965 ms  max     9.280 ms at frame    12  frames 30  wall    2.1 s
+== b2
+onto: plan 4
+ 1/4 gpu   stagger   1000000  median    41.395 ms  p95    44.245 ms  max    44.320 ms at frame    20  frames 30  wall    3.7 s
+ 2/4 mixer stagger   1000000  median    36.460 ms  p95    43.145 ms  max    44.015 ms at frame     9  frames 30  wall    3.4 s
+ 3/4 gpu   stagger    100000  median     6.695 ms  p95     8.740 ms  max     8.790 ms at frame    10  frames 30  wall    2.1 s
+ 4/4 mixer stagger    100000  median     6.070 ms  p95     8.805 ms  max    11.830 ms at frame    28  frames 30  wall    2.1 s
+== a2
+fatal: not a git repository (or any of the parent directories): .git
+onto: plan 4
+ 1/4 gpu   stagger   1000000  median    75.690 ms  p95    82.950 ms  max    87.705 ms at frame     6  frames 30  wall    4.9 s
+ 2/4 mixer stagger   1000000  median    70.710 ms  p95    83.840 ms  max    86.400 ms at frame    30  frames 30  wall    4.7 s
+ 3/4 gpu   stagger    100000  median    10.140 ms  p95    16.290 ms  max    16.395 ms at frame    14  frames 30  wall    2.3 s
+ 4/4 mixer stagger    100000  median     9.455 ms  p95    14.010 ms  max    15.065 ms at frame    20  frames 30  wall    2.2 s
