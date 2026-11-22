@@ -130,7 +130,7 @@ for (const [key, at] of rows) {
   );
   lines.push(
     [
-      new Date().toISOString().slice(0, 10),
+      new Date().toLocaleDateString('en-CA'),
       process.env.LEDGER_NODE ?? '',
       a,
       b === '.' ? (process.env.LEDGER_REV ?? '.') : b,
