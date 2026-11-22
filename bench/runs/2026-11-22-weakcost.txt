@@ -1,0 +1,22 @@
+# teitou, 2026-11-22, node v26, quiet: onto do --kind bench --node teitou --quiet --max-cores 2 -- node bench/weakcost.mjs 1000000 9 (twice; the second adds regTargetToken)
+1/9  N=1000000  weakRef 115.4  regToken 378.8  regNoToken 208.2  weakMap 64.2  map 44.6 ms
+2/9  N=1000000  map 50.7  weakMap 70.7  regNoToken 256.4  regToken 401.9  weakRef 132.5 ms
+3/9  N=1000000  weakRef 144.1  regToken 383.2  regNoToken 190.7  weakMap 66.5  map 41.0 ms
+4/9  N=1000000  map 47.6  weakMap 69.0  regNoToken 240.8  regToken 403.9  weakRef 115.4 ms
+5/9  N=1000000  weakRef 109.4  regToken 375.9  regNoToken 158.8  weakMap 61.4  map 37.1 ms
+6/9  N=1000000  map 38.1  weakMap 62.9  regNoToken 208.4  regToken 401.0  weakRef 113.9 ms
+7/9  N=1000000  weakRef 102.8  regToken 352.9  regNoToken 195.1  weakMap 61.6  map 38.4 ms
+8/9  N=1000000  map 43.1  weakMap 61.0  regNoToken 224.3  regToken 375.8  weakRef 125.0 ms
+9/9  N=1000000  weakRef 111.1  regToken 369.0  regNoToken 206.9  weakMap 60.8  map 39.0 ms
+medians N=1000000: weakRef 115.4  regToken 378.8  regNoToken 208.2  weakMap 62.9  map 41.0 ms
+# second run
+1/9  N=1000000  weakRef 156.2  regToken 384.3  regTargetToken 364.2  regNoToken 245.3  weakMap 65.9  map 41.9 ms
+2/9  N=1000000  map 40.6  weakMap 62.5  regNoToken 255.1  regTargetToken 381.1  regToken 390.8  weakRef 171.5 ms
+3/9  N=1000000  weakRef 152.4  regToken 336.1  regTargetToken 350.8  regNoToken 216.3  weakMap 69.6  map 42.4 ms
+4/9  N=1000000  map 43.2  weakMap 61.4  regNoToken 213.4  regTargetToken 330.5  regToken 372.1  weakRef 125.4 ms
+5/9  N=1000000  weakRef 133.4  regToken 383.0  regTargetToken 339.5  regNoToken 155.8  weakMap 59.6  map 42.7 ms
+6/9  N=1000000  map 36.1  weakMap 57.0  regNoToken 143.6  regTargetToken 406.0  regToken 342.0  weakRef 110.1 ms
+7/9  N=1000000  weakRef 106.4  regToken 374.0  regTargetToken 365.5  regNoToken 178.5  weakMap 61.3  map 41.1 ms
+8/9  N=1000000  map 42.7  weakMap 59.9  regNoToken 183.7  regTargetToken 346.5  regToken 339.7  weakRef 131.4 ms
+9/9  N=1000000  weakRef 118.9  regToken 357.1  regTargetToken 345.5  regNoToken 202.7  weakMap 58.1  map 38.9 ms
+medians N=1000000: weakRef 131.4  regToken 372.1  regTargetToken 350.8  regNoToken 202.7  weakMap 61.3  map 41.9 ms

@@ -1,6 +1,9 @@
 /** What a number's subject is once it has none: released, or let go by the host. */
 export const absent: unique symbol = Symbol('absent');
 
+/** The fewest cells left over for live subjects before a registry is made afresh. */
+const STALE = 1024;
+
 /** What `refs` holds for a subject that is itself `undefined`, the unit subject of some mixes. */
 const unit: unique symbol = Symbol('unit');
 
@@ -19,10 +22,13 @@ export class Numbers<I> {
   /**
    * Made at the second object numbered, when the first is registered too: a motion patch per voice
    * holds a `Numbers`, mostly for one subject, whose collection frees nothing worth a registry.
-   * Each object's weak reference is also its token, so a number reused after its subject is
-   * released never hears of the old one's collection.
+   * Registered with no unregister token, which costs a token table entry each (about 0.17 µs a
+   * subject at 1M): a cell outlives its number's release, so a collection is acted on only where
+   * the number still holds a collected subject, and the cells left over are bounded by `stale`.
    */
   private registry: FinalizationRegistry<number> | null = null;
+  /** Cells registered for a live subject whose number was since released or moved. */
+  private stale = 0;
   /** The one object numbered before there was a registry, and its number. */
   private lone: WeakRef<object> | null = null;
   private loneSlot = -1;
@@ -52,14 +58,14 @@ export class Numbers<I> {
           this.loneSlot = slot;
           return slot;
         }
-        this.registry = new FinalizationRegistry<number>((slot) => this.release(slot));
+        this.registry = this.registryOf();
         const first = this.lone.deref();
-        if (first !== undefined) this.registry.register(first, this.loneSlot, this.lone);
+        if (first !== undefined) this.registry.register(first, this.loneSlot);
         // Collected with no registry to hear of it: released here, once this subject is numbered.
         else dead = this.loneSlot;
         this.lone = null;
       }
-      this.registry.register(subject as object, slot, ref);
+      this.registry.register(subject as object, slot);
     } else this.refs[slot] = subject === undefined ? unit : subject;
     if (dead >= 0) this.release(dead);
     return slot;
@@ -97,8 +103,8 @@ export class Numbers<I> {
       if (subject === undefined) return false;
       if (ref === this.lone) this.loneSlot = to;
       else if (this.registry !== null) {
-        this.registry.unregister(ref);
-        this.registry.register(subject, to, ref);
+        this.registry.register(subject, to);
+        this.staled();
       }
     }
     free.splice(at, 1);
@@ -111,11 +117,41 @@ export class Numbers<I> {
   release(slot: number): void {
     const ref = this.refs[slot];
     if (ref === undefined) return;
+    const live = ref instanceof WeakRef && ref !== this.lone && ref.deref() !== undefined;
     if (ref === this.lone) this.lone = null;
-    else if (ref instanceof WeakRef) this.registry?.unregister(ref);
     this.refs[slot] = undefined;
     this.owner.forget(slot);
     if (this.free === null) this.free = [slot];
     else this.free.push(slot);
+    if (live) this.staled();
+  }
+
+  private registryOf(): FinalizationRegistry<number> {
+    return new FinalizationRegistry<number>((slot) => {
+      const ref = this.refs[slot];
+      // A cell left from before a release: its number may hold another subject now, or none.
+      if (ref instanceof WeakRef && ref.deref() === undefined) this.release(slot);
+    });
+  }
+
+  /**
+   * Counts a cell left registered for a live subject, and past as many as there are numbers, puts
+   * every live object in a fresh registry, so taking and releasing one subject over and over holds
+   * no more cells than numbers. Dropping the old registry drops its pending callbacks, so a number
+   * whose subject was already collected is released here.
+   */
+  private staled(): void {
+    if (++this.stale <= Math.max(STALE, this.next)) return;
+    this.stale = 0;
+    const registry = this.registryOf();
+    this.registry = registry;
+    const refs = this.refs;
+    for (let slot = 0; slot < this.next; slot++) {
+      const ref = refs[slot];
+      if (!(ref instanceof WeakRef) || ref === this.lone) continue;
+      const subject = ref.deref();
+      if (subject === undefined) this.release(slot);
+      else registry.register(subject, slot);
+    }
   }
 }

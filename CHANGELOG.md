@@ -8,9 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
-- Stopping a voice and dropping its subject among 40,000 one-subject crowd voices read by `pull`
-  costs about 9% less, 2.77 µs from 3.04 (msb-uai, 16 rounds), since a stop no longer looks the
-  voice's crowd row up in a map by its id.
+- The first frame that reads many new object subjects costs less: the lanes number each subject
+  without an unregister token, which cost about 0.17 µs a subject. The frame after one voice over
+  1M subjects is cued takes 1.15 s from 1.35 (node, teitou).
 - A voice naming the same long list of subjects as another voice of its mix cued recently shares
   that voice's list instead of building its own: cueing three voices over 1M subjects, as a
   scene with a move, a bob and a staggered nudge does, takes about 6 ms for each after the first,
@@ -23,6 +23,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `atRest` reads a subject from the lanes while a voice off lanes that does not reach it plays,
   where it folded every subject: asking it of 10,000 tweens beside one such voice takes 0.60 ms,
   where it took 1.02 (studio, shared).
+- Stopping a voice and dropping its subject among 40,000 one-subject crowd voices read by `pull`
+  costs about 9% less, 2.77 µs from 3.04 (msb-uai, 16 rounds), since a stop no longer looks the
+  voice's crowd row up in a map by its id.
 - Motion patches retargeted every frame no longer read slower through `pull` on lanes than off,
   without `history`: a pull's fill commits the changes due for the subjects it reads, where it used
   to hand each to the general path. 5,000 springs, about 2,900 of them retargeted a frame, under

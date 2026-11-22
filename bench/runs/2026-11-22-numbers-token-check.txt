@@ -1,0 +1,97 @@
+# teitou (Apple M5 Max), 2026-11-22, quiet: onto do --kind bench --node teitou --quiet --max-cores 3 -- bash -c 'LINEAGE_BENCH=start.mjs bench/lineage.sh 6 25fb7c5e . -- "10000 9 fns named tweens" && ROUNDS=150 LINEAGE_BENCH=restart.mjs bench/lineage.sh 6 25fb7c5e . -- "1000 10000"'
+# 25fb7c5e against . (token-free Numbers registration). Round values sorted, ms (stop in us):
+#   fns cue    base 4.9 5.2 5.3 5.4 5.6 5.7   tree 4.7 5.4 5.5 5.5 5.6 5.8;  first frame base 12.2-13.7, tree 11.1-12.9
+#   named cue  base 2.6 2.7 2.7 2.8 2.8 3.4   tree 2.5 2.6 2.9 2.9 3.6 5.6;  first frame base 18.8-24.9, tree 18.2-24.0
+#   tweens cue base 5.8 6.3 6.4 6.7 6.7 7.1   tree 6.0 6.6 7.2 7.3 8.1 8.7 (U 9 of 36, short of significance); first frame base 21.2-24.0, tree 19.1-29.2
+#   stop N=1000  base 0.52 0.53 0.56 0.57 0.59 0.71   tree 0.56 0.58 0.60 0.62 0.63 0.67 (U 9.5 of 36)
+#   stop N=10000 base 1.57 1.58 1.66 1.68 1.80 1.87   tree 1.54 1.56 1.62 1.63 1.77 1.79
+#   frame after a restart overlaps at both sizes.
+
+built 25fb7c5e
+built .
+== round 1/6 25fb7c5e
+1/3  fns      N=10000  cue     5.4 ms  first frame    13.7 ms  second     1.9 ms  (medians of 9)
+2/3  named    N=10000  cue     2.8 ms  first frame    24.4 ms  second     3.2 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.1 ms  first frame    22.9 ms  second     3.9 ms  (medians of 9)
+== round 1/6 .
+1/3  fns      N=10000  cue     4.7 ms  first frame    12.5 ms  second     1.7 ms  (medians of 9)
+2/3  named    N=10000  cue     2.6 ms  first frame    18.2 ms  second     3.2 ms  (medians of 9)
+3/3  tweens   N=10000  cue     6.6 ms  first frame    19.1 ms  second     3.8 ms  (medians of 9)
+== round 2/6 .
+1/3  fns      N=10000  cue     5.5 ms  first frame    12.1 ms  second     1.6 ms  (medians of 9)
+2/3  named    N=10000  cue     5.6 ms  first frame    23.9 ms  second     3.8 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.7 ms  first frame    22.1 ms  second     4.8 ms  (medians of 9)
+== round 2/6 25fb7c5e
+1/3  fns      N=10000  cue     5.6 ms  first frame    13.6 ms  second     1.6 ms  (medians of 9)
+2/3  named    N=10000  cue     3.4 ms  first frame    21.7 ms  second     3.5 ms  (medians of 9)
+3/3  tweens   N=10000  cue     6.3 ms  first frame    21.2 ms  second     4.0 ms  (medians of 9)
+== round 3/6 25fb7c5e
+1/3  fns      N=10000  cue     5.7 ms  first frame    12.2 ms  second     1.9 ms  (medians of 9)
+2/3  named    N=10000  cue     2.8 ms  first frame    24.9 ms  second     3.4 ms  (medians of 9)
+3/3  tweens   N=10000  cue     6.7 ms  first frame    24.0 ms  second     4.1 ms  (medians of 9)
+== round 3/6 .
+1/3  fns      N=10000  cue     5.6 ms  first frame    12.1 ms  second     1.9 ms  (medians of 9)
+2/3  named    N=10000  cue     2.9 ms  first frame    22.5 ms  second     3.7 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.3 ms  first frame    22.4 ms  second     3.9 ms  (medians of 9)
+== round 4/6 .
+1/3  fns      N=10000  cue     5.8 ms  first frame    12.9 ms  second     1.7 ms  (medians of 9)
+2/3  named    N=10000  cue     3.6 ms  first frame    19.3 ms  second     3.2 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.1 ms  first frame    29.2 ms  second     4.4 ms  (medians of 9)
+== round 4/6 25fb7c5e
+1/3  fns      N=10000  cue     4.9 ms  first frame    13.7 ms  second     1.5 ms  (medians of 9)
+2/3  named    N=10000  cue     2.7 ms  first frame    18.8 ms  second     2.9 ms  (medians of 9)
+3/3  tweens   N=10000  cue     5.8 ms  first frame    21.3 ms  second     3.8 ms  (medians of 9)
+== round 5/6 25fb7c5e
+1/3  fns      N=10000  cue     5.3 ms  first frame    12.6 ms  second     1.9 ms  (medians of 9)
+2/3  named    N=10000  cue     2.7 ms  first frame    23.5 ms  second     3.1 ms  (medians of 9)
+3/3  tweens   N=10000  cue     6.4 ms  first frame    23.7 ms  second     4.1 ms  (medians of 9)
+== round 5/6 .
+1/3  fns      N=10000  cue     5.5 ms  first frame    11.1 ms  second     1.6 ms  (medians of 9)
+2/3  named    N=10000  cue     2.9 ms  first frame    24.0 ms  second     3.5 ms  (medians of 9)
+3/3  tweens   N=10000  cue     6.0 ms  first frame    21.7 ms  second     3.7 ms  (medians of 9)
+== round 6/6 .
+1/3  fns      N=10000  cue     5.4 ms  first frame    11.5 ms  second     1.7 ms  (medians of 9)
+2/3  named    N=10000  cue     2.5 ms  first frame    20.3 ms  second     2.8 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.2 ms  first frame    27.3 ms  second     4.0 ms  (medians of 9)
+== round 6/6 25fb7c5e
+1/3  fns      N=10000  cue     5.2 ms  first frame    13.4 ms  second     1.5 ms  (medians of 9)
+2/3  named    N=10000  cue     2.6 ms  first frame    19.9 ms  second     3.0 ms  (medians of 9)
+3/3  tweens   N=10000  cue     6.7 ms  first frame    21.4 ms  second     4.0 ms  (medians of 9)
+built 25fb7c5e
+built .
+== round 1/6 25fb7c5e
+ 1/2  N=  1000  stop   0.56 us each  start   0.00 us each  frame after   0.351 ms  the one after   0.033 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.80 us each  start   0.01 us each  frame after   1.345 ms  the one after   0.215 ms  steady   0.153 ms
+== round 1/6 .
+ 1/2  N=  1000  stop   0.56 us each  start   0.00 us each  frame after   0.365 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.62 us each  start   0.01 us each  frame after   1.289 ms  the one after   0.207 ms  steady   0.154 ms
+== round 2/6 .
+ 1/2  N=  1000  stop   0.63 us each  start   0.00 us each  frame after   0.418 ms  the one after   0.035 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.56 us each  start   0.01 us each  frame after   1.237 ms  the one after   0.208 ms  steady   0.159 ms
+== round 2/6 25fb7c5e
+ 1/2  N=  1000  stop   0.59 us each  start   0.00 us each  frame after   0.400 ms  the one after   0.035 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.87 us each  start   0.01 us each  frame after   1.389 ms  the one after   0.217 ms  steady   0.157 ms
+== round 3/6 25fb7c5e
+ 1/2  N=  1000  stop   0.57 us each  start   0.00 us each  frame after   0.412 ms  the one after   0.036 ms  steady   0.020 ms
+ 2/2  N= 10000  stop   1.66 us each  start   0.01 us each  frame after   1.345 ms  the one after   0.213 ms  steady   0.156 ms
+== round 3/6 .
+ 1/2  N=  1000  stop   0.67 us each  start   0.00 us each  frame after   0.408 ms  the one after   0.043 ms  steady   0.020 ms
+ 2/2  N= 10000  stop   1.54 us each  start   0.01 us each  frame after   1.258 ms  the one after   0.206 ms  steady   0.154 ms
+== round 4/6 .
+ 1/2  N=  1000  stop   0.60 us each  start   0.00 us each  frame after   0.405 ms  the one after   0.034 ms  steady   0.020 ms
+ 2/2  N= 10000  stop   1.77 us each  start   0.01 us each  frame after   1.339 ms  the one after   0.214 ms  steady   0.159 ms
+== round 4/6 25fb7c5e
+ 1/2  N=  1000  stop   0.53 us each  start   0.00 us each  frame after   0.385 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.58 us each  start   0.01 us each  frame after   1.236 ms  the one after   0.205 ms  steady   0.153 ms
+== round 5/6 25fb7c5e
+ 1/2  N=  1000  stop   0.71 us each  start   0.00 us each  frame after   0.410 ms  the one after   0.048 ms  steady   0.020 ms
+ 2/2  N= 10000  stop   1.57 us each  start   0.01 us each  frame after   1.293 ms  the one after   0.205 ms  steady   0.155 ms
+== round 5/6 .
+ 1/2  N=  1000  stop   0.62 us each  start   0.00 us each  frame after   0.409 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.79 us each  start   0.01 us each  frame after   1.337 ms  the one after   0.216 ms  steady   0.158 ms
+== round 6/6 .
+ 1/2  N=  1000  stop   0.58 us each  start   0.18 us each  frame after   0.393 ms  the one after   0.035 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.63 us each  start   0.01 us each  frame after   1.316 ms  the one after   0.208 ms  steady   0.155 ms
+== round 6/6 25fb7c5e
+ 1/2  N=  1000  stop   0.52 us each  start   0.00 us each  frame after   0.361 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/2  N= 10000  stop   1.68 us each  start   0.00 us each  frame after   1.339 ms  the one after   0.210 ms  steady   0.154 ms

@@ -38,17 +38,18 @@ the machine being used.
   2026-11-21 (`runs/2026-11-21-sparse-crossover*/`): tweens 13% at 10k and 17% at 1k, so a
   crowd's tween line reads between the two on the log of its size; springs 6–7%, keys 4–5% and
   fns 11–12% at either size.
+- `bench/cue-wide.mjs` times one cue of a voice naming 1M subjects with a stagger on the stock mixer
+  in node, the mixer row of `bench/gpu-cue.mjs` on any node; `CUES=k` cues k on one mix, as
+  gpu-reach's `MIX=owned` does, and `FIRST=1` times the frame after. `bench/cuewide.sh` builds
+  sides in a `--kind build` job and runs them interleaved; `bench/places.mjs` times building a
+  lookup of 1M subjects each way `Named` could, and `bench/weakcost.mjs` holding 1M weakly each
+  way `Numbers` and `Store` do.
 - `bench/restart.mjs` times a stop (a fade and a `drop`) among N one-subject tweens read by `pull`,
   in weasel's shape; `LINEAGE_BENCH=restart.mjs bench/lineage.sh` compares builds on it.
   `bench/stopparts.mjs` times a stop's parts and `bench/stopprof.sh` profiles it.
   `bench/stopmaps.mjs` counts the Maps, WeakMaps and Sets a stop and a steady frame touch, by caller,
   and `bench/stopextra.mjs` times a stop with extra subject-keyed maps of its own (`EXTRA=k`), the
   most that folding one of the mix's away could save.
-- `bench/cue-wide.mjs` times one cue of a voice naming 1M subjects with a stagger on the stock mixer
-  in node, the mixer row of `bench/gpu-cue.mjs` on any node; `CUES=k` cues k on one mix, as
-  gpu-reach's `MIX=owned` does, and `FIRST=1` times the frame after. `bench/cuewide.sh` builds
-  sides in a `--kind build` job and runs them interleaved; `bench/places.mjs` times building a
-  lookup of 1M subjects each way `Named` could.
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
   releases included, and `bench/lineage.mjs` tables it.
 

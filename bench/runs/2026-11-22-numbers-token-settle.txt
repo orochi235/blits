@@ -1,0 +1,139 @@
+# teitou (Apple M5 Max), 2026-11-22, quiet: onto do --kind bench --node teitou --quiet --max-cores 3 -- bash -c 'LINEAGE_BENCH=start.mjs bench/lineage.sh 16 e508cb42 . -- "10000 9 tweens" && ROUNDS=150 LINEAGE_BENCH=restart.mjs bench/lineage.sh 16 e508cb42 . -- "1000"'
+# e508cb42 is before the token-free Numbers change; . is 5dbdf071, which makes it. Round values sorted:
+#   tweens cue ms  base 6.3 6.3 6.4 6.5 6.5 6.5 6.6 6.6 6.7 6.7 6.7 6.8 6.9 7.0 7.0 7.3   (median 6.65)
+#                  tree 6.1 6.2 6.4 6.4 6.4 6.4 6.5 6.5 6.6 6.6 6.8 6.8 6.9 7.0 7.4 9.9   (median 6.55; U 114.5 of 256: no change)
+#   stop N=1000 us base 0.52 0.52 0.52 0.53 0.53 0.53 0.54 0.54 0.55 0.55 0.55 0.55 0.61 0.61 0.62 0.64 (median 0.545)
+#                  tree 0.52 0.53 0.54 0.54 0.56 0.57 0.58 0.59 0.59 0.60 0.61 0.62 0.63 0.64 0.65 0.73 (median 0.590; U 74 of 256, at the 5% line)
+
+built e508cb42
+built .
+== round 1/16 e508cb42
+1/1  tweens   N=10000  cue     7.0 ms  first frame    24.9 ms  second     4.3 ms  (medians of 9)
+== round 1/16 .
+1/1  tweens   N=10000  cue     7.4 ms  first frame    25.3 ms  second     4.3 ms  (medians of 9)
+== round 2/16 .
+1/1  tweens   N=10000  cue     6.9 ms  first frame    24.6 ms  second     3.9 ms  (medians of 9)
+== round 2/16 e508cb42
+1/1  tweens   N=10000  cue     6.3 ms  first frame    24.5 ms  second     3.9 ms  (medians of 9)
+== round 3/16 e508cb42
+1/1  tweens   N=10000  cue     6.5 ms  first frame    24.4 ms  second     4.2 ms  (medians of 9)
+== round 3/16 .
+1/1  tweens   N=10000  cue     6.4 ms  first frame    23.1 ms  second     4.2 ms  (medians of 9)
+== round 4/16 .
+1/1  tweens   N=10000  cue     9.9 ms  first frame    22.8 ms  second     3.7 ms  (medians of 9)
+== round 4/16 e508cb42
+1/1  tweens   N=10000  cue     6.7 ms  first frame    24.7 ms  second     3.9 ms  (medians of 9)
+== round 5/16 e508cb42
+1/1  tweens   N=10000  cue     6.7 ms  first frame    24.0 ms  second     3.8 ms  (medians of 9)
+== round 5/16 .
+1/1  tweens   N=10000  cue     6.8 ms  first frame    24.1 ms  second     4.2 ms  (medians of 9)
+== round 6/16 .
+1/1  tweens   N=10000  cue     6.4 ms  first frame    22.7 ms  second     4.1 ms  (medians of 9)
+== round 6/16 e508cb42
+1/1  tweens   N=10000  cue     6.7 ms  first frame    25.3 ms  second     3.8 ms  (medians of 9)
+== round 7/16 e508cb42
+1/1  tweens   N=10000  cue     6.5 ms  first frame    24.2 ms  second     3.9 ms  (medians of 9)
+== round 7/16 .
+1/1  tweens   N=10000  cue     6.1 ms  first frame    24.1 ms  second     3.7 ms  (medians of 9)
+== round 8/16 .
+1/1  tweens   N=10000  cue     6.2 ms  first frame    24.7 ms  second     4.2 ms  (medians of 9)
+== round 8/16 e508cb42
+1/1  tweens   N=10000  cue     6.5 ms  first frame    23.6 ms  second     3.8 ms  (medians of 9)
+== round 9/16 e508cb42
+1/1  tweens   N=10000  cue     6.9 ms  first frame    25.6 ms  second     4.2 ms  (medians of 9)
+== round 9/16 .
+1/1  tweens   N=10000  cue     6.8 ms  first frame    24.9 ms  second     3.7 ms  (medians of 9)
+== round 10/16 .
+1/1  tweens   N=10000  cue     6.5 ms  first frame    24.4 ms  second     3.8 ms  (medians of 9)
+== round 10/16 e508cb42
+1/1  tweens   N=10000  cue     7.3 ms  first frame    24.9 ms  second     4.1 ms  (medians of 9)
+== round 11/16 e508cb42
+1/1  tweens   N=10000  cue     6.6 ms  first frame    25.4 ms  second     4.2 ms  (medians of 9)
+== round 11/16 .
+1/1  tweens   N=10000  cue     6.4 ms  first frame    24.9 ms  second     3.7 ms  (medians of 9)
+== round 12/16 .
+1/1  tweens   N=10000  cue     6.6 ms  first frame    23.2 ms  second     3.7 ms  (medians of 9)
+== round 12/16 e508cb42
+1/1  tweens   N=10000  cue     6.8 ms  first frame    25.2 ms  second     4.2 ms  (medians of 9)
+== round 13/16 e508cb42
+1/1  tweens   N=10000  cue     6.4 ms  first frame    24.5 ms  second     4.3 ms  (medians of 9)
+== round 13/16 .
+1/1  tweens   N=10000  cue     6.5 ms  first frame    23.2 ms  second     3.8 ms  (medians of 9)
+== round 14/16 .
+1/1  tweens   N=10000  cue     6.6 ms  first frame    25.7 ms  second     3.7 ms  (medians of 9)
+== round 14/16 e508cb42
+1/1  tweens   N=10000  cue     7.0 ms  first frame    26.4 ms  second     3.9 ms  (medians of 9)
+== round 15/16 e508cb42
+1/1  tweens   N=10000  cue     6.6 ms  first frame    25.2 ms  second     4.1 ms  (medians of 9)
+== round 15/16 .
+1/1  tweens   N=10000  cue     7.0 ms  first frame    24.6 ms  second     4.0 ms  (medians of 9)
+== round 16/16 .
+1/1  tweens   N=10000  cue     6.4 ms  first frame    24.9 ms  second     3.4 ms  (medians of 9)
+== round 16/16 e508cb42
+1/1  tweens   N=10000  cue     6.3 ms  first frame    24.1 ms  second     3.7 ms  (medians of 9)
+built e508cb42
+built .
+== round 1/16 e508cb42
+ 1/1  N=  1000  stop   0.52 us each  start   0.00 us each  frame after   0.354 ms  the one after   0.034 ms  steady   0.019 ms
+== round 1/16 .
+ 1/1  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.360 ms  the one after   0.033 ms  steady   0.019 ms
+== round 2/16 .
+ 1/1  N=  1000  stop   0.52 us each  start   0.00 us each  frame after   0.356 ms  the one after   0.034 ms  steady   0.019 ms
+== round 2/16 e508cb42
+ 1/1  N=  1000  stop   0.61 us each  start   0.00 us each  frame after   0.421 ms  the one after   0.036 ms  steady   0.019 ms
+== round 3/16 e508cb42
+ 1/1  N=  1000  stop   0.62 us each  start   0.00 us each  frame after   0.428 ms  the one after   0.035 ms  steady   0.019 ms
+== round 3/16 .
+ 1/1  N=  1000  stop   0.61 us each  start   0.00 us each  frame after   0.405 ms  the one after   0.035 ms  steady   0.019 ms
+== round 4/16 .
+ 1/1  N=  1000  stop   0.53 us each  start   0.00 us each  frame after   0.350 ms  the one after   0.034 ms  steady   0.020 ms
+== round 4/16 e508cb42
+ 1/1  N=  1000  stop   0.53 us each  start   0.00 us each  frame after   0.350 ms  the one after   0.039 ms  steady   0.019 ms
+== round 5/16 e508cb42
+ 1/1  N=  1000  stop   0.52 us each  start   0.00 us each  frame after   0.355 ms  the one after   0.034 ms  steady   0.019 ms
+== round 5/16 .
+ 1/1  N=  1000  stop   0.63 us each  start   0.00 us each  frame after   0.418 ms  the one after   0.035 ms  steady   0.019 ms
+== round 6/16 .
+ 1/1  N=  1000  stop   0.64 us each  start   0.00 us each  frame after   0.366 ms  the one after   0.034 ms  steady   0.019 ms
+== round 6/16 e508cb42
+ 1/1  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.360 ms  the one after   0.042 ms  steady   0.020 ms
+== round 7/16 e508cb42
+ 1/1  N=  1000  stop   0.53 us each  start   0.00 us each  frame after   0.348 ms  the one after   0.034 ms  steady   0.019 ms
+== round 7/16 .
+ 1/1  N=  1000  stop   0.56 us each  start   0.00 us each  frame after   0.357 ms  the one after   0.034 ms  steady   0.019 ms
+== round 8/16 .
+ 1/1  N=  1000  stop   0.59 us each  start   0.00 us each  frame after   0.391 ms  the one after   0.034 ms  steady   0.019 ms
+== round 8/16 e508cb42
+ 1/1  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.356 ms  the one after   0.035 ms  steady   0.019 ms
+== round 9/16 e508cb42
+ 1/1  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.361 ms  the one after   0.033 ms  steady   0.019 ms
+== round 9/16 .
+ 1/1  N=  1000  stop   0.62 us each  start   0.00 us each  frame after   0.425 ms  the one after   0.036 ms  steady   0.019 ms
+== round 10/16 .
+ 1/1  N=  1000  stop   0.58 us each  start   0.00 us each  frame after   0.398 ms  the one after   0.035 ms  steady   0.019 ms
+== round 10/16 e508cb42
+ 1/1  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.366 ms  the one after   0.034 ms  steady   0.019 ms
+== round 11/16 e508cb42
+ 1/1  N=  1000  stop   0.52 us each  start   0.00 us each  frame after   0.354 ms  the one after   0.033 ms  steady   0.019 ms
+== round 11/16 .
+ 1/1  N=  1000  stop   0.57 us each  start   0.00 us each  frame after   0.406 ms  the one after   0.035 ms  steady   0.019 ms
+== round 12/16 .
+ 1/1  N=  1000  stop   0.60 us each  start   0.00 us each  frame after   0.411 ms  the one after   0.034 ms  steady   0.019 ms
+== round 12/16 e508cb42
+ 1/1  N=  1000  stop   0.53 us each  start   0.00 us each  frame after   0.350 ms  the one after   0.034 ms  steady   0.019 ms
+== round 13/16 e508cb42
+ 1/1  N=  1000  stop   0.64 us each  start   0.00 us each  frame after   0.426 ms  the one after   0.036 ms  steady   0.019 ms
+== round 13/16 .
+ 1/1  N=  1000  stop   0.65 us each  start   0.00 us each  frame after   0.387 ms  the one after   0.035 ms  steady   0.020 ms
+== round 14/16 .
+ 1/1  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.363 ms  the one after   0.035 ms  steady   0.019 ms
+== round 14/16 e508cb42
+ 1/1  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.394 ms  the one after   0.035 ms  steady   0.019 ms
+== round 15/16 e508cb42
+ 1/1  N=  1000  stop   0.61 us each  start   0.00 us each  frame after   0.410 ms  the one after   0.035 ms  steady   0.019 ms
+== round 15/16 .
+ 1/1  N=  1000  stop   0.73 us each  start   0.00 us each  frame after   0.388 ms  the one after   0.035 ms  steady   0.019 ms
+== round 16/16 .
+ 1/1  N=  1000  stop   0.59 us each  start   0.00 us each  frame after   0.401 ms  the one after   0.035 ms  steady   0.019 ms
+== round 16/16 e508cb42
+ 1/1  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.361 ms  the one after   0.033 ms  steady   0.019 ms
