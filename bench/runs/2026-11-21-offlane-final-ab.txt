@@ -1,0 +1,99 @@
+# studio (shared node, --quiet --max-cores 2): EVERY=1 MS=1e9 FRAMES=2000 LINEAGE_BENCH=requalify.mjs bench/lineage.sh 6 b2e157dc . -- "10000 1 within" "10000 1 atrest-named" "10000 1 quiet" (. = f6135fa7, the same source)
+built b2e157dc
+built .
+== round 1/6 b2e157dc
+ 1/1  requalify-within      N=10000 V=1    1.838 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.838 ms/frame
+== round 1/6 b2e157dc
+ 1/1  requalify-atrest-named N=10000 V=1    0.318 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    1.018 ms/frame  resting 25
+== round 1/6 b2e157dc
+ 1/1  requalify-quiet       N=10000 V=1    0.307 ms/frame
+== round 1/6 .
+ 1/1  requalify-within      N=10000 V=1    0.332 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.332 ms/frame
+== round 1/6 .
+ 1/1  requalify-atrest-named N=10000 V=1    0.331 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.604 ms/frame  resting 25
+== round 1/6 .
+ 1/1  requalify-quiet       N=10000 V=1    0.288 ms/frame
+== round 2/6 .
+ 1/1  requalify-within      N=10000 V=1    0.351 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.351 ms/frame
+== round 2/6 .
+ 1/1  requalify-atrest-named N=10000 V=1    0.331 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.618 ms/frame  resting 25
+== round 2/6 .
+ 1/1  requalify-quiet       N=10000 V=1    0.310 ms/frame
+== round 2/6 b2e157dc
+ 1/1  requalify-within      N=10000 V=1    1.806 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.806 ms/frame
+== round 2/6 b2e157dc
+ 1/1  requalify-atrest-named N=10000 V=1    0.327 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.998 ms/frame  resting 25
+== round 2/6 b2e157dc
+ 1/1  requalify-quiet       N=10000 V=1    0.281 ms/frame
+== round 3/6 b2e157dc
+ 1/1  requalify-within      N=10000 V=1    1.735 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.735 ms/frame
+== round 3/6 b2e157dc
+ 1/1  requalify-atrest-named N=10000 V=1    0.331 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    1.016 ms/frame  resting 25
+== round 3/6 b2e157dc
+ 1/1  requalify-quiet       N=10000 V=1    0.306 ms/frame
+== round 3/6 .
+ 1/1  requalify-within      N=10000 V=1    0.351 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.351 ms/frame
+== round 3/6 .
+ 1/1  requalify-atrest-named N=10000 V=1    0.333 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.606 ms/frame  resting 25
+== round 3/6 .
+ 1/1  requalify-quiet       N=10000 V=1    0.305 ms/frame
+== round 4/6 .
+ 1/1  requalify-within      N=10000 V=1    0.334 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.334 ms/frame
+== round 4/6 .
+ 1/1  requalify-atrest-named N=10000 V=1    0.331 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.610 ms/frame  resting 25
+== round 4/6 .
+ 1/1  requalify-quiet       N=10000 V=1    0.307 ms/frame
+== round 4/6 b2e157dc
+ 1/1  requalify-within      N=10000 V=1    1.783 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.783 ms/frame
+== round 4/6 b2e157dc
+ 1/1  requalify-atrest-named N=10000 V=1    0.327 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.995 ms/frame  resting 25
+== round 4/6 b2e157dc
+ 1/1  requalify-quiet       N=10000 V=1    0.295 ms/frame
+== round 5/6 b2e157dc
+ 1/1  requalify-within      N=10000 V=1    1.818 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.818 ms/frame
+== round 5/6 b2e157dc
+ 1/1  requalify-atrest-named N=10000 V=1    0.325 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    1.040 ms/frame  resting 25
+== round 5/6 b2e157dc
+ 1/1  requalify-quiet       N=10000 V=1    0.297 ms/frame
+== round 5/6 .
+ 1/1  requalify-within      N=10000 V=1    0.346 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.346 ms/frame
+== round 5/6 .
+ 1/1  requalify-atrest-named N=10000 V=1    0.320 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.566 ms/frame  resting 25
+== round 5/6 .
+ 1/1  requalify-quiet       N=10000 V=1    0.299 ms/frame
+== round 6/6 .
+ 1/1  requalify-within      N=10000 V=1    0.340 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    0.340 ms/frame
+== round 6/6 .
+ 1/1  requalify-atrest-named N=10000 V=1    0.302 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    0.566 ms/frame  resting 25
+== round 6/6 .
+ 1/1  requalify-quiet       N=10000 V=1    0.288 ms/frame
+== round 6/6 b2e157dc
+ 1/1  requalify-within      N=10000 V=1    1.799 ms/frame  plays 2000
+ 1/1  requalify-within-play N=10000 V=1    1.799 ms/frame
+== round 6/6 b2e157dc
+ 1/1  requalify-atrest-named N=10000 V=1    0.317 ms/frame
+ 1/1  requalify-atrest-named-ask N=10000 V=1    1.024 ms/frame  resting 25
+== round 6/6 b2e157dc
+ 1/1  requalify-quiet       N=10000 V=1    0.291 ms/frame

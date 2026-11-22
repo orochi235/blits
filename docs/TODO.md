@@ -147,14 +147,18 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   ends reads 0.52 ms, from 3.74 (`bench/runs/2026-11-21-requalify-reorder-ab.txt`, measured).
   Where its channel stays written, a channel it closed may open, so skipping needs the remaining
   writers shown off lanes for reasons of their own. Not built.
-- **[agent] While a voice naming no subjects plays off lanes, every subject still reads one at a
-  time,** and `atRest` reads a subject from the lanes only while every voice is on one
-  (`restsLaned` asks `lanes.whole`, not `Lanes.alone`). Since 2026-11-21 a voice off lanes naming
-  its subjects sends only those to the general path: one 40 ms stateful voice cued every tenth
-  frame among 10,000 crowded tweens, the frames it does not end read 0.353 ms against 0.625 before
-  and 0.327 with none cued (studio, shared, 8 rounds, U 0,
-  `bench/runs/2026-11-21-offlane-named-ab.txt`, measured). Neither leftover is timed; a voice
-  over every subject off lanes may leave nothing for the lanes to save (inferred).
+- **[agent] While a voice naming no subjects and bounded by nothing plays off lanes, every subject
+  reads one at a time.** A stateful one over 10,000 crowded tweens reads 1.56 ms a frame steady
+  against 0.17 with none (teitou, shared, `bench/runs/2026-11-21-offlane-unnamed-prof.txt`,
+  measured). The profile puts 41% of the frame in reading the voice itself (`contribution`, which
+  any path pays) and most of the rest in the per-subject walk around it: `readAll`, `foldWith`'s
+  copy and chain walk, `prepare`, `writeValue`. A path that wrote the laned columns in runs and
+  folded only the off-lane voice's channels per subject could save part of that walk, under half a
+  millisecond here (inferred from the profile, not built). Its cue and end frames cost 1.2–2.2 ms
+  each, which looks like every subject's chain relinking (inferred, not profiled). Since
+  2026-11-21 such a voice bounded by `within` or an `around` ball sends only the subjects within
+  it, and those it left holding a weight, to the general path, and `atRest` reads every other
+  subject from the lanes (`Lanes.alone`).
 - **[agent] Churn under other reorderings.** `pull` renumbers a swapped-in subject into the freed
   number, and since 2026-11-21 leaves a list shifted up by `splice` as numbered (`reorder-splice`
   9.73 to 0.60 ms a frame at 10,000 subjects, measured). Left: that 0.60 against 0.18 in order is

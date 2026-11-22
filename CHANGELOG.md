@@ -15,6 +15,14 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   that voice's list instead of building its own: cueing three voices over 1M subjects, as a
   scene with a move, a bob and a staggered nudge does, takes about 6 ms for each after the first,
   where each took about 125 (node, orochi).
+- `pull` and `probe` on lanes no longer read every subject through the general path while a voice
+  naming no subjects plays off lanes bounded by `within` or an `around` ball, only the subjects
+  within it and those it left still weighted: a stateful voice around a small ball over 10,000
+  one-subject tweens reads 0.34 ms a frame, where it read 1.80, against 0.30 with no such voice
+  (studio, shared).
+- `atRest` reads a subject from the lanes while a voice off lanes that does not reach it plays,
+  where it folded every subject: asking it of 10,000 tweens beside one such voice takes 0.60 ms,
+  where it took 1.02 (studio, shared).
 - Motion patches retargeted every frame no longer read slower through `pull` on lanes than off,
   without `history`: a pull's fill commits the changes due for the subjects it reads, where it used
   to hand each to the general path. 5,000 springs, about 2,900 of them retargeted a frame, under

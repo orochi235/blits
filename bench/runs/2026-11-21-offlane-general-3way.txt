@@ -1,0 +1,130 @@
+# studio (shared node, --quiet --max-cores 2): FRAMES=5000 bench/lineage.sh 6 b2e157dc a79e649b . -- keys:10000:3 fn:10000:3 glowbkeys:10000:2 (. = marks refreshed in prepare, a79e649b = in alone)
+built b2e157dc
+built a79e649b
+built .
+== round 1/6 b2e157dc
+ 1/1  keys       N= 10000 V=3     1.740 ms/frame     58 ns/subject·voice  p50    1.784  p99    2.218  worst    8.596  first    26.6 ms  gc   49    6.3 ms     161.1 kB/frame
+== round 1/6 b2e157dc
+ 1/1  fn         N= 10000 V=3     4.467 ms/frame    149 ns/subject·voice  p50    4.378  p99    5.603  worst   17.428  first    33.2 ms  gc  399  293.6 ms    2432.0 kB/frame
+== round 1/6 b2e157dc
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     4.887 ms/frame    244 ns/subject·voice  p50    3.626  p99   41.052  worst  195.873  first    24.2 ms  gc  439 1040.1 ms    2025.5 kB/frame
+== round 1/6 a79e649b
+ 1/1  keys       N= 10000 V=3     4.766 ms/frame    159 ns/subject·voice  p50    1.994  p99   50.159  worst  167.595  first    84.5 ms  gc   49   79.0 ms     162.4 kB/frame
+== round 1/6 a79e649b
+ 1/1  fn         N= 10000 V=3     7.590 ms/frame    253 ns/subject·voice  p50    3.371  p99   68.311  worst  258.760  first   106.7 ms  gc  191 1984.6 ms    2433.5 kB/frame
+== round 1/6 a79e649b
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     7.378 ms/frame    369 ns/subject·voice  p50    3.901  p99   57.274  worst  180.696  first    71.4 ms  gc  389 2523.6 ms    2021.3 kB/frame
+== round 1/6 .
+ 1/1  keys       N= 10000 V=3     1.981 ms/frame     66 ns/subject·voice  p50    1.828  p99    5.877  worst   88.287  first    37.8 ms  gc   49    6.6 ms     161.7 kB/frame
+== round 1/6 .
+ 1/1  fn         N= 10000 V=3     3.387 ms/frame    113 ns/subject·voice  p50    3.281  p99    4.575  worst   32.546  first    35.4 ms  gc  399  285.5 ms    2430.0 kB/frame
+== round 1/6 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.607 ms/frame    180 ns/subject·voice  p50    3.561  p99    4.693  worst    8.664  first    25.6 ms  gc  440  123.0 ms    2025.8 kB/frame
+== round 2/6 a79e649b
+ 1/1  keys       N= 10000 V=3     1.695 ms/frame     56 ns/subject·voice  p50    1.703  p99    2.058  worst    3.024  first    27.8 ms  gc   98   10.4 ms     162.4 kB/frame
+== round 2/6 a79e649b
+ 1/1  fn         N= 10000 V=3     3.868 ms/frame    129 ns/subject·voice  p50    3.782  p99    4.930  worst   27.620  first    31.6 ms  gc  409  290.8 ms    2429.3 kB/frame
+== round 2/6 a79e649b
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.535 ms/frame    177 ns/subject·voice  p50    3.514  p99    4.665  worst    7.373  first    25.7 ms  gc  431  119.4 ms    2025.1 kB/frame
+== round 2/6 .
+ 1/1  keys       N= 10000 V=3     1.560 ms/frame     52 ns/subject·voice  p50    1.570  p99    1.869  worst    4.552  first    24.5 ms  gc   98    9.3 ms     162.6 kB/frame
+== round 2/6 .
+ 1/1  fn         N= 10000 V=3     4.911 ms/frame    164 ns/subject·voice  p50    4.075  p99   21.827  worst  227.237  first    32.1 ms  gc  399  855.2 ms    2431.0 kB/frame
+== round 2/6 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     4.290 ms/frame    215 ns/subject·voice  p50    3.831  p99   14.476  worst   96.975  first    29.9 ms  gc  388  165.4 ms    2025.8 kB/frame
+== round 2/6 b2e157dc
+ 1/1  keys       N= 10000 V=3     1.859 ms/frame     62 ns/subject·voice  p50    1.825  p99    3.799  worst   66.980  first   117.4 ms  gc   49    6.5 ms     162.2 kB/frame
+== round 2/6 b2e157dc
+ 1/1  fn         N= 10000 V=3     3.990 ms/frame    133 ns/subject·voice  p50    3.796  p99    7.955  worst   60.122  first    46.7 ms  gc  398  341.4 ms    2430.0 kB/frame
+== round 2/6 b2e157dc
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.535 ms/frame    177 ns/subject·voice  p50    3.477  p99    5.186  worst   30.296  first    25.9 ms  gc  432  123.4 ms    2025.8 kB/frame
+== round 3/6 .
+ 1/1  keys       N= 10000 V=3     1.612 ms/frame     54 ns/subject·voice  p50    1.606  p99    1.903  worst    2.116  first    25.7 ms  gc   98   10.6 ms     162.7 kB/frame
+== round 3/6 .
+ 1/1  fn         N= 10000 V=3     3.842 ms/frame    128 ns/subject·voice  p50    3.769  p99    4.766  worst   20.921  first    31.9 ms  gc  399  264.7 ms    2430.9 kB/frame
+== round 3/6 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.591 ms/frame    180 ns/subject·voice  p50    3.555  p99    4.639  worst    8.146  first    23.2 ms  gc  431  115.9 ms    2026.4 kB/frame
+== round 3/6 b2e157dc
+ 1/1  keys       N= 10000 V=3     1.595 ms/frame     53 ns/subject·voice  p50    1.577  p99    1.862  worst    2.658  first    24.7 ms  gc   98   10.1 ms     162.5 kB/frame
+== round 3/6 b2e157dc
+ 1/1  fn         N= 10000 V=3     4.558 ms/frame    152 ns/subject·voice  p50    4.444  p99    5.929  worst   19.407  first    31.0 ms  gc  399  311.8 ms    2430.1 kB/frame
+== round 3/6 b2e157dc
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.425 ms/frame    171 ns/subject·voice  p50    3.390  p99    4.629  worst    7.866  first    25.5 ms  gc  431  117.5 ms    2026.1 kB/frame
+== round 3/6 a79e649b
+ 1/1  keys       N= 10000 V=3     1.686 ms/frame     56 ns/subject·voice  p50    1.675  p99    2.015  worst    3.211  first    26.9 ms  gc   98   10.1 ms     161.7 kB/frame
+== round 3/6 a79e649b
+ 1/1  fn         N= 10000 V=3     4.433 ms/frame    148 ns/subject·voice  p50    4.326  p99    5.660  worst   16.862  first    32.3 ms  gc  398  313.2 ms    2430.2 kB/frame
+== round 3/6 a79e649b
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.497 ms/frame    175 ns/subject·voice  p50    3.463  p99    4.548  worst    8.149  first    24.0 ms  gc  438  122.4 ms    2025.8 kB/frame
+== round 4/6 b2e157dc
+ 1/1  keys       N= 10000 V=3     1.566 ms/frame     52 ns/subject·voice  p50    1.561  p99    1.817  worst    3.378  first    26.3 ms  gc   98    9.8 ms     162.9 kB/frame
+== round 4/6 b2e157dc
+ 1/1  fn         N= 10000 V=3     3.784 ms/frame    126 ns/subject·voice  p50    3.704  p99    4.809  worst   21.517  first    32.1 ms  gc  398  260.6 ms    2431.2 kB/frame
+== round 4/6 b2e157dc
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.508 ms/frame    175 ns/subject·voice  p50    3.461  p99    4.659  worst    7.821  first    24.2 ms  gc  434  127.8 ms    2025.7 kB/frame
+== round 4/6 a79e649b
+ 1/1  keys       N= 10000 V=3     1.697 ms/frame     57 ns/subject·voice  p50    1.684  p99    2.265  worst    9.961  first    30.3 ms  gc   98   11.5 ms     161.6 kB/frame
+== round 4/6 a79e649b
+ 1/1  fn         N= 10000 V=3     4.188 ms/frame    140 ns/subject·voice  p50    4.022  p99    6.849  worst   23.146  first    38.5 ms  gc  399  416.1 ms    2431.3 kB/frame
+== round 4/6 a79e649b
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.849 ms/frame    192 ns/subject·voice  p50    3.732  p99    6.367  worst   18.852  first    26.2 ms  gc  405  139.2 ms    2025.8 kB/frame
+== round 4/6 .
+ 1/1  keys       N= 10000 V=3     1.871 ms/frame     62 ns/subject·voice  p50    1.811  p99    3.288  worst   20.028  first    28.2 ms  gc   98   11.5 ms     161.8 kB/frame
+== round 4/6 .
+ 1/1  fn         N= 10000 V=3     3.454 ms/frame    115 ns/subject·voice  p50    3.270  p99    6.127  worst   35.494  first    46.9 ms  gc  190  179.8 ms    2433.1 kB/frame
+== round 4/6 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.900 ms/frame    195 ns/subject·voice  p50    3.796  p99    6.043  worst   13.657  first    30.4 ms  gc  387  132.6 ms    2024.5 kB/frame
+== round 5/6 a79e649b
+ 1/1  keys       N= 10000 V=3     1.857 ms/frame     62 ns/subject·voice  p50    1.811  p99    2.740  worst   10.934  first    28.4 ms  gc   49    6.7 ms     160.9 kB/frame
+== round 5/6 a79e649b
+ 1/1  fn         N= 10000 V=3     4.743 ms/frame    158 ns/subject·voice  p50    4.514  p99    7.636  worst   17.422  first    30.2 ms  gc  398  427.3 ms    2431.5 kB/frame
+== round 5/6 a79e649b
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.376 ms/frame    169 ns/subject·voice  p50    3.303  p99    4.637  worst   13.393  first    24.0 ms  gc  413  109.8 ms    2025.4 kB/frame
+== round 5/6 .
+ 1/1  keys       N= 10000 V=3     1.459 ms/frame     49 ns/subject·voice  p50    1.410  p99    1.806  worst    2.109  first    26.3 ms  gc   98    9.1 ms     161.9 kB/frame
+== round 5/6 .
+ 1/1  fn         N= 10000 V=3     3.708 ms/frame    124 ns/subject·voice  p50    3.579  p99    4.641  worst   18.291  first    30.8 ms  gc  399  250.7 ms    2430.9 kB/frame
+== round 5/6 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.276 ms/frame    164 ns/subject·voice  p50    3.205  p99    4.598  worst    7.535  first    24.3 ms  gc  420  106.1 ms    2025.7 kB/frame
+== round 5/6 b2e157dc
+ 1/1  keys       N= 10000 V=3     1.428 ms/frame     48 ns/subject·voice  p50    1.379  p99    1.824  worst    2.027  first    25.9 ms  gc   98    8.7 ms     161.6 kB/frame
+== round 5/6 b2e157dc
+ 1/1  fn         N= 10000 V=3     3.696 ms/frame    123 ns/subject·voice  p50    3.563  p99    4.653  worst   17.836  first    30.7 ms  gc  398  251.2 ms    2429.8 kB/frame
+== round 5/6 b2e157dc
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.499 ms/frame    175 ns/subject·voice  p50    3.394  p99    4.994  worst    8.193  first    23.1 ms  gc  419  113.1 ms    2026.0 kB/frame
+== round 6/6 .
+ 1/1  keys       N= 10000 V=3     1.543 ms/frame     51 ns/subject·voice  p50    1.509  p99    2.021  worst    2.499  first    24.8 ms  gc   98    9.3 ms     162.7 kB/frame
+== round 6/6 .
+ 1/1  fn         N= 10000 V=3     4.238 ms/frame    141 ns/subject·voice  p50    4.043  p99    5.756  worst   15.620  first    32.3 ms  gc  399  303.1 ms    2430.4 kB/frame
+== round 6/6 .
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.376 ms/frame    169 ns/subject·voice  p50    3.303  p99    4.476  worst    7.958  first    23.8 ms  gc  420  109.5 ms    2025.1 kB/frame
+== round 6/6 b2e157dc
+ 1/1  keys       N= 10000 V=3     1.449 ms/frame     48 ns/subject·voice  p50    1.389  p99    1.816  worst    4.832  first    24.4 ms  gc   98    9.0 ms     161.5 kB/frame
+== round 6/6 b2e157dc
+ 1/1  fn         N= 10000 V=3     3.719 ms/frame    124 ns/subject·voice  p50    3.601  p99    4.657  worst   17.500  first    30.2 ms  gc  398  248.4 ms    2429.5 kB/frame
+== round 6/6 b2e157dc
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.412 ms/frame    171 ns/subject·voice  p50    3.395  p99    4.513  worst    7.933  first    22.4 ms  gc  422  109.5 ms    2025.0 kB/frame
+== round 6/6 a79e649b
+ 1/1  keys       N= 10000 V=3     1.599 ms/frame     53 ns/subject·voice  p50    1.588  p99    1.951  worst    3.045  first    26.6 ms  gc   98   10.0 ms     162.4 kB/frame
+== round 6/6 a79e649b
+ 1/1  fn         N= 10000 V=3     4.091 ms/frame    136 ns/subject·voice  p50    4.001  p99    5.127  worst   17.553  first    31.4 ms  gc  399  277.8 ms    2429.6 kB/frame
+== round 6/6 a79e649b
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbkeys  N= 10000 V=2     3.430 ms/frame    172 ns/subject·voice  p50    3.388  p99    4.738  worst   18.291  first    24.5 ms  gc  426  110.6 ms    2025.7 kB/frame

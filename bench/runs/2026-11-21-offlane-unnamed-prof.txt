@@ -1,0 +1,66 @@
+# teitou (shared node, --quiet --max-cores 2): EVERY=1 MS=1e9 FRAMES=1500 node --cpu-prof --cpu-prof-interval 100 bench/requalify.mjs 10000 1 unnamed; profsum self, then INCL=1
+ 1/1  requalify-unnamed     N=10000 V=1    1.557 ms/frame  plays 1500
+ 1/1  requalify-unnamed-play N=10000 V=1    1.557 ms/frame
+total 2481.4 ms
+    322.9 ms  13.0%  over clock.js:12
+    280.1 ms  11.3%  readAll pull.js:168
+    214.0 ms   8.6%  foldWith fold.js:169
+    203.9 ms   8.2%  contribution contribution.js:49
+    139.4 ms   5.6%  prime weigh.js:7
+    136.0 ms   5.5%  bareRows bare.js:16
+     94.4 ms   3.8%  apply fold.js:61
+     90.6 ms   3.7%  prepare lanes.js:318
+     80.3 ms   3.2%  pull pull.js:63
+     62.6 ms   2.5%  writeValue pull.js:13
+     62.3 ms   2.5%  phaseAt clock.js:18
+     46.8 ms   1.9%  elapsedAt voice.js:496
+     35.2 ms   1.4%  current lanes.js:359
+     34.2 ms   1.4%  filled lanes.js:346
+     33.1 ms   1.3%  (garbage collector)
+     32.5 ms   1.3%  pullRun columns.js:10
+     32.0 ms   1.3%  weigh weigh.js:95
+     29.5 ms   1.2%  base weigh.js:114
+     27.7 ms   1.1%  capped weigh.js:51
+     27.0 ms   1.1%  read contribution.js:436
+     26.3 ms   1.1%  filled copyout.js:12
+     25.7 ms   1.0%  phaseOf contribution.js:41
+     24.5 ms   1.0%  (program)
+     19.3 ms   0.8%  fadeOf weigh.js:63
+     18.8 ms   0.8%  record trail.js:13
+     18.6 ms   0.7%  patch.writes requalify.mjs:34
+     18.5 ms   0.7%  alone lanes.js:242
+     18.0 ms   0.7%  markRead pull.js:146
+     17.7 ms   0.7%  elapsedWith clock.js:115
+     13.9 ms   0.6%  read
+== inclusive
+total 2481.4 ms
+   2481.4 ms 100.0%  (root)
+   2349.9 ms  94.7%  evaluate
+   2348.1 ms  94.6%  run module_job:558
+   2346.7 ms  94.6%  (anonymous) requalify.mjs:1
+   2345.4 ms  94.5%  round requalify.mjs:41
+   2323.1 ms  93.6%  pull mixer.js:474
+   2321.9 ms  93.6%  pull pull.js:63
+   2196.1 ms  88.5%  readAll pull.js:168
+   1423.0 ms  57.3%  foldWith fold.js:169
+   1031.7 ms  41.6%  read contribution.js:436
+   1008.5 ms  40.6%  contribution contribution.js:49
+    401.8 ms  16.2%  phaseOf contribution.js:41
+    382.5 ms  15.4%  phaseAt clock.js:18
+    322.9 ms  13.0%  over clock.js:12
+    273.4 ms  11.0%  pullRun columns.js:10
+    202.6 ms   8.2%  begin lanes.js:369
+    187.6 ms   7.6%  fillAll fill.js:38
+    176.6 ms   7.1%  crowdsUpTo crowd.js:157
+    175.1 ms   7.1%  runCrowd crowd.js:187
+    167.1 ms   6.7%  prime weigh.js:7
+    166.7 ms   6.7%  bareRows bare.js:16
+    135.3 ms   5.5%  prepare lanes.js:318
+    108.9 ms   4.4%  apply fold.js:61
+    101.1 ms   4.1%  weigh weigh.js:95
+     73.2 ms   3.0%  rawAt voice.js:607
+     69.3 ms   2.8%  filled lanes.js:346
+     64.3 ms   2.6%  elapsedAt voice.js:496
+     62.6 ms   2.5%  writeValue pull.js:13
+     41.5 ms   1.7%  (anonymous) run_main_module:1
+     41.1 ms   1.7%  executeUserEntryPoint run_main:144

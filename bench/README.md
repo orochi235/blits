@@ -27,7 +27,9 @@ the machine being used.
   inclusive time, `UNDER=<function>` for only the samples under it, such as `UNDER=pull`),
   `bench/proftree.mjs` and `bench/lines.mjs`; `ALLOC=1` samples what it allocates.
 - `bench/requalify.mjs` times the frame a voice off lanes ends among a crowd, the frames it does
-  not (`-rest`), and `requalify` itself; `bench/reorder.mjs` times `pull` over a list in another order than its numbers,
+  not (`-rest`), and `requalify` itself; `unnamed` and `within` cue the voice over every subject,
+  unbounded or around a ball, and `atrest-quiet` and `atrest-named` time `atRest` over the crowd
+  (`-ask`). `EVERY=1 MS=1e9` keeps one voice playing from the first frame. `bench/reorder.mjs` times `pull` over a list in another order than its numbers,
   `splice` and swap-remove churn among them. Both run under `LINEAGE_BENCH`, and `medians.mjs`
   reads them.
 - `bench/sparse.mjs <kind> <N> <rounds> <share>...` times `pull` over a share of N one-subject
@@ -190,6 +192,7 @@ rows where one was timed.
 | `drop` looking a subject's chain up once rather than three times (2026-11-21, `runs/2026-11-21-stop-one-lookup.diff`) | a stop at 40,000 subjects 2.505 against 2.615 µs, U 31.5 at 10 rounds, and 1.510 against 1.440 at 10,000 (msb-uai, `runs/2026-11-21-stop-seat-ab.txt`): the second and third lookups likely hit what the first brought in (inferred) |
 | A subject's chain head and `named`'s list in one map entry, through a store over a shared `Kept` record (2026-11-21, `runs/2026-11-21-stop-kept.diff`) | a stop at 40,000 subjects 3.445 against 3.720 µs, U 21 at 10 rounds, but `churn` 1.372 against 1.156 ms (U 92) and `tween-` 2.103 against 2.015 (U 90): every general-path probe reads the head through one more object (studio, `runs/2026-11-21-stop-kept-ab.txt`) |
 | `Lanes`' probe methods (`prepare`, `filled`, `current`, `begin`) moved out of the class body and installed on its prototype (2026-11-21) | `probed` 2.598 against 2.391 ms, U 52 of 64 at 8 rounds, then 2.635 against 2.635, U 43 of 100 at 10 (studio, `runs/2026-11-21-lanes-split-ab.txt`, `-ab2.txt`): not shown either way, so they stay in the class |
+| Refreshing a bounded off-lane voice's marks from `Lanes.alone`, asked once a subject, rather than from `prepare` (2026-11-21) | `keys` 10k×3 1.695 ms against 1.566 on main and 1.560 refreshed from `prepare`; `fn` 10k×3 4.188 against 3.784 and 3.708 (studio, 6 rounds rotated, U 9 against main, `runs/2026-11-21-offlane-general-3way.txt`). An earlier build that also asked `Object.is(weight, 0)` before whether a voice has a bound read the same rows 8–15% slower there (`-general-ab.txt`) |
 | Touching every record a lane reads in a pass before its loop, to take a suspected cache miss out of `one` (2026-11-21) | heatmap lanes `pull` 3.800 against 3.709 ms, slower (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-signal-split.txt`) |
 | Building `Named`'s lookup of a long list as a `Set`, from its constructor or a loop, in place of the map of places; batching `stagger`'s calls (2026-11-21) | not built: at 1M subjects a Set reads 69.4 and 66.6 ms against the map's 72.4, and keeps no place to read a delay by; the stagger loop alone is 1.4 ms (studio, 15 rounds, `runs/2026-11-21-cue-wide-places.txt`). A lookup in a built map costs 40 ns a subject, so a table of 1M is cache-bound however it is filled |
 

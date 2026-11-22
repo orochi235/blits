@@ -1,0 +1,103 @@
+# studio (shared node, --quiet --max-cores 2): FRAMES=2000 LINEAGE_BENCH=requalify.mjs bench/lineage.sh 10 b2e157dc . -- '10000 1 unnamed' (second half of one job; the first is -steady.txt)
+built b2e157dc
+built .
+== round 1/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.242 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.002 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.233 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.313 ms/frame
+== round 1/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    1.331 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.351 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.395 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.316 ms/frame
+== round 2/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    1.311 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.337 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.238 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.314 ms/frame
+== round 2/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.267 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.149 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.294 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.297 ms/frame
+== round 3/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.262 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.111 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.200 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.313 ms/frame
+== round 3/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    1.288 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.215 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.249 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.315 ms/frame
+== round 4/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    1.278 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.160 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.266 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.314 ms/frame
+== round 4/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.284 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.204 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.337 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.299 ms/frame
+== round 5/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.276 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.170 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.206 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.317 ms/frame
+== round 5/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    1.294 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.255 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.225 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.315 ms/frame
+== round 6/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    1.240 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    3.994 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.220 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.313 ms/frame
+== round 6/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.250 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.045 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.216 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.314 ms/frame
+== round 7/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.309 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.311 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.244 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.318 ms/frame
+== round 7/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    2.188 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    7.726 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    3.615 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.402 ms/frame
+== round 8/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    2.689 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    9.337 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    4.492 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.532 ms/frame
+== round 8/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    9.129 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1   31.531 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1   15.509 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    1.817 ms/frame
+== round 9/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    7.256 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1   23.780 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1   14.524 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    1.497 ms/frame
+== round 9/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    2.189 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    7.472 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    4.010 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.419 ms/frame
+== round 10/10 .
+ 1/1  requalify-unnamed     N=10000 V=1    1.335 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    4.431 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    2.363 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.303 ms/frame
+== round 10/10 b2e157dc
+ 1/1  requalify-unnamed     N=10000 V=1    1.714 ms/frame  plays 400
+ 1/1  requalify-unnamed-play N=10000 V=1    5.724 ms/frame
+ 1/1  requalify-unnamed-end N=10000 V=1    3.087 ms/frame  ends 200
+ 1/1  requalify-unnamed-idle N=10000 V=1    0.372 ms/frame
