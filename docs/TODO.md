@@ -82,7 +82,14 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   subject: relinking its chain (`relink.ts`), the fill's `open`/`one`/`call`/`shut`, and the copy
   out, which boxes every number into a host's `{}` out; `mix.pose()` gives the unboxed shape.
 - **[agent] A role costs about 20% over its voices played apart, a blend about 33%** (teitou,
-  2026-10-26); `runRole` covers the inline case, everything else gathers then folds.
+  2026-10-26). Both bench rows already run inline (`runRole`). A profile of `fn:10000:3`, `role`,
+  `signal` and `blend` (msb-uai, 2026-11-21, 3 runs each, `bench/runs/2026-11-21-role-prof.txt`)
+  puts the role's extra time in gathering and folding (`runRole`, `gatherScalar`, `meetRole`,
+  `foldAt`, together about 19% of its samples) and in more samples landing in the patch itself
+  (22% against 18%; why is not found). A blend costs what `signal` does: its extra over three
+  plain voices is the signal (`by`, `signalled`, `base`), which the host writes. Running inline past
+  a member yet to start was backed out (bench/README.md), and clearing `taken` once and dropping
+  `meetRole` from the inline route had been (2026-10-26).
 - **[agent] Starting 10k one-subject tweens** takes a 27.6 ms first frame against 12.6 for fn
   voices (msb-uai, 2026-11-12, `node bench/start.mjs 10000 9 tweens fns`), and no one cost leads.
   A crowded motion keeping its run in its crowd row (`Motions.lodge`) took it from 29.2
@@ -104,9 +111,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   hash (4.1 ms in Chromium) and the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
 - **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
   more; inferred to be first touches of each object of the voice and each array of its crowd row.
-- **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
-  it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
-  the benches still cue the deprecated `lerp: 'oklch'`.
 - **[agent] A voice leaving the general path or a lane** still requalifies every voice.
 - **[agent] Churn under other reorderings**: `pull` renumbers a swapped-in subject into the freed
   slot, but not for sorted, reversed or filtered lists, nor under history, roles or a bound

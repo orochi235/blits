@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- An `ink()` color on lanes folds as a sum rather than through a call per voice and subject: 10,000
+  subjects under two keys voices read 1.50 ms a frame from 1.64, and 0.65 from 0.88 through `pull`
+  (msb-uai, shared).
 - Cueing a staggered voice over many subjects takes about half as long: at 1M subjects, 35 ms on the
   stock mixer from 71, and 41 on the gpu engine from 76 (teitou). A stagger answering `undefined`
   now delays its subject by 0 everywhere; the general path used to ask it again.
