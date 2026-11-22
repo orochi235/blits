@@ -1,0 +1,131 @@
+# msb-uai, onto task probes-noter-ab (job 99f93428, --solo, RETARGETS=1 FRAMES=1500, base 4eb821a3; dirty is the per-kit noter in src/trail.ts and src/written.ts): bench/abdirty.sh 7 keys:10000:3 tweens:10000:1 fn:10000:3
+built head
+built dirty
+== round 1/7 head
+ 1/1  keys       N= 10000 V=3     1.824 ms/frame     61 ns/subject·voice  p50    1.809  p99    2.058  worst    2.143  first    22.5 ms  gc   14    1.1 ms     164.3 kB/frame
+== round 1/7 head
+ 1/1  tweens     N= 10000 V=1     1.297 ms/frame    130 ns/subject·voice  p50    1.263  p99    1.479  worst    3.131  first    47.9 ms  gc    2    1.9 ms       8.3 kB/frame
+== round 1/7 head
+ 1/1  fn         N= 10000 V=3     3.035 ms/frame    101 ns/subject·voice  p50    2.958  p99    3.736  worst   13.318  first    28.5 ms  gc  120   34.3 ms    2442.7 kB/frame
+== round 1/7 dirty
+ 1/1  keys       N= 10000 V=3     1.476 ms/frame     49 ns/subject·voice  p50    1.460  p99    1.658  worst    2.551  first    21.4 ms  gc   14    1.1 ms     163.5 kB/frame
+== round 1/7 dirty
+ 1/1  tweens     N= 10000 V=1     0.966 ms/frame     97 ns/subject·voice  p50    0.962  p99    1.075  worst    2.397  first    46.9 ms  gc    0    0.0 ms      11.0 kB/frame
+== round 1/7 dirty
+ 1/1  fn         N= 10000 V=3     2.647 ms/frame     88 ns/subject·voice  p50    2.584  p99    3.252  worst   12.765  first    26.3 ms  gc  120   32.2 ms    2441.9 kB/frame
+== round 2/7 dirty
+ 1/1  keys       N= 10000 V=3     1.510 ms/frame     50 ns/subject·voice  p50    1.491  p99    1.722  worst    2.058  first    21.6 ms  gc   14    1.2 ms     163.8 kB/frame
+== round 2/7 dirty
+ 1/1  tweens     N= 10000 V=1     0.979 ms/frame     98 ns/subject·voice  p50    0.963  p99    1.140  worst    2.540  first    46.7 ms  gc    0    0.0 ms       9.2 kB/frame
+== round 2/7 dirty
+ 1/1  fn         N= 10000 V=3     2.827 ms/frame     94 ns/subject·voice  p50    2.734  p99    3.751  worst   11.127  first    26.6 ms  gc  120   37.4 ms    2442.6 kB/frame
+== round 2/7 head
+ 1/1  keys       N= 10000 V=3     1.850 ms/frame     62 ns/subject·voice  p50    1.817  p99    2.076  worst    8.790  first    22.2 ms  gc   15    1.3 ms     164.5 kB/frame
+== round 2/7 head
+ 1/1  tweens     N= 10000 V=1     1.294 ms/frame    129 ns/subject·voice  p50    1.289  p99    1.449  worst    2.887  first    49.0 ms  gc   10   10.4 ms       7.6 kB/frame
+== round 2/7 head
+ 1/1  fn         N= 10000 V=3     3.017 ms/frame    101 ns/subject·voice  p50    2.960  p99    3.565  worst   13.464  first    27.8 ms  gc  120   31.7 ms    2442.8 kB/frame
+== round 3/7 head
+ 1/1  keys       N= 10000 V=3     1.842 ms/frame     61 ns/subject·voice  p50    1.813  p99    2.077  worst    2.852  first    22.0 ms  gc   15    1.2 ms     167.7 kB/frame
+== round 3/7 head
+ 1/1  tweens     N= 10000 V=1     1.298 ms/frame    130 ns/subject·voice  p50    1.287  p99    1.445  worst    3.119  first    46.5 ms  gc   10    8.5 ms       8.3 kB/frame
+== round 3/7 head
+ 1/1  fn         N= 10000 V=3     3.160 ms/frame    105 ns/subject·voice  p50    3.065  p99    4.051  worst   11.525  first    28.0 ms  gc  120   38.0 ms    2445.1 kB/frame
+== round 3/7 dirty
+ 1/1  keys       N= 10000 V=3     1.494 ms/frame     50 ns/subject·voice  p50    1.472  p99    1.681  worst    1.750  first    21.4 ms  gc   14    1.2 ms     163.5 kB/frame
+== round 3/7 dirty
+ 1/1  tweens     N= 10000 V=1     0.968 ms/frame     97 ns/subject·voice  p50    0.934  p99    1.118  worst    2.397  first    45.8 ms  gc    0    0.0 ms      13.4 kB/frame
+== round 3/7 dirty
+ 1/1  fn         N= 10000 V=3     2.958 ms/frame     99 ns/subject·voice  p50    2.853  p99    3.656  worst   11.046  first    27.2 ms  gc  120   38.3 ms    2443.6 kB/frame
+== round 4/7 dirty
+ 1/1  keys       N= 10000 V=3     1.449 ms/frame     48 ns/subject·voice  p50    1.427  p99    1.694  worst    1.839  first    22.5 ms  gc   14    1.1 ms     166.1 kB/frame
+== round 4/7 dirty
+ 1/1  tweens     N= 10000 V=1     0.970 ms/frame     97 ns/subject·voice  p50    0.939  p99    1.111  worst    8.606  first    47.4 ms  gc    0    0.0 ms       9.2 kB/frame
+== round 4/7 dirty
+ 1/1  fn         N= 10000 V=3     2.677 ms/frame     89 ns/subject·voice  p50    2.617  p99    3.271  worst   14.161  first    28.0 ms  gc  119   32.3 ms    2440.5 kB/frame
+== round 4/7 head
+ 1/1  keys       N= 10000 V=3     1.827 ms/frame     61 ns/subject·voice  p50    1.808  p99    2.020  worst    2.932  first    23.0 ms  gc   14    1.1 ms     163.9 kB/frame
+== round 4/7 head
+ 1/1  tweens     N= 10000 V=1     1.304 ms/frame    130 ns/subject·voice  p50    1.274  p99    1.505  worst    3.239  first    46.9 ms  gc    2    2.0 ms       8.6 kB/frame
+== round 4/7 head
+ 1/1  fn         N= 10000 V=3     3.255 ms/frame    109 ns/subject·voice  p50    3.159  p99    4.123  worst   12.858  first    37.3 ms  gc  120   39.2 ms    2441.5 kB/frame
+== round 5/7 head
+ 1/1  keys       N= 10000 V=3     1.793 ms/frame     60 ns/subject·voice  p50    1.774  p99    1.971  worst    2.733  first    22.4 ms  gc   15    1.3 ms     167.8 kB/frame
+== round 5/7 head
+ 1/1  tweens     N= 10000 V=1     1.316 ms/frame    132 ns/subject·voice  p50    1.304  p99    1.490  worst    3.252  first    47.4 ms  gc    2    1.9 ms       8.9 kB/frame
+== round 5/7 head
+ 1/1  fn         N= 10000 V=3     3.033 ms/frame    101 ns/subject·voice  p50    2.978  p99    3.601  worst   12.916  first    27.7 ms  gc  120   34.1 ms    2442.5 kB/frame
+== round 5/7 dirty
+ 1/1  keys       N= 10000 V=3     1.502 ms/frame     50 ns/subject·voice  p50    1.485  p99    1.679  worst    1.928  first    21.1 ms  gc   14    1.1 ms     165.2 kB/frame
+== round 5/7 dirty
+ 1/1  tweens     N= 10000 V=1     0.973 ms/frame     97 ns/subject·voice  p50    0.951  p99    1.057  worst    2.363  first    46.5 ms  gc    0    0.0 ms      10.6 kB/frame
+== round 5/7 dirty
+ 1/1  fn         N= 10000 V=3     3.007 ms/frame    100 ns/subject·voice  p50    2.903  p99    4.021  worst   11.729  first    26.2 ms  gc  120   38.9 ms    2438.8 kB/frame
+== round 6/7 dirty
+ 1/1  keys       N= 10000 V=3     1.446 ms/frame     48 ns/subject·voice  p50    1.433  p99    1.602  worst    1.712  first    20.5 ms  gc   15    1.1 ms     166.7 kB/frame
+== round 6/7 dirty
+ 1/1  tweens     N= 10000 V=1     0.964 ms/frame     96 ns/subject·voice  p50    0.967  p99    1.047  worst    2.383  first    46.4 ms  gc    0    0.0 ms      11.1 kB/frame
+== round 6/7 dirty
+ 1/1  fn         N= 10000 V=3     2.756 ms/frame     92 ns/subject·voice  p50    2.662  p99    3.363  worst   17.861  first    26.8 ms  gc  120   37.0 ms    2443.2 kB/frame
+== round 6/7 head
+ 1/1  keys       N= 10000 V=3     1.833 ms/frame     61 ns/subject·voice  p50    1.812  p99    2.061  worst    2.160  first    21.7 ms  gc   14    1.1 ms     163.3 kB/frame
+== round 6/7 head
+ 1/1  tweens     N= 10000 V=1     1.308 ms/frame    131 ns/subject·voice  p50    1.282  p99    1.477  worst    3.083  first    48.9 ms  gc    2    1.9 ms       8.6 kB/frame
+== round 6/7 head
+ 1/1  fn         N= 10000 V=3     3.045 ms/frame    102 ns/subject·voice  p50    2.977  p99    3.658  worst   13.004  first    29.3 ms  gc  120   33.4 ms    2441.0 kB/frame
+== round 7/7 head
+ 1/1  keys       N= 10000 V=3     1.837 ms/frame     61 ns/subject·voice  p50    1.813  p99    2.196  worst    2.604  first    22.0 ms  gc   14    1.1 ms     162.9 kB/frame
+== round 7/7 head
+ 1/1  tweens     N= 10000 V=1     1.283 ms/frame    128 ns/subject·voice  p50    1.259  p99    1.436  worst    3.049  first    54.0 ms  gc    2    1.8 ms       9.0 kB/frame
+== round 7/7 head
+ 1/1  fn         N= 10000 V=3     3.113 ms/frame    104 ns/subject·voice  p50    3.042  p99    3.763  worst   13.681  first    29.2 ms  gc  120   34.0 ms    2439.4 kB/frame
+== round 7/7 dirty
+ 1/1  keys       N= 10000 V=3     1.483 ms/frame     49 ns/subject·voice  p50    1.465  p99    1.691  worst    1.796  first    21.4 ms  gc   14    1.1 ms     165.1 kB/frame
+== round 7/7 dirty
+ 1/1  tweens     N= 10000 V=1     0.971 ms/frame     97 ns/subject·voice  p50    0.957  p99    1.106  worst    2.518  first    47.8 ms  gc    0    0.0 ms       8.2 kB/frame
+== round 7/7 dirty
+ 1/1  fn         N= 10000 V=3     3.016 ms/frame    101 ns/subject·voice  p50    2.908  p99    4.010  worst   11.135  first    26.1 ms  gc  120   39.5 ms    2440.9 kB/frame
+onto: agent-a92314c83e0e47409 is already set up
+onto: playwright-browsers-790bd7c0596f is already set up
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()

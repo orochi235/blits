@@ -93,7 +93,7 @@ export interface MixOptions<H = unknown> {
    * first of those voices starts where the subject was and leaves at its speed. Without it, the mix
    * keeps nothing until one is cued, and that first voice starts from this frame's pose, standing,
    * and from rest where the voice before it was cut off in the same frame; every later one reads the
-   * poses kept since. Off by default, as it costs a 10,000-subject probe frame 35–70%. A host reading
+   * poses kept since. Off by default, as it costs a 10,000-subject probe frame 8–22%. A host reading
    * through `pull`, or a probe with no `out`, needs no option.
    */
   retargets?: boolean;

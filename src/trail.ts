@@ -3,6 +3,7 @@ import { copy } from './clone.js';
 import type { Column } from './pull.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
+import { written } from './written.js';
 
 /** One `pull`'s subjects and the numbers it wrote for them, column by column. */
 interface Pulled<I> {
@@ -132,6 +133,9 @@ export class Probes {
   private other: unknown[] = [];
   private count = 0;
   private free: number[] = [];
+  /** Whether `other` has held a value: until it does, a note leaves it unread. */
+  private odd = false;
+  private readonly noter: Noter;
   /** Moved on by a seek: a head noted before then holds a row no longer its own. */
   epoch = 0;
 
@@ -143,6 +147,7 @@ export class Probes {
     this.layout = at;
     this.width = at[channels.length] as number;
     this.stride = 3 + 2 * this.width;
+    this.noter = noterFor(names, at);
   }
 
   /** Copies a probe's pose into the head's row, over the older half once the frame moves on. */
@@ -163,24 +168,7 @@ export class Probes {
     const half = rows[base + 2] as number;
     const into = base + 3 + half * this.width;
     const others = (head.probeRow * 2 + half) * this.names.length;
-    const names = this.names;
-    const layout = this.layout;
-    const other = this.other;
-    for (let i = 0; i < names.length; i++) {
-      const v = pose[names[i] as string];
-      const from = into + (layout[i] as number);
-      const axes = (layout[i + 1] as number) - (layout[i] as number);
-      if (typeof v === 'number' && axes === 1) {
-        rows[from] = v;
-        if (other[others + i] !== undefined) other[others + i] = undefined;
-      } else if (Array.isArray(v) && v.length === axes && typeof v[0] === 'number') {
-        for (let a = 0; a < axes; a++) rows[from + a] = v[a] as number;
-        if (other[others + i] !== undefined) other[others + i] = undefined;
-      } else {
-        rows[from] = Number.NaN;
-        other[others + i] = copy(v);
-      }
-    }
+    if (this.noter(rows, this.other, into, others, pose, this.odd)) this.odd = true;
   }
 
   /** The head's row, given one first where it has none since the last seek. */
@@ -249,6 +237,78 @@ export class Probes {
     }
     return pose;
   }
+}
+
+/**
+ * Copies a pose's channels into a row's half from `into`, a value that is not numbers into `other`
+ * from `others`, clearing what `other` held there only where `clear`; true where one went there.
+ */
+type Noter = (
+  rows: Float64Array,
+  other: unknown[],
+  into: number,
+  others: number,
+  pose: Record<string, unknown>,
+  clear: boolean,
+) => boolean;
+
+/** A noter for these channels, each read by its name in place, or a loop where `Function` is refused. */
+function noterFor(names: readonly string[], layout: Int32Array): Noter {
+  const lines: string[] = [];
+  for (let i = 0; i < names.length; i++) {
+    const at = layout[i] as number;
+    const axes = (layout[i + 1] as number) - at;
+    const fits =
+      axes === 1
+        ? `typeof v === 'number'`
+        : `Array.isArray(v) && v.length === ${axes} && typeof v[0] === 'number'`;
+    const store =
+      axes === 1
+        ? `r[into + ${at}] = v;`
+        : Array.from({ length: axes }, (_, a) => `r[into + ${at + a}] = v[${a}];`).join(' ');
+    lines.push(`v = p[${JSON.stringify(names[i])}];`);
+    lines.push(
+      `if (${fits}) { ${store} if (clear && o[others + ${i}] !== undefined) o[others + ${i}] = undefined; }`,
+    );
+    lines.push(
+      `else { r[into + ${at}] = NaN; if ((o[others + ${i}] = copy(v)) !== undefined) odd = true; }`,
+    );
+  }
+  const make = written<(c: typeof copy) => Noter>(
+    ['copy'],
+    `return function note(r, o, into, others, p, clear) {\nlet v, odd = false;\n${lines.join('\n')}\nreturn odd;\n};`,
+  );
+  return make === undefined ? (...args) => noteLoop(names, layout, ...args) : make(copy);
+}
+
+function noteLoop(
+  names: readonly string[],
+  layout: Int32Array,
+  rows: Float64Array,
+  other: unknown[],
+  into: number,
+  others: number,
+  pose: Record<string, unknown>,
+  clear: boolean,
+): boolean {
+  let odd = false;
+  for (let i = 0; i < names.length; i++) {
+    const v = pose[names[i] as string];
+    const from = into + (layout[i] as number);
+    const axes = (layout[i + 1] as number) - (layout[i] as number);
+    if (axes === 1 && typeof v === 'number') rows[from] = v;
+    else if (axes > 1 && Array.isArray(v) && v.length === axes && typeof v[0] === 'number')
+      for (let a = 0; a < axes; a++) rows[from + a] = v[a] as number;
+    else {
+      rows[from] = Number.NaN;
+      const kept = copy(v);
+      other[others + i] = kept;
+      if (kept !== undefined) odd = true;
+      continue;
+    }
+    if (clear && other[others + i] !== undefined) other[others + i] = undefined;
+  }
+  return odd;
 }
 
 /** The value `axes` numbers from `at` hold, or undefined where one is NaN, standing for none. */

@@ -1,0 +1,130 @@
+# teitou, onto task probes-retargets-after (job 7ddfb003, --solo, FRAMES=1500, base 4eb821a3 + the per-kit noter and the RETARGETS switch): bench/rows.sh 7 keys:10000:3 RETARGETS=1@keys:10000:3 tweens:10000:1 RETARGETS=1@tweens:10000:1 fn:10000:3 RETARGETS=1@fn:10000:3
+onto: plan 42
+round 1   1/1  keys       N= 10000 V=3     1.036 ms/frame     35 ns/subject·voice  p50    1.022  p99    1.234  worst    2.119  first    16.5 ms  gc   14    1.2 ms     166.5 kB/frame
+onto: progress 1/42
+round 1 RETARGETS=1  1/1  keys       N= 10000 V=3     1.202 ms/frame     40 ns/subject·voice  p50    1.178  p99    1.464  worst    2.035  first    16.4 ms  gc   14    1.2 ms     163.6 kB/frame
+onto: progress 2/42
+round 1   1/1  tweens     N= 10000 V=1     0.613 ms/frame     61 ns/subject·voice  p50    0.608  p99    0.713  worst    1.783  first    35.0 ms  gc    1    1.6 ms      10.0 kB/frame
+onto: progress 3/42
+round 1 RETARGETS=1  1/1  tweens     N= 10000 V=1     0.721 ms/frame     72 ns/subject·voice  p50    0.713  p99    0.832  worst    1.714  first    45.0 ms  gc    0    0.0 ms      13.8 kB/frame
+onto: progress 4/42
+round 1   1/1  fn         N= 10000 V=3     2.022 ms/frame     67 ns/subject·voice  p50    1.952  p99    2.552  worst   12.830  first    19.4 ms  gc  122   39.0 ms    2444.5 kB/frame
+onto: progress 5/42
+round 1 RETARGETS=1  1/1  fn         N= 10000 V=3     2.220 ms/frame     74 ns/subject·voice  p50    2.141  p99    2.836  worst    9.080  first    21.9 ms  gc  120   37.2 ms    2443.6 kB/frame
+onto: progress 6/42
+round 2 RETARGETS=1  1/1  fn         N= 10000 V=3     2.232 ms/frame     74 ns/subject·voice  p50    2.159  p99    2.890  worst    9.047  first    21.7 ms  gc  131   42.5 ms    2445.5 kB/frame
+onto: progress 7/42
+round 2   1/1  fn         N= 10000 V=3     2.059 ms/frame     69 ns/subject·voice  p50    1.977  p99    2.639  worst   12.676  first    19.8 ms  gc  122   40.0 ms    2444.5 kB/frame
+onto: progress 8/42
+round 2 RETARGETS=1  1/1  tweens     N= 10000 V=1     0.777 ms/frame     78 ns/subject·voice  p50    0.777  p99    0.884  worst    1.774  first    39.5 ms  gc    0    0.0 ms      12.1 kB/frame
+onto: progress 9/42
+round 2   1/1  tweens     N= 10000 V=1     0.589 ms/frame     59 ns/subject·voice  p50    0.584  p99    0.657  worst    1.548  first    38.7 ms  gc    0    0.0 ms      11.1 kB/frame
+onto: progress 10/42
+round 2 RETARGETS=1  1/1  keys       N= 10000 V=3     1.165 ms/frame     39 ns/subject·voice  p50    1.150  p99    1.347  worst    1.480  first    17.0 ms  gc   14    1.1 ms     168.0 kB/frame
+onto: progress 11/42
+round 2   1/1  keys       N= 10000 V=3     1.011 ms/frame     34 ns/subject·voice  p50    0.997  p99    1.187  worst    1.454  first    14.5 ms  gc   30    1.9 ms     171.0 kB/frame
+onto: progress 12/42
+round 3   1/1  keys       N= 10000 V=3     1.033 ms/frame     34 ns/subject·voice  p50    1.017  p99    1.225  worst    1.425  first    15.5 ms  gc   14    1.1 ms     163.9 kB/frame
+onto: progress 13/42
+round 3 RETARGETS=1  1/1  keys       N= 10000 V=3     1.172 ms/frame     39 ns/subject·voice  p50    1.144  p99    1.459  worst    3.944  first    17.5 ms  gc   14    1.1 ms     168.9 kB/frame
+onto: progress 14/42
+round 3   1/1  tweens     N= 10000 V=1     0.584 ms/frame     58 ns/subject·voice  p50    0.572  p99    0.667  worst    1.721  first    35.3 ms  gc    1    1.5 ms      11.1 kB/frame
+onto: progress 15/42
+round 3 RETARGETS=1  1/1  tweens     N= 10000 V=1     0.760 ms/frame     76 ns/subject·voice  p50    0.758  p99    0.888  worst    1.819  first    37.7 ms  gc    0    0.0 ms       9.9 kB/frame
+onto: progress 16/42
+round 3   1/1  fn         N= 10000 V=3     1.973 ms/frame     66 ns/subject·voice  p50    1.909  p99    2.520  worst   11.840  first    19.8 ms  gc  122   36.4 ms    2440.8 kB/frame
+onto: progress 17/42
+round 3 RETARGETS=1  1/1  fn         N= 10000 V=3     2.212 ms/frame     74 ns/subject·voice  p50    2.117  p99    2.890  worst    9.647  first    22.4 ms  gc  120   37.4 ms    2441.3 kB/frame
+onto: progress 18/42
+round 4 RETARGETS=1  1/1  fn         N= 10000 V=3     2.239 ms/frame     75 ns/subject·voice  p50    2.158  p99    2.834  worst    8.813  first    21.7 ms  gc  120   37.5 ms    2441.8 kB/frame
+onto: progress 19/42
+round 4   1/1  fn         N= 10000 V=3     2.131 ms/frame     71 ns/subject·voice  p50    2.060  p99    2.769  worst   12.074  first    18.8 ms  gc  122   39.9 ms    2440.3 kB/frame
+onto: progress 20/42
+round 4 RETARGETS=1  1/1  tweens     N= 10000 V=1     0.773 ms/frame     77 ns/subject·voice  p50    0.764  p99    0.944  worst    2.104  first    38.1 ms  gc    0    0.0 ms       8.2 kB/frame
+onto: progress 21/42
+round 4   1/1  tweens     N= 10000 V=1     0.614 ms/frame     61 ns/subject·voice  p50    0.602  p99    0.823  worst    1.703  first    38.7 ms  gc    1    1.5 ms      13.1 kB/frame
+onto: progress 22/42
+round 4 RETARGETS=1  1/1  keys       N= 10000 V=3     1.153 ms/frame     38 ns/subject·voice  p50    1.137  p99    1.353  worst    1.451  first    17.6 ms  gc   14    1.0 ms     166.8 kB/frame
+onto: progress 23/42
+round 4   1/1  keys       N= 10000 V=3     1.045 ms/frame     35 ns/subject·voice  p50    1.028  p99    1.236  worst    1.540  first    15.6 ms  gc   14    1.1 ms     163.9 kB/frame
+onto: progress 24/42
+round 5   1/1  keys       N= 10000 V=3     1.096 ms/frame     37 ns/subject·voice  p50    1.064  p99    1.362  worst    1.471  first    16.6 ms  gc   14    1.5 ms     164.3 kB/frame
+onto: progress 25/42
+round 5 RETARGETS=1  1/1  keys       N= 10000 V=3     1.154 ms/frame     38 ns/subject·voice  p50    1.132  p99    1.417  worst    1.958  first    18.2 ms  gc   15    1.2 ms     167.5 kB/frame
+onto: progress 26/42
+round 5   1/1  tweens     N= 10000 V=1     0.615 ms/frame     61 ns/subject·voice  p50    0.609  p99    0.765  worst    1.703  first    36.3 ms  gc    0    0.0 ms       9.4 kB/frame
+onto: progress 27/42
+round 5 RETARGETS=1  1/1  tweens     N= 10000 V=1     0.745 ms/frame     74 ns/subject·voice  p50    0.742  p99    0.843  worst    2.615  first    38.2 ms  gc   10    7.6 ms       8.4 kB/frame
+onto: progress 28/42
+round 5   1/1  fn         N= 10000 V=3     2.229 ms/frame     74 ns/subject·voice  p50    2.204  p99    2.995  worst   13.344  first    20.5 ms  gc  122   44.2 ms    2443.9 kB/frame
+onto: progress 29/42
+round 5 RETARGETS=1  1/1  fn         N= 10000 V=3     2.074 ms/frame     69 ns/subject·voice  p50    2.035  p99    2.471  worst    9.872  first    21.6 ms  gc  120   28.7 ms    2442.5 kB/frame
+onto: progress 30/42
+round 6 RETARGETS=1  1/1  fn         N= 10000 V=3     2.293 ms/frame     76 ns/subject·voice  p50    2.243  p99    2.893  worst    9.531  first    21.7 ms  gc  120   41.1 ms    2444.8 kB/frame
+onto: progress 31/42
+round 6   1/1  fn         N= 10000 V=3     2.094 ms/frame     70 ns/subject·voice  p50    2.039  p99    3.347  worst    9.367  first    17.0 ms  gc   66   28.0 ms    2442.2 kB/frame
+onto: progress 32/42
+round 6 RETARGETS=1  1/1  tweens     N= 10000 V=1     0.745 ms/frame     74 ns/subject·voice  p50    0.737  p99    0.879  worst    1.833  first    37.2 ms  gc    0    0.0 ms       9.3 kB/frame
+onto: progress 33/42
+round 6   1/1  tweens     N= 10000 V=1     0.586 ms/frame     59 ns/subject·voice  p50    0.579  p99    0.916  worst    1.999  first    36.0 ms  gc    0    0.0 ms      12.5 kB/frame
+onto: progress 34/42
+round 6 RETARGETS=1  1/1  keys       N= 10000 V=3     1.214 ms/frame     40 ns/subject·voice  p50    1.187  p99    1.479  worst    2.096  first    17.9 ms  gc   14    1.2 ms     167.0 kB/frame
+onto: progress 35/42
+round 6   1/1  keys       N= 10000 V=3     1.016 ms/frame     34 ns/subject·voice  p50    1.000  p99    1.201  worst    1.730  first    17.8 ms  gc   29    1.7 ms     164.1 kB/frame
+onto: progress 36/42
+round 7   1/1  keys       N= 10000 V=3     1.010 ms/frame     34 ns/subject·voice  p50    0.995  p99    1.167  worst    1.293  first    16.2 ms  gc   14    1.0 ms     163.1 kB/frame
+onto: progress 37/42
+round 7 RETARGETS=1  1/1  keys       N= 10000 V=3     1.214 ms/frame     40 ns/subject·voice  p50    1.172  p99    1.614  worst    2.127  first    16.7 ms  gc   22    4.8 ms     170.2 kB/frame
+onto: progress 38/42
+round 7   1/1  tweens     N= 10000 V=1     0.608 ms/frame     61 ns/subject·voice  p50    0.593  p99    0.756  worst    2.157  first    40.1 ms  gc    2    1.6 ms      10.0 kB/frame
+onto: progress 39/42
+round 7 RETARGETS=1  1/1  tweens     N= 10000 V=1     0.738 ms/frame     74 ns/subject·voice  p50    0.729  p99    0.865  worst    1.795  first    38.9 ms  gc    0    0.0 ms      12.7 kB/frame
+onto: progress 40/42
+round 7   1/1  fn         N= 10000 V=3     1.997 ms/frame     67 ns/subject·voice  p50    1.936  p99    2.495  worst   10.870  first    20.0 ms  gc  122   35.9 ms    2443.3 kB/frame
+onto: progress 41/42
+round 7 RETARGETS=1  1/1  fn         N= 10000 V=3     2.268 ms/frame     76 ns/subject·voice  p50    2.194  p99    2.851  worst    9.386  first    21.3 ms  gc  120   37.6 ms    2442.4 kB/frame
+onto: progress 42/42
+onto: agent-a92314c83e0e47409 is already set up
+onto: playwright-browsers-790bd7c0596f is already set up
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()

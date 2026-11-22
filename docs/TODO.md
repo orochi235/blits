@@ -73,8 +73,10 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   `subject`, which lead the profile) on `spring/const/ink/on` against `off`. Profile with
   `bench/heatprof.sh`, not the stress demo, which plays a lanes twin.
 - **[agent] A host probing into its own object under `retargets: true`** keeps two poses a
-  subject in `Probes` (`src/trail.ts`), costing a 10,000-subject probe frame 35–70%, spread with no
-  hot spot (`bench/runs/2026-11-08-probes-ab.txt`).
+  subject in `Probes` (`src/trail.ts`), costing a 10,000-subject probe frame 8–22%, about 14 ns a
+  probe: `keys` 1.033 against 1.172 ms, `tweens` 0.608 against 0.745 (measured: teitou, 7 rounds,
+  `RETARGETS=1`, `bench/runs/2026-11-21-probes-retargets-after.txt`; 18–57% before the per-kit
+  noter). What is left is finding the row and turning its halves over; no hot spot (inferred).
 - **[agent] Steady `tweens^`/`weasel^` frame** (10k one-voice-per-subject tweens by `pull`): 0.235
   and 0.362 ms on studio against 0.03–0.05 for a hand loop. `tweens^` is 39% `bareRows`, 29%
   `pullRun` (about 1 ns a subject per check, none dominant); `weasel^` 58% `runMotion`.

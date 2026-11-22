@@ -397,6 +397,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
       ...(taped ? { history: { ms: 5000, every: 50, tape: createHistory }, stepMs: 5 } : {}),
       lanes: !off,
+      // RETARGETS=1 keeps each probed subject's last two poses, as `retargets: true` asks.
+      ...(process.env.RETARGETS === '1' ? { retargets: true } : {}),
     },
   );
   if (unwatched) {
