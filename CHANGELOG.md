@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Cueing a staggered voice over many subjects takes about half as long: at 1M subjects, 35 ms on the
+  stock mixer from 71, and 41 on the gpu engine from 76 (teitou). A stagger answering `undefined`
+  now delays its subject by 0 everywhere; the general path used to ask it again.
 - A patch whose first call is made on lanes, or by a GPU mix folding a shader patch on the CPU, warns,
   outside production, of a key it returns that is not in its `writes`, as one first called on the
   general path does; the mix drops that key either way.

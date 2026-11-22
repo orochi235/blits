@@ -30,8 +30,9 @@ Owner tags:
   first subject's last frame from 100 to 300); backward the mirror case shows nothing ("waits for a
   subject staggered ahead of it" in `test/backward.test.ts`). Either hold both ways, or show
   nothing both ways, which would snap each subject of a staggered entrance back as it finishes.
-- **[agent] `plot(subjects, xy, cell)`, `cell` as a third argument, is deprecated** (2026-11-12):
-  remove it in the release after the one that ships `{ axes, cell }`. `bench/frame.mjs`,
+- **[maintainer] `plot(subjects, xy, cell)`, `cell` as a third argument, is deprecated** (2026-11-12):
+  removing it is breaking, so it waits for a 2.0.0; the removal is built on branch
+  `worktree-agent-a24072fec4e1b314d` (`35e8c808`, 2026-11-21). `bench/frame.mjs`,
   `bench/recaddr.mjs` and `bench/plotleak.mjs` still call the old shape, since older builds an A/B
   runs them against throw for `{ cell }`; move them to `{ cell }` with the removal.
 - **[maintainer] A ticker has no single teardown** (filed 2026-11-15 from automated review).
