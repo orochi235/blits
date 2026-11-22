@@ -147,8 +147,6 @@ built and what is deliberately not offered.
   are offered.
 - **[maintainer] Recording level moves** as a composition field, so they save, share and undo.
 - **[maintainer] A booker with its own clock, and link drags on group headers** — wanted or not.
-- **[agent] A rate set from the debug panel is not in the Player's record**, so a replay drops it;
-  the playground's own rate control is recorded.
 - **[waiting] Three unnamed mixes on the playground's debug panel come from weasel** (seen
   2026-11-21): their channels are `pose`, `alpha`, `path` and `data`, a weasel UI kit's, not the
   playground's. Weasel's own mixes need a name, or `close()`, to keep off a host's panel.

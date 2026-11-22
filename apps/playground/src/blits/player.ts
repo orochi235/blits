@@ -47,10 +47,13 @@ export type SeekBy = 'replay' | 'seek';
 
 /**
  * One thing the host did to the transport, and the mix time it left: what a replay does again.
- * Live changes to voices are not among them, so a replay drops those.
+ * Live changes to voices are not among them, so a replay drops those. A `land` is a frame whose
+ * clock something else moved, such as the debug panel's hold: a replay syncs it at host time `at`
+ * with the gap taken out, then seeks to `to`, where the frame showed the mix.
  */
 type Act =
   | { kind: 'sync'; at: number }
+  | { kind: 'land'; at: number; to: number }
   | { kind: 'rate'; rate: number; over: number }
   | { kind: 'rebase' }
   | { kind: 'seek'; to: number };
@@ -357,9 +360,17 @@ export class Player {
       transport.sync(op.at);
       this.follows = movedElsewhere(this.lastNow, before, expect, transport.now);
       this.lastNow = transport.now;
-      // A frame rate 0 held at the last one's time replaces it, so a long hold keeps one op.
-      const last = this.ops.at(-1);
-      if (last?.kind === 'sync' && last.now === transport.now) this.ops.pop();
+      this.popHeld();
+      if (this.follows) op = { kind: 'land', at: op.at, to: transport.now };
+    } else if (op.kind === 'land') {
+      transport.rebase();
+      this.rebased = false;
+      this.lastHost = op.at;
+      transport.sync(op.at);
+      if (transport.now !== op.to) transport.seek(op.to);
+      this.follows = true;
+      this.lastNow = transport.now;
+      this.popHeld();
     } else if (op.kind === 'rate') transport.ramp(op.rate, op.over);
     else if (op.kind === 'rebase') {
       transport.rebase();
@@ -376,6 +387,13 @@ export class Player {
     this.ops.push({ ...op, now: transport.now });
     this.shown();
     return true;
+  }
+
+  /** A frame held at the last one's time replaces it, so a long hold keeps one op. */
+  private popHeld(): void {
+    const last = this.ops.at(-1);
+    if ((last?.kind === 'sync' || last?.kind === 'land') && last.now === this.built.transport.now)
+      this.ops.pop();
   }
 
   /** Reads the frame the transport stands at into the columns, the events and the plots. */
@@ -421,6 +439,7 @@ export class Player {
     for (const op of this.ops) {
       if (op.kind === 'rate') ramp = { rate: op.rate, left: op.over };
       else if (op.kind === 'rebase') host = Number.NaN;
+      else if (op.kind === 'land') host = op.at;
       else if (op.kind === 'sync') {
         if (ramp !== null && !Number.isNaN(host)) ramp.left -= op.at - host;
         host = op.at;

@@ -71,3 +71,54 @@ describe('a clock held elsewhere', () => {
     expect(p.t).toBeLessThan(260);
   });
 });
+
+describe('a replay after a hold', () => {
+  /** A player held at half rate, stepped, sought back if `back`, stopped and freed; each frame. */
+  const heldRun = (back: boolean) => {
+    const p = player();
+    p.seekBy = 'replay';
+    play(p, 30 * FRAME);
+    const hold = holdOf(p);
+    const shown: { t: number; turn: number }[] = [];
+    const frame = (n: number) => {
+      for (let k = 0; k < n; k++) {
+        step(p);
+        shown.push({ t: p.t, turn: p.columns.turn[0] as number });
+      }
+    };
+    hold.rate = 0.5;
+    frame(10);
+    hold.step(100);
+    frame(5);
+    const ahead = shown.length;
+    if (back) hold.seek(150);
+    frame(5);
+    hold.rate = 0;
+    frame(5);
+    hold.free();
+    frame(10);
+    return { p, shown, ahead };
+  };
+
+  it('rebuilds where playback stood, and plays on from there', () => {
+    for (const back of [false, true]) {
+      const { p, shown } = heldRun(back);
+      const last = shown.at(-1) as { t: number; turn: number };
+      p.rebuild();
+      expect(p.t).toBe(last.t);
+      expect(p.columns.turn[0]).toBe(last.turn);
+      step(p);
+      expect(p.following).toBe(false);
+      expect(p.t).toBeCloseTo(last.t + FRAME, 6);
+    }
+  });
+
+  it('scrubs back to each held frame as it showed', () => {
+    const { p, shown, ahead } = heldRun(true);
+    for (const s of shown.slice(0, ahead).reverse()) {
+      p.seek(s.t);
+      expect(p.t).toBe(s.t);
+      expect(p.columns.turn[0]).toBeCloseTo(s.turn, 9);
+    }
+  });
+});
