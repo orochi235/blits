@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A host probing into its own object under `retargets: true` pays about 60% less for it: a
+  10,000-subject probe frame of `tweens` costs 0.745 ms against 0.608 without the option, where it
+  cost 0.951, and of `keys` 1.172 against 1.033, where it cost 1.372 (teitou).
 - Cueing a staggered voice over many subjects takes about half as long: at 1M subjects, 35 ms on the
   stock mixer from 71, and 41 on the gpu engine from 76 (teitou). A stagger answering `undefined`
   now delays its subject by 0 everywhere; the general path used to ask it again.

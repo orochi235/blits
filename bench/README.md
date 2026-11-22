@@ -14,6 +14,7 @@ the machine being used.
 - `AB_BENCH=bench/frame.mjs` makes both sides run this tree's bench, so both print `kB/frame`.
 - `bench/frame.mjs` takes `form:n:v` for a row its list does not hold, such as `fns-:10000:1`, and
   `OUT=blank` to probe into a pose of the mix's own (`mix.pose()`) rather than a host's `{}`.
+  `RETARGETS=1` gives the mix `retargets: true`, so each probe keeps its pose in `Probes`.
 - `node bench/medians.mjs <output>` reduces a run to medians; `node bench/allocs.mjs <row>` lists
   the functions that allocate.
 - `bench/start.mjs` times cueing N one-subject voices and the first two frames; `LINEAGE_BENCH=start.mjs
