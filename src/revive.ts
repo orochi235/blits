@@ -215,6 +215,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
     mix.opts.host,
     mix.send,
     null,
+    mix.recent,
   );
   voice.clocks = d.clocks;
   voice.take(d);

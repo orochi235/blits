@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice naming the same long list of subjects as another voice of its mix cued recently shares
+  that voice's list instead of building its own: cueing three voices over 1M subjects, as a
+  scene with a move, a bob and a staggered nudge does, takes about 6 ms for each after the first,
+  where each took about 125 (node, orochi).
 - Motion patches retargeted every frame no longer read slower through `pull` on lanes than off,
   without `history`: a pull's fill commits the changes due for the subjects it reads, where it used
   to hand each to the general path. 5,000 springs, about 2,900 of them retargeted a frame, under

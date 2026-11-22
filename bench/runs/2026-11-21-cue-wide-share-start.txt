@@ -1,0 +1,71 @@
+# msb-uai, 2026-11-21, onto do --kind bench --quiet --max-cores 2 -- LINEAGE_BENCH=start.mjs bench/lineage.sh 8 b2e157dc . -- "10000 9 fns named tweens"
+# b2e157dc is main; . the tree sharing a long Named list with a recent equal one (Recent, src/named.ts).
+# Cue medians of the 8 rounds, ms: fns 6.50 main / 6.55 tree, named 4.50 / 4.75, tweens 7.95 / 8.20; rounds overlap
+# (named main 3.5-6.7, tree 3.7-7.3). One-subject voices take Named's short path, which never asks Recent.
+
+built b2e157dc
+built .
+== round 1/8 b2e157dc
+1/3  fns      N=10000  cue     6.4 ms  first frame    15.1 ms  second     2.3 ms  (medians of 9)
+2/3  named    N=10000  cue     3.7 ms  first frame    25.0 ms  second     4.0 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.8 ms  first frame    26.5 ms  second     4.0 ms  (medians of 9)
+== round 1/8 .
+1/3  fns      N=10000  cue     7.2 ms  first frame    16.2 ms  second     2.6 ms  (medians of 9)
+2/3  named    N=10000  cue     5.0 ms  first frame    25.4 ms  second     3.3 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.2 ms  first frame    26.8 ms  second     3.8 ms  (medians of 9)
+== round 2/8 .
+1/3  fns      N=10000  cue     6.4 ms  first frame    15.2 ms  second     2.5 ms  (medians of 9)
+2/3  named    N=10000  cue     3.7 ms  first frame    24.1 ms  second     3.8 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.5 ms  first frame    26.4 ms  second     4.1 ms  (medians of 9)
+== round 2/8 b2e157dc
+1/3  fns      N=10000  cue     6.3 ms  first frame    16.2 ms  second     2.1 ms  (medians of 9)
+2/3  named    N=10000  cue     3.5 ms  first frame    24.7 ms  second     3.8 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.9 ms  first frame    25.7 ms  second     3.7 ms  (medians of 9)
+== round 3/8 b2e157dc
+1/3  fns      N=10000  cue     6.4 ms  first frame    14.6 ms  second     2.0 ms  (medians of 9)
+2/3  named    N=10000  cue     4.5 ms  first frame    23.0 ms  second     3.5 ms  (medians of 9)
+3/3  tweens   N=10000  cue    10.0 ms  first frame    36.0 ms  second     5.0 ms  (medians of 9)
+== round 3/8 .
+1/3  fns      N=10000  cue     6.5 ms  first frame    15.0 ms  second     1.9 ms  (medians of 9)
+2/3  named    N=10000  cue     4.5 ms  first frame    21.9 ms  second     3.1 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.7 ms  first frame    25.4 ms  second     3.6 ms  (medians of 9)
+== round 4/8 .
+1/3  fns      N=10000  cue     6.6 ms  first frame    15.5 ms  second     2.6 ms  (medians of 9)
+2/3  named    N=10000  cue     4.2 ms  first frame    27.2 ms  second     3.2 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.8 ms  first frame    26.4 ms  second     3.9 ms  (medians of 9)
+== round 4/8 b2e157dc
+1/3  fns      N=10000  cue     7.0 ms  first frame    14.7 ms  second     1.9 ms  (medians of 9)
+2/3  named    N=10000  cue     4.5 ms  first frame    23.1 ms  second     3.3 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.9 ms  first frame    27.2 ms  second     3.9 ms  (medians of 9)
+== round 5/8 b2e157dc
+1/3  fns      N=10000  cue     6.5 ms  first frame    15.6 ms  second     1.8 ms  (medians of 9)
+2/3  named    N=10000  cue     4.5 ms  first frame    22.4 ms  second     3.9 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.1 ms  first frame    26.6 ms  second     3.9 ms  (medians of 9)
+== round 5/8 .
+1/3  fns      N=10000  cue     6.5 ms  first frame    14.3 ms  second     1.9 ms  (medians of 9)
+2/3  named    N=10000  cue     4.5 ms  first frame    22.1 ms  second     3.2 ms  (medians of 9)
+3/3  tweens   N=10000  cue     9.4 ms  first frame    31.5 ms  second     4.6 ms  (medians of 9)
+== round 6/8 .
+1/3  fns      N=10000  cue     6.6 ms  first frame    15.1 ms  second     2.7 ms  (medians of 9)
+2/3  named    N=10000  cue     6.5 ms  first frame    26.4 ms  second     3.3 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.0 ms  first frame    28.6 ms  second     4.3 ms  (medians of 9)
+== round 6/8 b2e157dc
+1/3  fns      N=10000  cue     6.6 ms  first frame    15.5 ms  second     2.3 ms  (medians of 9)
+2/3  named    N=10000  cue     3.9 ms  first frame    25.8 ms  second     4.1 ms  (medians of 9)
+3/3  tweens   N=10000  cue     9.1 ms  first frame    30.6 ms  second     5.3 ms  (medians of 9)
+== round 7/8 b2e157dc
+1/3  fns      N=10000  cue     7.5 ms  first frame    19.6 ms  second     2.7 ms  (medians of 9)
+2/3  named    N=10000  cue     4.9 ms  first frame    25.6 ms  second     3.8 ms  (medians of 9)
+3/3  tweens   N=10000  cue     7.8 ms  first frame    27.4 ms  second     4.3 ms  (medians of 9)
+== round 7/8 .
+1/3  fns      N=10000  cue     6.9 ms  first frame    17.0 ms  second     2.8 ms  (medians of 9)
+2/3  named    N=10000  cue     5.0 ms  first frame    27.6 ms  second     4.3 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.2 ms  first frame    28.0 ms  second     4.1 ms  (medians of 9)
+== round 8/8 .
+1/3  fns      N=10000  cue     6.3 ms  first frame    17.7 ms  second     2.7 ms  (medians of 9)
+2/3  named    N=10000  cue     7.3 ms  first frame    25.5 ms  second     4.3 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.2 ms  first frame    30.4 ms  second     4.6 ms  (medians of 9)
+== round 8/8 b2e157dc
+1/3  fns      N=10000  cue     8.0 ms  first frame    17.2 ms  second     2.5 ms  (medians of 9)
+2/3  named    N=10000  cue     6.7 ms  first frame    28.3 ms  second     4.9 ms  (medians of 9)
+3/3  tweens   N=10000  cue     8.8 ms  first frame    28.8 ms  second     4.7 ms  (medians of 9)

@@ -1,0 +1,18 @@
+# studio, 2026-11-21, node v26: onto do --kind bench --node studio --quiet --max-cores 2 -- node bench/places.mjs 1000000 15
+# Building a lookup of 1M distinct { i } subjects, the variants in alternating order each round.
+1/15  N=1000000  mapLoop 75.14  setCtor 71.36  setLoop 62.55  stagger 3.08  mapGet 39.39 ms
+2/15  N=1000000  mapGet 38.08  stagger 2.20  setLoop 72.88  setCtor 67.94  mapLoop 72.42 ms
+3/15  N=1000000  mapLoop 75.73  setCtor 71.49  setLoop 65.85  stagger 2.33  mapGet 40.30 ms
+4/15  N=1000000  mapGet 36.34  stagger 1.75  setLoop 67.95  setCtor 66.88  mapLoop 71.81 ms
+5/15  N=1000000  mapLoop 72.81  setCtor 59.97  setLoop 67.28  stagger 2.27  mapGet 53.40 ms
+6/15  N=1000000  mapGet 56.22  stagger 2.28  setLoop 66.62  setCtor 62.19  mapLoop 72.14 ms
+7/15  N=1000000  mapLoop 73.47  setCtor 69.41  setLoop 67.11  stagger 1.44  mapGet 39.34 ms
+8/15  N=1000000  mapGet 39.72  stagger 1.39  setLoop 65.76  setCtor 63.70  mapLoop 74.65 ms
+9/15  N=1000000  mapLoop 72.35  setCtor 78.75  setLoop 64.83  stagger 1.37  mapGet 40.17 ms
+10/15  N=1000000  mapGet 40.60  stagger 1.43  setLoop 69.22  setCtor 71.62  mapLoop 68.91 ms
+11/15  N=1000000  mapLoop 74.99  setCtor 69.56  setLoop 61.30  stagger 1.39  mapGet 37.80 ms
+12/15  N=1000000  mapGet 37.43  stagger 1.38  setLoop 64.22  setCtor 74.26  mapLoop 71.45 ms
+13/15  N=1000000  mapLoop 71.04  setCtor 73.53  setLoop 69.64  stagger 1.41  mapGet 40.43 ms
+14/15  N=1000000  mapGet 41.35  stagger 1.39  setLoop 67.49  setCtor 64.10  mapLoop 73.45 ms
+15/15  N=1000000  mapLoop 72.36  setCtor 68.66  setLoop 62.47  stagger 1.39  mapGet 39.61 ms
+medians N=1000000: mapLoop 72.42  setCtor 69.41  setLoop 66.62  stagger 1.43  mapGet 39.72 ms

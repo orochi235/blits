@@ -19,7 +19,7 @@ import type { Group } from './filed.js';
 import type { Leavings } from './leavings.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
-import { Named } from './named.js';
+import { Named, type Recent } from './named.js';
 import { leftCount, type Past, pastAt } from './origin.js';
 import {
   childPlayed,
@@ -586,6 +586,8 @@ export class Voice<I, O> {
     send: (event: unknown) => void,
     /** The owner whose clock it runs on, its start included; null for one on the mix clock. */
     public owner: Voice<I, O> | null,
+    /** The long lists the mix's voices named last, for this one to share where it names the same. */
+    recent?: Recent<I>,
   ) {
     this.holding = patch === ownerPatch ? new Holding() : null;
     const wrote = writing(patch.writes as readonly string[], slotOf, channels);
@@ -596,7 +598,7 @@ export class Voice<I, O> {
       slotOf,
       channels,
     );
-    this.named = spec.subjects ? new Named(spec.subjects, spec.stagger) : null;
+    this.named = spec.subjects ? new Named(spec.subjects, spec.stagger, recent) : null;
     // Every subject's stagger is known at cue, so a finite loop ends by them all, read or not.
     this.latest = this.named?.latest ?? 0;
     this.soonest = this.named?.soonest ?? 0;

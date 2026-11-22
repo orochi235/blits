@@ -69,6 +69,7 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
     mix.opts.host,
     mix.send,
     owner,
+    mix.recent,
   );
   voice.offset = mix.offset;
   if (voice.named?.ordered != null) mix.delayed?.(voice);

@@ -36,6 +36,11 @@ the machine being used.
   2026-11-21 (`runs/2026-11-21-sparse-crossover*/`): tweens 13% at 10k and 17% at 1k, so a
   crowd's tween line reads between the two on the log of its size; springs 6–7%, keys 4–5% and
   fns 11–12% at either size.
+- `bench/cue-wide.mjs` times one cue of a voice naming 1M subjects with a stagger on the stock mixer
+  in node, the mixer row of `bench/gpu-cue.mjs` on any node; `CUES=k` cues k on one mix, as
+  gpu-reach's `MIX=owned` does, and `FIRST=1` times the frame after. `bench/cuewide.sh` builds
+  sides in a `--kind build` job and runs them interleaved; `bench/places.mjs` times building a
+  lookup of 1M subjects each way `Named` could.
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
   releases included, and `bench/lineage.mjs` tables it.
 
@@ -88,6 +93,11 @@ the machine being used.
 - **A short `bench/frame.mjs` process runs on about 1.5 cores** (V8's compiler and collector
   threads), so `onto do --max-cores 1` stops a job of default 300-frame runs. Run rows at
   `FRAMES=5000`, and build in a `--kind build` job of its own (2026-11-21).
+- **A CPU profile's first sample carries the profiler's start-up**, 16–37 ms of self time in
+  whatever frame called it (`console.profile` in Chromium, inspector `post` in node). Over a call
+  of 30–80 ms that reads as a third of it in the caller: the "rest of `cue`, inlined" in
+  `runs/2026-11-21-gpu-cue.txt` was that one sample (`runs/2026-11-21-cue-wide-prof-base/`).
+  Drop sample 0 or read `positionTicks` before splitting a short call.
 - **The heatmap stress demo plays a lanes twin**, so profile `bench/heatmap.mjs` with
   `bench/heatprof.sh` (`INLINE=off`, `LINES`, `CALLERS`), not `bench/stressprof.sh heatmap`.
 
@@ -152,6 +162,7 @@ rows where one was timed.
 | `Trail.record` comparing its list with the one it holds before storing each subject (2026-11-21) | `tweens^` 0.283 against 0.282 ms, `weasel^` 0.307 against 0.299 (msb-uai, 8 rounds, `runs/2026-11-21-steady-tweens-switches.txt`) |
 | A cheaper read for a subject owing a laned voice to the general path: an upper bound that queued its lane values with no pose and read the owed voice without folding it, so not correct (2026-11-21) | heatmap `spring/const/ink/on` 2.707 against 2.952 ms (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-owed-bounds.{txt,diff}`); not built, since a pull's fill committing the retarget leaves nothing owed there (2.153 in the same job) |
 | Touching every record a lane reads in a pass before its loop, to take a suspected cache miss out of `one` (2026-11-21) | heatmap lanes `pull` 3.800 against 3.709 ms, slower (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-signal-split.txt`) |
+| Building `Named`'s lookup of a long list as a `Set`, from its constructor or a loop, in place of the map of places; batching `stagger`'s calls (2026-11-21) | not built: at 1M subjects a Set reads 69.4 and 66.6 ms against the map's 72.4, and keeps no place to read a delay by; the stagger loop alone is 1.4 ms (studio, 15 rounds, `runs/2026-11-21-cue-wide-places.txt`). A lookup in a built map costs 40 ns a subject, so a table of 1M is cache-bound however it is filled |
 
 A lane switching a band off at weight 0 costs the `glowl` rows about 3% (teitou, 2026-10-10,
 against `da6e613`: `glowl` 1.680 to 1.736 ms), and filling only once did not recover it, so the

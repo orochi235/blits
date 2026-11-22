@@ -106,11 +106,21 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   at cue, outside this frame.
 - **[agent] Cueing a staggered voice naming 1M subjects takes 35 ms on the stock mixer, 41 on
   the gpu engine** (teitou, Chromium, 60 cues a row, `bench/runs/2026-11-21-named-places.txt`,
-  2026-11-21), down from 71 and 76 by `Named` keeping one map of places in place of a `Set` and a
-  delay `Map`. Still two frames in one call. About half is `Named` (`src/named.ts`): its map of
-  1M places and the stagger asked per subject. The rest of `cue`, inlined so the profile can't
-  split it, is a third, and collection 7–13%. The gpu engine's share is about 5 ms: the level
-  hash (4.1 ms in Chromium) and the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
+  2026-11-21), and about 80 in node (`bench/cue-wide.mjs`). Nearly all of it is `Named` building
+  its map of places, with collection after: the "rest of `cue`, inlined" a third earlier read off
+  a profile was one sample carrying the profiler's start-up (`bench/README.md`, Traps; measured).
+  The map is what finds two subjects named twice, so a cue cannot skip it for a list it has not
+  seen. A later voice of the mix naming an equal list shares it since 2026-11-21: three such cues
+  on one mix, as gpu-reach's `MIX=owned` makes, take 5.7 ms for each after the first, from 126
+  (orochi, shared, `bench/runs/2026-11-21-cue-wide-share-ab.txt`, measured). A Set builds no
+  faster and the stagger calls are 1.4 ms (`runs/2026-11-21-cue-wide-places.txt`). Left: the
+  first such cue, and a list named for the first time in a mix. The gpu row is not re-timed;
+  nothing it runs changed.
+- **[agent] The first frame after three voices of 1M subjects each takes 4 to 7 seconds** (node,
+  `CUES=3 FIRST=1 bench/cue-wide.mjs`, a sync and a probe of every subject, orochi under load,
+  `bench/runs/2026-11-21-cue-wide-share-ab.txt`, 2026-11-21), about 2 µs a subject and voice. Not
+  profiled; shared lists may cut it (the two sides overlapped there). Profile it with `FIRST=1
+  PROF=<dir>` on a quiet node.
 - **[agent] A stop grows with N** (0.52 µs at 1,000 subjects, 1.46 at 10,000, 2.41 at 40,000;
   msb-uai, 2026-11-21, `bench/runs/2026-11-21-row-alloc-restart.txt`) though nothing walks more.
   Every part of it grows, none by much more than the rest (`bench/stopparts.mjs`,
