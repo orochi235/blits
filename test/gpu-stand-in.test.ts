@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Col, ROW } from '../src/gpu/columns.js';
 import { gpu, gpuOf } from '../src/gpu/engine.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
@@ -82,5 +82,22 @@ describe('gpu stand-in kernel', () => {
     m.sync(266);
     expect(side.channel('y')).toBeNull();
     expect(side.reasons()).toEqual([]);
+  });
+
+  it('warns once of a key the hosted at returns outside its writes', async () => {
+    const { m, side } = await compiled();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const wave = shaderPatch<C, P>(1000, {
+      wgsl: 'out.y = phase;',
+      at: (phase) => ({ y: phase, why: phase }) as P,
+      writes: ['y'],
+    });
+    m.cue({ patch: wave, subjects: cells, loop: true, name: 'wave' });
+    m.sync(266);
+    m.sync(282);
+    expect(side.channel('y')).not.toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/wave's patch returns why from at\(\)/);
+    warn.mockRestore();
   });
 });

@@ -1,6 +1,6 @@
 import { passAt, phaseAt, phaseBefore } from '../clock.js';
 import type { Mixer } from '../mixer.js';
-import type { Voice } from '../voice.js';
+import { checkWrites, type Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
 import { type Laid, lay } from './lay.js';
 import { type ChannelLookup, cachedRunner, type Runner } from './runner.js';
@@ -163,6 +163,7 @@ export class Hosted {
     const slots = layout.slots.filter((slot) => writes.includes(slot.name));
     for (let i = 0; i < list.length; i++) {
       const delta = voice.patch.at(phase, list[i] as I, s as never) as Record<string, unknown>;
+      if (voice.unchecked) checkWrites(voice, delta);
       for (const slot of slots) {
         const given = delta[slot.name];
         if (given === undefined) continue;

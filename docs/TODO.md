@@ -46,11 +46,6 @@ Owner tags:
   idempotent `dispose()` that cancels the frame and drops every subscription, or a scoped owner
   that collects removers, and a call on whether a second `add` counts. Either is a public addition,
   so it ships in a minor.
-- **[maintainer] The GPU host's patch calls never check returned keys against `writes`** (filed
-  from external review, 2026-11-21). `contribution` and the lane fill (`src/fill.ts`) warn once,
-  outside production, of a key a patch's `at` returns that is not in its `writes`;
-  `src/gpu/hosted.ts` calls `voice.patch.at` per subject without `checkWrites`, so a voice whose
-  first calls are made there drops a misspelled key silently.
 
 ## Speed
 
