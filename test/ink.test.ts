@@ -165,10 +165,13 @@ describe('ink()', () => {
     });
   });
 
-  it('names its rule, folds as its own on lanes, and refuses mul, max and bounds', () => {
+  it('names its rule, folds as a widened sum on lanes, and refuses mul, max and bounds', () => {
     expect(ink().kind).toBe('ink(sum)');
     expect(ink(sum()).kind).toBe('ink(sum)');
-    expect(numericOf(ink())).toEqual({ op: 'own', axes: 5 });
+    const n = numericOf(ink());
+    expect(n).toMatchObject({ op: 'own', axes: 5 });
+    expect(n?.folds).toBeUndefined();
+    expect(Array.from(n?.widens?.([0.5, 3, 4, 0.8], []) ?? [])).toEqual([0.5, 3, 4, 5, 0.8]);
     expect(() => ink(mul())).toThrow(/ink/);
     expect(() => ink(max())).toThrow(/ink/);
     expect(() => ink(sum({ bounds: [0, 1] }))).toThrow(/ink/);

@@ -43,7 +43,15 @@ export interface Numeric {
    * it as the op and lerps it through the channel. A copy that predates it folds it as `'own'`.
    */
   folds?: 'sum';
+  /**
+   * An `'own'` channel that folds as a sum of each contribution widened to its axes by this, as
+   * `ink` widens a color with its chroma. A copy that predates it folds it as `'own'`.
+   */
+  widens?: Widen;
 }
+
+/** A contribution's numbers widened to its channel's axes, into `out` or an array of its own. */
+export type Widen = (v: ArrayLike<number>, out: number[]) => ArrayLike<number>;
 
 /** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */
 const add = (a: number, b: number): number => a + b;

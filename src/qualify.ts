@@ -191,12 +191,13 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     // A rest-less channel's values are NaN until some voice passes the band: absent from the pose.
     const rest = (channel.rest ?? Number.NaN) as number | number[];
     const scalar = typeof rest === 'number' && n.axes === 1;
-    const op = n.folds ?? n.op;
+    const op = n.folds ?? (n.widens === undefined ? n.op : 'sum');
     const ch: Laned = {
       name: host.names[slot] as string,
       op,
       plain: op !== 'last' && op !== 'own' && n.turn === undefined,
-      straight: n.folds === undefined,
+      straight: n.folds === undefined && n.widens === undefined,
+      widen: n.widens ?? null,
       turn: n.turn ?? 0,
       channel,
       scalar,

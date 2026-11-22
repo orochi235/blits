@@ -1,5 +1,5 @@
 import { unbareLane } from './bare.js';
-import type { Numeric } from './channels.js';
+import { doubles, type Numeric, type Widen } from './channels.js';
 import { grown, grownInts } from './grow.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
@@ -18,6 +18,8 @@ export interface Laned {
   plain: boolean;
   /** A plain channel's values lerp straight across each axis, not through the channel's `lerp`. */
   straight: boolean;
+  /** Widens a contribution to the channel's axes before it folds as numbers, as `ink`'s does. */
+  widen: Widen | null;
   /** An angle's full turn, and 0 for any other channel. */
   turn: number;
   /** The channel, whose own `fold` and `lerp` an `'own'` lane calls. */
@@ -144,6 +146,9 @@ export const enum Per {
   GENERAL_PROBE = 4,
   LANE_FILL = 5,
 }
+
+/** Where a lane widens a contribution, read at once and never kept. */
+export const WIDENED = doubles(5, 0);
 
 /**
  * Below what share of its subjects probed last frame a lane stops filling, and above what share it

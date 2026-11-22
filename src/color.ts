@@ -1,5 +1,5 @@
 import { blendCss, blendHex, blending, modeOf } from './blend-modes.js';
-import { doubles, lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
+import { doubles, lerpNumber, numericOf, sum, vec, vouch, type Widen, widen } from './channels.js';
 import { CANCEL, HUES, lchPair, shortWay } from './lch.js';
 import { fromLab, LAB, lab } from './oklab.js';
 import type { Channel } from './types.js';
@@ -202,6 +202,9 @@ export function color(
   throw refuse('color', own);
 }
 
+/** A contribution as ink's five numbers, as a lane widens it to fold as a sum. */
+const inkedOnce: Widen = (v, out) => inked(v, 1, out);
+
 /** Where `ink`'s merge and fold widen a contribution, which neither keeps. */
 const WIDE = doubles(5, 0);
 
@@ -246,7 +249,7 @@ export function ink(of?: Channel<number> | Channel<unknown>): Channel<number[]> 
     },
     lerp: lerpInk,
   };
-  vouch(channel, { op: 'own', axes: 5 });
+  vouch(channel, { op: 'own', axes: 5, widens: inkedOnce });
   return channel;
 }
 

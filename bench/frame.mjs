@@ -14,6 +14,7 @@ import * as blits from '../dist/index.js';
 const {
   angle,
   color,
+  ink,
   keys,
   kit,
   last,
@@ -35,16 +36,15 @@ const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: last({
 const KC = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color() });
 // And with it replacing as `color(last())`, which runs on lanes too.
 const KL = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color(last()) });
-// And averaging with its lerp round the hue.
-const KO = kit({
-  gain: mul(),
-  dark: max(),
-  position: vec(3, sum()),
-  color: color({ lerp: 'oklch' }),
-});
+// And as `ink()`, which blends and travels round the hue. These rows used `color({ lerp: 'oklch' })`
+// before 2026-11-21; a build without `ink` (before v0.16.0) cannot run them.
+const KO =
+  ink === undefined
+    ? undefined
+    : kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: ink() });
 const AMBER = oklab(0xffe08a);
 const SKY = oklab(0x8ab4ff);
-// Round the hue and back, half a turn a second, for the `oklch` rows.
+// Round the hue and back, half a turn a second, for the `ink` rows.
 const hues = (v) =>
   keys(1000 + 170 * v, [
     { at: 0, delta: { gain: 1, color: v % 2 ? SKY : AMBER } },
@@ -191,6 +191,8 @@ const rows = [
   ['keys', 10000, 3],
   // Named `locus` in ledger rows before 2026-10-26; a build from before then ignores `role` here.
   ['role', 10000, 3],
+  // `role` with a fourth member cued first and yet to start, as a handoff waiting on its start.
+  ['rolewait', 10000, 3],
   // The same three voices weighted by a signal, and `mix.blend` between them, which is both.
   ['signal', 10000, 3],
   ['blend', 10000, 3],
@@ -200,7 +202,7 @@ const rows = [
   // as the playground's glow does; a packed color runs on no lane, so the glow and the voice under it leave
   // the lanes together. `glowk` writes it to a `color()` channel instead,
   // and `glowl` to a `color(last())`. `glowkeys` is `glowc` as keys, which a subject at weight 0
-  // does not read. `glowo` is `glowk` on a `color({ lerp: 'oklch' })`, and `glowokeys` its keys,
+  // does not read. `glowo` is `glowk` on an `ink()`, and `glowokeys` its keys,
   // lerped round the hue.
   ['glowbase', 10000, 1],
   ['glow', 10000, 2],
@@ -224,7 +226,7 @@ const rows = [
   ['glowbkeys', 10000, 2],
   ['glowm', 10000, 2],
   ['glowbm', 10000, 2],
-  // Keys voices over every subject lerping a `color({ lerp: 'oklch' })` round the hue.
+  // Keys voices over every subject lerping an `ink()` round the hue.
   ['hues', 10000, 2],
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
@@ -389,10 +391,11 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const kind = off || pulls ? form.slice(0, -1) : form;
   const scrub = kind === 'ahead' || kind === 'back' || kind === 'far' || kind === 'redo';
   const taped = kind === 'kept' || kind === 'seek' || kind === 'redo';
-  const oklch = kind === 'glowo' || kind === 'glowokeys' || kind === 'hues';
-  const four = kind === 'glowk' || kind === 'glowl' || oklch;
+  const inks = kind === 'glowo' || kind === 'glowokeys' || kind === 'hues';
+  const four = kind === 'glowk' || kind === 'glowl';
+  if (inks && KO === undefined) throw new Error(`${form} needs ink(), which this build lacks`);
   const m = mix(
-    kind === 'turn' ? KR : kind === 'glowk' ? KC : kind === 'glowl' ? KL : oklch ? KO : K,
+    kind === 'turn' ? KR : kind === 'glowk' ? KC : kind === 'glowl' ? KL : inks ? KO : K,
     {
       ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
       ...(taped ? { history: { ms: 5000, every: 50, tape: createHistory }, stepMs: 5 } : {}),
@@ -637,6 +640,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       ...(start === undefined ? {} : { start }),
     });
   if (kind === 'far') for (let k = 1; k < voices; k++) cueLater(k, 450 + 150 * k);
+  if (kind === 'rolewait') m.cue({ patch: flicker(3), role: 'one', start: 1e9, loop: true });
   for (
     let v = 0;
     !own && !glow && kind !== 'blend' && kind !== 'typing' && v < (later ? 1 : voices);
@@ -667,7 +671,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     m.cue({
       patch: p,
       fade: { in: 100 },
-      role: kind === 'role' ? 'one' : undefined,
+      role: kind === 'role' || kind === 'rolewait' ? 'one' : undefined,
       weight: kind === 'signal' || kind === 'tweensig' ? by : undefined,
       loop: true,
     });
@@ -694,7 +698,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     gain: new Float64Array(n),
     dark: new Float64Array(n),
     position: new Float64Array(n * 3),
-    color: new Float64Array(four ? n * 4 : n),
+    color: new Float64Array(inks ? n * 5 : four ? n * 4 : n),
   };
   // Indexed, not `for...of`: an iterator V8 leaves unoptimized in some processes and not others
   // allocates a result a subject, about 390 kB a frame at 10,000 (`glow`, 2026-10-20).
