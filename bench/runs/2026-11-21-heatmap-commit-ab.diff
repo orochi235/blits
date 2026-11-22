@@ -1,0 +1,129 @@
+diff --git a/src/changes.ts b/src/changes.ts
+index 55fa0735..cfe50c44 100644
+--- a/src/changes.ts
++++ b/src/changes.ts
+@@ -1,3 +1,5 @@
++// biome-ignore lint/suspicious/noExplicitAny: scratch
++const EXP: number = Number((globalThis as any).process?.env?.BLITS_EXP ?? 0);
+ import { type Motions, RunField } from './motions.js';
+ import { absent } from './numbers.js';
+ import { reading } from './reading.js';
+@@ -152,15 +154,44 @@ export function applied<I>(
+ ): Segment {
+   const n = this.n;
+   if (landing.x.length < n) landing = { x: new Float64Array(n), v: new Float64Array(n) };
+-  const { x, v } = landing;
+-  this.evaluateSegment(seg, at, x, v);
+-  const xs = change.x ?? numbers(x, 0, n);
+-  const vs = change.v ?? numbers(v, 0, n);
++  this.evaluateSegment(seg, at, landing.x, landing.v);
++  return released(this, subject, change, at, seg.ms, change.to ?? seg.to);
++}
++
++/** `applied` to the stretch subject `s` plays now, read from its run without building it. */
++function appliedLatest<I>(
++  motions: Motions<I>,
++  subject: I | typeof absent,
++  s: number,
++  change: Change,
++  at: number,
++): Segment {
++  const n = motions.n;
++  if (landing.x.length < n) landing = { x: new Float64Array(n), v: new Float64Array(n) };
++  motions.evaluateLatest(s, at, landing.x, landing.v);
++  const runs = motions.runs;
++  const b = motions.base(s);
++  const to = change.to ?? numbers(runs, b + RunField.X0 + 2 * n, n);
++  return released(motions, subject, change, at, runs[b + RunField.MS] as number, to);
++}
++
++/** The stretch `change` releases at `at` from where `landing` holds the one it lands on. */
++function released<I>(
++  motions: Motions<I>,
++  subject: I | typeof absent,
++  change: Change,
++  at: number,
++  ms: number,
++  to: number[],
++): Segment {
++  const n = motions.n;
++  const xs = change.x ?? numbers(landing.x, 0, n);
++  const vs = change.v ?? numbers(landing.v, 0, n);
+   const known = subject === absent ? (undefined as I) : subject;
+   const put = change.x !== undefined && change.v === undefined;
+-  const to = this.shape.aim(xs, vs, change.to ?? seg.to, known, put);
+-  const ms = subject === absent ? seg.ms : (this.shape.ms?.(known) ?? 0);
+-  return { at, ms, x0: xs, v0: vs, to, change };
++  const aimed = motions.shape.aim(xs, vs, to, known, put);
++  const length = subject === absent ? ms : (motions.shape.ms?.(known) ?? 0);
++  return { at, ms: length, x0: xs, v0: vs, to: aimed, change };
+ }
+ 
+ export function commit<I>(this: Motions<I>, s: number, t: number): void {
+@@ -174,12 +205,22 @@ export function commit<I>(this: Motions<I>, s: number, t: number): void {
+       this.queue(list, c, t);
+     }
+   }
++  const subject = EXP >= 2 ? this.numbers.subject(s) : absent;
+   while (list.length > 0) {
+     const change = list[0] as Change;
+     const a = change.at as number;
+     if (a > t) break;
+     list.shift();
+-    this.insert(s, this.applied(this.numbers.subject(s), this.playing(s, a), change, a));
++    if (EXP >= 2) {
++      const latest =
++        this.older?.[s] === undefined || a >= (this.runs[this.base(s) + RunField.AT] as number);
++      this.insert(
++        s,
++        latest
++          ? appliedLatest(this, subject, s, change, a)
++          : this.applied(subject, this.playing(s, a), change, a),
++      );
++    } else this.insert(s, this.applied(this.numbers.subject(s), this.playing(s, a), change, a));
+   }
+   if (list.length === 0) {
+     (this.pending as (Change[] | undefined)[])[s] = undefined;
+@@ -189,13 +230,20 @@ export function commit<I>(this: Motions<I>, s: number, t: number): void {
+ 
+ export function insert<I>(this: Motions<I>, s: number, seg: Segment): void {
+   let list = this.older?.[s];
++  const after = seg.at >= (this.runs[this.base(s) + RunField.AT] as number);
++  // With nothing older kept and no horizon, `advance`'s prune would let the stretch this replaces
++  // go straight after.
++  if (EXP >= 1 && list === undefined && after && reading.horizon === Number.POSITIVE_INFINITY) {
++    this.write(s, seg);
++    return;
++  }
+   if (list === undefined) {
+     list = [];
+     if (this.older === null) this.older = [undefined];
+     this.older[s] = list;
+     this.flag(s, OLDER, true);
+   }
+-  if (seg.at >= (this.runs[this.base(s) + RunField.AT] as number)) {
++  if (after) {
+     list.push(this.latest(s));
+     this.write(s, seg);
+     return;
+diff --git a/src/motions.ts b/src/motions.ts
+index 33147961..0444bd1f 100644
+--- a/src/motions.ts
++++ b/src/motions.ts
+@@ -627,6 +627,16 @@ export class Motions<I> {
+     this.evaluate(seg.at, seg.ms, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo);
+   }
+ 
++  /** `evaluateSegment` of `latest(s)`, read from the run without building it. */
++  evaluateLatest(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
++    const runs = this.runs;
++    const b = this.base(s);
++    const x = b + RunField.X0;
++    const n = this.n;
++    const at = runs[b + RunField.AT] as number;
++    this.evaluate(at, runs[b + RunField.MS] as number, runs, x, runs, x + n, runs, x + 2 * n, t, xo, vo);
++  }
++
+   private evaluate(
+     at: number,
+     ms: number,

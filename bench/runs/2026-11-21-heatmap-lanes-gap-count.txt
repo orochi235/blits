@@ -1,0 +1,37 @@
+# studio, onto task blits-heatgap-count (--quiet --max-cores 1), a7702546 plus the counters in 2026-11-21-heatmap-lanes-gap-count.diff and a src/cnt.ts of `export const C = (globalThis.__C ??= {}); export const inc = (k) => { C[k] = (C[k] ?? 0) + 1; }`, FRAMES=240 plus 60 warm, each count divided by 300 frames. Contribution counts are keyed by voice id: 1 the spring, 2-4 the ink holds. Timings come from a loaded node and are not comparable with anything.
+== spring/-/none/on
+ 1/1  spring/-/none/on        read p50   3.766 ms  p90   4.435  step p50   1.424  load 8.61
+1                                     2919 a frame
+commit                                2911 a frame
+insert                                4394 a frame
+move owe                              2903 a frame
+prune                                 2911 a frame
+runMotion bare                        2072 a frame
+runMotion->move(pending/older)        2911 a frame
+== spring/-/none/off
+ 1/1  spring/-/none/off       read p50   3.072 ms  p90   3.658  step p50   1.447  load 8.61
+1                                     5000 a frame
+commit                                2911 a frame
+insert                                4394 a frame
+prune                                 2911 a frame
+== spring/const/ink/on
+ 1/1  spring/const/ink/on     read p50   6.850 ms  p90   8.016  step p50   1.903  load 8.16
+1                                     2919 a frame
+2                                       17 a frame
+3                                       17 a frame
+4                                       17 a frame
+commit                                2911 a frame
+insert                                4394 a frame
+move owe                              2903 a frame
+prune                                 2911 a frame
+runMotion bare                        2072 a frame
+runMotion->move(pending/older)        2911 a frame
+== spring/const/ink/off
+ 1/1  spring/const/ink/off    read p50   5.723 ms  p90   6.429  step p50   1.532  load 8.16
+1                                     5000 a frame
+2                                     5000 a frame
+3                                     5000 a frame
+4                                     5000 a frame
+commit                                2911 a frame
+insert                                4394 a frame
+prune                                 2911 a frame

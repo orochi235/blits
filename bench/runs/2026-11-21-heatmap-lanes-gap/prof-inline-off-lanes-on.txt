@@ -1,0 +1,96 @@
+# msb-uai bench/heatprof.sh spring/const/ink/on INLINE=off TOP=40
+onto: plan 1
+ 1/1  spring/const/ink/on     read p50   7.974 ms  p90   9.667  step p50   1.611  load 7.48
+onto: progress 1/1
+total 6445.8 ms
+    642.1 ms  10.0%  primeLaned weigh.js:28
+    397.7 ms   6.2%  foldInto gather.js:367
+    261.6 ms   4.1%  one fill.js:305
+    257.4 ms   4.0%  numbers stretch.js:4
+    196.8 ms   3.1%  foldNumber channels.js:62
+    189.0 ms   2.9%  (garbage collector)
+    186.3 ms   2.9%  call fill.js:456
+    182.0 ms   2.8%  subject numbers.js:73
+    176.4 ms   2.7%  change changes.js:12
+    132.8 ms   2.1%  runMotion sample.js:13
+    127.3 ms   2.0%  commit changes.js:155
+    119.9 ms   1.9%  latest motions.js:513
+    115.6 ms   1.8%  base motions.js:420
+    110.7 ms   1.7%  times channels.js:20
+    107.5 ms   1.7%  add channels.js:19
+     97.9 ms   1.5%  prepare closed.js:25
+     92.6 ms   1.4%  closed closed.js:165
+     89.5 ms   1.4%  flag motions.js:402
+     85.8 ms   1.3%  get store.js:20
+     84.7 ms   1.3%  has named.js:70
+     82.8 ms   1.3%  move sample.js:210
+     80.6 ms   1.3%  owes owed.js:28
+     78.3 ms   1.2%  (program)
+     77.4 ms   1.2%  foldWith fold.js:169
+     76.8 ms   1.2%  readAll pull.js:143
+     72.3 ms   1.1%  now strays.js:44
+     71.6 ms   1.1%  revive strays.js:66
+     71.1 ms   1.1%  contribution contribution.js:48
+     69.1 ms   1.1%  prune lives.js:159
+     66.3 ms   1.0%  changed strays.js:54
+     56.8 ms   0.9%  pullRun columns.js:9
+     54.8 ms   0.8%  playing motions.js:551
+     54.1 ms   0.8%  next heatmap.mjs:48
+     53.6 ms   0.8%  insertByAt changes.js:52
+     53.2 ms   0.8%  foldDelta gather.js:279
+     51.4 ms   0.8%  patch.writes heatmap.mjs:70
+     51.3 ms   0.8%  stretchChanged lanes.js:480
+     51.0 ms   0.8%  write motions.js:494
+     46.2 ms   0.7%  apply fold.js:61
+     45.8 ms   0.7%  get now mixer.js:342
+total 6445.8 ms
+     49.0 ms   0.8%  foldDelta gather.js:279 <- call fill.js:456
+     21.6 ms   0.3%  subjectAt fill.js:215 <- call fill.js:456
+      2.9 ms   0.0%  foldDelta gather.js:279 <- (root)
+      1.9 ms   0.0%  subjectAt fill.js:215 <- (root)
+      1.9 ms   0.0%  subjectAt fill.js:215 <- one fill.js:305
+      1.2 ms   0.0%  foldDelta gather.js:279 <- one fill.js:305
+      0.2 ms   0.0%  subjectAt fill.js:215 <- move sample.js:210
+one  fill.js
+  0.8%    334  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  0.5%    405  return this.call(voice, lane.chans, rec, slot);
+  0.5%    312  keepProbed(data, o, this.per, slot * 6 /* Per.SLOT */, this.fills);
+  0.4%    361  w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
+  0.2%    315  const delay = data[o + 0 /* Row.DELAY */];
+  0.2%    401  return true;
+  0.2%    366  this.rec = lane.records[p] ?? null;
+  0.1%    313  if (this.lately >= 0 && this.unread(slot))
+  0.1%    343  if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
+  0.1%    362  data[o + 2 /* Row.WEIGHT */] = w;
+  0.1%    305  export function one(lane, p, slot) {
+  0.1%    322  : raw > voice.span
+call  fill.js
+  0.5%    480  host.ready(voice, subject, rec);
+  0.3%    485  const delta = voice.patch.at(phase, subject, voice.setting);
+  0.3%    471  if (silent(voice, w)) {
+  0.2%    462  const subject = this.subjectAt(slot);
+  0.2%    463  if (subject === absent)
+  0.1%    494  if (reading.kept !== kept && !voice.keeping)
+  0.1%    484  reading.horizon = Number.POSITIVE_INFINITY;
+  0.1%    497  this.foldDelta(chans, slot, delta);
+  0.1%    498  return true;
+  0.1%    457  const arg = this.arg;
+  0.1%    479  const kept = reading.kept;
+  0.1%    489  rec.delta = delta;
+foldDelta  gather.js
+  0.2%    287  const v = delta[ch.name];
+  0.1%    300  this.foldInto(ch, slot, v);
+  0.1%    302  ch = chans[1];
+  0.1%    279  export function foldDelta(chans, slot, delta) {
+  0.1%    319  ch = chans[2];
+  0.1%    353  }
+  0.0%    285  let ch = chans[0];
+  0.0%    280  const n = chans.length;
+  0.0%    281  const arg = this.arg;
+  0.0%    288  if (typeof v === 'number' && ch.scalar && ch.plain) {
+  0.0%    303  if (n > 1) {
+subjectAt  fill.js
+  0.1%    217  let subject = this.subjects[slot];
+  0.1%    215  export function subjectAt(slot) {
+  0.1%    216  this.lookups++;
+  0.1%    223  return subject;

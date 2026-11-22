@@ -1,6 +1,7 @@
 // Self time by function in V8 .cpuprofiles, summed over the files, most first, as ms and share.
 //   node bench/profsum.mjs <file.cpuprofile>... [top]
-// INCL=1 counts each function's time with its callees'.
+// INCL=1 counts each function's time with its callees'. UNDER=<name> counts only samples with a
+// function of that name on the stack, such as UNDER=pull for a heatmap frame's read alone.
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 
@@ -8,6 +9,7 @@ const args = process.argv.slice(2);
 const files = args.filter((a) => a.endsWith('.cpuprofile'));
 const top = Number(args.find((a) => !a.endsWith('.cpuprofile')) ?? 40);
 const incl = Boolean(process.env.INCL);
+const under = process.env.UNDER;
 const self = new Map();
 let total = 0;
 for (const file of files) {
@@ -17,6 +19,11 @@ for (const file of files) {
   for (const n of prof.nodes) for (const c of n.children ?? []) parent.set(c, n);
   for (let i = 0; i < prof.samples.length; i++) {
     const dt = prof.timeDeltas[i] / 1000;
+    if (under !== undefined) {
+      let n = byId.get(prof.samples[i]);
+      while (n !== undefined && n.callFrame.functionName !== under) n = parent.get(n.id);
+      if (n === undefined) continue;
+    }
     total += dt;
     const seen = new Set();
     for (let n = byId.get(prof.samples[i]); n !== undefined; n = parent.get(n.id)) {

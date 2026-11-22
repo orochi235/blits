@@ -1,0 +1,46 @@
+# msb-uai bench/heatprof.sh spring/const/ink/off INLINE=on TOP=40
+onto: plan 1
+ 1/1  spring/const/ink/off    read p50   3.742 ms  p90   4.627  step p50   0.988  load 7.66
+onto: progress 1/1
+total 3317.8 ms
+    367.8 ms  11.1%  contribution contribution.js:48
+    241.2 ms   7.3%  numbers stretch.js:4
+    177.9 ms   5.4%  foldWith fold.js:169
+    167.8 ms   5.1%  apply fold.js:61
+    151.6 ms   4.6%  subject numbers.js:73
+    100.3 ms   3.0%  (garbage collector)
+     86.3 ms   2.6%  change changes.js:12
+     84.3 ms   2.5%  commit changes.js:155
+     81.8 ms   2.5%  prepare closed.js:25
+     80.9 ms   2.4%  changed strays.js:54
+     78.0 ms   2.4%  get store.js:20
+     75.1 ms   2.3%  readAll pull.js:143
+     66.9 ms   2.0%  closed closed.js:165
+     66.0 ms   2.0%  has named.js:70
+     63.2 ms   1.9%  read contribution.js:421
+     56.6 ms   1.7%  (program)
+     52.9 ms   1.6%  advance motions.js:299
+     52.4 ms   1.6%  latest motions.js:513
+     50.5 ms   1.5%  revive strays.js:66
+     50.4 ms   1.5%  prune lives.js:159
+     49.8 ms   1.5%  elapsedAt voice.js:496
+     46.5 ms   1.4%  weigh weigh.js:95
+     45.6 ms   1.4%  insertByAt changes.js:52
+     41.4 ms   1.2%  prime weigh.js:7
+     34.9 ms   1.1%  copy clone.js:68
+     34.7 ms   1.0%  next heatmap.mjs:48
+     34.7 ms   1.0%  inked color.js:76
+     34.5 ms   1.0%  playing motions.js:551
+     34.5 ms   1.0%  insert changes.js:180
+     33.1 ms   1.0%  fold color.js:197
+     31.2 ms   0.9%  frame strays.js:39
+     30.8 ms   0.9%  fadeOf weigh.js:63
+     30.8 ms   0.9%  now strays.js:44
+     30.6 ms   0.9%  sample motions.js:278
+     30.4 ms   0.9%  seq strays.js:47
+     30.2 ms   0.9%  early strays.js:50
+     29.8 ms   0.9%  elapsedWith clock.js:115
+     29.0 ms   0.9%  play heatmap.mjs:35
+     25.9 ms   0.8%  page strays.js:59
+     25.7 ms   0.8%  base weigh.js:114
+total 3317.8 ms
