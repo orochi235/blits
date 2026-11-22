@@ -36,12 +36,12 @@ export function renumber<I, O>(
     return false;
   for (const lane of lanes.lanes) lane.renumber(from, to);
   const placed = lanes.placed;
-  for (const id of placed.all(from)) {
-    placed.remove(from, id);
-    const s = lanes.seats.get(id);
+  for (const v of placed.voices(from)) {
+    placed.remove(from, v);
+    const s = lanes.seatFor(v);
     if (s === undefined || s.crowd.list[s.row] !== from) continue;
     s.crowd.list[s.row] = to;
-    placed.add(to, id);
+    placed.add(to, v);
   }
   const per = lanes.per;
   per.copyWithin(to * Per.SLOT, from * Per.SLOT, (from + 1) * Per.SLOT);

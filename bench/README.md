@@ -36,6 +36,12 @@ the machine being used.
   2026-11-21 (`runs/2026-11-21-sparse-crossover*/`): tweens 13% at 10k and 17% at 1k, so a
   crowd's tween line reads between the two on the log of its size; springs 6–7%, keys 4–5% and
   fns 11–12% at either size.
+- `bench/restart.mjs` times a stop (a fade and a `drop`) among N one-subject tweens read by `pull`,
+  in weasel's shape; `LINEAGE_BENCH=restart.mjs bench/lineage.sh` compares builds on it.
+  `bench/stopparts.mjs` times a stop's parts and `bench/stopprof.sh` profiles it.
+  `bench/stopmaps.mjs` counts the Maps, WeakMaps and Sets a stop and a steady frame touch, by caller,
+  and `bench/stopextra.mjs` times a stop with extra subject-keyed maps of its own (`EXTRA=k`), the
+  most that folding one of the mix's away could save.
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
   releases included, and `bench/lineage.mjs` tables it.
 
@@ -171,6 +177,7 @@ rows where one was timed.
 | Running a role inline past members yet to start, done or idle, not only when every member plays (2026-11-21) | `rolewait` 3.797 against 3.679 ms, U 20 at 9 rounds on a shared node; gathering then folding costs about what inline does there (`runs/2026-11-21-role-inline-waiting.{txt,diff}`, the diff also holding the ink change) |
 | `Trail.record` comparing its list with the one it holds before storing each subject (2026-11-21) | `tweens^` 0.283 against 0.282 ms, `weasel^` 0.307 against 0.299 (msb-uai, 8 rounds, `runs/2026-11-21-steady-tweens-switches.txt`) |
 | A cheaper read for a subject owing a laned voice to the general path: an upper bound that queued its lane values with no pose and read the owed voice without folding it, so not correct (2026-11-21) | heatmap `spring/const/ink/on` 2.707 against 2.952 ms (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-owed-bounds.{txt,diff}`); not built, since a pull's fill committing the retarget leaves nothing owed there (2.153 in the same job) |
+| `drop` looking a subject's chain up once rather than three times (2026-11-21, `runs/2026-11-21-stop-one-lookup.diff`) | a stop at 40,000 subjects 2.505 against 2.615 µs, U 31.5 at 10 rounds, and 1.510 against 1.440 at 10,000 (msb-uai, `runs/2026-11-21-stop-seat-ab.txt`): the second and third lookups likely hit what the first brought in (inferred) |
 | Touching every record a lane reads in a pass before its loop, to take a suspected cache miss out of `one` (2026-11-21) | heatmap lanes `pull` 3.800 against 3.709 ms, slower (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-signal-split.txt`) |
 
 A lane switching a band off at weight 0 costs the `glowl` rows about 3% (teitou, 2026-10-10,

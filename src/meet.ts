@@ -232,7 +232,7 @@ function place<I, O>(
   if (!held.reaches) return false;
   const o = p * Row.STRIDE;
   c.list[p] = slot;
-  lanes.placed.add(slot, voice.id);
+  lanes.placed.add(slot, c.voices[p] as Voice<I, O>);
   c.data[o + Row.DELAY] = held.delay;
   c.data[o + Row.SINCE] = held.shown;
   c.data[o + Row.WEIGHT] = 0;

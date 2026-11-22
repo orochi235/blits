@@ -1,0 +1,271 @@
+# msb-uai Apple M3 Max 2026-11-21, 10 rounds -- msb-uai: bench/runs/2026-11-21-stop-seat-ab.sh 10 (f439e5be backed out since; 9305a16f is 60d4ec5b on top of it)
+built b2e157dc
+built f439e5be
+built 9305a16f
+== round 1/10 b2e157dc
+ 1/3  N=  1000  stop   0.50 us each  start   0.00 us each  frame after   0.414 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.43 us each  start   0.01 us each  frame after   1.614 ms  the one after   0.295 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.53 us each  start   0.01 us each  frame after   5.142 ms  the one after   1.094 ms  steady   0.816 ms
+== round 1/10 f439e5be
+ 1/3  N=  1000  stop   0.56 us each  start   0.00 us each  frame after   0.433 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.54 us each  start   0.01 us each  frame after   1.633 ms  the one after   0.298 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.60 us each  start   0.00 us each  frame after   5.053 ms  the one after   1.094 ms  steady   0.830 ms
+== round 1/10 9305a16f
+ 1/3  N=  1000  stop   0.44 us each  start   0.00 us each  frame after   0.466 ms  the one after   0.045 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.33 us each  start   0.01 us each  frame after   1.625 ms  the one after   0.294 ms  steady   0.206 ms
+ 3/3  N= 40000  stop   2.24 us each  start   0.00 us each  frame after   5.050 ms  the one after   1.085 ms  steady   0.815 ms
+== round 2/10 f439e5be
+ 1/3  N=  1000  stop   0.46 us each  start   0.00 us each  frame after   0.413 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.60 us each  start   0.01 us each  frame after   1.644 ms  the one after   0.297 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.51 us each  start   0.00 us each  frame after   5.062 ms  the one after   1.090 ms  steady   0.851 ms
+== round 2/10 9305a16f
+ 1/3  N=  1000  stop   0.51 us each  start   0.00 us each  frame after   0.444 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.35 us each  start   0.01 us each  frame after   1.614 ms  the one after   0.296 ms  steady   0.206 ms
+ 3/3  N= 40000  stop   2.18 us each  start   0.00 us each  frame after   5.047 ms  the one after   1.090 ms  steady   0.822 ms
+== round 2/10 b2e157dc
+ 1/3  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.480 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.57 us each  start   0.01 us each  frame after   1.665 ms  the one after   0.301 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.69 us each  start   0.01 us each  frame after   5.116 ms  the one after   1.098 ms  steady   0.831 ms
+== round 3/10 9305a16f
+ 1/3  N=  1000  stop   0.51 us each  start   0.00 us each  frame after   0.485 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.33 us each  start   0.00 us each  frame after   1.610 ms  the one after   0.293 ms  steady   0.209 ms
+ 3/3  N= 40000  stop   2.25 us each  start   0.01 us each  frame after   5.013 ms  the one after   1.087 ms  steady   0.825 ms
+== round 3/10 b2e157dc
+ 1/3  N=  1000  stop   0.50 us each  start   0.00 us each  frame after   0.416 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.45 us each  start   0.01 us each  frame after   1.624 ms  the one after   0.297 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.54 us each  start   0.01 us each  frame after   5.157 ms  the one after   1.111 ms  steady   0.818 ms
+== round 3/10 f439e5be
+ 1/3  N=  1000  stop   0.48 us each  start   0.00 us each  frame after   0.419 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.58 us each  start   0.01 us each  frame after   1.642 ms  the one after   0.296 ms  steady   0.206 ms
+ 3/3  N= 40000  stop   2.42 us each  start   0.00 us each  frame after   5.001 ms  the one after   1.088 ms  steady   0.882 ms
+== round 4/10 b2e157dc
+ 1/3  N=  1000  stop   0.49 us each  start   0.00 us each  frame after   0.418 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.56 us each  start   0.01 us each  frame after   1.666 ms  the one after   0.297 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.59 us each  start   0.01 us each  frame after   5.015 ms  the one after   1.083 ms  steady   0.821 ms
+== round 4/10 f439e5be
+ 1/3  N=  1000  stop   0.50 us each  start   0.00 us each  frame after   0.418 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.56 us each  start   0.01 us each  frame after   1.632 ms  the one after   0.296 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.50 us each  start   0.01 us each  frame after   5.114 ms  the one after   1.095 ms  steady   0.822 ms
+== round 4/10 9305a16f
+ 1/3  N=  1000  stop   0.47 us each  start   0.00 us each  frame after   0.459 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.33 us each  start   0.01 us each  frame after   1.617 ms  the one after   0.295 ms  steady   0.218 ms
+ 3/3  N= 40000  stop   2.29 us each  start   0.01 us each  frame after   5.112 ms  the one after   1.104 ms  steady   0.822 ms
+== round 5/10 f439e5be
+ 1/3  N=  1000  stop   0.52 us each  start   0.00 us each  frame after   0.478 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.43 us each  start   0.01 us each  frame after   1.625 ms  the one after   0.294 ms  steady   0.211 ms
+ 3/3  N= 40000  stop   2.46 us each  start   0.00 us each  frame after   5.036 ms  the one after   1.078 ms  steady   0.826 ms
+== round 5/10 9305a16f
+ 1/3  N=  1000  stop   0.49 us each  start   0.00 us each  frame after   0.477 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.35 us each  start   0.01 us each  frame after   1.633 ms  the one after   0.296 ms  steady   0.213 ms
+ 3/3  N= 40000  stop   2.44 us each  start   0.01 us each  frame after   5.048 ms  the one after   1.087 ms  steady   0.838 ms
+== round 5/10 b2e157dc
+ 1/3  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.475 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.45 us each  start   0.00 us each  frame after   1.634 ms  the one after   0.296 ms  steady   0.218 ms
+ 3/3  N= 40000  stop   2.51 us each  start   0.01 us each  frame after   5.024 ms  the one after   1.083 ms  steady   0.818 ms
+== round 6/10 9305a16f
+ 1/3  N=  1000  stop   0.50 us each  start   0.00 us each  frame after   0.464 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.34 us each  start   0.01 us each  frame after   1.615 ms  the one after   0.294 ms  steady   0.216 ms
+ 3/3  N= 40000  stop   2.25 us each  start   0.00 us each  frame after   5.094 ms  the one after   1.089 ms  steady   0.814 ms
+== round 6/10 b2e157dc
+ 1/3  N=  1000  stop   0.50 us each  start   0.00 us each  frame after   0.422 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.43 us each  start   0.00 us each  frame after   1.627 ms  the one after   0.293 ms  steady   0.219 ms
+ 3/3  N= 40000  stop   2.64 us each  start   0.01 us each  frame after   5.088 ms  the one after   1.091 ms  steady   0.828 ms
+== round 6/10 f439e5be
+ 1/3  N=  1000  stop   0.51 us each  start   0.00 us each  frame after   0.415 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.48 us each  start   0.01 us each  frame after   1.641 ms  the one after   0.295 ms  steady   0.220 ms
+ 3/3  N= 40000  stop   2.30 us each  start   0.13 us each  frame after   4.992 ms  the one after   1.083 ms  steady   0.822 ms
+== round 7/10 b2e157dc
+ 1/3  N=  1000  stop   0.57 us each  start   0.00 us each  frame after   0.462 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.37 us each  start   0.00 us each  frame after   1.606 ms  the one after   0.293 ms  steady   0.223 ms
+ 3/3  N= 40000  stop   2.46 us each  start   0.01 us each  frame after   5.014 ms  the one after   1.083 ms  steady   0.830 ms
+== round 7/10 f439e5be
+ 1/3  N=  1000  stop   0.51 us each  start   0.00 us each  frame after   0.459 ms  the one after   0.045 ms  steady   0.034 ms
+ 2/3  N= 10000  stop   1.46 us each  start   0.01 us each  frame after   1.620 ms  the one after   0.296 ms  steady   0.217 ms
+ 3/3  N= 40000  stop   2.53 us each  start   0.01 us each  frame after   5.093 ms  the one after   1.091 ms  steady   0.820 ms
+== round 7/10 9305a16f
+ 1/3  N=  1000  stop   0.46 us each  start   0.00 us each  frame after   0.416 ms  the one after   0.044 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.29 us each  start   0.01 us each  frame after   1.602 ms  the one after   0.294 ms  steady   0.219 ms
+ 3/3  N= 40000  stop   2.23 us each  start   0.00 us each  frame after   5.128 ms  the one after   1.095 ms  steady   0.815 ms
+== round 8/10 f439e5be
+ 1/3  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.481 ms  the one after   0.047 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.46 us each  start   0.01 us each  frame after   1.604 ms  the one after   0.292 ms  steady   0.213 ms
+ 3/3  N= 40000  stop   2.48 us each  start   0.01 us each  frame after   5.086 ms  the one after   1.090 ms  steady   0.818 ms
+== round 8/10 9305a16f
+ 1/3  N=  1000  stop   0.51 us each  start   0.00 us each  frame after   0.475 ms  the one after   0.046 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.23 us each  start   0.01 us each  frame after   1.595 ms  the one after   0.293 ms  steady   0.210 ms
+ 3/3  N= 40000  stop   2.38 us each  start   0.00 us each  frame after   5.040 ms  the one after   1.094 ms  steady   0.828 ms
+== round 8/10 b2e157dc
+ 1/3  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.507 ms  the one after   0.047 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.37 us each  start   0.01 us each  frame after   1.591 ms  the one after   0.296 ms  steady   0.211 ms
+ 3/3  N= 40000  stop   2.68 us each  start   0.00 us each  frame after   5.059 ms  the one after   1.092 ms  steady   0.821 ms
+== round 9/10 9305a16f
+ 1/3  N=  1000  stop   0.56 us each  start   0.00 us each  frame after   0.485 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.62 us each  start   0.01 us each  frame after   1.677 ms  the one after   0.300 ms  steady   0.216 ms
+ 3/3  N= 40000  stop   2.30 us each  start   0.00 us each  frame after   5.036 ms  the one after   1.101 ms  steady   0.814 ms
+== round 9/10 b2e157dc
+ 1/3  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.489 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.27 us each  start   0.01 us each  frame after   1.575 ms  the one after   0.292 ms  steady   0.216 ms
+ 3/3  N= 40000  stop   2.66 us each  start   0.00 us each  frame after   5.132 ms  the one after   1.115 ms  steady   0.825 ms
+== round 9/10 f439e5be
+ 1/3  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.501 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.47 us each  start   0.01 us each  frame after   1.623 ms  the one after   0.293 ms  steady   0.214 ms
+ 3/3  N= 40000  stop   3.10 us each  start   0.01 us each  frame after   5.287 ms  the one after   1.142 ms  steady   0.812 ms
+== round 10/10 b2e157dc
+ 1/3  N=  1000  stop   0.59 us each  start   0.00 us each  frame after   0.473 ms  the one after   0.053 ms  steady   0.027 ms
+ 2/3  N= 10000  stop   1.65 us each  start   0.01 us each  frame after   1.678 ms  the one after   0.299 ms  steady   0.215 ms
+ 3/3  N= 40000  stop   2.79 us each  start   0.01 us each  frame after   5.246 ms  the one after   1.124 ms  steady   0.849 ms
+== round 10/10 f439e5be
+ 1/3  N=  1000  stop   0.57 us each  start   0.00 us each  frame after   0.471 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.70 us each  start   0.01 us each  frame after   1.709 ms  the one after   0.306 ms  steady   0.218 ms
+ 3/3  N= 40000  stop   3.52 us each  start   0.01 us each  frame after   6.105 ms  the one after   1.188 ms  steady   0.885 ms
+== round 10/10 9305a16f
+ 1/3  N=  1000  stop   0.74 us each  start   0.00 us each  frame after   0.478 ms  the one after   0.048 ms  steady   0.046 ms
+ 2/3  N= 10000  stop   2.42 us each  start   0.01 us each  frame after   2.111 ms  the one after   0.337 ms  steady   0.231 ms
+ 3/3  N= 40000  stop   3.83 us each  start   0.01 us each  frame after   6.144 ms  the one after   1.354 ms  steady   0.877 ms
+built b2e157dc
+built f439e5be
+built 9305a16f
+== round 1/6 b2e157dc
+ 1/1  tweens^    N= 10000 V=1     0.201 ms/frame     20 ns/subject·voice  p50    0.193  p99    0.265  worst    2.230  first    78.3 ms  gc    8   16.6 ms       6.0 kB/frame
+== round 1/6 b2e157dc
+ 1/1  weasel^    N= 10000 V=1     0.233 ms/frame     23 ns/subject·voice  p50    0.225  p99    0.293  worst    2.963  first    23.6 ms  gc    1    0.3 ms       5.9 kB/frame
+== round 1/6 b2e157dc
+ 1/1  churn^     N= 10000 V=1     0.247 ms/frame     25 ns/subject·voice  p50    0.239  p99    0.315  worst    4.225  first    53.6 ms  gc    4    6.6 ms      18.8 kB/frame
+== round 1/6 b2e157dc
+ 1/1  turnover^  N= 10000 V=1     0.278 ms/frame     28 ns/subject·voice  p50    0.273  p99    0.358  worst    4.062  first    51.1 ms  gc   21   10.7 ms     136.4 kB/frame
+== round 1/6 f439e5be
+ 1/1  tweens^    N= 10000 V=1     0.199 ms/frame     20 ns/subject·voice  p50    0.190  p99    0.264  worst    2.502  first    55.0 ms  gc    1    2.2 ms       6.2 kB/frame
+== round 1/6 f439e5be
+ 1/1  weasel^    N= 10000 V=1     0.264 ms/frame     26 ns/subject·voice  p50    0.232  p99    0.586  worst   17.245  first    36.6 ms  gc    2    2.8 ms       6.3 kB/frame
+== round 1/6 f439e5be
+ 1/1  churn^     N= 10000 V=1     0.296 ms/frame     30 ns/subject·voice  p50    0.252  p99    0.611  worst   38.454  first    80.6 ms  gc    4   44.8 ms      20.2 kB/frame
+== round 1/6 f439e5be
+ 1/1  turnover^  N= 10000 V=1     0.328 ms/frame     33 ns/subject·voice  p50    0.294  p99    0.818  worst   22.728  first   115.0 ms  gc   21   26.5 ms     136.9 kB/frame
+== round 1/6 9305a16f
+ 1/1  tweens^    N= 10000 V=1     0.204 ms/frame     20 ns/subject·voice  p50    0.195  p99    0.278  worst    2.300  first   139.9 ms  gc    1    1.4 ms       7.4 kB/frame
+== round 1/6 9305a16f
+ 1/1  weasel^    N= 10000 V=1     0.235 ms/frame     23 ns/subject·voice  p50    0.228  p99    0.298  worst    2.835  first    23.3 ms  gc    1    0.4 ms       6.5 kB/frame
+== round 1/6 9305a16f
+ 1/1  churn^     N= 10000 V=1     0.259 ms/frame     26 ns/subject·voice  p50    0.247  p99    0.365  worst    4.637  first    57.1 ms  gc    4    7.4 ms      18.3 kB/frame
+== round 1/6 9305a16f
+ 1/1  turnover^  N= 10000 V=1     0.291 ms/frame     29 ns/subject·voice  p50    0.284  p99    0.390  worst    4.133  first    55.3 ms  gc   21   11.7 ms     137.8 kB/frame
+== round 2/6 f439e5be
+ 1/1  tweens^    N= 10000 V=1     0.199 ms/frame     20 ns/subject·voice  p50    0.192  p99    0.269  worst    2.461  first    63.1 ms  gc    1    2.2 ms       6.2 kB/frame
+== round 2/6 f439e5be
+ 1/1  weasel^    N= 10000 V=1     0.229 ms/frame     23 ns/subject·voice  p50    0.222  p99    0.281  worst    2.950  first    22.0 ms  gc    3    0.8 ms       7.1 kB/frame
+== round 2/6 f439e5be
+ 1/1  churn^     N= 10000 V=1     0.245 ms/frame     25 ns/subject·voice  p50    0.237  p99    0.304  worst    4.300  first    51.2 ms  gc    3    4.1 ms      19.0 kB/frame
+== round 2/6 f439e5be
+ 1/1  turnover^  N= 10000 V=1     0.279 ms/frame     28 ns/subject·voice  p50    0.276  p99    0.347  worst    4.029  first    49.0 ms  gc   21   10.7 ms     137.9 kB/frame
+== round 2/6 9305a16f
+ 1/1  tweens^    N= 10000 V=1     0.197 ms/frame     20 ns/subject·voice  p50    0.189  p99    0.261  worst    2.750  first    55.5 ms  gc    1    2.5 ms       6.2 kB/frame
+== round 2/6 9305a16f
+ 1/1  weasel^    N= 10000 V=1     0.233 ms/frame     23 ns/subject·voice  p50    0.227  p99    0.294  worst    2.826  first    23.2 ms  gc    1    0.5 ms       6.8 kB/frame
+== round 2/6 9305a16f
+ 1/1  churn^     N= 10000 V=1     0.249 ms/frame     25 ns/subject·voice  p50    0.242  p99    0.308  worst    4.222  first    60.5 ms  gc    4    6.7 ms      19.1 kB/frame
+== round 2/6 9305a16f
+ 1/1  turnover^  N= 10000 V=1     0.288 ms/frame     29 ns/subject·voice  p50    0.282  p99    0.374  worst    4.176  first    52.5 ms  gc   21   10.8 ms     136.5 kB/frame
+== round 2/6 b2e157dc
+ 1/1  tweens^    N= 10000 V=1     0.198 ms/frame     20 ns/subject·voice  p50    0.189  p99    0.268  worst    2.382  first    54.1 ms  gc    1    2.2 ms       6.1 kB/frame
+== round 2/6 b2e157dc
+ 1/1  weasel^    N= 10000 V=1     0.228 ms/frame     23 ns/subject·voice  p50    0.219  p99    0.286  worst    2.843  first    22.8 ms  gc    1    0.4 ms       6.6 kB/frame
+== round 2/6 b2e157dc
+ 1/1  churn^     N= 10000 V=1     0.250 ms/frame     25 ns/subject·voice  p50    0.240  p99    0.318  worst    4.773  first    52.9 ms  gc    4    7.5 ms      19.8 kB/frame
+== round 2/6 b2e157dc
+ 1/1  turnover^  N= 10000 V=1     0.290 ms/frame     29 ns/subject·voice  p50    0.286  p99    0.377  worst    3.968  first    50.2 ms  gc   21   10.9 ms     136.6 kB/frame
+== round 3/6 9305a16f
+ 1/1  tweens^    N= 10000 V=1     0.205 ms/frame     20 ns/subject·voice  p50    0.192  p99    0.344  worst    6.267  first    59.3 ms  gc    2    2.4 ms       6.0 kB/frame
+== round 3/6 9305a16f
+ 1/1  weasel^    N= 10000 V=1     0.241 ms/frame     24 ns/subject·voice  p50    0.229  p99    0.324  worst    3.300  first    23.8 ms  gc    3    0.9 ms       6.7 kB/frame
+== round 3/6 9305a16f
+ 1/1  churn^     N= 10000 V=1     0.260 ms/frame     26 ns/subject·voice  p50    0.241  p99    0.493  worst    7.478  first    60.2 ms  gc    4    7.2 ms      19.0 kB/frame
+== round 3/6 9305a16f
+ 1/1  turnover^  N= 10000 V=1     0.274 ms/frame     27 ns/subject·voice  p50    0.268  p99    0.350  worst    3.829  first    53.9 ms  gc   21    8.4 ms     138.8 kB/frame
+== round 3/6 b2e157dc
+ 1/1  tweens^    N= 10000 V=1     0.199 ms/frame     20 ns/subject·voice  p50    0.188  p99    0.275  worst    2.400  first    52.4 ms  gc    1    1.9 ms       6.0 kB/frame
+== round 3/6 b2e157dc
+ 1/1  weasel^    N= 10000 V=1     0.231 ms/frame     23 ns/subject·voice  p50    0.223  p99    0.305  worst    2.921  first    21.8 ms  gc    1    0.4 ms       6.5 kB/frame
+== round 3/6 b2e157dc
+ 1/1  churn^     N= 10000 V=1     0.249 ms/frame     25 ns/subject·voice  p50    0.239  p99    0.350  worst    4.774  first    58.3 ms  gc    4    6.9 ms      20.1 kB/frame
+== round 3/6 b2e157dc
+ 1/1  turnover^  N= 10000 V=1     0.278 ms/frame     28 ns/subject·voice  p50    0.272  p99    0.436  worst    4.054  first    56.4 ms  gc   21   11.2 ms     136.7 kB/frame
+== round 3/6 f439e5be
+ 1/1  tweens^    N= 10000 V=1     0.197 ms/frame     20 ns/subject·voice  p50    0.186  p99    0.278  worst    2.224  first    57.4 ms  gc    1    2.0 ms       6.3 kB/frame
+== round 3/6 f439e5be
+ 1/1  weasel^    N= 10000 V=1     0.229 ms/frame     23 ns/subject·voice  p50    0.223  p99    0.308  worst    2.964  first    23.3 ms  gc    3    0.9 ms       6.0 kB/frame
+== round 3/6 f439e5be
+ 1/1  churn^     N= 10000 V=1     0.247 ms/frame     25 ns/subject·voice  p50    0.237  p99    0.346  worst    5.342  first    57.8 ms  gc    4    7.9 ms      18.7 kB/frame
+== round 3/6 f439e5be
+ 1/1  turnover^  N= 10000 V=1     0.277 ms/frame     28 ns/subject·voice  p50    0.271  p99    0.448  worst    3.929  first    55.0 ms  gc   21   10.4 ms     137.9 kB/frame
+== round 4/6 b2e157dc
+ 1/1  tweens^    N= 10000 V=1     0.198 ms/frame     20 ns/subject·voice  p50    0.189  p99    0.288  worst    2.413  first    60.8 ms  gc    1    2.2 ms       5.3 kB/frame
+== round 4/6 b2e157dc
+ 1/1  weasel^    N= 10000 V=1     0.229 ms/frame     23 ns/subject·voice  p50    0.222  p99    0.298  worst    3.180  first    21.3 ms  gc    3    0.9 ms       6.6 kB/frame
+== round 4/6 b2e157dc
+ 1/1  churn^     N= 10000 V=1     0.253 ms/frame     25 ns/subject·voice  p50    0.238  p99    0.427  worst    5.218  first    58.4 ms  gc    4    7.7 ms      20.0 kB/frame
+== round 4/6 b2e157dc
+ 1/1  turnover^  N= 10000 V=1     0.278 ms/frame     28 ns/subject·voice  p50    0.272  p99    0.435  worst    4.090  first    60.3 ms  gc   21   11.4 ms     137.6 kB/frame
+== round 4/6 f439e5be
+ 1/1  tweens^    N= 10000 V=1     0.192 ms/frame     19 ns/subject·voice  p50    0.181  p99    0.253  worst    1.911  first    47.8 ms  gc    1    1.7 ms       5.7 kB/frame
+== round 4/6 f439e5be
+ 1/1  weasel^    N= 10000 V=1     0.227 ms/frame     23 ns/subject·voice  p50    0.218  p99    0.286  worst    4.678  first    22.5 ms  gc    1    0.3 ms       6.8 kB/frame
+== round 4/6 f439e5be
+ 1/1  churn^     N= 10000 V=1     0.239 ms/frame     24 ns/subject·voice  p50    0.231  p99    0.288  worst    3.958  first    50.3 ms  gc    4    6.0 ms      19.7 kB/frame
+== round 4/6 f439e5be
+ 1/1  turnover^  N= 10000 V=1     0.276 ms/frame     28 ns/subject·voice  p50    0.275  p99    0.327  worst    4.041  first    44.6 ms  gc   21    8.6 ms     136.8 kB/frame
+== round 4/6 9305a16f
+ 1/1  tweens^    N= 10000 V=1     0.199 ms/frame     20 ns/subject·voice  p50    0.190  p99    0.268  worst    2.243  first    53.6 ms  gc    1    2.0 ms       5.5 kB/frame
+== round 4/6 9305a16f
+ 1/1  weasel^    N= 10000 V=1     0.233 ms/frame     23 ns/subject·voice  p50    0.227  p99    0.296  worst    3.212  first    23.1 ms  gc    3    0.9 ms       6.9 kB/frame
+== round 4/6 9305a16f
+ 1/1  churn^     N= 10000 V=1     0.248 ms/frame     25 ns/subject·voice  p50    0.240  p99    0.306  worst    4.449  first    54.7 ms  gc    4    7.2 ms      17.4 kB/frame
+== round 4/6 9305a16f
+ 1/1  turnover^  N= 10000 V=1     0.283 ms/frame     28 ns/subject·voice  p50    0.280  p99    0.351  worst    4.012  first    54.5 ms  gc   21   10.5 ms     138.2 kB/frame
+== round 5/6 f439e5be
+ 1/1  tweens^    N= 10000 V=1     0.200 ms/frame     20 ns/subject·voice  p50    0.191  p99    0.271  worst    2.417  first    55.0 ms  gc    1    2.2 ms       6.1 kB/frame
+== round 5/6 f439e5be
+ 1/1  weasel^    N= 10000 V=1     0.230 ms/frame     23 ns/subject·voice  p50    0.224  p99    0.292  worst    3.092  first    23.0 ms  gc    3    0.9 ms       7.1 kB/frame
+== round 5/6 f439e5be
+ 1/1  churn^     N= 10000 V=1     0.247 ms/frame     25 ns/subject·voice  p50    0.239  p99    0.307  worst    4.509  first    56.7 ms  gc    4    7.2 ms      19.9 kB/frame
+== round 5/6 f439e5be
+ 1/1  turnover^  N= 10000 V=1     0.280 ms/frame     28 ns/subject·voice  p50    0.276  p99    0.370  worst    3.934  first    52.3 ms  gc   21    9.8 ms     136.4 kB/frame
+== round 5/6 9305a16f
+ 1/1  tweens^    N= 10000 V=1     0.200 ms/frame     20 ns/subject·voice  p50    0.191  p99    0.265  worst    2.368  first    55.2 ms  gc    1    2.2 ms       6.1 kB/frame
+== round 5/6 9305a16f
+ 1/1  weasel^    N= 10000 V=1     0.230 ms/frame     23 ns/subject·voice  p50    0.224  p99    0.294  worst    2.864  first    22.9 ms  gc    1    0.4 ms       7.0 kB/frame
+== round 5/6 9305a16f
+ 1/1  churn^     N= 10000 V=1     0.250 ms/frame     25 ns/subject·voice  p50    0.241  p99    0.313  worst    4.282  first    58.1 ms  gc    4    6.9 ms      19.2 kB/frame
+== round 5/6 9305a16f
+ 1/1  turnover^  N= 10000 V=1     0.294 ms/frame     29 ns/subject·voice  p50    0.289  p99    0.384  worst    4.097  first    54.9 ms  gc   21   10.3 ms     137.1 kB/frame
+== round 5/6 b2e157dc
+ 1/1  tweens^    N= 10000 V=1     0.213 ms/frame     21 ns/subject·voice  p50    0.198  p99    0.332  worst    4.031  first    77.0 ms  gc    2    2.0 ms       7.3 kB/frame
+== round 5/6 b2e157dc
+ 1/1  weasel^    N= 10000 V=1     0.238 ms/frame     24 ns/subject·voice  p50    0.228  p99    0.362  worst    2.974  first    23.4 ms  gc    2    0.7 ms       7.1 kB/frame
+== round 5/6 b2e157dc
+ 1/1  churn^     N= 10000 V=1     0.275 ms/frame     28 ns/subject·voice  p50    0.250  p99    0.607  worst    7.462  first    63.1 ms  gc    4    7.9 ms      18.6 kB/frame
+== round 5/6 b2e157dc
+ 1/1  turnover^  N= 10000 V=1     0.288 ms/frame     29 ns/subject·voice  p50    0.282  p99    0.443  worst    4.356  first    62.2 ms  gc   21   10.5 ms     138.4 kB/frame
+== round 6/6 9305a16f
+ 1/1  tweens^    N= 10000 V=1     0.192 ms/frame     19 ns/subject·voice  p50    0.182  p99    0.260  worst    2.242  first    46.7 ms  gc    1    2.0 ms       5.7 kB/frame
+== round 6/6 9305a16f
+ 1/1  weasel^    N= 10000 V=1     0.234 ms/frame     23 ns/subject·voice  p50    0.224  p99    0.345  worst    3.506  first    23.0 ms  gc    1    0.4 ms       6.8 kB/frame
+== round 6/6 9305a16f
+ 1/1  churn^     N= 10000 V=1     0.252 ms/frame     25 ns/subject·voice  p50    0.242  p99    0.358  worst    4.199  first    59.3 ms  gc    4    6.8 ms      20.0 kB/frame
+== round 6/6 9305a16f
+ 1/1  turnover^  N= 10000 V=1     0.300 ms/frame     30 ns/subject·voice  p50    0.290  p99    0.460  worst    8.341  first    54.5 ms  gc   21   11.8 ms     137.8 kB/frame
+== round 6/6 b2e157dc
+ 1/1  tweens^    N= 10000 V=1     0.201 ms/frame     20 ns/subject·voice  p50    0.191  p99    0.276  worst    2.599  first    61.6 ms  gc    1    2.3 ms       5.7 kB/frame
+== round 6/6 b2e157dc
+ 1/1  weasel^    N= 10000 V=1     0.234 ms/frame     23 ns/subject·voice  p50    0.228  p99    0.300  worst    2.961  first    24.8 ms  gc    1    0.7 ms       7.3 kB/frame
+== round 6/6 b2e157dc
+ 1/1  churn^     N= 10000 V=1     0.250 ms/frame     25 ns/subject·voice  p50    0.240  p99    0.350  worst    4.469  first    58.3 ms  gc   12   16.6 ms      20.3 kB/frame
+== round 6/6 b2e157dc
+ 1/1  turnover^  N= 10000 V=1     0.291 ms/frame     29 ns/subject·voice  p50    0.286  p99    0.424  worst    4.107  first    56.9 ms  gc   21   10.9 ms     137.5 kB/frame
+== round 6/6 f439e5be
+ 1/1  tweens^    N= 10000 V=1     0.200 ms/frame     20 ns/subject·voice  p50    0.192  p99    0.265  worst    2.832  first    57.9 ms  gc    1    2.6 ms       5.8 kB/frame
+== round 6/6 f439e5be
+ 1/1  weasel^    N= 10000 V=1     0.234 ms/frame     23 ns/subject·voice  p50    0.228  p99    0.319  worst    2.695  first    22.5 ms  gc    7    3.7 ms       6.4 kB/frame
+== round 6/6 f439e5be
+ 1/1  churn^     N= 10000 V=1     0.259 ms/frame     26 ns/subject·voice  p50    0.245  p99    0.377  worst   12.348  first    62.1 ms  gc    4   17.4 ms      20.3 kB/frame
+== round 6/6 f439e5be
+ 1/1  turnover^  N= 10000 V=1     0.292 ms/frame     29 ns/subject·voice  p50    0.284  p99    0.485  worst    4.387  first    54.8 ms  gc   21   12.2 ms     136.6 kB/frame

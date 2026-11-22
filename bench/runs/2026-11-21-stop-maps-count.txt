@@ -1,0 +1,66 @@
+# teitou: node bench/stopmaps.mjs 1000 && ROUNDS=5 node bench/stopmaps.mjs 10000 (b2e157dc, before callers were named)
+N=1000 stop: 4 distinct maps touched over 2000 (3 holding >= N/2 entries), 11 calls each
+     6.00  Map.get store.js:23
+     4.00  Map.delete store.js:61
+     1.00  Map.get lanes.js:473
+  big map (901): Map.get store.js:23, Map.delete store.js:61
+  big map (1000): Map.get lanes.js:473
+  big map (1000): Map.get store.js:23
+N=1000 one stop: 4 distinct maps touched over 1 (3 holding >= N/2 entries), 11 calls each
+     6.00  Map.get store.js:23
+     4.00  Map.delete store.js:61
+     1.00  Map.get lanes.js:473
+  big map (1000): Map.get store.js:23, Map.delete store.js:61
+  big map (1000): Map.get lanes.js:473
+  big map (1000): Map.get store.js:23
+N=1000 steady frame: 1 distinct maps touched over 20 (0 holding >= N/2 entries), 1 calls each
+     1.00  Map.get pull.js:241
+N=10000 stop: 4 distinct maps touched over 500 (3 holding >= N/2 entries), 11 calls each
+     6.00  Map.get store.js:23
+     4.00  Map.delete store.js:61
+     1.00  Map.get lanes.js:473
+  big map (9901): Map.get store.js:23, Map.delete store.js:61
+  big map (10000): Map.get lanes.js:473
+  big map (10000): Map.get store.js:23
+N=10000 one stop: 4 distinct maps touched over 1 (3 holding >= N/2 entries), 11 calls each
+     6.00  Map.get store.js:23
+     4.00  Map.delete store.js:61
+     1.00  Map.get lanes.js:473
+  big map (10000): Map.get store.js:23, Map.delete store.js:61
+  big map (10000): Map.get lanes.js:473
+  big map (10000): Map.get store.js:23
+N=10000 steady frame: 1 distinct maps touched over 5 (0 holding >= N/2 entries), 1 calls each
+     1.00  Map.get pull.js:241
+# teitou: ROUNDS=5 node bench/stopmaps.mjs 1000 (b2e157dc, callers named)
+N=1000 stop: 4 distinct maps touched over 500 (3 holding >= N/2 entries), 11 calls each
+     1.00  Map.get headOf chain.js:55 via Store.get store.js:23
+     1.00  Map.get Mixer.drop drop.js:14 via Store.get store.js:23
+     1.00  Map.get Mixer.drop drop.js:18 via Store.get store.js:23
+     1.00  Map.get Lanes.forget lanes.js:473
+     1.00  Map.delete Mixer.drop drop.js:28 via Store.delete store.js:61
+     1.00  Map.delete Mixer.drop drop.js:32 via Store.delete store.js:61
+     1.00  Map.get Mixer.drop drop.js:39 via Store.get store.js:23
+     1.00  Map.delete Motions.release lives.js:42 via Store.delete store.js:61
+     1.00  Map.get Mixer.drop drop.js:46 via Store.get store.js:23
+     1.00  Map.get Mixer.drop drop.js:62 via Store.get store.js:23
+     1.00  Map.delete Mixer.drop drop.js:66 via Store.delete store.js:61
+  big map (901): Map.get headOf chain.js:55 via Store.get store.js:23, Map.get Mixer.drop drop.js:14 via Store.get store.js:23, Map.get Mixer.drop drop.js:18 via Store.get store.js:23, Map.delete Mixer.drop drop.js:32 via Store.delete store.js:61
+  big map (1000): Map.get Lanes.forget lanes.js:473
+  big map (1000): Map.get Mixer.drop drop.js:39 via Store.get store.js:23
+N=1000 one stop: 4 distinct maps touched over 1 (3 holding >= N/2 entries), 11 calls each
+     1.00  Map.get headOf chain.js:55 via Store.get store.js:23
+     1.00  Map.get Mixer.drop drop.js:14 via Store.get store.js:23
+     1.00  Map.get Mixer.drop drop.js:18 via Store.get store.js:23
+     1.00  Map.get Lanes.forget lanes.js:473
+     1.00  Map.delete Mixer.drop drop.js:28 via Store.delete store.js:61
+     1.00  Map.delete Mixer.drop drop.js:32 via Store.delete store.js:61
+     1.00  Map.get Mixer.drop drop.js:39 via Store.get store.js:23
+     1.00  Map.delete Motions.release lives.js:42 via Store.delete store.js:61
+     1.00  Map.get Mixer.drop drop.js:46 via Store.get store.js:23
+     1.00  Map.get Mixer.drop drop.js:62 via Store.get store.js:23
+     1.00  Map.delete Mixer.drop drop.js:66 via Store.delete store.js:61
+  big map (1000): Map.get headOf chain.js:55 via Store.get store.js:23, Map.get Mixer.drop drop.js:14 via Store.get store.js:23, Map.get Mixer.drop drop.js:18 via Store.get store.js:23, Map.delete Mixer.drop drop.js:32 via Store.delete store.js:61
+  big map (1000): Map.get Lanes.forget lanes.js:473
+  big map (1000): Map.get Mixer.drop drop.js:39 via Store.get store.js:23
+N=1000 steady frame: 1 distinct maps touched over 5 (0 holding >= N/2 entries), 1 calls each
+     1.00  Map.get columnsOf pull.js:241

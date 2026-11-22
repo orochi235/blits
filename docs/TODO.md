@@ -113,14 +113,21 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   hash (4.1 ms in Chromium) and the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
 - **[agent] A stop grows with N** (0.52 µs at 1,000 subjects, 1.46 at 10,000, 2.41 at 40,000;
   msb-uai, 2026-11-21, `bench/runs/2026-11-21-row-alloc-restart.txt`) though nothing walks more.
-  Every part of it grows, none by much more than the rest (`bench/stopparts.mjs`,
-  `runs/2026-11-21-row-alloc-stopparts.txt`; `bench/stopprof.sh`,
-  `runs/2026-11-21-row-alloc-stopprof.txt`): the fade 0.36 to 1.03 µs, `Numbers.release` 0.33 to
-  0.96, `Lanes.forget` 0.06 to 0.29, the map deletes in `drop` (`Store.delete`) 0.02 to 0.25. The
-  bench's own swap-remove, which indexes two arrays and nothing else, grows 0.04 to 0.27 µs too, so
-  the growth is cold memory, each distinct object and map a stop touches costing a miss (inferred
-  from that, not counted). A lever would be fewer of them per subject, such as one record holding
-  what `chains`, `lastPoses` and `restStamps` keep by subject in maps of their own. Not tried.
+  Every part of it grows (`bench/stopparts.mjs`, `runs/2026-11-21-row-alloc-stopparts.txt`;
+  `bench/stopprof.sh`, `runs/2026-11-21-row-alloc-stopprof.txt`), and so does the bench's own
+  two-array swap-remove, so the growth is read as cold memory (inferred). Counted with
+  `bench/stopmaps.mjs` (`runs/2026-11-21-stop-maps-count.txt`, measured): a stop touches three maps
+  holding an entry per subject or voice, `chains`, `named`'s lists and the lanes' `seats`, and a
+  steady frame none. `lastPoses`, `restStamps` and `strays` are empty in this shape, so folding them
+  into `chains` would save it nothing. One or two more such maps cost a stop 0.3–0.45 µs at 40,000
+  (teitou, 8 rounds, `runs/2026-11-21-stop-maps-extra.txt`; noisy, two read less than one). `seats` left the stop on 2026-11-21: a
+  stop reads a crowd voice's seat off the voice, 2.825 against 3.035 µs at 40,000 (teitou, shared,
+  12 rounds, U 33.5 of 144, `runs/2026-11-21-stop-seat-ab2.txt`), and with a backed-out change
+  under it 2.270 against 2.615 (msb-uai, U 10 of 100, `-stop-seat-ab.txt`); steady frames did not
+  move. Left: `named`'s list, which could ride on one per-subject record with the chain head, at
+  the cost of a load more on every probe that looks a chain up, so it wants `probed` and the probe
+  rows timed beside the stop (not built). The fade's growth (0.36 to 1.03 µs) touches no map: it is
+  the voice, its handle and its patch read cold (inferred).
 - **[agent] A voice leaving the general path still requalifies every voice where a voice still
   present writes one of its channels, and so does a role member leaving a lane.** A requalify
   costs 1.4 to 2.9 ms at 10,000 crowded voices (`bench/requalify.mjs` `direct`, teitou, a shared
