@@ -30,11 +30,11 @@ Owner tags:
   first subject's last frame from 100 to 300); backward the mirror case shows nothing ("waits for a
   subject staggered ahead of it" in `test/backward.test.ts`). Either hold both ways, or show
   nothing both ways, which would snap each subject of a staggered entrance back as it finishes.
-- **[maintainer] `plot(subjects, xy, cell)`, `cell` as a third argument, is deprecated** (2026-11-12):
-  removing it is breaking, so it waits for a 2.0.0; the removal is built on branch
-  `remove-plot-cell` (`35e8c808`, 2026-11-21). `bench/frame.mjs`,
-  `bench/recaddr.mjs` and `bench/plotleak.mjs` still call the old shape, since older builds an A/B
-  runs them against throw for `{ cell }`; move them to `{ cell }` with the removal.
+- **[waiting] `plot(subjects, xy, cell)`, `cell` as a third argument, stays deprecated until a
+  major release made for other reasons** (no 2.0.0 for it alone, 2026-11-21). The removal then:
+  the overload in `src/types/mix.ts`, the warning in `src/plot.ts` (a number there throws instead),
+  its test in `test/plot-axes.test.ts`, the line in `docs/schema.html`, and `{ cell }` in
+  `bench/frame.mjs`, `bench/recaddr.mjs` and `bench/plotleak.mjs`.
 - **[maintainer] A ticker has no single teardown** (filed 2026-11-15 from automated review).
   `ticker()` (`src/ticker.ts`) gives a remover per `add`, `after` and `hold`, and `stop()` only
   cancels the waiting frame: every mix's `onWake` subscription stays, so a mix waking restarts the
