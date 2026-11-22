@@ -9,7 +9,7 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 ### Fixed
 
 - Stopping a voice and dropping its subject among 40,000 one-subject crowd voices read by `pull`
-  costs about 7% less, 2.83 µs from 3.04 (teitou, shared), since a stop no longer looks the
+  costs about 9% less, 2.77 µs from 3.04 (msb-uai, 16 rounds), since a stop no longer looks the
   voice's crowd row up in a map by its id.
 - Motion patches retargeted every frame no longer read slower through `pull` on lanes than off,
   without `history`: a pull's fill commits the changes due for the subjects it reads, where it used

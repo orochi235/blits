@@ -1,0 +1,131 @@
+# msb-uai Apple M3 Max 2026-11-21, 16 rounds -- bench/runs/2026-11-21-stop-seat-ab2.sh 16, --quiet --max-cores 2; the node was loaded with other jobs within its quiet cap
+built b2e157dc
+built 60d4ec5b
+== round 1/16 b2e157dc
+ 1/3  N=  1000  stop   0.66 us each  start   0.00 us each  frame after   0.451 ms  the one after   0.048 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   2.05 us each  start   0.01 us each  frame after   1.747 ms  the one after   0.306 ms  steady   0.218 ms
+ 3/3  N= 40000  stop   3.05 us each  start   0.01 us each  frame after   5.384 ms  the one after   1.212 ms  steady   0.873 ms
+== round 1/16 60d4ec5b
+ 1/3  N=  1000  stop   0.57 us each  start   0.01 us each  frame after   0.483 ms  the one after   0.046 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.76 us each  start   0.01 us each  frame after   1.755 ms  the one after   0.309 ms  steady   0.218 ms
+ 3/3  N= 40000  stop   2.71 us each  start   0.01 us each  frame after   5.449 ms  the one after   1.163 ms  steady   0.872 ms
+== round 2/16 60d4ec5b
+ 1/3  N=  1000  stop   0.59 us each  start   0.00 us each  frame after   0.514 ms  the one after   0.048 ms  steady   0.027 ms
+ 2/3  N= 10000  stop   1.94 us each  start   0.01 us each  frame after   1.816 ms  the one after   0.319 ms  steady   0.261 ms
+ 3/3  N= 40000  stop   2.89 us each  start   0.01 us each  frame after   5.364 ms  the one after   1.159 ms  steady   0.865 ms
+== round 2/16 b2e157dc
+ 1/3  N=  1000  stop   0.56 us each  start   0.00 us each  frame after   0.438 ms  the one after   0.047 ms  steady   0.033 ms
+ 2/3  N= 10000  stop   1.88 us each  start   0.01 us each  frame after   1.762 ms  the one after   0.309 ms  steady   0.219 ms
+ 3/3  N= 40000  stop   3.18 us each  start   0.01 us each  frame after   5.334 ms  the one after   1.149 ms  steady   0.867 ms
+== round 3/16 b2e157dc
+ 1/3  N=  1000  stop   0.63 us each  start   0.00 us each  frame after   0.502 ms  the one after   0.049 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   2.07 us each  start   0.01 us each  frame after   1.803 ms  the one after   0.311 ms  steady   0.219 ms
+ 3/3  N= 40000  stop   4.45 us each  start   0.01 us each  frame after   6.679 ms  the one after   1.402 ms  steady   0.894 ms
+== round 3/16 60d4ec5b
+ 1/3  N=  1000  stop   0.65 us each  start   0.00 us each  frame after   0.465 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   2.39 us each  start   0.01 us each  frame after   2.579 ms  the one after   0.478 ms  steady   0.222 ms
+ 3/3  N= 40000  stop   3.93 us each  start   0.01 us each  frame after   5.954 ms  the one after   1.254 ms  steady   0.901 ms
+== round 4/16 60d4ec5b
+ 1/3  N=  1000  stop   0.73 us each  start   0.00 us each  frame after   0.472 ms  the one after   0.051 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   2.24 us each  start   0.02 us each  frame after   1.932 ms  the one after   0.326 ms  steady   0.224 ms
+ 3/3  N= 40000  stop   3.28 us each  start   0.01 us each  frame after   5.451 ms  the one after   1.193 ms  steady   0.874 ms
+== round 4/16 b2e157dc
+ 1/3  N=  1000  stop   0.68 us each  start   0.00 us each  frame after   0.490 ms  the one after   0.055 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   2.03 us each  start   0.01 us each  frame after   1.784 ms  the one after   0.309 ms  steady   0.220 ms
+ 3/3  N= 40000  stop   3.39 us each  start   0.01 us each  frame after   5.574 ms  the one after   1.170 ms  steady   0.861 ms
+== round 5/16 b2e157dc
+ 1/3  N=  1000  stop   1.39 us each  start   0.03 us each  frame after   0.571 ms  the one after   0.089 ms  steady   0.027 ms
+ 2/3  N= 10000  stop   2.55 us each  start   0.01 us each  frame after   2.525 ms  the one after   0.337 ms  steady   0.252 ms
+ 3/3  N= 40000  stop   4.58 us each  start   0.02 us each  frame after   6.545 ms  the one after   1.330 ms  steady   0.904 ms
+== round 5/16 60d4ec5b
+ 1/3  N=  1000  stop   0.59 us each  start   0.00 us each  frame after   0.451 ms  the one after   0.046 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   2.01 us each  start   0.01 us each  frame after   1.818 ms  the one after   0.320 ms  steady   0.218 ms
+ 3/3  N= 40000  stop   3.03 us each  start   0.01 us each  frame after   5.477 ms  the one after   1.196 ms  steady   0.893 ms
+== round 6/16 60d4ec5b
+ 1/3  N=  1000  stop   0.68 us each  start   0.00 us each  frame after   0.523 ms  the one after   0.049 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.97 us each  start   0.01 us each  frame after   1.816 ms  the one after   0.316 ms  steady   0.221 ms
+ 3/3  N= 40000  stop   3.06 us each  start   0.01 us each  frame after   5.362 ms  the one after   1.152 ms  steady   0.883 ms
+== round 6/16 b2e157dc
+ 1/3  N=  1000  stop   0.66 us each  start   0.00 us each  frame after   0.453 ms  the one after   0.048 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.99 us each  start   0.01 us each  frame after   1.755 ms  the one after   0.307 ms  steady   0.219 ms
+ 3/3  N= 40000  stop   3.29 us each  start   0.01 us each  frame after   5.377 ms  the one after   1.151 ms  steady   0.863 ms
+== round 7/16 b2e157dc
+ 1/3  N=  1000  stop   0.80 us each  start   0.00 us each  frame after   0.500 ms  the one after   0.048 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   2.06 us each  start   0.01 us each  frame after   1.778 ms  the one after   0.309 ms  steady   0.220 ms
+ 3/3  N= 40000  stop   3.31 us each  start   0.01 us each  frame after   5.412 ms  the one after   1.164 ms  steady   0.871 ms
+== round 7/16 60d4ec5b
+ 1/3  N=  1000  stop   0.63 us each  start   0.00 us each  frame after   0.514 ms  the one after   0.049 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.91 us each  start   0.01 us each  frame after   1.806 ms  the one after   0.314 ms  steady   0.219 ms
+ 3/3  N= 40000  stop   3.01 us each  start   0.15 us each  frame after   5.572 ms  the one after   1.190 ms  steady   0.871 ms
+== round 8/16 60d4ec5b
+ 1/3  N=  1000  stop   0.49 us each  start   0.00 us each  frame after   0.413 ms  the one after   0.045 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.26 us each  start   0.01 us each  frame after   1.598 ms  the one after   0.293 ms  steady   0.213 ms
+ 3/3  N= 40000  stop   2.65 us each  start   0.00 us each  frame after   5.176 ms  the one after   1.112 ms  steady   0.859 ms
+== round 8/16 b2e157dc
+ 1/3  N=  1000  stop   0.51 us each  start   0.00 us each  frame after   0.475 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.34 us each  start   0.01 us each  frame after   1.584 ms  the one after   0.291 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.66 us each  start   0.00 us each  frame after   5.028 ms  the one after   1.094 ms  steady   0.819 ms
+== round 9/16 b2e157dc
+ 1/3  N=  1000  stop   0.50 us each  start   0.00 us each  frame after   0.413 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.56 us each  start   0.01 us each  frame after   1.663 ms  the one after   0.298 ms  steady   0.206 ms
+ 3/3  N= 40000  stop   2.40 us each  start   0.00 us each  frame after   5.028 ms  the one after   1.082 ms  steady   0.842 ms
+== round 9/16 60d4ec5b
+ 1/3  N=  1000  stop   0.53 us each  start   0.00 us each  frame after   0.430 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.34 us each  start   0.01 us each  frame after   1.585 ms  the one after   0.289 ms  steady   0.208 ms
+ 3/3  N= 40000  stop   2.41 us each  start   0.01 us each  frame after   5.048 ms  the one after   1.086 ms  steady   0.848 ms
+== round 10/16 60d4ec5b
+ 1/3  N=  1000  stop   0.46 us each  start   0.00 us each  frame after   0.416 ms  the one after   0.045 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.25 us each  start   0.01 us each  frame after   1.568 ms  the one after   0.288 ms  steady   0.208 ms
+ 3/3  N= 40000  stop   2.49 us each  start   0.00 us each  frame after   5.256 ms  the one after   1.131 ms  steady   0.826 ms
+== round 10/16 b2e157dc
+ 1/3  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.478 ms  the one after   0.046 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.70 us each  start   0.01 us each  frame after   1.673 ms  the one after   0.300 ms  steady   0.212 ms
+ 3/3  N= 40000  stop   2.55 us each  start   0.01 us each  frame after   5.024 ms  the one after   1.092 ms  steady   0.822 ms
+== round 11/16 b2e157dc
+ 1/3  N=  1000  stop   0.52 us each  start   0.00 us each  frame after   0.455 ms  the one after   0.046 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.64 us each  start   0.01 us each  frame after   1.676 ms  the one after   0.297 ms  steady   0.208 ms
+ 3/3  N= 40000  stop   2.96 us each  start   0.01 us each  frame after   5.276 ms  the one after   1.134 ms  steady   0.865 ms
+== round 11/16 60d4ec5b
+ 1/3  N=  1000  stop   0.56 us each  start   0.00 us each  frame after   0.448 ms  the one after   0.046 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.74 us each  start   0.01 us each  frame after   1.732 ms  the one after   0.306 ms  steady   0.217 ms
+ 3/3  N= 40000  stop   2.67 us each  start   0.01 us each  frame after   5.192 ms  the one after   1.100 ms  steady   0.848 ms
+== round 12/16 60d4ec5b
+ 1/3  N=  1000  stop   0.58 us each  start   0.00 us each  frame after   0.505 ms  the one after   0.046 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.64 us each  start   0.01 us each  frame after   1.698 ms  the one after   0.300 ms  steady   0.219 ms
+ 3/3  N= 40000  stop   2.96 us each  start   0.01 us each  frame after   5.219 ms  the one after   1.112 ms  steady   0.866 ms
+== round 12/16 b2e157dc
+ 1/3  N=  1000  stop   0.68 us each  start   0.00 us each  frame after   0.478 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.91 us each  start   0.01 us each  frame after   1.745 ms  the one after   0.304 ms  steady   0.213 ms
+ 3/3  N= 40000  stop   3.01 us each  start   0.01 us each  frame after   5.270 ms  the one after   1.125 ms  steady   0.851 ms
+== round 13/16 b2e157dc
+ 1/3  N=  1000  stop   0.84 us each  start   0.01 us each  frame after   0.470 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.73 us each  start   0.01 us each  frame after   1.686 ms  the one after   0.300 ms  steady   0.227 ms
+ 3/3  N= 40000  stop   2.95 us each  start   0.14 us each  frame after   5.232 ms  the one after   1.122 ms  steady   0.858 ms
+== round 13/16 60d4ec5b
+ 1/3  N=  1000  stop   0.58 us each  start   0.00 us each  frame after   0.430 ms  the one after   0.049 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.74 us each  start   0.01 us each  frame after   1.724 ms  the one after   0.304 ms  steady   0.212 ms
+ 3/3  N= 40000  stop   2.75 us each  start   0.00 us each  frame after   5.254 ms  the one after   1.124 ms  steady   0.918 ms
+== round 14/16 60d4ec5b
+ 1/3  N=  1000  stop   0.55 us each  start   0.00 us each  frame after   0.473 ms  the one after   0.047 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.33 us each  start   0.01 us each  frame after   1.592 ms  the one after   0.292 ms  steady   0.213 ms
+ 3/3  N= 40000  stop   2.78 us each  start   0.01 us each  frame after   5.193 ms  the one after   1.115 ms  steady   0.854 ms
+== round 14/16 b2e157dc
+ 1/3  N=  1000  stop   0.70 us each  start   0.00 us each  frame after   0.489 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.90 us each  start   0.01 us each  frame after   1.719 ms  the one after   0.302 ms  steady   0.223 ms
+ 3/3  N= 40000  stop   3.27 us each  start   0.01 us each  frame after   5.220 ms  the one after   1.124 ms  steady   0.843 ms
+== round 15/16 b2e157dc
+ 1/3  N=  1000  stop   0.57 us each  start   0.00 us each  frame after   0.485 ms  the one after   0.047 ms  steady   0.026 ms
+ 2/3  N= 10000  stop   1.85 us each  start   0.01 us each  frame after   1.713 ms  the one after   0.336 ms  steady   0.213 ms
+ 3/3  N= 40000  stop   2.83 us each  start   0.01 us each  frame after   5.259 ms  the one after   1.124 ms  steady   0.858 ms
+== round 15/16 60d4ec5b
+ 1/3  N=  1000  stop   0.46 us each  start   0.00 us each  frame after   0.408 ms  the one after   0.049 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.64 us each  start   0.01 us each  frame after   1.698 ms  the one after   0.302 ms  steady   0.207 ms
+ 3/3  N= 40000  stop   2.08 us each  start   0.00 us each  frame after   4.986 ms  the one after   1.079 ms  steady   0.817 ms
+== round 16/16 60d4ec5b
+ 1/3  N=  1000  stop   0.54 us each  start   0.00 us each  frame after   0.479 ms  the one after   0.057 ms  steady   0.027 ms
+ 2/3  N= 10000  stop   1.52 us each  start   0.01 us each  frame after   1.647 ms  the one after   0.296 ms  steady   0.212 ms
+ 3/3  N= 40000  stop   2.52 us each  start   0.01 us each  frame after   5.121 ms  the one after   1.096 ms  steady   0.846 ms
+== round 16/16 b2e157dc
+ 1/3  N=  1000  stop   0.58 us each  start   0.00 us each  frame after   0.457 ms  the one after   0.051 ms  steady   0.025 ms
+ 2/3  N= 10000  stop   1.36 us each  start   0.00 us each  frame after   1.588 ms  the one after   0.291 ms  steady   0.209 ms
+ 3/3  N= 40000  stop   3.03 us each  start   0.01 us each  frame after   5.240 ms  the one after   1.128 ms  steady   0.853 ms

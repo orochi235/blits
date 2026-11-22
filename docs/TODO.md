@@ -121,10 +121,10 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   steady frame none. `lastPoses`, `restStamps` and `strays` are empty in this shape, so folding them
   into `chains` would save it nothing. One or two more such maps cost a stop 0.3–0.45 µs at 40,000
   (teitou, 8 rounds, `runs/2026-11-21-stop-maps-extra.txt`; noisy, two read less than one). `seats` left the stop on 2026-11-21: a
-  stop reads a crowd voice's seat off the voice, 2.825 against 3.035 µs at 40,000 (teitou, shared,
-  12 rounds, U 33.5 of 144, `runs/2026-11-21-stop-seat-ab2.txt`), and with a backed-out change
-  under it 2.270 against 2.615 (msb-uai, U 10 of 100, `-stop-seat-ab.txt`); steady frames did not
-  move. Left: `named`'s list, which could ride on one per-subject record with the chain head, at
+  stop reads a crowd voice's seat off the voice, 2.765 against 3.040 µs at 40,000 (msb-uai,
+  `--quiet` on a loaded node, 16 rounds, U 74.5 of 256, `runs/2026-11-21-stop-seat-ab3.txt`;
+  2.825 against 3.035 on teitou, `-stop-seat-ab2.txt`); steady frames did not move
+  (`-stop-seat-ab.txt`). Left: `named`'s list, which could ride on one per-subject record with the chain head, at
   the cost of a load more on every probe that looks a chain up, so it wants `probed` and the probe
   rows timed beside the stop (not built). The fade's growth (0.36 to 1.03 µs) touches no map: it is
   the voice, its handle and its patch read cold (inferred).
