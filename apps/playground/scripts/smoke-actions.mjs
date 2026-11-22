@@ -12,7 +12,6 @@ export async function actions(browser, origin, shots) {
     // weasel's switch keeps its input visually hidden, under the track a click lands on.
     await page.getByRole('switch', { name: 'live' }).check({ force: true });
     await page.getByLabel('ramp or mute over, ms').fill('300');
-    await page.getByLabel('mix rate').fill('2');
     await page.getByRole('button', { name: 'mute' }).click();
     await page.waitForTimeout(800);
     const rest = await page.getByText(/^subject 0 (at rest|moving)$/).textContent();
