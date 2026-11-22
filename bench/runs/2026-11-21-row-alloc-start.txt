@@ -1,0 +1,7 @@
+# msb-uai: node bench/start.mjs 10000 9 tweens fns, x3 processes (main 4eb821a3)
+1/2  tweens   N=10000  cue     8.0 ms  first frame    30.1 ms  second     3.5 ms  (medians of 9)
+2/2  fns      N=10000  cue     3.4 ms  first frame    11.9 ms  second     1.8 ms  (medians of 9)
+1/2  tweens   N=10000  cue     8.3 ms  first frame    31.0 ms  second     3.8 ms  (medians of 9)
+2/2  fns      N=10000  cue     3.6 ms  first frame    12.5 ms  second     1.9 ms  (medians of 9)
+1/2  tweens   N=10000  cue     7.7 ms  first frame    28.1 ms  second     3.7 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.7 ms  first frame    12.2 ms  second     2.4 ms  (medians of 9)

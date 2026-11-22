@@ -1,0 +1,51 @@
+# msb-uai: LINEAGE_BENCH=start.mjs bench/lineage.sh 8 4eb821a3 6ab68648 -- "10000 9 tweens fns"
+built 4eb821a3
+built 6ab68648
+== round 1/8 4eb821a3
+1/2  tweens   N=10000  cue     8.4 ms  first frame    31.2 ms  second     4.1 ms  (medians of 9)
+2/2  fns      N=10000  cue     3.9 ms  first frame    14.1 ms  second     2.0 ms  (medians of 9)
+== round 1/8 6ab68648
+1/2  tweens   N=10000  cue     8.4 ms  first frame    31.8 ms  second     4.1 ms  (medians of 9)
+2/2  fns      N=10000  cue     3.8 ms  first frame    12.5 ms  second     1.8 ms  (medians of 9)
+== round 2/8 6ab68648
+1/2  tweens   N=10000  cue     8.8 ms  first frame    34.4 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.0 ms  first frame    14.0 ms  second     2.1 ms  (medians of 9)
+== round 2/8 4eb821a3
+1/2  tweens   N=10000  cue     8.5 ms  first frame    32.1 ms  second     4.1 ms  (medians of 9)
+2/2  fns      N=10000  cue     3.8 ms  first frame    14.7 ms  second     2.5 ms  (medians of 9)
+== round 3/8 4eb821a3
+1/2  tweens   N=10000  cue     8.5 ms  first frame    33.9 ms  second     4.6 ms  (medians of 9)
+2/2  fns      N=10000  cue     6.7 ms  first frame    13.8 ms  second     2.4 ms  (medians of 9)
+== round 3/8 6ab68648
+1/2  tweens   N=10000  cue     8.6 ms  first frame    31.4 ms  second     4.0 ms  (medians of 9)
+2/2  fns      N=10000  cue     6.7 ms  first frame    13.5 ms  second     2.2 ms  (medians of 9)
+== round 4/8 6ab68648
+1/2  tweens   N=10000  cue     8.9 ms  first frame    36.3 ms  second     4.7 ms  (medians of 9)
+2/2  fns      N=10000  cue     3.8 ms  first frame    15.0 ms  second     2.3 ms  (medians of 9)
+== round 4/8 4eb821a3
+1/2  tweens   N=10000  cue     9.0 ms  first frame    32.2 ms  second     4.0 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.3 ms  first frame    14.1 ms  second     2.4 ms  (medians of 9)
+== round 5/8 4eb821a3
+1/2  tweens   N=10000  cue     8.4 ms  first frame    31.2 ms  second     4.5 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.0 ms  first frame    13.8 ms  second     2.2 ms  (medians of 9)
+== round 5/8 6ab68648
+1/2  tweens   N=10000  cue     8.3 ms  first frame    29.0 ms  second     3.9 ms  (medians of 9)
+2/2  fns      N=10000  cue     5.1 ms  first frame    14.4 ms  second     2.1 ms  (medians of 9)
+== round 6/8 6ab68648
+1/2  tweens   N=10000  cue     9.0 ms  first frame    31.9 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.0 ms  first frame    14.2 ms  second     2.1 ms  (medians of 9)
+== round 6/8 4eb821a3
+1/2  tweens   N=10000  cue     9.0 ms  first frame    31.8 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     3.6 ms  first frame    13.0 ms  second     1.9 ms  (medians of 9)
+== round 7/8 4eb821a3
+1/2  tweens   N=10000  cue     7.8 ms  first frame    31.0 ms  second     4.5 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.8 ms  first frame    14.2 ms  second     2.3 ms  (medians of 9)
+== round 7/8 6ab68648
+1/2  tweens   N=10000  cue     7.8 ms  first frame    28.6 ms  second     4.3 ms  (medians of 9)
+2/2  fns      N=10000  cue     4.8 ms  first frame    12.7 ms  second     1.9 ms  (medians of 9)
+== round 8/8 6ab68648
+1/2  tweens   N=10000  cue     8.9 ms  first frame    33.1 ms  second     4.2 ms  (medians of 9)
+2/2  fns      N=10000  cue     6.9 ms  first frame    13.2 ms  second     2.2 ms  (medians of 9)
+== round 8/8 4eb821a3
+1/2  tweens   N=10000  cue     8.0 ms  first frame    31.7 ms  second     4.8 ms  (medians of 9)
+2/2  fns      N=10000  cue     6.5 ms  first frame    14.1 ms  second     2.1 ms  (medians of 9)

@@ -1,0 +1,41 @@
+# msb-uai: node bench/stopparts.mjs 1000 40000 (main 4eb821a3)
+N=1000  fade   0.360 µs  drop   2.137 µs a stop
+    2.081  Mixer.drop
+    0.463  Mixer.releaseIn
+    0.406  Motions.release
+    0.326  Numbers.release
+    0.283  Lanes.release
+    0.161  Lanes.forget
+    0.132  Store.get chains
+    0.111  Store.delete other
+    0.108  Store.get other
+    0.054  Motions.known
+    0.048  Store.delete chains
+    0.048  Store.get strays
+    0.047  Motions.forget
+    0.044  Lanes.voiceChanged
+    0.040  Store.delete lastPoses
+    0.039  Store.delete strays
+    0.024  Lanes.touch
+    0.022  Placed.remove
+    0.021  Lanes.refill
+N=40000  fade   1.030 µs  drop   3.896 µs a stop
+    3.839  Mixer.drop
+    1.112  Mixer.releaseIn
+    1.055  Motions.release
+    0.961  Numbers.release
+    0.642  Lanes.release
+    0.450  Lanes.forget
+    0.367  Motions.known
+    0.300  Store.get chains
+    0.290  Store.get other
+    0.202  Store.delete other
+    0.197  Motions.forget
+    0.172  Lanes.voiceChanged
+    0.053  Store.delete chains
+    0.040  Store.delete lastPoses
+    0.040  Store.delete strays
+    0.037  Store.get strays
+    0.024  Lanes.touch
+    0.023  Placed.remove
+    0.021  Lanes.refill

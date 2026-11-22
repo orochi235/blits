@@ -1,0 +1,99 @@
+# teitou: ROUNDS=1000 bench/stopprof.sh 1000 40000 (main 4eb821a3)
+ 1/1  N=  1000  stop   0.67 us each  start   0.00 us each  frame after   0.477 ms  the one after   0.033 ms  steady   0.021 ms
+other   0.040 µs a stop
+fade    0.209 µs a stop
+drop    0.388 µs a stop
+  0.081 µs  drop  drop drop.js:8
+  0.064 µs  drop  forget lanes.js:447
+  0.046 µs  fade  touch lanes.js:200
+  0.036 µs  other stop restart.mjs:33
+  0.034 µs  drop  release numbers.js:114
+  0.031 µs  fade  schedule due.js:231
+  0.031 µs  fade  beginFade fade.js:187
+  0.023 µs  drop  delete store.js:53
+  0.018 µs  fade  retire fade.js:343
+  0.017 µs  drop  releaseIn drop.js:90
+  0.016 µs  drop  any placed.js:18
+  0.015 µs  fade  dueOf due.js:185
+  0.015 µs  drop  get store.js:20
+  0.015 µs  drop  forgot hosts.js:63
+  0.013 µs  drop  same store.js:91
+  0.013 µs  fade  fade handle.js:152
+  0.012 µs  fade  push due.js:25
+  0.012 µs  drop  goneIndex gone.js:46
+  0.010 µs  drop  release lives.js:25
+  0.010 µs  drop  unplace rows.js:18
+  0.010 µs  drop  get filed.js:70
+  0.009 µs  drop  dropIn drop.js:73
+  0.009 µs  drop  headOf chain.js:54
+  0.008 µs  drop  known motions.js:185
+  0.008 µs  fade  noted history.js:62
+  0.006 µs  drop  stir mixer.js:165
+  0.006 µs  drop  release lanes.js:219
+  0.006 µs  drop  forget motions.js:409
+  0.005 µs  drop  leaveVoice fade.js:104
+  0.005 µs  drop  leave history.js:302
+  0.004 µs  fade  get now mixer.js:342
+  0.004 µs  fade  nowFor now.js:3
+  0.003 µs  fade  stir mixer.js:165
+  0.003 µs  drop  unlink chain.js:178
+  0.003 µs  fade  play voice.js:330
+  0.003 µs  fade  woke transport.js:177
+  0.003 µs  drop  unrecord fade.js:130
+  0.002 µs  fade  settle transport.js:66
+  0.002 µs  fade  resolve voice.js:320
+  0.002 µs  drop  settle transport.js:66
+  0.002 µs  fade  fadeVoice fade.js:14
+  0.002 µs  fade  fade hosts.js:247
+  0.002 µs  fade  scoreTouched scored.js:73
+  0.002 µs  fade  seatOf seat.js:21
+  0.002 µs  drop  releasing history.js:330
+ 1/1  N= 40000  stop   2.94 us each  start   0.01 us each  frame after   4.893 ms  the one after   1.041 ms  steady   0.760 ms
+fade    0.851 µs a stop
+other   0.285 µs a stop
+drop    1.727 µs a stop
+  0.290 µs  drop  forget lanes.js:447
+  0.282 µs  drop  drop drop.js:8
+  0.274 µs  other stop restart.mjs:33
+  0.245 µs  drop  delete store.js:53
+  0.189 µs  fade  touch lanes.js:200
+  0.147 µs  drop  release numbers.js:114
+  0.144 µs  fade  beginFade fade.js:187
+  0.130 µs  fade  dueOf due.js:185
+  0.093 µs  drop  releaseIn drop.js:90
+  0.087 µs  fade  schedule due.js:231
+  0.086 µs  drop  any placed.js:18
+  0.064 µs  fade  push due.js:25
+  0.060 µs  drop  forgot hosts.js:63
+  0.057 µs  fade  retire fade.js:343
+  0.054 µs  drop  dropIn drop.js:73
+  0.052 µs  drop  goneIndex gone.js:46
+  0.050 µs  drop  headOf chain.js:54
+  0.049 µs  drop  get store.js:20
+  0.047 µs  drop  same store.js:91
+  0.035 µs  drop  stir mixer.js:165
+  0.035 µs  drop  release lanes.js:219
+  0.030 µs  drop  release lives.js:25
+  0.029 µs  fade  fade handle.js:152
+  0.028 µs  drop  known motions.js:185
+  0.026 µs  drop  get filed.js:70
+  0.025 µs  drop  leaveVoice fade.js:104
+  0.023 µs  drop  forget motions.js:409
+  0.022 µs  fade  scoreTouched scored.js:73
+  0.021 µs  drop  unplace rows.js:18
+  0.016 µs  fade  nowFor now.js:3
+  0.013 µs  fade  noted history.js:62
+  0.013 µs  fade  play voice.js:330
+  0.011 µs  drop  leave history.js:302
+  0.010 µs  fade  get #cued handle.js:68
+  0.009 µs  fade  voiceChanged lanes.js:525
+  0.009 µs  fade  resolve voice.js:320
+  0.008 µs  drop  settle transport.js:66
+  0.008 µs  fade  asks fade.js:334
+  0.007 µs  fade  stir mixer.js:165
+  0.007 µs  fade  woke transport.js:177
+  0.006 µs  drop  subject numbers.js:73
+  0.006 µs  drop  releasing history.js:330
+  0.005 µs  fade  seatOf seat.js:21
+  0.005 µs  fade  settle transport.js:66
+  0.005 µs  fade  get turns voice.js:513

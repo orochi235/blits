@@ -35,11 +35,7 @@ export type {
 /** A value's axes as a new array: a number is one axis. */
 export const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);
 /** Zero on every axis `x` has: a motion's velocity where its options give none. */
-const still = (x: readonly number[]): number[] => {
-  const v: number[] = [];
-  for (let i = 0; i < x.length; i++) v.push(0);
-  return v;
-};
+const still = (x: readonly number[]): number[] => new Array<number>(x.length).fill(0);
 const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
   typeof p === 'function' ? (p as (s: I) => V)(subject) : p;
 const scalarOf = <I, V>(p: PerSubject<I, V>): boolean | undefined =>

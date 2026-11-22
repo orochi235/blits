@@ -83,18 +83,20 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   out, which boxes every number into a host's `{}` out; `mix.pose()` gives the unboxed shape.
 - **[agent] A role costs about 20% over its voices played apart, a blend about 33%** (teitou,
   2026-10-26); `runRole` covers the inline case, everything else gathers then folds.
-- **[agent] Starting 10k one-subject tweens** takes a 27.6 ms first frame against 12.6 for fn
-  voices (msb-uai, 2026-11-12, `node bench/start.mjs 10000 9 tweens fns`), and no one cost leads.
-  A crowded motion keeping its run in its crowd row (`Motions.lodge`) took it from 29.2
-  (`bench/runs/2026-11-12-motion-lodge-start-ab.txt`). Before that, a round's profile: building the
-  crowd (`regroup`, `join`) 4.3 ms, a motion patch's first stretch and buffer (`Motions.slot`) 4.6,
-  collection 5.4 against 3.2 for fns, and the lanes numbering each subject (a `WeakRef` and a
-  finalization registration) 2.0 for both forms (`bench/runs/2026-11-12-tween-start-tree.txt`).
-  Cutting `join`'s and `regroup`'s allocation did not move it, and a 64 MB young generation did
-  not cut collection (`runs/2026-11-12-tween-start-semispace.txt`). The first frame allocates 34 MB
-  against 17. What is left is per row: each crowd row's arrays, seat and `seats` entry, and the
-  first stretch `Motions.fresh` builds as objects before writing it into the row. `Voice`'s boxed
-  doubles are made at cue, outside this frame.
+- **[agent] Starting 10k one-subject tweens** takes a 28–31 ms first frame against 12–12.5 for fn
+  voices (msb-uai, 2026-11-21, three processes of `node bench/start.mjs 10000 9 tweens fns`,
+  `bench/runs/2026-11-21-row-alloc-start.txt`), and no one cost leads. The first frame allocates
+  34 MB against 17. What tweens spend that fns don't, in a round's profile (teitou, 2026-11-21,
+  `runs/2026-11-21-row-alloc-start-tree.txt`): rebuilding the crowd (`regroup` 3.1 ms, of it
+  `join` 2.4) and `requalify`'s own share of it, the general path's first sample of each subject
+  (`moved` 2.7 against 1.3 for fns' `contribution`, of it `Motions.fresh` 0.9), and collection
+  5.0 against 3.2. Allocation that dies young is not the lever, measured three ways: cutting
+  `join`'s and `regroup`'s, a 64 MB young generation (`runs/2026-11-12-tween-start-semispace.txt`),
+  and writing the first stretch straight into its run with no stretch object (31.8 against 31.7 ms,
+  `runs/2026-11-21-row-alloc-fresh-direct-ab.txt`; its bytes only moved to `moved`). Left: the
+  rebuild's work itself, and what survives per row (crowd arrays, `Seat`, the `seats` entry),
+  which a scavenge copies; the second is inferred, not measured. `Voice`'s boxed doubles are made
+  at cue, outside this frame.
 - **[agent] Cueing a staggered voice naming 1M subjects takes 35 ms on the stock mixer, 41 on
   the gpu engine** (teitou, Chromium, 60 cues a row, `bench/runs/2026-11-21-named-places.txt`,
   2026-11-21), down from 71 and 76 by `Named` keeping one map of places in place of a `Set` and a
@@ -102,8 +104,16 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   1M places and the stagger asked per subject. The rest of `cue`, inlined so the profile can't
   split it, is a third, and collection 7–13%. The gpu engine's share is about 5 ms: the level
   hash (4.1 ms in Chromium) and the codes buffer (0.15 ms). `bench/gpu-cue.mjs` times it.
-- **[agent] A stop grows with N** (0.61 µs at 1,000 subjects, 2.92 at 40,000) though nothing walks
-  more; inferred to be first touches of each object of the voice and each array of its crowd row.
+- **[agent] A stop grows with N** (0.52 µs at 1,000 subjects, 1.46 at 10,000, 2.41 at 40,000;
+  msb-uai, 2026-11-21, `bench/runs/2026-11-21-row-alloc-restart.txt`) though nothing walks more.
+  Every part of it grows, none by much more than the rest (`bench/stopparts.mjs`,
+  `runs/2026-11-21-row-alloc-stopparts.txt`; `bench/stopprof.sh`,
+  `runs/2026-11-21-row-alloc-stopprof.txt`): the fade 0.36 to 1.03 µs, `Numbers.release` 0.33 to
+  0.96, `Lanes.forget` 0.06 to 0.29, the map deletes in `drop` (`Store.delete`) 0.02 to 0.25. The
+  bench's own swap-remove, which indexes two arrays and nothing else, grows 0.04 to 0.27 µs too, so
+  the growth is cold memory, each distinct object and map a stop touches costing a miss (inferred
+  from that, not counted). A lever would be fewer of them per subject, such as one record holding
+  what `chains`, `lastPoses` and `restStamps` keep by subject in maps of their own. Not tried.
 - **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
   it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
   the benches still cue the deprecated `lerp: 'oklch'`.
