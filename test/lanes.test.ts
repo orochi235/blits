@@ -2470,6 +2470,24 @@ describe('a role of keys and fn voices runs on lanes and folds as the general pa
     expect(inline.some((r) => r.length === 3 && r[0] && r[1] && !r[2])).toBe(true);
   });
 
+  it('for a role with a member yet to start and one done', () => {
+    agree(
+      (m) => {
+        const handles = [
+          m.cue({ patch: flicker(1), role: 'r', start: 200, fade: { in: 50 } }),
+          m.cue({ patch: sweep, role: 'r', weight: 0.6 }),
+          m.cue({ patch: flicker(2), role: 'r', weight: 1.3, fade: { in: 90 } }),
+          m.cue({ patch: flicker(3), role: 'r', weight: 0.5 }),
+        ];
+        const at = (t: number) => {
+          if (t === 250) handles[3]?.fade({ over: 0 });
+        };
+        return { handles, at };
+      },
+      { times: ramp, parts: 40 },
+    );
+  });
+
   it('fills a blend from the lanes', () => {
     const m = mix<Part, Pose>(K, { lanes: true });
     const parts = Array.from({ length: 6 }, (_, id) => ({ id }));

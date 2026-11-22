@@ -88,7 +88,14 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   `runs/2026-11-21-swap-baseline.txt`), a host's cost. No one part leads, and each left is 1–3%
   a line, under the row's run-to-run spread (inferred from the profile, not timed apart).
 - **[agent] A role costs about 20% over its voices played apart, a blend about 33%** (teitou,
-  2026-10-26); `runRole` covers the inline case, everything else gathers then folds.
+  2026-10-26). Both bench rows already run inline (`runRole`). A profile of `fn:10000:3`, `role`,
+  `signal` and `blend` (msb-uai, 2026-11-21, 3 runs each, `bench/runs/2026-11-21-role-prof.txt`)
+  puts the role's extra time in gathering and folding (`runRole`, `gatherScalar`, `meetRole`,
+  `foldAt`, together about 19% of its samples) and in more samples landing in the patch itself
+  (22% against 18%; why is not found). A blend costs what `signal` does: its extra over three
+  plain voices is the signal (`by`, `signalled`, `base`), which the host writes. Running inline past
+  a member yet to start was backed out (bench/README.md), and clearing `taken` once and dropping
+  `meetRole` from the inline route had been (2026-10-26).
 - **[agent] Starting 10k one-subject tweens** takes a 28–31 ms first frame against 12–12.5 for fn
   voices (msb-uai, 2026-11-21, three processes of `node bench/start.mjs 10000 9 tweens fns`,
   `bench/runs/2026-11-21-row-alloc-start.txt`), and no one cost leads. The first frame allocates
@@ -120,9 +127,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   the growth is cold memory, each distinct object and map a stop touches costing a miss (inferred
   from that, not counted). A lever would be fewer of them per subject, such as one record holding
   what `chains`, `lastPoses` and `restStamps` keep by subject in maps of their own. Not tried.
-- **[agent] `ink()` folds on lanes through its channel's `fold`**, a call per contribution; folding
-  it as a five-axis sum needs the widening wherever a lane reads a contribution as numbers. Unmeasured;
-  the benches still cue the deprecated `lerp: 'oklch'`.
 - **[agent] A voice leaving the general path still requalifies every voice where a voice still
   present writes one of its channels, and so does a role member leaving a lane.** A requalify
   costs 1.4 to 2.9 ms at 10,000 crowded voices (`bench/requalify.mjs` `direct`, teitou, a shared

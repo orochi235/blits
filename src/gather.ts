@@ -1,7 +1,7 @@
 import { inside, leave, meetBound } from './bound.js';
 import { foldNumber, lerpNumber } from './channels.js';
 import { grown } from './grow.js';
-import { Arg, type Lane, type Laned, type Role, Row } from './lane.js';
+import { Arg, type Lane, type Laned, type Role, Row, WIDENED } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Subject } from './subject.js';
 import { foldTurn, gatherTurn, shortWay, turnFrom, turnInto, turnToward } from './turns.js';
@@ -370,8 +370,8 @@ export function foldInto<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value
   }
   const base = slot * ch.axes;
   // Indexed as `vec`'s fold indexes it, so a typed array folds as an array does.
-  const arr =
-    Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
+  let arr = Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
+  if (ch.widen !== null && arr !== null) arr = ch.widen(arr, WIDENED);
   for (let a = 0; a < ch.axes; a++) {
     const v = arr === null ? ch.rest : (arr[a] ?? ch.rest);
     values[base + a] = foldNumber(ch.op, values[base + a] as number, v, w);

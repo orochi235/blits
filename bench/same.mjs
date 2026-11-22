@@ -84,8 +84,9 @@ function run(lib, seed, general = false, left = none, kept = null) {
     pos: lib.vec(3, lib.sum()),
     color: lib.last({ lerp: lib.mixHex }),
     tag: lib.last(),
-    // A build from before `color` lacks it, and its scenes then write no hue.
-    ...(lib.color ? { hue: lib.color({ lerp: 'oklch' }) } : {}),
+    // A build from before `color` lacks it, and its scenes then write no hue. One before `ink`
+    // (v0.16.0) writes it to `color({ lerp: 'oklch' })`, so its hues differ from a later build's.
+    ...(lib.ink ? { hue: lib.ink() } : lib.color ? { hue: lib.color({ lerp: 'oklch' }) } : {}),
   });
   // Drawn apart from `r`, so a scene with a hue is otherwise the scene it was without one.
   const hr = rng(seed ^ 0x0c1c);

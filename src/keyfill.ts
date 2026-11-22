@@ -1,7 +1,7 @@
 import { foldNumber } from './channels.js';
 import { clampWeight, frozenTime, phaseAt, same, weighed } from './clock.js';
 import { unband } from './fold.js';
-import { Arg, keepProbed, type Lane, type Laned, Per, Row } from './lane.js';
+import { Arg, keepProbed, type Lane, type Laned, Per, Row, WIDENED } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { shortWay } from './turns.js';
 
@@ -125,8 +125,9 @@ function flatten(
       kinds[i] = Kind.NUMBERS;
       if (ch.scalar) nums[k] = value as number;
       else {
-        const arr =
+        let arr =
           Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
+        if (ch.widen !== null && arr !== null) arr = ch.widen(arr, WIDENED);
         for (let a = 0; a < ch.axes; a++)
           nums[k + a] = arr === null ? ch.rest : (arr[a] ?? ch.rest);
       }

@@ -1,0 +1,250 @@
+diff --git a/src/channels.ts b/src/channels.ts
+index 3ed6a14d..b703e981 100644
+--- a/src/channels.ts
++++ b/src/channels.ts
+@@ -43,8 +43,16 @@ export interface Numeric {
+    * it as the op and lerps it through the channel. A copy that predates it folds it as `'own'`.
+    */
+   folds?: 'sum';
++  /**
++   * An `'own'` channel that folds as a sum of each contribution widened to its axes by this, as
++   * `ink` widens a color with its chroma. A copy that predates it folds it as `'own'`.
++   */
++  widens?: Widen;
+ }
+ 
++/** A contribution's numbers widened to its channel's axes, into `out` or an array of its own. */
++export type Widen = (v: ArrayLike<number>, out: number[]) => ArrayLike<number>;
++
+ /** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */
+ const add = (a: number, b: number): number => a + b;
+ export const times = (v: number, w: number): number => v * w;
+diff --git a/src/color.ts b/src/color.ts
+index 0676de19..d115172d 100644
+--- a/src/color.ts
++++ b/src/color.ts
+@@ -1,5 +1,5 @@
+ import { blendCss, blendHex, blending, modeOf } from './blend-modes.js';
+-import { doubles, lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
++import { doubles, lerpNumber, numericOf, sum, vec, vouch, type Widen, widen } from './channels.js';
+ import { CANCEL, HUES, lchPair, shortWay } from './lch.js';
+ import { fromLab, LAB, lab } from './oklab.js';
+ import type { Channel } from './types.js';
+@@ -202,6 +202,9 @@ export function color(
+   throw refuse('color', own);
+ }
+ 
++/** A contribution as ink's five numbers, as a lane widens it to fold as a sum. */
++const inkedOnce: Widen = (v, out) => inked(v, 1, out);
++
+ /** Where `ink`'s merge and fold widen a contribution, which neither keeps. */
+ const WIDE = doubles(5, 0);
+ 
+@@ -246,7 +249,7 @@ export function ink(of?: Channel<number> | Channel<unknown>): Channel<number[]>
+     },
+     lerp: lerpInk,
+   };
+-  vouch(channel, { op: 'own', axes: 5 });
++  vouch(channel, { op: 'own', axes: 5, widens: inkedOnce });
+   return channel;
+ }
+ 
+diff --git a/src/fill.ts b/src/fill.ts
+index 3394ac6f..77c8ddae 100644
+--- a/src/fill.ts
++++ b/src/fill.ts
+@@ -243,7 +243,7 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
+   const g = lane.group;
+   if (g !== null) {
+     if (!g.inline) foldRole(this, lane, g);
+-    else if (lane === g.members[0]) runRole(this, g);
++    else if (lane === g.playing[0]) runRole(this, g);
+     return;
+   }
+   this.reset(lane);
+diff --git a/src/gather.ts b/src/gather.ts
+index 1cd3c6b1..e087cdac 100644
+--- a/src/gather.ts
++++ b/src/gather.ts
+@@ -1,7 +1,7 @@
+ import { inside, leave, meetBound } from './bound.js';
+ import { foldNumber, lerpNumber } from './channels.js';
+ import { grown } from './grow.js';
+-import { Arg, type Lane, type Laned, type Role, Row } from './lane.js';
++import { Arg, type Lane, type Laned, type Role, Row, WIDENED } from './lane.js';
+ import type { Lanes } from './lanes.js';
+ import type { Subject } from './subject.js';
+ import { foldTurn, gatherTurn, shortWay, turnFrom, turnInto, turnToward } from './turns.js';
+@@ -188,31 +188,43 @@ function foldAt<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, slot: number): void {
+ }
+ 
+ /**
+- * Whether a fill can run a role a subject at a time: every member playing, on its lane, keeping
+- * no state, and over the same subjects in the same places, with no other voice between them.
++ * Whether a fill can run a role a subject at a time, filling `g.playing`: every member it would
++ * gather keeping no state, and over the same subjects in the same places, with no other voice
++ * between them. A member yet to start, done or idle is passed over, as `gatherRole` passes it.
+  */
+ function inlined<I, O>(g: Role<I, O>): boolean {
++  const playing = g.playing;
++  const at = g.playingAt;
++  playing.length = 0;
++  at.length = 0;
+   if (!g.contiguous) return false;
+-  const members = g.members;
+-  const list = (members[0] as Lane<I, O>).list;
+-  for (const lane of members) {
++  let list: number[] | null = null;
++  for (let i = 0; i < g.members.length; i++) {
++    const lane = g.members[i] as Lane<I, O>;
+     const voice = lane.voice;
+-    if (lane.idle || voice.keeping || voice.state === 'pending' || voice.state === 'done')
+-      return false;
++    if (lane.idle || voice.state === 'pending' || voice.state === 'done') continue;
++    if (voice.keeping) return false;
++    playing.push(lane);
++    at.push(i);
+     const own = lane.list;
+-    if (own === list) continue;
++    if (list === null || own === list) {
++      list = own;
++      continue;
++    }
+     if (own.length !== list.length) return false;
+     for (let p = 0; p < list.length; p++) if (own[p] !== list[p]) return false;
+   }
+-  return true;
++  return list !== null;
+ }
+ 
+ /**
+- * An inlined role at its first member's turn: each subject's members gathered in voice order, as
+- * `gatherRole` gathers them, then folded at once, with no pass of its own and no array of sums.
++ * An inlined role at its first playing member's turn: each subject's members gathered in voice
++ * order, as `gatherRole` gathers them, then folded at once, with no pass of its own and no array
++ * of sums.
+  */
+ export function runRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
+-  const members = g.members;
++  const members = g.playing;
++  const at = g.playingAt;
+   const arg = lanes.arg;
+   for (const lane of members) {
+     lanes.reset(lane);
+@@ -238,7 +250,7 @@ export function runRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
+         }
+         // Each lane's placing is numbered on its own; the last member placed left its number.
+         arg[Arg.MARK] = lane.mark;
+-        lanes.intoMember = i;
++        lanes.intoMember = at[i] as number;
+         if (lanes.one(lane, p, slot)) {
+           meetRole(lanes, g, slot);
+           sum += lane.data[p * Row.STRIDE + Row.WEIGHT] as number;
+@@ -370,8 +382,8 @@ export function foldInto<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value
+   }
+   const base = slot * ch.axes;
+   // Indexed as `vec`'s fold indexes it, so a typed array folds as an array does.
+-  const arr =
+-    Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
++  let arr = Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
++  if (ch.widen !== null && arr !== null) arr = ch.widen(arr, WIDENED);
+   for (let a = 0; a < ch.axes; a++) {
+     const v = arr === null ? ch.rest : (arr[a] ?? ch.rest);
+     values[base + a] = foldNumber(ch.op, values[base + a] as number, v, w);
+diff --git a/src/keyfill.ts b/src/keyfill.ts
+index ec52de5a..2ac050ab 100644
+--- a/src/keyfill.ts
++++ b/src/keyfill.ts
+@@ -1,7 +1,7 @@
+ import { foldNumber } from './channels.js';
+ import { clampWeight, frozenTime, phaseAt, same, weighed } from './clock.js';
+ import { unband } from './fold.js';
+-import { Arg, keepProbed, type Lane, type Laned, Per, Row } from './lane.js';
++import { Arg, keepProbed, type Lane, type Laned, Per, Row, WIDENED } from './lane.js';
+ import type { Lanes } from './lanes.js';
+ import { shortWay } from './turns.js';
+ 
+@@ -125,8 +125,9 @@ function flatten(
+       kinds[i] = Kind.NUMBERS;
+       if (ch.scalar) nums[k] = value as number;
+       else {
+-        const arr =
++        let arr =
+           Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
++        if (ch.widen !== null && arr !== null) arr = ch.widen(arr, WIDENED);
+         for (let a = 0; a < ch.axes; a++)
+           nums[k + a] = arr === null ? ch.rest : (arr[a] ?? ch.rest);
+       }
+diff --git a/src/lane.ts b/src/lane.ts
+index 918e8c00..1af9a2ec 100644
+--- a/src/lane.ts
++++ b/src/lane.ts
+@@ -1,5 +1,5 @@
+ import { unbareLane } from './bare.js';
+-import type { Numeric } from './channels.js';
++import { doubles, type Numeric, type Widen } from './channels.js';
+ import { grown, grownInts } from './grow.js';
+ import { motionOf } from './motion.js';
+ import type { Motions } from './motions.js';
+@@ -18,6 +18,8 @@ export interface Laned {
+   plain: boolean;
+   /** A plain channel's values lerp straight across each axis, not through the channel's `lerp`. */
+   straight: boolean;
++  /** Widens a contribution to the channel's axes before it folds as numbers, as `ink`'s does. */
++  widen: Widen | null;
+   /** An angle's full turn, and 0 for any other channel. */
+   turn: number;
+   /** The channel, whose own `fold` and `lerp` an `'own'` lane calls. */
+@@ -53,8 +55,12 @@ export interface Role<I, O> {
+   turnWeights: (Float64Array | undefined)[];
+   /** No other laned or crowded voice falls between its members in voice order, as qualify found. */
+   contiguous: boolean;
+-  /** This fill runs it a subject at a time at its first member's turn, folding each as it goes. */
++  /** This fill runs it a subject at a time at its first playing member's turn, folding each as it goes. */
+   inline: boolean;
++  /** The members an inlined role runs this fill, in voice order: those `gatherRole` would gather. */
++  playing: Lane<I, O>[];
++  /** Each playing member's place among `members`. */
++  playingAt: number[];
+ }
+ 
+ /**
+@@ -145,6 +151,9 @@ export const enum Per {
+   LANE_FILL = 5,
+ }
+ 
++/** Where a lane widens a contribution, read at once and never kept. */
++export const WIDENED = doubles(5, 0);
++
+ /**
+  * Below what share of its subjects probed last frame a lane stops filling, and above what share it
+  * fills again; between the two it keeps doing what it did, so a host near the line does not flip
+diff --git a/src/qualify.ts b/src/qualify.ts
+index 54780c55..8dd4ee2c 100644
+--- a/src/qualify.ts
++++ b/src/qualify.ts
+@@ -143,6 +143,8 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
+         turnWeights: [],
+         contiguous: false,
+         inline: false,
++        playing: [],
++        playingAt: [],
+       };
+       roles.set(name, g);
+       lanes.roles.push(g);
+@@ -191,12 +193,13 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
+     // A rest-less channel's values are NaN until some voice passes the band: absent from the pose.
+     const rest = (channel.rest ?? Number.NaN) as number | number[];
+     const scalar = typeof rest === 'number' && n.axes === 1;
+-    const op = n.folds ?? n.op;
++    const op = n.folds ?? (n.widens === undefined ? n.op : 'sum');
+     const ch: Laned = {
+       name: host.names[slot] as string,
+       op,
+       plain: op !== 'last' && op !== 'own' && n.turn === undefined,
+-      straight: n.folds === undefined,
++      straight: n.folds === undefined && n.widens === undefined,
++      widen: n.widens ?? null,
+       turn: n.turn ?? 0,
+       channel,
+       scalar,

@@ -69,6 +69,11 @@ the machine being used.
   ms; 1.23–1.26 or 1.41–1.51 ms). Six runs a side at least.
 - **Rows run earlier in one process change a later row's numbers** (the heap a 100k row grew):
   `AB_EACH=1 bench/ab.sh` runs each row in its own process.
+- **`glowo`, `glowokeys` and `hues` cue `ink()` from 2026-11-21**, not the deprecated
+  `color({ lerp: 'oklch' })`, so their ledger rows before then measured another channel, and a build
+  before v0.16.0, which has no `ink`, cannot run them. On one build `ink()` read `hues` 17% and
+  `hues^` 46% slower than the old channel, before ink folded as a sum
+  (`runs/2026-11-21-ink-fold-sum.txt`).
 - **The heatmap stress demo plays a lanes twin**, so profile `bench/heatmap.mjs` with
   `bench/heatprof.sh` (`INLINE=off`, `LINES`, `CALLERS`), not `bench/stressprof.sh heatmap`.
 
@@ -128,6 +133,7 @@ rows where one was timed.
 | Building records with a class (`new`) | layout and time unchanged |
 | A segment lookup shared by keys tracks whose stops sit at the same phases: a 256-slot memo, phase to segment, on a timing interned across patches (2026-11-11) | 98% of the stress rig's searches hit it, yet `read` p50 0.955 against 0.953 ms without (teitou, 7 rounds, `runs/2026-11-11-timing-memo-ab/`): a 9-stop binary search costs what the lookup does |
 | Folding the lane signal read: `call` skipping its second `primeLaned` after `host.signal`, which calls the signal without `base` (2026-11-12) | heatmap lanes `pull` 5.216 against 5.248 ms (studio, 7 rounds, `runs/2026-11-12-heatmap-signal-fold-ab.txt`); `one`'s self time moved to the next line, so it is not call overhead |
+| Running a role inline past members yet to start, done or idle, not only when every member plays (2026-11-21) | `rolewait` 3.797 against 3.679 ms, U 20 at 9 rounds on a shared node; gathering then folding costs about what inline does there (`runs/2026-11-21-role-inline-waiting.{txt,diff}`, the diff also holding the ink change) |
 | Touching every record a lane reads in a pass before its loop, to take a suspected cache miss out of `one` (2026-11-21) | heatmap lanes `pull` 3.800 against 3.709 ms, slower (msb-uai, 5 rounds, `runs/2026-11-21-heatmap-signal-split.txt`) |
 
 A lane switching a band off at weight 0 costs the `glowl` rows about 3% (teitou, 2026-10-10,
