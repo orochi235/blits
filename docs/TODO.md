@@ -64,17 +64,22 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   merge on main, read within spread of the base, so no commit carries it. Any real effect is under
   about 2%, less than one build's run-to-run spread on this row (7–11 ms). Reopen only if a new
   run reads it above 3% again.
-- **[agent] Heatmap `pull` reads 5.2 ms with lanes, 3.9 without** (5,000 retargeted springs and
-  three `ink` voices weighted by `input` signals; studio, 7 rounds,
-  `bench/runs/2026-11-12-heatmap-signal-fold-ab.txt`). The 14% `one` spends on its lines calling
-  `signalled` is not call overhead: folding the layers under it (no second `primeLaned` in `call`,
-  the signal called without `base`) read 5.216 against 5.248 ms, within spread, and that self time
-  moved onto the next line, `data[o + Row.WEIGHT] = w` (8.9% and 5.4% on the call lines before,
-  7.7% on the store after; `bench/runs/2026-11-12-heatmap-lanes-profile.txt`) (2026-11-12). It
-  looks like a stall, perhaps a cache miss on a subject's record or on the signal's own reads, that
-  lands on whatever runs next (inferred, not measured). Next: hardware counters or a per-load split
-  of `one`'s signal branch, not another fold. Profile with `bench/heatprof.sh`, not the stress
-  demo, which plays a lanes twin.
+- **[agent] Heatmap `pull` reads 20–33% slower with lanes than without** (5,000 retargeted
+  springs and three `ink` voices weighted by `input` signals: 5.2 against 3.9 ms on studio,
+  `bench/runs/2026-11-12-heatmap-signal-fold-ab.txt`; 3.71 against 3.09 on msb-uai,
+  `bench/runs/2026-11-21-heatmap-signal-split.txt`). Little of it is `one`'s signal branch, and
+  nothing in that branch stalls. A per-load split on msb-uai (5 rounds, switches in
+  `runs/2026-11-21-heatmap-signal-split.diff`, measured) put the whole branch at about 0.33 of
+  3.86 ms, spread over its ordinary work: the signal call and replay check about 0.11, the
+  `primeLaned` in `host.signal` about 0.15, `signalled`'s own entry about 0.07. Touching every
+  record before the loop made it 0.09 ms slower, not faster (`runs/2026-11-21-heatmap-signal-split{,2}.txt`)
+  (2026-11-21). The 14% the 2026-11-12 studio profile put on the `signalled` lines did not recur
+  on msb-uai (1.2% on that line, 1.4% on the weight store), so it reads as where the profiler
+  pinned inlined code, not a cost of its own (inferred). Const weights, which fold every band,
+  still read 3.42 ms on lanes against 3.09 off (measured), so most of the gap is outside the
+  signal. Next: split that remainder (`call`'s `host.ready` and `foldDelta`, `numbers` and
+  `subject`, which lead the profile) on `spring/const/ink/on` against `off`. Profile with
+  `bench/heatprof.sh`, not the stress demo, which plays a lanes twin.
 - **[agent] A host probing into its own object under `retargets: true`** keeps two poses a
   subject in `Probes` (`src/trail.ts`), costing a 10,000-subject probe frame 35–70%, spread with no
   hot spot (`bench/runs/2026-11-08-probes-ab.txt`).

@@ -1,0 +1,96 @@
+# msb-uai (Apple M3 Max), onto task blits-heatsplit2 (--solo, same build): bench/heatsplit.sh 5 with switches 0 11 4 8 9 7 on spring/input/ink/on, then BLITS_EXP=0 and 9 with FRAMES=3000 LINES=one bench/heatprof.sh. Every frame is in 2026-11-21-heatmap-signal-split2.jsonl.
+# node msb-uai.local
+1/30 round 1 exp 0  1/1  spring/input/ink/on     read p50   3.911 ms  p90   4.618  step p50   0.893  load 3.36
+2/30 round 1 exp 11  1/1  spring/input/ink/on     read p50   3.860 ms  p90   4.768  step p50   0.894  load 3.33
+3/30 round 1 exp 4  1/1  spring/input/ink/on     read p50   3.747 ms  p90   4.506  step p50   0.890  load 3.30
+4/30 round 1 exp 8  1/1  spring/input/ink/on     read p50   3.696 ms  p90   4.619  step p50   0.932  load 3.30
+5/30 round 1 exp 9  1/1  spring/input/ink/on     read p50   3.527 ms  p90   4.359  step p50   0.928  load 3.52
+6/30 round 1 exp 7  1/1  spring/input/ink/on     read p50   3.682 ms  p90   4.400  step p50   0.810  load 3.40
+7/30 round 2 exp 11  1/1  spring/input/ink/on     read p50   3.835 ms  p90   4.751  step p50   0.896  load 3.40
+8/30 round 2 exp 4  1/1  spring/input/ink/on     read p50   3.723 ms  p90   4.645  step p50   0.927  load 3.28
+9/30 round 2 exp 8  1/1  spring/input/ink/on     read p50   3.492 ms  p90   4.223  step p50   0.851  load 3.28
+10/30 round 2 exp 9  1/1  spring/input/ink/on     read p50   3.559 ms  p90   4.488  step p50   0.858  load 3.58
+11/30 round 2 exp 7  1/1  spring/input/ink/on     read p50   3.685 ms  p90   4.673  step p50   0.904  load 3.69
+12/30 round 2 exp 0  1/1  spring/input/ink/on     read p50   3.952 ms  p90   4.860  step p50   0.922  load 3.69
+13/30 round 3 exp 4  1/1  spring/input/ink/on     read p50   3.747 ms  p90   4.644  step p50   0.886  load 3.48
+14/30 round 3 exp 8  1/1  spring/input/ink/on     read p50   3.596 ms  p90   4.609  step p50   0.930  load 3.44
+15/30 round 3 exp 9  1/1  spring/input/ink/on     read p50   3.420 ms  p90   4.378  step p50   0.911  load 3.44
+16/30 round 3 exp 7  1/1  spring/input/ink/on     read p50   3.705 ms  p90   4.450  step p50   0.890  load 3.32
+17/30 round 3 exp 0  1/1  spring/input/ink/on     read p50   3.835 ms  p90   4.783  step p50   0.954  load 3.22
+18/30 round 3 exp 11  1/1  spring/input/ink/on     read p50   3.866 ms  p90   4.722  step p50   0.878  load 3.22
+19/30 round 4 exp 8  1/1  spring/input/ink/on     read p50   3.575 ms  p90   4.337  step p50   0.996  load 3.28
+20/30 round 4 exp 9  1/1  spring/input/ink/on     read p50   3.588 ms  p90   4.542  step p50   0.943  load 3.26
+21/30 round 4 exp 7  1/1  spring/input/ink/on     read p50   3.909 ms  p90   4.588  step p50   0.940  load 3.26
+22/30 round 4 exp 0  1/1  spring/input/ink/on     read p50   3.667 ms  p90   4.439  step p50   0.900  load 3.24
+23/30 round 4 exp 11  1/1  spring/input/ink/on     read p50   3.870 ms  p90   4.892  step p50   0.854  load 3.24
+24/30 round 4 exp 4  1/1  spring/input/ink/on     read p50   3.833 ms  p90   4.563  step p50   0.911  load 3.46
+25/30 round 5 exp 9  1/1  spring/input/ink/on     read p50   3.428 ms  p90   4.275  step p50   0.870  load 3.26
+26/30 round 5 exp 7  1/1  spring/input/ink/on     read p50   3.764 ms  p90   4.472  step p50   0.914  load 3.26
+27/30 round 5 exp 0  1/1  spring/input/ink/on     read p50   3.663 ms  p90   4.590  step p50   0.850  load 3.32
+28/30 round 5 exp 11  1/1  spring/input/ink/on     read p50   3.780 ms  p90   4.759  step p50   0.943  load 3.13
+29/30 round 5 exp 4  1/1  spring/input/ink/on     read p50   4.219 ms  p90   4.951  step p50   1.064  load 3.13
+30/30 round 5 exp 8  1/1  spring/input/ink/on     read p50   4.061 ms  p90   4.960  step p50   1.038  load 3.28
+=== profile BLITS_EXP=0
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   3.893 ms  p90   4.737  step p50   0.873  load 2.85
+total 14907.0 ms
+   1183.7 ms   7.9%  one fill.js:331
+   1135.7 ms   7.6%  numbers stretch.js:4
+    641.8 ms   4.3%  subject numbers.js:73
+    471.5 ms   3.2%  runMotion sample.js:13
+    422.4 ms   2.8%  signalled fill.js:193
+    404.3 ms   2.7%  call fill.js:485
+    390.5 ms   2.6%  commit changes.js:155
+    365.6 ms   2.5%  change changes.js:12
+    346.4 ms   2.3%  (garbage collector)
+    333.8 ms   2.2%  base weigh.js:115
+    319.0 ms   2.1%  prepare closed.js:25
+    306.8 ms   2.1%  get store.js:20
+    274.7 ms   1.8%  primeLaned weigh.js:29
+    272.3 ms   1.8%  readAll pull.js:143
+    272.2 ms   1.8%  has named.js:54
+one  fill.js
+  1.4%    391  data[o + 2 /* Row.WEIGHT */] = w;
+  1.2%    382  else if (!this.signalled(voice, slot, lane.records[p])) {
+  0.8%    434  return this.call(voice, lane.chans, rec, slot);
+  0.7%    387  w = arg[0 /* Arg.WEIGHT */];
+  0.4%    338  keepProbed(data, o, this.per, slot * 6 /* Per.SLOT */, this.fills);
+  0.4%    360  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  0.3%    395  this.rec = lane.records[p] ?? null;
+  0.3%    379  if (EXP === 9) {
+  0.2%    393  unband(lane.records[p]);
+  0.2%    430  return true;
+  0.2%    331  export function one(lane, p, slot) {
+  0.2%    348  : raw > voice.span
+=== profile BLITS_EXP=9
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   3.652 ms  p90   4.513  step p50   0.980  load 2.75
+total 14300.9 ms
+   1185.9 ms   8.3%  numbers stretch.js:4
+    798.6 ms   5.6%  one fill.js:331
+    673.5 ms   4.7%  subject numbers.js:73
+    581.2 ms   4.1%  call fill.js:485
+    474.8 ms   3.3%  runMotion sample.js:13
+    470.0 ms   3.3%  change changes.js:12
+    385.7 ms   2.7%  commit changes.js:155
+    357.9 ms   2.5%  (garbage collector)
+    319.6 ms   2.2%  prepare closed.js:25
+    311.8 ms   2.2%  get store.js:20
+    272.9 ms   1.9%  has named.js:54
+    271.8 ms   1.9%  readAll pull.js:143
+    258.2 ms   1.8%  prune lives.js:159
+    254.2 ms   1.8%  closed closed.js:165
+    232.9 ms   1.6%  next heatmap.mjs:48
+one  fill.js
+  0.8%    434  return this.call(voice, lane.chans, rec, slot);
+  0.6%    380  arg[0 /* Arg.WEIGHT */] = weighed(pre.w[slot] * voice.weight, lane.fade, 1);
+  0.6%    395  this.rec = lane.records[p] ?? null;
+  0.5%    338  keepProbed(data, o, this.per, slot * 6 /* Per.SLOT */, this.fills);
+  0.3%    430  return true;
+  0.3%    360  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  0.2%    379  if (EXP === 9) {
+  0.2%    348  : raw > voice.span
+  0.2%    391  data[o + 2 /* Row.WEIGHT */] = w;
+  0.2%    368  const since = data[o + 1 /* Row.SINCE */];
+  0.2%    331  export function one(lane, p, slot) {
+  0.1%    369  if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
