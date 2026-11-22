@@ -170,5 +170,5 @@ for (let r = 0; r < rounds; r++)
 const fs = await import('node:fs');
 fs.writeFileSync(
   process.env.OUT ?? 'levels-hash.jsonl',
-  rec.map((x) => JSON.stringify(x)).join('\n') + '\n',
+  `${rec.map((x) => JSON.stringify(x)).join('\n')}\n`,
 );
