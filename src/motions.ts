@@ -627,6 +627,28 @@ export class Motions<I> {
     this.evaluate(seg.at, seg.ms, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo);
   }
 
+  /** `evaluateSegment` of `latest(s)`, read from the run without building it. */
+  evaluateLatest(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
+    const runs = this.runs;
+    const b = this.base(s);
+    const x = b + RunField.X0;
+    const n = this.n;
+    const at = runs[b + RunField.AT] as number;
+    this.evaluate(
+      at,
+      runs[b + RunField.MS] as number,
+      runs,
+      x,
+      runs,
+      x + n,
+      runs,
+      x + 2 * n,
+      t,
+      xo,
+      vo,
+    );
+  }
+
   private evaluate(
     at: number,
     ms: number,

@@ -1,0 +1,94 @@
+diff --git a/src/changes.ts b/src/changes.ts
+index 55fa0735..2936a1b2 100644
+--- a/src/changes.ts
++++ b/src/changes.ts
+@@ -1,3 +1,4 @@
++import { inc } from './cnt.js';
+ import { type Motions, RunField } from './motions.js';
+ import { absent } from './numbers.js';
+ import { reading } from './reading.js';
+@@ -164,6 +165,7 @@ export function applied<I>(
+ }
+ 
+ export function commit<I>(this: Motions<I>, s: number, t: number): void {
++  inc('commit');
+   const list = (this.pending as Change[][])[s] as Change[];
+   // The first read of a subject no frame had met: those waiting for a time take this one.
+   if ((list[list.length - 1] as Change).at === undefined) {
+@@ -188,6 +190,7 @@ export function commit<I>(this: Motions<I>, s: number, t: number): void {
+ }
+ 
+ export function insert<I>(this: Motions<I>, s: number, seg: Segment): void {
++  inc('insert');
+   let list = this.older?.[s];
+   if (list === undefined) {
+     list = [];
+diff --git a/src/contribution.ts b/src/contribution.ts
+index 19a1e3f1..bad726b4 100644
+--- a/src/contribution.ts
++++ b/src/contribution.ts
+@@ -1,3 +1,4 @@
++import { inc } from './cnt.js';
+ import { inBound } from './bound.js';
+ import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
+ import { copy as copyValue } from './clone.js';
+@@ -67,6 +68,7 @@ export function contribution<I, O>(
+   now: number,
+   held: Subject<unknown>,
+ ): Record<string, unknown> | null {
++  inc(String(voice.id));
+   held.weight = 0;
+   if (!held.reaches) return null;
+   // Outside its bound the signal reads 0 unread. What a read at weight 0 still does is done there:
+diff --git a/src/lives.ts b/src/lives.ts
+index 00a29169..7c7c9ebe 100644
+--- a/src/lives.ts
++++ b/src/lives.ts
+@@ -1,3 +1,4 @@
++import { inc } from './cnt.js';
+ import { type Cut, within } from './cut.js';
+ import { type Motions, RunField } from './motions.js';
+ import { absent } from './numbers.js';
+@@ -178,6 +179,7 @@ export function made<I>(this: Motions<I>, c: Change | undefined): { at: number;
+ 
+ /** Lets go of stretches older than the one in force at `reading.horizon`. */
+ export function prune<I>(this: Motions<I>, s: number): void {
++  inc('prune');
+   const list = this.older?.[s];
+   if (list === undefined) return;
+   let n = 0;
+diff --git a/src/sample.ts b/src/sample.ts
+index 73748759..e6e8bdff 100644
+--- a/src/sample.ts
++++ b/src/sample.ts
+@@ -6,6 +6,7 @@ import type { Lanes } from './lanes.js';
+ import { owableAlone } from './meet.js';
+ import { type Motions, RunField } from './motions.js';
+ import { absent } from './numbers.js';
++import { inc } from './cnt.js';
+ import { reading } from './reading.js';
+ import { RunFlag } from './stretch.js';
+ import type { Subject } from './subject.js';
+@@ -135,9 +136,11 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
+       arg[Arg.ELAPSED] = elapsed;
+       arg[Arg.DELAY] = delay;
+       arg[Arg.WEIGHT] = w;
++      inc(b < 0 ? 'runMotion->move(pending/older)' : 'runMotion->move(probed)');
+       move(lanes, lane, run, p, slot, records[p] as Subject<unknown>);
+       continue;
+     }
++    inc('runMotion bare');
+     const runs = run.runs;
+     if (own && folds && scalar === ch.scalar) {
+       if (data[o + Row.SAMPLED] !== Sampled.BARE) {
+@@ -250,8 +253,8 @@ export function move<I, O>(
+       // other voices still read the lanes.
+       const own = lanes.byId.get(voice.id);
+       if (own === lane && lanes.filling && !lanes.owes(slot) && owableAlone(lanes, own))
+-        lanes.owed.owe(slot, own.alone, 1);
+-      else lanes.late.push(slot);
++        { inc('move owe'); lanes.owed.owe(slot, own.alone, 1); }
++      else { inc('move late'); lanes.late.push(slot); }
+       return;
+     }
+     run.sample(ms, elapsed, run.xs, run.vs);

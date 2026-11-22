@@ -1,0 +1,46 @@
+# msb-uai bench/heatprof.sh spring/const/ink/off INLINE=off TOP=40
+onto: plan 1
+ 1/1  spring/const/ink/off    read p50   6.226 ms  p90   7.588  step p50   1.409  load 8.01
+onto: progress 1/1
+total 5354.3 ms
+    478.3 ms   8.9%  contribution contribution.js:48
+    288.2 ms   5.4%  numbers stretch.js:4
+    256.0 ms   4.8%  foldWith fold.js:169
+    212.8 ms   4.0%  apply fold.js:61
+    205.3 ms   3.8%  change changes.js:12
+    184.7 ms   3.4%  subject numbers.js:73
+    180.8 ms   3.4%  (garbage collector)
+    167.7 ms   3.1%  commit changes.js:155
+    146.4 ms   2.7%  prime weigh.js:7
+    118.7 ms   2.2%  elapsedWith clock.js:115
+    106.3 ms   2.0%  prepare closed.js:25
+     94.6 ms   1.8%  weigh weigh.js:95
+     90.9 ms   1.7%  get store.js:20
+     90.3 ms   1.7%  has named.js:70
+     89.3 ms   1.7%  prune lives.js:159
+     87.5 ms   1.6%  closed closed.js:165
+     86.8 ms   1.6%  readAll pull.js:143
+     81.4 ms   1.5%  latest motions.js:513
+     76.8 ms   1.4%  envelope clock.js:53
+     74.8 ms   1.4%  rawAt voice.js:607
+     69.8 ms   1.3%  shownAt voice.js:640
+     65.0 ms   1.2%  (program)
+     64.5 ms   1.2%  revive strays.js:66
+     63.8 ms   1.2%  next heatmap.mjs:48
+     60.3 ms   1.1%  base motions.js:420
+     60.0 ms   1.1%  advance motions.js:299
+     58.7 ms   1.1%  now strays.js:44
+     57.9 ms   1.1%  unstarted voice.js:594
+     56.2 ms   1.0%  copy clone.js:68
+     55.1 ms   1.0%  inked color.js:76
+     52.7 ms   1.0%  voiceEnvelope clock.js:71
+     49.7 ms   0.9%  fold color.js:197
+     47.0 ms   0.9%  elapsedAt voice.js:496
+     46.4 ms   0.9%  read contribution.js:421
+     45.4 ms   0.8%  insert changes.js:180
+     43.7 ms   0.8%  insertByAt changes.js:52
+     41.1 ms   0.8%  changed strays.js:54
+     40.4 ms   0.8%  before voice.js:614
+     40.3 ms   0.8%  add channels.js:19
+     38.9 ms   0.7%  fadeOf weigh.js:63
+total 5354.3 ms

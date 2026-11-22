@@ -1,0 +1,61 @@
+# msb-uai Apple M3 Max 2026-11-21, onto --quiet --max-cores 1, a7702546: bench/heatsplit.sh 5, exp 0
+1/30 round 1 exp 0  1/1  spring/const/ink/on     read p50   3.987 ms  p90   5.238  step p50   0.979  load 6.39
+onto: progress 1/30
+2/30 round 1 exp 0  1/1  spring/const/ink/off    read p50   3.774 ms  p90   4.735  step p50   0.913  load 6.39
+onto: progress 2/30
+3/30 round 1 exp 0  1/1  none/const/ink/on       read p50   1.034 ms  p90   1.255  step p50   0.071  load 6.12
+onto: progress 3/30
+4/30 round 1 exp 0  1/1  none/const/ink/off      read p50   1.581 ms  p90   1.746  step p50   0.072  load 6.12
+onto: progress 4/30
+5/30 round 1 exp 0  1/1  spring/-/none/on        read p50   2.214 ms  p90   2.995  step p50   0.835  load 6.12
+onto: progress 5/30
+6/30 round 1 exp 0  1/1  spring/-/none/off       read p50   1.960 ms  p90   2.627  step p50   0.931  load 7.07
+onto: progress 6/30
+7/30 round 2 exp 0  1/1  spring/const/ink/off    read p50   3.685 ms  p90   4.438  step p50   0.911  load 7.07
+onto: progress 7/30
+8/30 round 2 exp 0  1/1  none/const/ink/on       read p50   1.257 ms  p90   1.375  step p50   0.075  load 6.99
+onto: progress 8/30
+9/30 round 2 exp 0  1/1  none/const/ink/off      read p50   1.551 ms  p90   1.730  step p50   0.072  load 6.99
+onto: progress 9/30
+10/30 round 2 exp 0  1/1  spring/-/none/on        read p50   2.295 ms  p90   3.223  step p50   0.876  load 6.99
+onto: progress 10/30
+11/30 round 2 exp 0  1/1  spring/-/none/off       read p50   1.955 ms  p90   2.623  step p50   0.837  load 7.23
+onto: progress 11/30
+12/30 round 2 exp 0  1/1  spring/const/ink/on     read p50   4.016 ms  p90   5.235  step p50   1.162  load 7.23
+onto: progress 12/30
+13/30 round 3 exp 0  1/1  none/const/ink/on       read p50   1.225 ms  p90   1.317  step p50   0.070  load 7.37
+onto: progress 13/30
+14/30 round 3 exp 0  1/1  none/const/ink/off      read p50   1.346 ms  p90   1.567  step p50   0.069  load 7.37
+onto: progress 14/30
+15/30 round 3 exp 0  1/1  spring/-/none/on        read p50   2.337 ms  p90   3.072  step p50   0.857  load 7.37
+onto: progress 15/30
+16/30 round 3 exp 0  1/1  spring/-/none/off       read p50   1.947 ms  p90   2.450  step p50   0.785  load 7.58
+onto: progress 16/30
+17/30 round 3 exp 0  1/1  spring/const/ink/on     read p50   4.234 ms  p90   5.373  step p50   1.094  load 7.58
+onto: progress 17/30
+18/30 round 3 exp 0  1/1  spring/const/ink/off    read p50   3.643 ms  p90   4.522  step p50   0.922  load 7.53
+onto: progress 18/30
+19/30 round 4 exp 0  1/1  none/const/ink/off      read p50   1.483 ms  p90   1.784  step p50   0.070  load 7.53
+onto: progress 19/30
+20/30 round 4 exp 0  1/1  spring/-/none/on        read p50   2.415 ms  p90   3.074  step p50   0.849  load 7.33
+onto: progress 20/30
+21/30 round 4 exp 0  1/1  spring/-/none/off       read p50   2.009 ms  p90   2.648  step p50   0.874  load 7.33
+onto: progress 21/30
+22/30 round 4 exp 0  1/1  spring/const/ink/on     read p50   4.480 ms  p90   5.889  step p50   1.205  load 7.22
+onto: progress 22/30
+23/30 round 4 exp 0  1/1  spring/const/ink/off    read p50   3.868 ms  p90   4.846  step p50   0.975  load 7.29
+onto: progress 23/30
+24/30 round 4 exp 0  1/1  none/const/ink/on       read p50   1.333 ms  p90   1.528  step p50   0.069  load 7.29
+onto: progress 24/30
+25/30 round 5 exp 0  1/1  spring/-/none/on        read p50   2.460 ms  p90   3.133  step p50   0.963  load 7.29
+onto: progress 25/30
+26/30 round 5 exp 0  1/1  spring/-/none/off       read p50   2.012 ms  p90   2.822  step p50   0.792  load 8.06
+onto: progress 26/30
+27/30 round 5 exp 0  1/1  spring/const/ink/on     read p50   4.743 ms  p90   6.582  step p50   1.282  load 8.06
+onto: progress 27/30
+28/30 round 5 exp 0  1/1  spring/const/ink/off    read p50   3.787 ms  p90   4.727  step p50   0.829  load 8.06
+onto: progress 28/30
+29/30 round 5 exp 0  1/1  none/const/ink/on       read p50   1.273 ms  p90   1.376  step p50   0.071  load 8.06
+onto: progress 29/30
+30/30 round 5 exp 0  1/1  none/const/ink/off      read p50   1.595 ms  p90   1.883  step p50   0.071  load 7.89
+onto: progress 30/30
