@@ -1,11 +1,9 @@
-import { lit } from './bound.js';
 import { flush, pullRun, writeLater } from './columns.js';
 import { type Copier, copy } from './copyout.js';
-import { type Crowd, Flag, Hot, row } from './crowd.js';
+import { type Crowd, row } from './crowd.js';
 import { share } from './everyone.js';
 import {
   call,
-  fillAll,
   foldKeys,
   one,
   parting,
@@ -17,72 +15,52 @@ import {
   subjectAt,
 } from './fill.js';
 import { fold, foldDelta, foldInto, foldRun, gate, gather, unplain } from './gather.js';
-import { grown } from './grow.js';
-import { Arg, Begin, type Lane, type Laned, Per, type Role, Row } from './lane.js';
-import { meet, reach } from './meet.js';
-import { absent, Numbers } from './numbers.js';
+import { Arg, type Lane, type Laned, Per, type Role } from './lane.js';
+import type { LaneHost } from './lanehost.js';
+import {
+  begin,
+  current,
+  filled,
+  general,
+  prepare,
+  probedThisFrame,
+  rests,
+  unread,
+} from './laneprobe.js';
+import {
+  alone,
+  forget,
+  grow,
+  number,
+  rejoin,
+  release,
+  renew,
+  seatFor,
+  sought,
+} from './lanesubjects.js';
+import {
+  owes,
+  owesVoice,
+  paid,
+  part,
+  reported,
+  rerecord,
+  reshown,
+  stretchChanged,
+  voiceChanged,
+  weightOf,
+} from './lanevoices.js';
+import { type absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
 import { Placed } from './placed.js';
 import type { Column } from './pull.js';
-import { requalify, retouch } from './qualify.js';
-import { reading } from './reading.js';
 import { renumber } from './renumber.js';
-import { reportedRow, unplace } from './rows.js';
-import { type Seat, seatOf } from './seat.js';
+import type { Seat } from './seat.js';
 import type { Watcher } from './stretch.js';
 import type { Subject } from './subject.js';
-import type { Channel, OffLane } from './types.js';
 import type { Voice } from './voice.js';
 
-/** What a lane fill asks of the mix it belongs to. */
-export interface LaneHost<I, O> {
-  readonly voices: readonly Voice<I, O>[];
-  readonly channels: readonly Channel<unknown>[];
-  readonly names: readonly string[];
-  /** The mix itself, for its clock: a getter V8 does not inline would box `now` on return. */
-  readonly clock: { readonly now: number };
-  /** Why a voice's patch and spec cannot run on a lane, its channels aside; undefined where they can. */
-  unfit(voice: Voice<I, O>): OffLane | undefined;
-  /** The voice's record for a subject this probe has already linked it to, from `head` if there. */
-  meet(
-    voice: Voice<I, O>,
-    subject: I,
-    head: Subject<unknown> | null,
-    slot: number,
-  ): Subject<unknown>;
-  /** The number `slot` was let go of, to be handed to another subject. */
-  forgot(slot: number): void;
-  /** The voices whose `subjects` name the subject, in voice order. */
-  naming(subject: I): readonly Voice<I, O>[] | undefined;
-  /** The subject's number, -1 where it has none yet. */
-  slotOf(subject: I): number;
-  /** The voice's own fade for a subject whose delay ran out at `since`. */
-  envelope(voice: Voice<I, O>, since: number): number;
-  /** What a subject's own ramp out of the voice leaves of its weight, 0..1. */
-  parting(voice: Voice<I, O>, subject: I): number;
-  /**
-   * Fills the voice's setting and the send target for a call to its patch, at the voice time, pass
-   * and weight in `Arg.ELAPSED`, `Arg.PASS` and `Arg.WEIGHT`.
-   */
-  ready(voice: Voice<I, O>, subject: I, held: Subject<unknown>): void;
-  /**
-   * A voice with a signal weight: the signal's value for a subject the general path has met, at the
-   * voice time and pass in `Arg.ELAPSED` and `Arg.PASS`, left in `Arg.WEIGHT` before the fade and
-   * ramp `weighed` applies, with the setting filled in for the call; makes the voice stateful if the
-   * signal keeps state. `slot` is the subject's number.
-   */
-  signal(voice: Voice<I, O>, subject: I, held: Subject<unknown>, slot: number): void;
-  /** Whether a rest-less channel's contribution passes the band, as the general path decides it. */
-  passes(was: boolean | undefined, w: number): boolean;
-  /** Sets `reading.horizon` for the voice and a subject delayed `delay` voice ms. */
-  horizon(voice: Voice<I, O>, delay: number): void;
-  /** Whether the mix keeps history, so a record a patch call changed may need a copy kept. */
-  readonly keeps: boolean;
-  /** After a patch call, keeps history of a record that grew kept state. */
-  after(voice: Voice<I, O>, subject: I, held: Subject<unknown>): void;
-  /** A patch call left kept state on a record: the voice is stateful from now on. */
-  kept(voice: Voice<I, O>): void;
-}
+export type { LaneHost } from './lanehost.js';
 
 /**
  * The lanes of one mix: subject numbers, which channels and voices run on lanes, and the values a
@@ -288,354 +266,38 @@ export class Lanes<I, O> implements Watcher {
     this.touched.push(voice);
     this.filledVersion = Number.NaN;
   }
-
-  /** Numbers a subject the mix sees for the first time. */
-  number(subject: I): number {
-    const slot = this.numbers.take(subject);
-    this.live++;
-    this.grow(slot + 1);
-    this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
-    this.per[slot * Per.SLOT + Per.SEEN] = -1;
-    this.per[slot * Per.SLOT + Per.IDLE] = 0;
-    this.per[slot * Per.SLOT + Per.LANE_PROBE] = 0;
-    this.per[slot * Per.SLOT + Per.GENERAL_PROBE] = 0;
-    this.per[slot * Per.SLOT + Per.LANE_FILL] = 0;
-    if (this.filling) this.late.push(slot);
-    this.off[slot] = this.whole ? 0 : 1;
-    return slot;
-  }
-
-  /** Whether a subject the lanes filled has nothing left to fold: no voice off lanes reaches it. */
-  alone(slot: number): boolean {
-    return this.whole || (!this.offAll && this.off[slot] === 0);
-  }
-
-  release(slot: number): void {
-    this.numbers.release(slot);
-  }
-
-  /** Whether `slot` is a number a seek carried over whose chain has not been linked since. */
-  sought(slot: number): boolean {
-    return Number.isNaN(this.per[slot * Per.SLOT + Per.FILLED] as number);
-  }
-
-  /**
-   * A chain is being linked for the subject at `slot`: one a seek carried over is from now on as
-   * `number` leaves a subject it numbers. Says whether it was one.
-   */
-  renew(slot: number): boolean {
-    if (!this.sought(slot)) return false;
-    this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
-    if (this.filling) this.late.push(slot);
-    this.off[slot] = this.whole ? 0 : 1;
-    return true;
-  }
-
-  /** A voice faded a subject out of itself alone: its lane lets the subject's position go. */
-  part(id: number, slot: number): void {
-    const lane = this.byId.get(id);
-    if (lane !== undefined) {
-      if (lane.positionOf(slot) < 0) return;
-      if (lane.idle) reach(this, slot, -1);
-      lane.remove(slot);
-      return;
-    }
-    const s = this.seats.get(id);
-    if (s !== undefined && s.crowd.list[s.row] === slot) unplace(this, s.crowd, s.row);
-  }
-
-  /** A voice brought a subject back: its next probe meets every lane again, as it met them first. */
-  rejoin(slot: number): void {
-    if (slot < this.cap) this.per[slot * Per.SLOT + Per.SEEN] = -1;
-  }
-
-  /**
-   * A laned voice's weight for a subject at the last frame a probe read it from the lane; undefined
-   * where the subject's record holds it instead, because its last probe took the general path or
-   * the voice is not on a lane.
-   */
-  weightOf(id: number, slot: number): number | undefined {
-    if (slot < 0) return undefined;
-    const lane = this.byId.get(id);
-    if (lane !== undefined) return this.reported(lane, slot);
-    const s = this.seats.get(id);
-    return s === undefined ? undefined : reportedRow(this, s.crowd, s.row, slot);
-  }
-
-  reported(lane: Lane<I, O>, slot: number): number | undefined {
-    const o = slot * Per.SLOT;
-    const probe = this.per[o + Per.LANE_PROBE] as number;
-    if (!(probe > (this.per[o + Per.GENERAL_PROBE] as number)) || !(probe > lane.made))
-      return undefined;
-    const p = lane.positionOf(slot);
-    if (p < 0) return undefined;
-    return lane.data[
-      p * Row.STRIDE + (this.per[o + Per.LANE_FILL] === this.fills ? Row.WEIGHT : Row.PROBED)
-    ];
-  }
-
-  /**
-   * Fills the lanes once a frame, and says whether this probe of a subject reads its values from
-   * them. One that a lane has not met yet, newly numbered or newly reached, takes the general path
-   * this frame, which is where it is first seen; so does one probed from inside a fill.
-   */
-  prepare(slot: number, subject: I, version: number, head: Subject<unknown> | null): boolean {
-    // Read, not passed: a double passed to a call V8 does not inline is boxed, once a probe.
-    const now = this.host.clock.now;
-    if (!this.filled(now, version) && this.begin(now, version) === Begin.GENERAL)
-      return this.general(slot);
-    if (slot < 0) return false;
-    if (!this.probedThisFrame(slot)) this.distinct++;
-    const probe = ++this.probes;
-    const per = this.per;
-    const o = slot * Per.SLOT;
-    let lane = (per[o + Per.FILLED] as number) < this.busyFill && per[o + Per.IDLE] === 0;
-    if ((per[o + Per.SEEN] as number) < this.wide) lane = meet(this, slot, subject, head, lane);
-    if (lane) {
-      per[o + Per.LANE_PROBE] = probe;
-      per[o + Per.LANE_FILL] = this.fills;
-      if (this.holds) {
-        this.subjects[slot] = subject;
-        this.holding = true;
-      }
-    } else per[o + Per.GENERAL_PROBE] = probe;
-    return lane;
-  }
-
-  /** Whether this frame's lanes are filled and nothing since asks `begin` to look again. */
-  filled(now: number, version: number): boolean {
-    return (
-      this.frameAt === now &&
-      this.qualifiedVersion === version &&
-      this.touched.length === 0 &&
-      !this.filling &&
-      this.current(now, version)
-    );
-  }
-
-  /**
-   * Whether the last fill still stands: everything a fill reads that can change between two probes,
-   * each stamped by `fillAll`. The clock; the mix's version, which voices coming, going, starting
-   * and stopping move; a motion's retargets and pushes; and a `level` set. Whatever else can change
-   * between probes keeps its voice off lanes in `unfit`.
-   */
-  current(now: number, version: number): boolean {
-    return (
-      this.filledAt === now &&
-      this.filledVersion === version &&
-      this.moved === reading.moved &&
-      this.inputs === reading.inputs
-    );
-  }
-
-  /**
-   * What a probe does before its subject, once a frame's lanes are settled: qualifies and fills as
-   * needed. Says whether the subject takes the general path or the lanes are filled.
-   */
-  begin(now: number, version: number): number {
-    if (now !== this.frameAt) {
-      this.lastFrom = this.frameProbes;
-      this.lastTo = this.probes;
-      this.lastDistinct = this.distinct;
-      this.distinct = 0;
-      this.frameAt = now;
-      this.frameProbes = this.probes;
-      this.fresh = true;
-    }
-    if (this.filling) return Begin.GENERAL;
-    // Past a qualify that stands, the mix's version moves when a voice over every subject comes,
-    // goes, starts or stops waiting, each of which touches it, or stops sharing one record, which
-    // moves no voice on or off a lane: so with voices touched it is a set of touches.
-    if (this.qualifiedVersion !== version) {
-      if (!Number.isNaN(this.qualifiedVersion) && this.touched.length > 0 && retouch(this))
-        this.qualifiedVersion = version;
-      else requalify(this, version);
-    } else if (this.touched.length > 0 && !retouch(this)) requalify(this, version);
-    if (this.laned.length === 0) return Begin.GENERAL;
-    if (!this.current(now, version)) {
-      fillAll(this, now, version);
-      // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
-      if (this.qualifiedVersion !== version) {
-        requalify(this, version);
-        if (this.laned.length === 0) return Begin.GENERAL;
-        fillAll(this, now, version);
-      }
-    }
-    return Begin.READY;
-  }
-
-  general(slot: number): false {
-    if (slot >= 0) this.per[slot * Per.SLOT + Per.GENERAL_PROBE] = ++this.probes;
-    return false;
-  }
-
-  /**
-   * Whether this fill leaves the subject at `slot` to the general path, for not having been probed
-   * this frame or the last: a probe of it before the next fill then takes the general path.
-   */
-  unread(slot: number): boolean {
-    const per = this.per;
-    const o = slot * Per.SLOT;
-    const lately = this.lately;
-    if (
-      (per[o + Per.LANE_PROBE] as number) > lately ||
-      (per[o + Per.GENERAL_PROBE] as number) > lately
-    )
-      return false;
-    per[o + Per.FILLED] = this.fills;
-    return true;
-  }
-
-  /** Whether a probe has read the subject since the frame began, on either path. */
-  probedThisFrame(slot: number): boolean {
-    const from = this.frameProbes;
-    const o = slot * Per.SLOT;
-    return (
-      (this.per[o + Per.LANE_PROBE] as number) > from ||
-      (this.per[o + Per.GENERAL_PROBE] as number) > from
-    );
-  }
-
-  /** Whether the subject at `slot` reads some laned voice from the general path this fill. */
-  owes(slot: number): boolean {
-    return this.owed.owes(slot);
-  }
-
-  /** Whether the subject at `slot` reads laned voice `id` from the general path this fill. */
-  owesVoice(slot: number, id: number): boolean {
-    return this.owed.owesVoice(slot, id);
-  }
-
-  /** The weight the general path gave a voice the subject at `slot` owes, as `weightOf` reports. */
-  paid(id: number, slot: number, w: number): void {
-    const lane = this.byId.get(id);
-    const p = lane === undefined ? -1 : lane.positionOf(slot);
-    if (p < 0) return;
-    (lane as Lane<I, O>).data[p * Row.STRIDE + Row.WEIGHT] = w;
-    const b = (lane as Lane<I, O>).voice.bound;
-    if (b !== null && w !== 0) lit(b, slot, this.fills);
-  }
-
-  /**
-   * Whether a subject's laned values are at their channels' rest, as `atRest` reads the pose `copy`
-   * would write: each number within 1e-9 of its rest.
-   */
-  rests(slot: number): boolean {
-    for (const ch of this.laned) {
-      const values = ch.values;
-      if (ch.op === 'last') {
-        if (!Number.isNaN(values[slot * ch.axes] as number)) return false;
-        continue;
-      }
-      if (ch.scalar) {
-        if (!(Math.abs((values[slot] as number) - ch.rest) < 1e-9)) return false;
-        continue;
-      }
-      // `copy` lengthens a rest shorter than the channel's axes, and a longer array is never near it.
-      if (ch.start.length < ch.axes) return false;
-      const base = slot * ch.axes;
-      for (let a = 0; a < ch.axes; a++)
-        if (!(Math.abs((values[base + a] as number) - (ch.start[a] as number)) < 1e-9))
-          return false;
-    }
-    return true;
-  }
-
-  forget(slot: number): void {
-    this.host.forgot(slot);
-    this.live--;
-    for (const lane of this.lanes) lane.remove(slot);
-    const placed = this.placed;
-    for (let v = placed.any(slot); v !== undefined; v = placed.any(slot)) {
-      const s = this.seatFor(v);
-      if (s !== undefined && s.crowd.list[s.row] === slot && s.crowd.voices[s.row] === v)
-        unplace(this, s.crowd, s.row);
-      else placed.remove(slot, v);
-    }
-    if (slot < this.cap) this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
-    this.subjects[slot] = undefined;
-  }
-
-  /** `voice`'s seat here: the one it holds where it is these lanes', else the one kept by its id. */
-  seatFor(voice: Voice<I, O>): Seat<I, O> | undefined {
-    const s = voice.seat;
-    return s !== null && s.lanes === this ? s : this.seats.get(voice.id);
-  }
-
-  grow(size: number): void {
-    if (size <= this.cap) return;
-    const cap = Math.max(size, this.cap * 2, 64);
-    this.per = grown(this.per, cap * Per.SLOT);
-    this.owed.grow(cap);
-    this.placed.grow(cap);
-    this.unlinked = grown(this.unlinked, cap);
-    const off = new Uint8Array(cap);
-    off.set(this.off);
-    this.off = off;
-    for (const ch of this.laned) ch.values = grown(ch.values, cap * ch.axes);
-    this.cap = cap;
-  }
-
-  /**
-   * A laned voice's patch is about to change subject `s`'s stretch: a crowd copies it again at the
-   * next fill, and a lane keeps the sample the old one gave.
-   */
-  stretchChanged(id: number, s: number): void {
-    const seat = this.seats.get(id);
-    if (seat !== undefined) {
-      const c = seat.crowd;
-      c.restale(seat.row, c.hot[seat.row * c.stride + Hot.FLAGS] as number);
-      return;
-    }
-    const lane = this.byId.get(id);
-    const q = lane === undefined ? -1 : lane.positionOfMotion(s);
-    if (q >= 0) (lane as Lane<I, O>).fix(q);
-  }
-
-  /**
-   * A voice that kept one record for every subject keeps one each from now on: each of its lane's
-   * positions takes the record `of` gives its subject.
-   */
-  rerecord(id: number, of: (subject: I, slot: number) => Subject<unknown>): void {
-    const lane = this.byId.get(id);
-    if (lane === undefined) return;
-    for (let p = 0; p < lane.list.length; p++) {
-      const slot = lane.list[p] as number;
-      const subject = this.subjectAt(slot);
-      if (subject !== absent) lane.records[p] = of(subject as I, slot);
-    }
-  }
-
-  /** A voice's clock moved the `shown` of records it had already placed: copies them again. */
-  reshown(id: number): void {
-    const s = this.seats.get(id);
-    if (s !== undefined) {
-      const held = s.crowd.records[s.row];
-      if (held !== undefined) s.crowd.data[s.row * Row.STRIDE + Row.SINCE] = held.shown;
-    }
-    const lane = this.byId.get(id);
-    if (lane === undefined) return;
-    lane.latestSince = Number.NEGATIVE_INFINITY;
-    for (let q = 0; q < lane.list.length; q++) {
-      const held = lane.records[q];
-      if (held !== undefined) lane.data[q * Row.STRIDE + Row.SINCE] = held.shown;
-      lane.since(lane.data[q * Row.STRIDE + Row.SINCE] as number);
-    }
-  }
-
-  /** Something on a voice changed: a crowd copies it again at the next fill. */
-  voiceChanged(voice: Voice<I, O>): void {
-    const s = seatOf(this, voice);
-    if (s === null) return;
-    const c = s.crowd;
-    const f = s.row * c.stride + Hot.FLAGS;
-    c.hot[f] = (c.hot[f] as number) | Flag.VOICE;
-  }
 }
 
-// A fill's per-subject path is methods, installed here from the modules that own them: as
-// functions called directly they made fills 5-8% slower (bench/ab.sh on teitou, 2026-10-05).
+// A probe's and a fill's per-subject path is methods, installed here from the modules that own
+// them: as functions called directly they made fills 5-8% slower (bench/ab.sh on teitou, 2026-10-05).
 const methods = {
+  prepare,
+  filled,
+  current,
+  begin,
+  general,
+  unread,
+  probedThisFrame,
+  rests,
+  number,
+  alone,
+  release,
+  sought,
+  renew,
+  rejoin,
+  forget,
+  seatFor,
+  grow,
+  part,
+  weightOf,
+  reported,
+  owes,
+  owesVoice,
+  paid,
+  stretchChanged,
+  rerecord,
+  reshown,
+  voiceChanged,
   copy,
   row,
   signalled,

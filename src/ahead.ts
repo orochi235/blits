@@ -170,7 +170,7 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
     c,
     mix.cued.filter((v) => v.state !== 'done'),
     (v) => {
-      const link = new Link(mix as Mixer<unknown, unknown>, v as Voice<unknown, unknown>);
+      const link = new Link(mix as unknown as Mixer<unknown, unknown>, v as Voice<unknown, unknown>);
       const store = new Along<I, Subject<unknown>>(
         link.line as Store<I, Stand<Subject<unknown>>>,
         link.at,
