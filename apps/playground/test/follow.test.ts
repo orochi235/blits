@@ -113,6 +113,34 @@ describe('a replay after a hold', () => {
     }
   });
 
+  it('keeps a ramp under way through the hold, rebuilt playing on as it would have', () => {
+    const ramped = () => {
+      const p = player();
+      p.seekBy = 'replay';
+      play(p, 30 * FRAME);
+      p.setRate(2, 1000);
+      step(p, 5);
+      const hold = holdOf(p);
+      hold.rate = 0.5;
+      step(p, 20);
+      hold.free();
+      step(p, 5);
+      return p;
+    };
+    const kept = ramped();
+    const rebuilt = ramped();
+    rebuilt.rebuild();
+    expect(rebuilt.t).toBe(kept.t);
+    for (let f = 0; f < 60; f++) {
+      expect(rebuilt.rate).toBeCloseTo(kept.rate, 9);
+      expect(rebuilt.t).toBeCloseTo(kept.t, 6);
+      expect(rebuilt.following).toBe(false);
+      step(kept);
+      step(rebuilt);
+    }
+    expect(kept.rate).toBe(2);
+  });
+
   it('scrubs back to each held frame as it showed', () => {
     const { p, shown, ahead } = heldRun(true);
     for (const s of shown.slice(0, ahead).reverse()) {
