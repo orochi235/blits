@@ -86,9 +86,9 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   `RETARGETS=1`, `bench/runs/2026-11-21-probes-retargets-after.txt`; 18–57% before the per-kit
   noter). What is left is finding the row and turning its halves over; no hot spot (inferred).
 - **[agent] Steady `tweens^`/`weasel^` frame** (10k one-voice-per-subject tweens by `pull`, and
-  one tween voice over 10k subjects): 0.228 and 0.237 ms on msb-uai in flight, 0.179 for `tweens^`
+  one tween voice over 10k subjects): 0.225 and 0.236 ms on msb-uai in flight, 0.175 for `tweens^`
   landed, against 0.03–0.05 for a hand loop (measured, 2026-11-21, `FRAMES=5000`,
-  `runs/2026-11-21-steady-tweens-sum.txt`), from 0.270, 0.294 and 0.207 by folding a bare tween's
+  `runs/2026-11-21-steady-tweens-retime.txt`), from 0.271, 0.297 and 0.203 by folding a bare tween's
   sum inline and weighing a lane flat once every fade in is over. What is left, from profiles before
   that change (`runs/2026-11-21-steady-tweens-prof{,-inflight}/`, measured): `bareRows` 45% of
   `tweens^` in flight, of it about a fifth the fold line; `pullRun` 17–21%, spread over its

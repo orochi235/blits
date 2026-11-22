@@ -1,0 +1,99 @@
+diff --git a/src/bare.ts b/src/bare.ts
+index 066dac5a..9b52c548 100644
+--- a/src/bare.ts
++++ b/src/bare.ts
+@@ -4,6 +4,7 @@ import type { Curve } from './easing.js';
+ import { keepProbed, type Lane, type Laned, Per, Row } from './lane.js';
+ import type { Lanes } from './lanes.js';
+ import { type Motions, RunField } from './motions.js';
++import { SW } from './sw.js';
+ import { between, left, progress } from './tweened.js';
+ 
+ /**
+@@ -44,7 +45,7 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
+   const now = lanes.now;
+   const op = ch.op;
+   // `foldNumber`'s sum written out, its op asked once a fill rather than once an axis.
+-  const sum = op === 'sum';
++  const sum = (SW & 1) !== 0 && op === 'sum';
+   // Ids are finite, so a fill running to the end need not read each row's.
+   const bounded = id !== Number.POSITIVE_INFINITY;
+   for (; p < list.length; p++) {
+diff --git a/src/fill.ts b/src/fill.ts
+index 86d6cfe0..c9841059 100644
+--- a/src/fill.ts
++++ b/src/fill.ts
+@@ -16,6 +16,7 @@ import { reading } from './reading.js';
+ import { move, runMotion } from './sample.js';
+ import type { Subject } from './subject.js';
+ import { rested } from './turns.js';
++import { SW } from './sw.js';
+ import { checkWrites, type Voice } from './voice.js';
+ 
+ // V8 reads a local const as a constant, where it reads an import from its module on every call.
+@@ -234,7 +235,8 @@ export function reset<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
+     voice.back === null &&
+     voice.owner === null &&
+     (!((voice.fade.in ?? 0) > 0) ||
+-      (!Number.isNaN(lane.latestSince) && this.host.envelope(voice, lane.latestSince) === 1));
++      ((SW & 4) !== 0 &&
++        !Number.isNaN(lane.latestSince) && this.host.envelope(voice, lane.latestSince) === 1));
+   lane.fade = 1;
+ }
+ 
+diff --git a/src/sample.ts b/src/sample.ts
+index b5f189fd..2e53a710 100644
+--- a/src/sample.ts
++++ b/src/sample.ts
+@@ -8,6 +8,7 @@ import { type Motions, RunField } from './motions.js';
+ import { absent } from './numbers.js';
+ import { reading } from './reading.js';
+ import { RunFlag } from './stretch.js';
++import { SW } from './sw.js';
+ import type { Subject } from './subject.js';
+ import { between, left, progress } from './tweened.js';
+ 
+@@ -37,7 +38,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
+   const n = run.n;
+   const op = ch.op;
+   // `foldNumber`'s sum written out, its op asked once a fill rather than once an axis.
+-  const sum = op === 'sum';
++  const sum = (SW & 1) !== 0 && op === 'sum';
+   if (n > 0) lane.room(list.length, n);
+   const samples = lane.samples;
+   const landed = lane.landed;
+diff --git a/src/sw.ts b/src/sw.ts
+new file mode 100644
+index 00000000..e459d49c
+--- /dev/null
++++ b/src/sw.ts
+@@ -0,0 +1,5 @@
++// TEMPORARY experiment switches (bench/runs/2026-11-21-steady-tweens-switches.sh).
++export const SW = Number(
++  (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env
++    .BLITS_SW ?? 0,
++);
+diff --git a/src/trail.ts b/src/trail.ts
+index ad2b45e3..d770170f 100644
+--- a/src/trail.ts
++++ b/src/trail.ts
+@@ -2,6 +2,7 @@ import { axesOf } from './channels.js';
+ import { copy } from './clone.js';
+ import type { Column } from './pull.js';
+ import type { Subject } from './subject.js';
++import { SW } from './sw.js';
+ import type { Channel } from './types.js';
+ import { written } from './written.js';
+ 
+@@ -50,7 +51,10 @@ export class Trail<I> {
+     f.count++;
+     const n = list.length;
+     p.list.length = n;
+-    for (let i = 0; i < n; i++) p.list[i] = list[i] as I;
++    const kept = p.list;
++    if ((SW & 2) !== 0) {
++      for (let i = 0; i < n; i++) if (kept[i] !== list[i]) kept[i] = list[i] as I;
++    } else for (let i = 0; i < n; i++) kept[i] = list[i] as I;
+     p.index = null;
+     p.keys.length = columns.length;
+     p.axes.length = columns.length;

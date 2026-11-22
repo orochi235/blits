@@ -3,6 +3,9 @@
 # runMotion), and the tree with BLITS_SW=4 (`flat`: a lane whose every fade in is over weighs flat).
 #   build: bench/runs/2026-11-21-steady-tweens-sum.sh build     (in a --kind build job, many cores)
 #   run:   bench/runs/2026-11-21-steady-tweens-sum.sh run <rounds>
+# The `flat` side needs the switches: apply 2026-11-21-steady-tweens-switches.diff to the tree
+# first (see steady-tweens-switches.sh). The kept change, measured with no switches, is
+# 2026-11-21-steady-tweens-retime.sh.
 # Each side and row in a process of its own, FRAMES=5000, order reversed every other round. Rows
 # with LONG=1e9 keep their tweens in flight; `tweens^ landed` is tweens^ with LONG=1.
 set -euo pipefail
