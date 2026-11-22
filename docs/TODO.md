@@ -147,6 +147,14 @@ built and what is deliberately not offered.
   are offered.
 - **[maintainer] Recording level moves** as a composition field, so they save, share and undo.
 - **[maintainer] A booker with its own clock, and link drags on group headers** — wanted or not.
+- **[maintainer] The debug panel's hold ends at every playground rebuild**: an edit, or a seek
+  back or lap by replay (2026-11-21). The Player closes its mixes and makes new ones with the same
+  names; the panel's agent frees the hold as the held mix's `gone` arrives, and the panel shows it
+  free while the score plays on at the transport's rate. Which mix the panel picks after is an accident
+  of order: `pickOnly` picks whatever mix is alone on the page as the old ones close and the new
+  ones register. Decide whether the agent carries the pick and the hold, at its rate, to a mix
+  that replaces the held one under the same name. `apps/playground/test/panelHold.test.ts` pins
+  today's behavior.
 - **[waiting] Three unnamed mixes on the playground's debug panel come from weasel** (seen
   2026-11-21): their channels are `pose`, `alpha`, `path` and `data`, a weasel UI kit's, not the
   playground's. Weasel's own mixes need a name, or `close()`, to keep off a host's panel.
