@@ -12,6 +12,8 @@ the machine being used.
   working tree; the other has to be a commit `origin` has. `AB_EACH=1` runs each row in a process
   of its own. `bench/abdirty.sh` compares an uncommitted diff with no commit on origin.
 - `AB_BENCH=bench/frame.mjs` makes both sides run this tree's bench, so both print `kB/frame`.
+  Without it each side runs its own bench, so a row or setting added since the older build (such
+  as `LONG`) is silently ignored on that side and the A/B compares unlike runs.
 - `bench/frame.mjs` takes `form:n:v` for a row its list does not hold, such as `fns-:10000:1`, and
   `OUT=blank` to probe into a pose of the mix's own (`mix.pose()`) rather than a host's `{}`.
   `RETARGETS=1` gives the mix `retargets: true`, so each probe keeps its pose in `Probes`.
