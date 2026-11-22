@@ -1,0 +1,424 @@
+# teitou (--quiet --max-cores 2): MODES=line FRAMES=1500 LINEAGE_BENCH=sparse.mjs bench/lineage.sh 10 a7702546 c5b31976 . -- tween 1000 1 0.12 0.15 0.16 0.17 0.18 0.2 / tween 3000 1 0.15 0.18 / tween 10000 1 0.12 0.15 0.2
+built a7702546
+built c5b31976
+built .
+== round 1/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.030 ms/frame  p50   0.028  listed    200
+== round 1/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.063 ms/frame  p50   0.059  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.080 ms/frame  p50   0.077  listed    540
+== round 1/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.185 ms/frame  p50   0.178  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.244 ms/frame  p50   0.233  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.477 ms/frame  p50   0.416  listed   2000
+== round 1/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.021 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.026 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.026 ms/frame  p50   0.024  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    200
+== round 1/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.070 ms/frame  p50   0.068  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.070 ms/frame  p50   0.069  listed    540
+== round 1/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.192 ms/frame  p50   0.184  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.229 ms/frame  p50   0.224  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.222 ms/frame  p50   0.220  listed   2000
+== round 1/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.021 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 1/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.063 ms/frame  p50   0.059  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.071 ms/frame  p50   0.069  listed    540
+== round 1/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.200 ms/frame  p50   0.185  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.224 ms/frame  p50   0.221  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.236 ms/frame  p50   0.220  listed   2000
+== round 2/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.025 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.027 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.025 ms/frame  p50   0.023  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.029 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.024  listed    200
+== round 2/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.078 ms/frame  p50   0.070  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.075 ms/frame  p50   0.069  listed    540
+== round 2/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.251 ms/frame  p50   0.207  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.254 ms/frame  p50   0.233  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.238 ms/frame  p50   0.228  listed   2000
+== round 2/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.024 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.024 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.026 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 2/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.064 ms/frame  p50   0.059  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.074 ms/frame  p50   0.069  listed    540
+== round 2/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.275 ms/frame  p50   0.221  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.237 ms/frame  p50   0.225  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.240 ms/frame  p50   0.222  listed   2000
+== round 2/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.022 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.026 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.027 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.028 ms/frame  p50   0.025  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.031 ms/frame  p50   0.027  listed    200
+== round 2/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.075 ms/frame  p50   0.063  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.096 ms/frame  p50   0.080  listed    540
+== round 2/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.230 ms/frame  p50   0.189  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.327 ms/frame  p50   0.266  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.432 ms/frame  p50   0.372  listed   2000
+== round 3/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.022 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.024 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.023 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.027 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 3/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.062 ms/frame  p50   0.058  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.068 ms/frame  p50   0.067  listed    540
+== round 3/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.185 ms/frame  p50   0.178  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.227 ms/frame  p50   0.221  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.219 ms/frame  p50   0.217  listed   2000
+== round 3/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.023 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.024 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.026 ms/frame  p50   0.025  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.028  listed    200
+== round 3/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.062 ms/frame  p50   0.058  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.078 ms/frame  p50   0.076  listed    540
+== round 3/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.188 ms/frame  p50   0.178  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.245 ms/frame  p50   0.229  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.313 ms/frame  p50   0.305  listed   2000
+== round 3/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.025 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    200
+== round 3/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.072 ms/frame  p50   0.070  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.071 ms/frame  p50   0.070  listed    540
+== round 3/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.187 ms/frame  p50   0.180  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.225 ms/frame  p50   0.223  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.220 ms/frame  p50   0.218  listed   2000
+== round 4/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.028  listed    200
+== round 4/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.063 ms/frame  p50   0.060  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.082 ms/frame  p50   0.078  listed    540
+== round 4/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.180 ms/frame  p50   0.174  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.234 ms/frame  p50   0.225  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.321 ms/frame  p50   0.299  listed   2000
+== round 4/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.026 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 4/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.072 ms/frame  p50   0.069  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.072 ms/frame  p50   0.071  listed    540
+== round 4/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.189 ms/frame  p50   0.185  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.228 ms/frame  p50   0.224  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.220 ms/frame  p50   0.219  listed   2000
+== round 4/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.021 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    200
+== round 4/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.060 ms/frame  p50   0.056  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.069 ms/frame  p50   0.068  listed    540
+== round 4/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.180 ms/frame  p50   0.173  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.226 ms/frame  p50   0.221  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.216 ms/frame  p50   0.215  listed   2000
+== round 5/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 5/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.070 ms/frame  p50   0.068  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.069 ms/frame  p50   0.069  listed    540
+== round 5/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.184 ms/frame  p50   0.179  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.227 ms/frame  p50   0.223  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.221 ms/frame  p50   0.219  listed   2000
+== round 5/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.023  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 5/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.060 ms/frame  p50   0.057  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.068 ms/frame  p50   0.067  listed    540
+== round 5/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.197 ms/frame  p50   0.189  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.224 ms/frame  p50   0.221  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.218 ms/frame  p50   0.217  listed   2000
+== round 5/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.023 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.023 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.027 ms/frame  p50   0.026  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.028  listed    200
+== round 5/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.060 ms/frame  p50   0.056  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.078 ms/frame  p50   0.077  listed    540
+== round 5/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.188 ms/frame  p50   0.179  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.249 ms/frame  p50   0.236  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.490 ms/frame  p50   0.491  listed   2000
+== round 6/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.021 ms/frame  p50   0.020  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.022 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 6/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.061 ms/frame  p50   0.058  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.068 ms/frame  p50   0.067  listed    540
+== round 6/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.197 ms/frame  p50   0.183  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.223 ms/frame  p50   0.219  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.216 ms/frame  p50   0.215  listed   2000
+== round 6/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.027  listed    200
+== round 6/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.059 ms/frame  p50   0.056  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.077 ms/frame  p50   0.076  listed    540
+== round 6/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.196 ms/frame  p50   0.185  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.240 ms/frame  p50   0.230  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.332 ms/frame  p50   0.313  listed   2000
+== round 6/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    200
+== round 6/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.069 ms/frame  p50   0.068  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.069 ms/frame  p50   0.069  listed    540
+== round 6/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.192 ms/frame  p50   0.182  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.226 ms/frame  p50   0.223  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.220 ms/frame  p50   0.218  listed   2000
+== round 7/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.027  listed    200
+== round 7/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.060 ms/frame  p50   0.057  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.077 ms/frame  p50   0.075  listed    540
+== round 7/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.187 ms/frame  p50   0.181  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.253 ms/frame  p50   0.237  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.329 ms/frame  p50   0.310  listed   2000
+== round 7/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.026 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    200
+== round 7/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.069 ms/frame  p50   0.067  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.070 ms/frame  p50   0.069  listed    540
+== round 7/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.190 ms/frame  p50   0.182  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.227 ms/frame  p50   0.224  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.219 ms/frame  p50   0.217  listed   2000
+== round 7/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 7/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.062 ms/frame  p50   0.059  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.069 ms/frame  p50   0.068  listed    540
+== round 7/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.184 ms/frame  p50   0.178  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.235 ms/frame  p50   0.223  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.218 ms/frame  p50   0.217  listed   2000
+== round 8/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.024 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 8/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.071 ms/frame  p50   0.070  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.071 ms/frame  p50   0.070  listed    540
+== round 8/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.180 ms/frame  p50   0.175  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.229 ms/frame  p50   0.224  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.220 ms/frame  p50   0.219  listed   2000
+== round 8/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.021 ms/frame  p50   0.020  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.022 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 8/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.062 ms/frame  p50   0.058  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.068 ms/frame  p50   0.068  listed    540
+== round 8/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.183 ms/frame  p50   0.177  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.229 ms/frame  p50   0.223  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.216 ms/frame  p50   0.215  listed   2000
+== round 8/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.025  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.028  listed    200
+== round 8/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.061 ms/frame  p50   0.058  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.077 ms/frame  p50   0.075  listed    540
+== round 8/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.206 ms/frame  p50   0.185  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.233 ms/frame  p50   0.228  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.389 ms/frame  p50   0.366  listed   2000
+== round 9/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.019 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.021 ms/frame  p50   0.020  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.022 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 9/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.062 ms/frame  p50   0.058  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.069 ms/frame  p50   0.069  listed    540
+== round 9/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.180 ms/frame  p50   0.174  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.231 ms/frame  p50   0.226  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.221 ms/frame  p50   0.219  listed   2000
+== round 9/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.021  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.029 ms/frame  p50   0.028  listed    200
+== round 9/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.060 ms/frame  p50   0.056  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.076 ms/frame  p50   0.075  listed    540
+== round 9/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.187 ms/frame  p50   0.181  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.235 ms/frame  p50   0.230  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.487 ms/frame  p50   0.494  listed   2000
+== round 9/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.016  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.026 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.027 ms/frame  p50   0.024  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.028 ms/frame  p50   0.024  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 9/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.073 ms/frame  p50   0.070  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.073 ms/frame  p50   0.071  listed    540
+== round 9/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.220 ms/frame  p50   0.173  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.228 ms/frame  p50   0.224  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.226 ms/frame  p50   0.220  listed   2000
+== round 10/10 a7702546
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.021 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.027 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.040 ms/frame  p50   0.029  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.041 ms/frame  p50   0.028  listed    200
+== round 10/10 a7702546
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.061 ms/frame  p50   0.058  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.078 ms/frame  p50   0.076  listed    540
+== round 10/10 a7702546
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.183 ms/frame  p50   0.176  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.260 ms/frame  p50   0.244  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.382 ms/frame  p50   0.364  listed   2000
+== round 10/10 c5b31976
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.024 ms/frame  p50   0.023  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 10/10 c5b31976
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.071 ms/frame  p50   0.069  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.070 ms/frame  p50   0.069  listed    540
+== round 10/10 c5b31976
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.183 ms/frame  p50   0.176  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.240 ms/frame  p50   0.233  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.228 ms/frame  p50   0.228  listed   2000
+== round 10/10 .
+  1/6  sparse-tween-line@0.12 N=1000 V=1    0.020 ms/frame  p50   0.015  listed    120
+  2/6  sparse-tween-line@0.15 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    150
+  3/6  sparse-tween-line@0.16 N=1000 V=1    0.022 ms/frame  p50   0.020  listed    160
+  4/6  sparse-tween-line@0.17 N=1000 V=1    0.023 ms/frame  p50   0.022  listed    170
+  5/6  sparse-tween-line@0.18 N=1000 V=1    0.025 ms/frame  p50   0.024  listed    180
+  6/6  sparse-tween-line@0.20 N=1000 V=1    0.023 ms/frame  p50   0.023  listed    200
+== round 10/10 .
+  1/2  sparse-tween-line@0.15 N=3000 V=1    0.062 ms/frame  p50   0.059  listed    450
+  2/2  sparse-tween-line@0.18 N=3000 V=1    0.069 ms/frame  p50   0.068  listed    540
+== round 10/10 .
+  1/3  sparse-tween-line@0.12 N=10000 V=1    0.188 ms/frame  p50   0.179  listed   1200
+  2/3  sparse-tween-line@0.15 N=10000 V=1    0.232 ms/frame  p50   0.224  listed   1500
+  3/3  sparse-tween-line@0.20 N=10000 V=1    0.243 ms/frame  p50   0.222  listed   2000

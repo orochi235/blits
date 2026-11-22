@@ -122,7 +122,7 @@ export class Crowd<I, O> implements Positions<I, O> {
   laws: Float64Array[] = [];
   idle = false;
   /** Where the crowd stops and starts filling, which `reline` keeps as the mean of its rows'. */
-  readonly line = { ...SPARSE.crowd.tween };
+  readonly line = { ...SPARSE.crowd.large.tween };
   /** Where the fill now under way has reached. */
   cursor = 0;
   /** Rows whose voices have left, kept in place until the crowd is compacted or rebuilt. */
@@ -214,30 +214,38 @@ export class Crowd<I, O> implements Positions<I, O> {
   }
 }
 
-/** Sets a crowd's `line` to the mean of its rows' lines by kind, read from up to about 64 rows. */
+/**
+ * Sets a crowd's `line` to the mean of its rows' lines by kind, read from up to about 64 rows, and
+ * between `SPARSE.crowd`'s sizes on the log of the crowd's.
+ */
 export function reline<I, O>(c: Crowd<I, O>): void {
-  const lines = SPARSE.crowd;
+  const { small, large } = SPARSE.crowd;
   const step = Math.max(1, Math.floor(c.size / 64));
   let stop = 0;
   let start = 0;
+  let stopLarge = 0;
+  let startLarge = 0;
   let n = 0;
   for (let p = 0; p < c.size; p += step) {
     const f = c.hot[p * c.stride + Hot.FLAGS] as number;
-    const l =
+    const kind =
       (f & Flag.TWEEN) !== 0
-        ? lines.tween
+        ? 'tween'
         : (f & Flag.MOTION) !== 0
-          ? lines.motion
+          ? 'motion'
           : (f & Flag.FLAT) !== 0
-            ? lines.keys
-            : lines.fn;
-    stop += l.stop;
-    start += l.start;
+            ? 'keys'
+            : 'fn';
+    stop += small[kind].stop;
+    start += small[kind].start;
+    stopLarge += large[kind].stop;
+    startLarge += large[kind].start;
     n++;
   }
   if (n === 0) return;
-  c.line.stop = stop / n;
-  c.line.start = start / n;
+  const w = Math.min(1, Math.max(0, Math.log10(c.size) - 3));
+  c.line.stop = (stop + (stopLarge - stop) * w) / n;
+  c.line.start = (start + (startLarge - start) * w) / n;
 }
 
 /** Runs every crowd's rows whose voices come before voice `id`, from where each crowd reached. */

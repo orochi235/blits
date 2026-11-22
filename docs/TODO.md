@@ -169,10 +169,6 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   would carry.
 - **[agent] astv's glides (+8%) and progress clocks (+39%) since 0.8.0** are unexplained, at 1–2 µs
   a frame; `MOTION_ONLY=1 probes/blits-version-bench.sh <out> 0.7.1` in `~/src/astv` on a node.
-- **[agent] A crowd of tweens at 1,000 subjects read 10–15% at a time costs 4–7% more** since crowds
-  got lines of their own (2 µs a frame; msb-uai, 6 rounds, `bench/runs/2026-11-21-sparse-crowd-ab2/`,
-  measured): it stays filling inside the band where its crossover sits, 17% at 1k against 13% at 10k.
-  Accepted, as the line is set for 10k; a line by crowd size would remove it.
 - **[agent] Running back past a voice's end costs `own` and `keys` 1–3%** (`4a6cc4e`, accepted
   under the tuning bound, 2026-10-17).
 - **[agent] A probe pays for every channel in the kit, written or not**; skipping unwritten ones

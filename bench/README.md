@@ -31,8 +31,9 @@ the machine being used.
 - `bench/sparse.mjs <kind> <N> <rounds> <share>...` times `pull` over a share of N one-subject
   voices with their crowd forced to fill, forced idle, and left to its line, to place a crowd's
   `SPARSE.crowd` line; `MODES=line` runs the line alone under `AB_BENCH`. Crossovers measured
-  2026-11-21 (`runs/2026-11-21-sparse-crossover*/`): tweens 13–17%, springs 6–7%, keys 4–5%,
-  fns 11–12%, at 10k and 1k.
+  2026-11-21 (`runs/2026-11-21-sparse-crossover*/`): tweens 13% at 10k and 17% at 1k, so a
+  crowd's tween line reads between the two on the log of its size; springs 6–7%, keys 4–5% and
+  fns 11–12% at either size.
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
   releases included, and `bench/lineage.mjs` tables it.
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, last, max, mul, sum, vec } from '../src/channels.js';
 import { color, oklab } from '../src/color.js';
+import { SPARSE } from '../src/lane.js';
 import type { Lanes } from '../src/lanes.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
@@ -1489,6 +1490,9 @@ describe('lanes go idle below a share of subjects probed and fill again above it
     const few = parts.filter((p) => p.id % 50 === 0);
     frame(0, parts);
     expect(frame(16, parts)).toBe(false);
+    // 200 rows, under the smaller of the sizes the lines are set at, read the smaller's line.
+    expect(crowd()?.line.stop).toBeCloseTo(SPARSE.crowd.small.tween.stop, 9);
+    expect(crowd()?.line.start).toBeCloseTo(SPARSE.crowd.small.tween.start, 9);
     // Half probed is above a tween crowd's line, where filling every row costs less than probing half.
     frame(32, half);
     expect(frame(48, half)).toBe(false);

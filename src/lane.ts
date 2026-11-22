@@ -157,18 +157,28 @@ export const WIDENED = doubles(5, 0);
  * with probing through the general path at about 19% probed for keys at both sizes, 71-77% for a
  * spring, and 63% (1k) to about 100% (10k) for a stateless fn.
  *
- * A crowd's line is the mean of its rows' `crowd` lines, by the row's kind. Crowds break even far
- * lower (bench/sparse.mjs, 1k and 10k, 2026-11-21): tweens at 13-17%, other motion such as a spring
- * at 6-7%, keys at 4-5%, and a fn at 11-12%.
+ * A crowd's line is the mean of its rows' `crowd` lines by the row's kind, at 1,000 rows (`small`)
+ * and 10,000 (`large`), read between the two on the log of its size and held at either end. Crowds
+ * break even far lower (bench/sparse.mjs, 2026-11-21), at 1k and 10k: tweens at 16-17% and 13%,
+ * other motion such as a spring at 6-7%, keys at 4-5%, and a fn at 11-12%. Only the tween line
+ * reads better apart by size; the others measured no better for it.
  */
 export const SPARSE = {
   keys: { stop: 0.15, start: 0.25 },
   other: { stop: 0.6, start: 0.8 },
   crowd: {
-    tween: { stop: 0.13, start: 0.22 },
-    motion: { stop: 0.07, start: 0.12 },
-    keys: { stop: 0.04, start: 0.08 },
-    fn: { stop: 0.12, start: 0.2 },
+    small: {
+      tween: { stop: 0.17, start: 0.25 },
+      motion: { stop: 0.07, start: 0.12 },
+      keys: { stop: 0.04, start: 0.08 },
+      fn: { stop: 0.12, start: 0.2 },
+    },
+    large: {
+      tween: { stop: 0.13, start: 0.22 },
+      motion: { stop: 0.07, start: 0.12 },
+      keys: { stop: 0.04, start: 0.08 },
+      fn: { stop: 0.12, start: 0.2 },
+    },
   },
 };
 
