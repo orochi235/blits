@@ -11,3 +11,14 @@ same: 1000 scenes
 comparing 807c41bc (807c41bc0be050c9fed0f3e2098d1db5d8265183) with this tree
 1000/1000  0 differ
 same: 1000 scenes
+
+# a8fef76f (probe methods kept in the class body) against 807c41bc, 1000 scenes each: plain, SAME_SEEK=1, SAME_LANES=off
+comparing 807c41bc (807c41bc0be050c9fed0f3e2098d1db5d8265183) with this tree
+1000/1000  0 differ
+same: 1000 scenes
+comparing 807c41bc (807c41bc0be050c9fed0f3e2098d1db5d8265183) with this tree
+1000/1000  0 differ
+same: 1000 scenes
+comparing 807c41bc (807c41bc0be050c9fed0f3e2098d1db5d8265183) with this tree
+1000/1000  0 differ
+same: 1000 scenes
