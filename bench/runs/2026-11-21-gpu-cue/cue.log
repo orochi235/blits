@@ -1,0 +1,7 @@
+onto: plan 6
+ 1/6 gpu   stagger   1000000  median    76.925 ms  p95    88.480 ms  max    89.525 ms at frame     6  frames 30  wall    4.8 s
+ 2/6 mixer stagger   1000000  median    71.840 ms  p95    97.270 ms  max    97.865 ms at frame    26  frames 30  wall    4.8 s
+ 3/6 mixer stagger   1000000  median    70.865 ms  p95    92.425 ms  max    98.625 ms at frame     7  frames 30  wall    4.7 s
+ 4/6 gpu   stagger   1000000  median    75.935 ms  p95    85.280 ms  max    87.270 ms at frame    22  frames 30  wall    5.1 s
+ 5/6 gpu   stagger    100000  median     5.755 ms  p95     8.315 ms  max     8.745 ms at frame    19  frames 30  wall    2.1 s
+ 6/6 mixer stagger    100000  median     7.840 ms  p95    16.130 ms  max    17.975 ms at frame    26  frames 30  wall    2.2 s

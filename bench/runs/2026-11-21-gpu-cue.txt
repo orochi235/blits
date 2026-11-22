@@ -1,0 +1,29 @@
+# teitou (Apple M5 Max, apple metal-3), 2026-11-21, headless Chromium 153, node v26.13.0
+# onto do --kind bench --node teitou --gui --solo -- ROWS=gpu:1000000,mixer:1000000,mixer:1000000,gpu:1000000,gpu:100000,mixer:100000 \
+#   FRAMES=30 WARM=5 node bench/gpu-cue.mjs --out bench/runs/2026-11-21-gpu-cue/cue
+# at 9c0e3c5d with bench/gpu-cue.mjs uncommitted (added in the commit that adds this file).
+# One `cue` of a voice naming n subjects with stagger (c.i % 256) * 4, starting at once on a mix
+# synced to 0, a fresh mix each repeat; 30 repeats a row after 5. `hash` is levelsOf on a fresh copy
+# of the same delays and `upload` the codes buffer made mapped, filled and unmapped, both outside the
+# mix. Raw records: 2026-11-21-gpu-cue/cue.jsonl; progress lines: cue.log.
+#
+# engine          subjects   median ms     p95 ms     max ms  frames        cue       hash     upload
+# gpu/stagger      1000000    76.925     88.480     89.525      30     76.925      4.075      0.155
+# mixer/stagger    1000000    71.840     97.270     97.865      30     71.840      4.100      0.185
+# mixer/stagger    1000000    70.865     92.425     98.625      30     70.865      4.070      0.190
+# gpu/stagger      1000000    75.935     85.280     87.270      30     75.935      4.025      0.150
+# gpu/stagger       100000     5.755      8.315      8.745      30      5.755      0.420      0.020
+# mixer/stagger     100000     7.840     16.130     17.975      30      7.840      0.455      0.045
+#
+# Both rows a side at 1M (60 repeats): gpu median 76.2 ms (69.9-89.5), mixer 71.4 (65.2-98.6). The
+# gpu engine adds about 5 ms: the hash (4.1 ms in Chromium, against about 2 in node,
+# 2026-11-11-levels-hash.txt) and the upload (0.15 ms). At 100k the mixer row ran last and reads
+# slower than gpu, so the gap there is collection, not the engine.
+#
+# Profiles of repeats 8, 12 and 16 at 1M (same command with PROFILE=8,12,16
+# ROWS=mixer:1000000,gpu:1000000 FRAMES=15 WARM=5; raw in 2026-11-21-gpu-cue-prof/), self time
+# summed over the three, node bench/profsum.mjs:
+#   mixer 274.8 ms: Named 68.7%, the rest of cue inlined into its caller 21.5%, GC 8.0%, Voice 1.0%
+#   gpu   297.9 ms: Named 64.2%, the rest of cue inlined 20.5%, GC 9.8%, levelsOf's hash 3.7%
+# Named (src/named.ts) builds a Set of the list, since it is longer than 8, and with a stagger a Map
+# from each subject to its delay, beside the Float64Array of the same delays in list order.
