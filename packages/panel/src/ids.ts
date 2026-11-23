@@ -20,10 +20,18 @@ export class Ids {
     return id;
   }
 
-  /** Forgets the ids of subjects that have been collected. */
-  prune(): void {
+  /**
+   * Forgets the ids of subjects that have been collected, and of the numbers, strings and other
+   * plain subjects `kept` turns down, which nothing collects.
+   */
+  prune(kept: (subject: unknown) => boolean): void {
     for (const [id, b] of this.back)
-      if (b instanceof WeakRef && b.deref() === undefined) this.back.delete(id);
+      if (b instanceof WeakRef) {
+        if (b.deref() === undefined) this.back.delete(id);
+      } else if (!kept(b.value)) {
+        this.back.delete(id);
+        this.strong.delete(b.value);
+      }
   }
 
   get(id: number): unknown {

@@ -171,7 +171,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     for (const x of entries()) for (const s of x.subjects()) if (!next.has(s)) next.set(s, x.id);
     if (e !== null) for (const s of e.subjects()) next.set(s, e.id);
     owners = next;
-    ids.prune();
+    ids.prune((s) => next.has(s) || s === subject);
     if (e === null) return;
     const list = subjectList(e);
     const text = JSON.stringify(list);
