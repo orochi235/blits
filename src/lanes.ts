@@ -234,6 +234,8 @@ export class Lanes<I, O> implements Watcher {
     this.numbers = from.numbers;
     this.numbers.adopt(this);
     this.live = from.live;
+    // Carried on: a bound kept through the seek holds fill stamps a count from 0 would meet again.
+    this.fills = from.fills;
     const size = this.numbers.size;
     this.grow(size);
     const per = this.per;

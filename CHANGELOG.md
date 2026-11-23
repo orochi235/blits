@@ -8,6 +8,13 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A seek back and on, on the lanes, no longer reads 0 for one frame from a voice weighed by a ball
+  (`around` or `within`): the lanes the seek rebuilt counted their fills from 0 again, and met fill
+  stamps the voice's bound kept from before.
+- `to`, `push` and `set` on the handle of a voice that is done do nothing. They reached its motion
+  patch unrecorded, and a seek back that brought the voice back applied them at its next read.
+- A subject whose number moved (`pull` on a list kept dense) is released when it is collected,
+  where a registry rebuilt during the move could leave its new number held for good.
 - The first frame that reads many new object subjects costs less: the lanes number each subject
   without an unregister token, which cost about 0.17 µs a subject. The frame after one voice over
   1M subjects is cued takes 1.15 s from 1.35 (node, teitou). A voice naming a long list no longer

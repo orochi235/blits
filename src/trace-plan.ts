@@ -1,4 +1,4 @@
-import { clampWeight, envelope } from './clock.js';
+import { clampWeight, envelope, fadeMsFor } from './clock.js';
 import { delayAhead } from './delay.js';
 import { type Curve, stepsOf, straight } from './easing.js';
 import type { Mixer } from './mixer.js';
@@ -231,7 +231,7 @@ function envelopeOf<I, O>(
   to: number,
 ): { knots: number[]; moving: Moving | null } | false {
   const reduced = mix.reduced;
-  const fadeIn = reduced ? 0 : (voice.fade.in ?? 0);
+  const fadeIn = fadeMsFor(mix, voice.fade.in ?? 0);
   let out: Out | null = null;
   if (voice.state === 'fading') {
     const o = voice.out;
@@ -242,7 +242,7 @@ function envelopeOf<I, O>(
     const plain = !voice.freezesAfter && !voice.freezesBefore;
     const fadeOut = (at: number, set: number): Out => ({
       at,
-      over: reduced ? 0 : Number.isNaN(set) ? (voice.fade.out ?? 0) : set,
+      over: fadeMsFor(mix, Number.isNaN(set) ? (voice.fade.out ?? 0) : set),
       rest: false,
     });
     // A fade set ahead begins then, unless the voice's own end comes first.

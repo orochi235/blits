@@ -517,17 +517,19 @@ export interface Handle<I = unknown> {
   weightOf(subject: I): number;
   /**
    * Heads `subject` for `target`, for a voice playing a `spring` or a `tween`. It is the patch's own
-   * `to`, reached without holding the patch. Throws for any other voice.
+   * `to`, reached without holding the patch. Throws for any other voice, and does nothing once
+   * this one is done.
    */
   to(subject: I, target: Value, at?: number): void;
   /**
    * Sets `subject` moving at `velocity`, for a voice playing a `spring` or a `glide`. The velocity
-   * is in units per second, and this is the patch's own `push`. Throws for any other voice.
+   * is in units per second, and this is the patch's own `push`. Throws for any other voice, and
+   * does nothing once this one is done.
    */
   push(subject: I, velocity: Value, at?: number): void;
   /**
    * Puts `subject` at `value`, keeping its velocity, for a voice playing any motion patch. It is the
-   * patch's own `set`. Throws for any other voice.
+   * patch's own `set`. Throws for any other voice, and does nothing once this one is done.
    */
   set(subject: I, value: Value, at?: number): void;
   /**

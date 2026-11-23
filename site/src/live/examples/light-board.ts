@@ -15,6 +15,7 @@ import {
   shaderPatch,
   toHex,
   transport,
+  type VoiceSpec,
 } from '@msb235/blits/gpu';
 import { demo } from '../demo';
 import { gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
@@ -218,35 +219,63 @@ export default demo((d) => {
     d.closes(m);
 
     // Gels share a role, so a change of look crossfades one gel into the next rather than stacking
-    // them. Spots and the blackout come up and go on their own fades.
-    let up: Handle[] = [];
-    let current = -1;
-    let since = 0;
+    // them. Spots and the blackout come up and go on their own fades. Every look taken is kept, the
+    // newest last, so what is lit is read from its voices, which a seek back puts as they were.
+    const taken: { look: number; voices: Handle[] }[] = [];
     let running = true;
+    let named = 0;
     const fade = { in: FADE, out: FADE };
-    const take = (i: number) => {
+    const take = (i: number, place: Pick<VoiceSpec<Cell, Light>, 'anchor'> = {}, name?: string) => {
       const look = LOOKS[i] as Look;
-      for (const h of up) h.fade();
-      up = look.spots.map((p) => m.cue({ patch: p, subjects: CELLS, loop: true, fade }));
-      if (look.gel !== undefined)
-        up.push(m.cue({ patch: look.gel, subjects: CELLS, role: 'gel', fade }));
-      if (look.blackout) up.push(m.cue({ patch: dark, subjects: CELLS, fade }));
-      current = i;
-      since = show.now;
-      buttons.forEach((b, j) => {
-        b.ariaPressed = String(j === i);
-      });
-      auto.ariaPressed = String(running);
+      const specs: VoiceSpec<Cell, Light>[] = look.spots.map((p) => ({ patch: p, loop: true }));
+      if (look.gel !== undefined) specs.push({ patch: look.gel, role: 'gel' });
+      if (look.blackout) specs.push({ patch: dark });
+      const voices = specs.map((spec, k) =>
+        m.cue({ ...spec, subjects: CELLS, fade, ...place, ...(k === 0 && name ? { name } : {}) }),
+      );
+      taken.push({ look: i, voices });
+      if (taken.length > 4 * LOOKS.length && taken[0]?.voices.every((v) => v.state === 'done'))
+        taken.shift();
+    };
+    const lit = () => {
+      for (let k = taken.length - 1; k >= 0; k--) {
+        const t = taken[k] as (typeof taken)[number];
+        const state = t.voices[0]?.state;
+        if (state === 'live' || state === 'frozen') return t.look;
+      }
+      return -1;
+    };
+    const ahead = () => taken.filter((t) => t.voices[0]?.state === 'pending').length;
+    // Running the show, each look starts `HOLD` after the one before and starts to fade as the
+    // next comes up, both anchored on the mix's clock; the frame loop keeps two looks cued ahead.
+    let prev: string | undefined;
+    const next = (from = taken[taken.length - 1]?.look ?? -1) => {
+      const at = (from + 1) % LOOKS.length;
+      const name = `show ${named++}`;
+      const anchor = {
+        out: { with: `show ${named}` },
+        ...(prev === undefined ? {} : { start: { with: prev, by: HOLD } }),
+      };
+      prev = name;
+      take(at, { anchor }, name);
+    };
+    const leave = () => {
+      for (const t of taken) for (const v of t.voices) if (v.state !== 'done') v.fade();
     };
     buttons.forEach((b, i) => {
       d.on(b, 'click', () => {
         running = false;
+        leave();
         take(i);
       });
     });
     d.on(auto, 'click', () => {
+      // The show goes on from the look that is up, not one cued ahead and let go.
+      const from = lit();
+      leave();
       running = true;
-      take((current + 1) % LOOKS.length);
+      prev = undefined;
+      next(from);
     });
     playPause(d, show, play);
 
@@ -294,8 +323,12 @@ export default demo((d) => {
       show,
       (now) => {
         show.sync(now);
-        if (current < 0) take(0);
-        else if (running && show.now - since >= HOLD) take((current + 1) % LOOKS.length);
+        while (running && ahead() < 2) next();
+        const on = lit();
+        buttons.forEach((b, j) => {
+          b.ariaPressed = String(j === on);
+        });
+        auto.ariaPressed = String(ahead() > 0);
         if (show.seq === drawn) return;
         drawn = show.seq;
         draw();

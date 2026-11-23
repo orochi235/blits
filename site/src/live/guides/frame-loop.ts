@@ -77,7 +77,7 @@ export default function run(root: HTMLElement): () => void {
 
   const show = () => {
     read.textContent = `${state.padEnd(6)}  frames ${String(count).padStart(6)}`;
-    cue.disabled = state === 'awake' || hiding !== 0;
+    cue.disabled = state === 'awake' || state === 'paused' || hiding !== 0;
     hide.disabled = hiding !== 0;
     catchUp.ariaPressed = String(!rebase);
     pickUp.ariaPressed = String(rebase);

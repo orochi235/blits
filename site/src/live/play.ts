@@ -6,13 +6,19 @@ export function showPlay(button: HTMLElement, paused: boolean): void {
   button.dataset.glyph = paused ? 'play' : 'pause';
 }
 
+/** A mix or transport a play button drives: a seek can restore the rate it had then. */
+interface Rated {
+  rate: number;
+  onSeek(fn: () => void): () => void;
+}
+
 /**
  * Has `button` pause and play `clock` through its `rate`, until demo `d` stops. Returns the
  * relabel, for a pause made elsewhere.
  */
 export function playPause(
-  d: Pick<Demo, 'on'>,
-  clock: { rate: number },
+  d: Pick<Demo, 'on' | 'stops'>,
+  clock: Rated,
   button: HTMLElement,
 ): () => void {
   const label = () => showPlay(button, clock.rate === 0);
@@ -20,6 +26,7 @@ export function playPause(
     clock.rate = clock.rate === 0 ? 1 : 0;
     label();
   });
+  d.stops(clock.onSeek(label));
   label();
   return label;
 }
@@ -30,8 +37,8 @@ export function playPause(
  * pass, for the slider.
  */
 export function scrubbed(
-  d: Pick<Demo, 'on'>,
-  clock: { rate: number },
+  d: Pick<Demo, 'on' | 'stops'>,
+  clock: Rated,
   button: HTMLElement,
   slider: HTMLInputElement,
   period: number,

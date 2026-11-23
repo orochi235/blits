@@ -280,3 +280,36 @@ describe('a weight write on a signal-weighted voice multiplies into the signal',
     });
   });
 });
+
+describe('a motion call on a done voice', () => {
+  // Frame gaps from the randomized seek check that found it.
+  const gaps = [
+    120, 50, 33, 33, 120, 16, 16, 16, 16, 16, 33, 120, 50, 16, 120, 16, 33, 120, 33, 50,
+  ];
+  for (const lanes of [false, true])
+    it(`does nothing, so a seek back that brings the voice back shows it as it was (lanes ${lanes})`, () => {
+      const m = mix<{ id: number }, { x: number }>(kit({ x: sum() }), {
+        lanes,
+        history: { ms: 100_000, tape },
+      });
+      const d = { id: 0 };
+      let t = 0;
+      let h: Handle<{ id: number }> | undefined;
+      const seen: { seq: number; x: number }[] = [];
+      gaps.forEach((gap, f) => {
+        if (f === 1)
+          h = m.cue({ patch: spring<{ id: number }, { x: number }>('x', { from: 0, to: 9.49 }) });
+        // Run back to its start, it leaves.
+        if (f === 7) (h as Handle<{ id: number }>).rate = -1;
+        t += gap;
+        m.sync(t);
+        seen.push({ seq: m.seq, x: m.probe(d).x });
+      });
+      expect(h?.state).toBe('done');
+      h?.to(d, 11.12);
+      m.seek({ frame: (seen[11] as { seq: number }).seq });
+      m.probe(d);
+      m.seek({ frame: (seen[7] as { seq: number }).seq });
+      expect(m.probe(d).x).toBe((seen[7] as { x: number }).x);
+    });
+});
