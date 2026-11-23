@@ -236,11 +236,11 @@ built and what is deliberately not offered.
 
 ## Site and diagrams
 
-- **[maintainer] Two example demos still schedule from the frame loop** (2026-11-21):
-  `light-board.ts`'s "Run the show" keeps the current look and the button lit as host state, so a
-  panel seek back leaves the wrong look lit; moving it onto anchored voices that the buttons read
-  back is a redesign. `burst.ts` cues its automatic bursts on `m.now` in the frame loop, as each
-  needs new random sparks, which a voice cannot make.
+- **[maintainer] light-board still schedules from the frame loop** (2026-11-21): "Run the show"
+  cues each look as the frame loop finds fewer than two cued ahead (`while (running && ahead() < 2)
+  next()` in `light-board.ts`), rather than from a voice. What is lit is read back from its voices
+  (2026-11-23), so a panel seek back shows the right look; moving the cueing onto voices too is a
+  redesign.
 - **[maintainer] Should the built-on page's Libraries table list every consumer?** It names
   klieg, magicsmoke, weasel and agnew; the README's status names nine. Which are public decides it.
 - **[maintainer] CI never runs `test:gpu`.** It needs real WebGPU, which GitHub's hosted runners
