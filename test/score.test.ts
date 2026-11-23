@@ -177,6 +177,22 @@ describe('placement', () => {
     expect(() => m.cue({ patch: hold(100), start: 0, anchor: { in: 10 } })).toThrow(/not both/);
   });
 
+  it('chains a voice after the last voice of its own name, as it does by tag', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const first = m.cue({ patch: hold(100), name: 'step', start: 0, loop: false });
+    const next = m.cue({
+      patch: hold(100),
+      name: 'step',
+      loop: false,
+      anchor: { start: { after: 'step' } },
+    });
+    m.sync(50);
+    expect(next.state).toBe('pending');
+    m.sync(150);
+    expect([first.state, next.state]).toEqual(['done', 'live']);
+  });
+
   it('lets a projection ahead play what the anchors place', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);

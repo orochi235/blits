@@ -99,8 +99,6 @@ export function checkPlacement<I, O>(
     const q = typeof given === 'string' ? { name: given } : given;
     const score = q.score ?? asker.spec.score;
     const anywhere = q.score !== undefined;
-    if (asker === self && q.name !== undefined && q.name === spec.name && score === spec.score)
-      refuse();
     const met = voices.filter(
       (v) =>
         v !== asker &&
@@ -110,6 +108,9 @@ export function checkPlacement<I, O>(
         (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
         (q.writes === undefined || (v.writes as readonly unknown[]).includes(q.writes)),
     );
+    // Only its own name, with no other voice under it to follow, is a voice waiting on itself.
+    if (asker === self && met.length === 0 && q.name !== undefined && q.name === spec.name)
+      if (score === spec.score) refuse();
     const resolver = q.resolver ?? 'last';
     const picked =
       met.length > 1 && (resolver === 'first' || resolver === 'last')

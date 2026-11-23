@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice anchored on its own name follows the last other voice of that name, as one anchored on
+  its own tag does, where it was refused as waiting on itself. It is still refused when no other
+  voice carries the name.
 - A mix dropped from its transport refuses `mute()`, `drop(subject)` and writes through its voices'
   handles, as it refused `cue` and `touch`: a mute retired every voice of a mix the transport no
   longer synced.
