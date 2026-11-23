@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A channel bounded at an infinity, `sum({ bounds: [0, Infinity] })`, folds on the GPU, clamped to
+  the largest f32 there; its kernel failed to compile, so `channel()` and `read()` gave null for
+  every channel of the mix. One bounded past the largest f32 stays on the CPU, and `reasons()` says
+  why.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the

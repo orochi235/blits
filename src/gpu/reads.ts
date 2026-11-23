@@ -8,9 +8,7 @@ import { elapsedOf } from './table.js';
 import { reaches } from './unread.js';
 import type { GpuBuffer, GpuDevice } from './webgpu.js';
 import { KEEPS, perSubject, SENDS } from './weight.js';
-
-/** The largest finite f32, which an infinite read is stored as. */
-const MAX_F32 = 3.4028234663852886e38;
+import { MAX_F32 } from './wgsl/literal.js';
 
 /**
  * One voice's reads from the last `read` it was in, and what a CPU record of each subject keeps for

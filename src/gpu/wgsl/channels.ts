@@ -3,6 +3,7 @@ import { numericOf } from '../../channels.js';
 import { extremeOf } from '../../extremes.js';
 import type { Channel } from '../../types.js';
 import { LERP_LCH_WGSL } from './lch.js';
+import { literal } from './literal.js';
 
 /**
  * A channel's WGSL: how many numbers a subject's value takes, its rest, and how a voice's value
@@ -58,9 +59,6 @@ export const helpersOf = (h: string | readonly string[] | undefined): readonly s
 /** The `lerp` of every rule whose values interpolate as plain numbers. */
 const STRAIGHT = 'mix(x, y, u)';
 
-/** A number as a WGSL f32 literal. */
-const f = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
-
 /** Each stock op's fold of one axis `a`, its rest, for a channel of numbers or a `vec` of them. */
 const OPS: Record<string, { rest: number; fold: string }> = {
   sum: { rest: 0, fold: 'acc[a] = acc[a] + v[a] * w;' },
@@ -78,9 +76,19 @@ function stock(op: string, axes: number): ChannelCode {
   };
 }
 
-/** The WGSL for a channel's rule, or undefined where the GPU has none and it stays on the CPU. */
-export function codeFor(channel: Channel<unknown>): ChannelCode | undefined {
-  const code = ruleOf(channel);
+/**
+ * The WGSL for a channel's rule, or undefined where the GPU has none, or why not where its rule or
+ * bounds take a number no f32 literal holds; either way it stays on the CPU.
+ */
+export function codeFor(channel: Channel<unknown>): ChannelCode | { why: string } | undefined {
+  let code: ChannelCode | undefined;
+  try {
+    code = ruleOf(channel);
+    for (const b of channel.bounds ?? []) literal(b);
+  } catch (e) {
+    if (e instanceof RangeError) return { why: `whose rule takes ${e.message}` };
+    throw e;
+  }
   if (code === undefined) return undefined;
   return {
     ...code,
@@ -105,7 +113,7 @@ function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
   const n = numericOf(channel);
   const plain = typeof channel.rest === 'number';
   if (n !== undefined && n.turn !== undefined && n.op === 'sum' && n.axes === 1 && plain) {
-    const t = f(n.turn);
+    const t = literal(n.turn);
     return {
       axes: 1,
       rest: [0],
@@ -125,7 +133,7 @@ function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
     return {
       axes: 1,
       rest: [x.top],
-      fold: `acc[0] = min(acc[0], ${f(x.top)} + (v[0] - ${f(x.top)}) * w);`,
+      fold: `acc[0] = min(acc[0], ${literal(x.top)} + (v[0] - ${literal(x.top)}) * w);`,
       lerp: STRAIGHT,
     };
   if (x?.op === 'screen')
@@ -136,8 +144,8 @@ function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
       lerp: STRAIGHT,
     };
   if (x?.op === 'norm') {
-    const p = f(x.power);
-    const q = f(1 / x.power);
+    const p = literal(x.power);
+    const q = literal(1 / x.power);
     return {
       axes: 1,
       rest: [0],
@@ -205,7 +213,7 @@ function blended(rule: NonNullable<ReturnType<typeof blendRuleOf>>): ChannelCode
       axes: 4,
       rest: [0, 0, 0, 0],
       ...travel(rule),
-      fold: `let cov = v[3]; if (cov > 0.0 && w > 0.0) { ${LAYER} let x = w * min(cov, 1.0) * (${x}); for (var a = 0u; a < 3u; a++) { ${op} } } acc[3] = ${f(rule.tag)};`,
+      fold: `let cov = v[3]; if (cov > 0.0 && w > 0.0) { ${LAYER} let x = w * min(cov, 1.0) * (${x}); for (var a = 0u; a < 3u; a++) { ${op} } } acc[3] = ${literal(rule.tag)};`,
     };
   }
   const axes = 2 + 4 * rule.layers;

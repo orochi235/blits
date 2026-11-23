@@ -19,18 +19,24 @@ export interface Eligibility<I, O> {
 }
 
 const lookups = new WeakMap<object, ChannelLookup>();
+/** For each lookup, why a channel whose rule has WGSL is still left out of it. */
+const unfit = new WeakMap<ChannelLookup, ReadonlyMap<string, string>>();
 
 /** The WGSL of each of the mix's channels whose rule has some, one map per mix. */
 export function codesOf<I, O>(mix: Mixer<I, O>): ChannelLookup {
   let codes = lookups.get(mix);
   if (codes === undefined) {
     const made = new Map<string, ChannelCode>();
+    const why = new Map<string, string>();
     mix.names.forEach((name, i) => {
       const code = codeFor(mix.channels[i] as never);
-      if (code !== undefined) made.set(name, code);
+      if (code === undefined) return;
+      if ('why' in code) why.set(name, code.why);
+      else made.set(name, code);
     });
     codes = made;
     lookups.set(mix, codes);
+    unfit.set(codes, why);
   }
   return codes;
 }
@@ -64,7 +70,8 @@ function why<I, O>(
   refused?: WeakMap<object, string>,
 ): string | null {
   for (const name of voice.patch.writes as readonly string[])
-    if (!codes.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
+    if (!codes.has(name))
+      return `it writes ${name}, ${unfit.get(codes)?.get(name) ?? 'whose rule the GPU has no WGSL for'}`;
   if (voice.axes !== null) return "it weighs a channel's axes apart";
   const packed = packOf(voice.patch, codes);
   if (packed === undefined) return `no gpu runner takes a ${voice.patch.form} patch`;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { kernel, prefixed } from '../src/gpu/kernel.js';
 import { packOf, type Runner } from '../src/gpu/runner.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
+import { literal } from '../src/gpu/wgsl/literal.js';
 import { spring } from '../src/index.js';
 
 type O = { y: number; z: number; v: number };
@@ -128,5 +129,28 @@ describe('packOf', () => {
   });
   it('claims no plain patch', () => {
     expect(packOf({ form: 'fn' }, channels)).toBeUndefined();
+  });
+});
+
+describe('WGSL literals', () => {
+  it('writes a number as an f32 literal WGSL parses', () => {
+    expect(literal(2)).toBe('2.0');
+    expect(literal(-0.5)).toBe('-0.5');
+    expect(literal(1e21)).toBe('1e+21');
+    expect(literal(1e-7)).toBe('1e-7');
+  });
+  it('writes an infinity as the largest f32 of its sign', () => {
+    expect(literal(Infinity)).toBe('3.4028234663852886e+38');
+    expect(literal(-Infinity)).toBe('-3.4028234663852886e+38');
+  });
+  it('refuses a finite number past the largest f32, and NaN', () => {
+    expect(() => literal(1e39)).toThrow(RangeError);
+    expect(() => literal(Number.NaN)).toThrow(RangeError);
+  });
+  it('clamps a channel bounded on one side only to the largest f32 on the other', () => {
+    const bounded = new Map([['v', { ...sum, bounds: [0, Infinity] as const }]]);
+    expect(kernel([stub], bounded, 1).code).toContain(
+      'clamp(acc_0[a], 0.0, 3.4028234663852886e+38)',
+    );
   });
 });
