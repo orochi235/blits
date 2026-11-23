@@ -120,7 +120,7 @@ function schemaOf() {
         .number(1000)
         .label('period')
 
-        .range(0, 1e9)
+        .range(1, 1e9)
         .input()
         .step(10)
         .suffix('ms')
