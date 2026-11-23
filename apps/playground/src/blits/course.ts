@@ -29,7 +29,7 @@ export function coursesOf(
   subject = 0,
   n = 241,
 ): Map<string, Track> {
-  const built = compile(c, subjects, { solos: true });
+  const built = compile(c, subjects, { solos: true, listed: false });
   try {
     const { transport, mix, solos, handles, groupHandles } = built;
     const weighed = [...handles, ...groupHandles];

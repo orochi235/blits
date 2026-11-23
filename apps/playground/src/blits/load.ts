@@ -30,6 +30,7 @@ const expr = (v: unknown) => obj(v) && str(v.code);
 const count = (v: unknown, max = Infinity) =>
   Number.isInteger(v) && (v as number) > 0 && (v as number) <= max;
 const channel = (v: unknown) => CHANNELS.includes(v as never);
+const positive = (v: unknown) => num(v) && v > 0;
 const oneOf =
   (...xs: unknown[]) =>
   (v: unknown) =>
@@ -43,7 +44,10 @@ const easing = (v: unknown) =>
 
 const byChannel = (ok: (v: unknown) => boolean) => (v: unknown) =>
   obj(v) && Object.entries(v).every(([k, x]) => channel(k) && ok(x));
-const stop = (v: unknown) => obj(v) && num(v.at) && obj(v.delta) && opt(v.ease, easing);
+const pair = (v: unknown) => Array.isArray(v) && v.length === 2 && v.every(num);
+const delta = (v: unknown) =>
+  obj(v) && Object.entries(v).every(([k, x]) => channel(k) && (k === 'offset' ? pair(x) : num(x)));
+const stop = (v: unknown) => obj(v) && num(v.at) && delta(v.delta) && opt(v.ease, easing);
 const option = (v: unknown) => num(v) || (Array.isArray(v) && v.every(num)) || expr(v);
 
 function patch(p: unknown): boolean {
@@ -51,7 +55,7 @@ function patch(p: unknown): boolean {
   switch (p.kind) {
     case 'keys':
       return (
-        num(p.period) &&
+        positive(p.period) &&
         Array.isArray(p.stops) &&
         p.stops.every(stop) &&
         opt(p.ease, easing) &&
@@ -60,7 +64,7 @@ function patch(p: unknown): boolean {
       );
     case 'fn':
       return (
-        num(p.period) &&
+        positive(p.period) &&
         Array.isArray(p.writes) &&
         p.writes.every(channel) &&
         str(p.at) &&
@@ -69,7 +73,7 @@ function patch(p: unknown): boolean {
       );
     case 'wave':
       return (
-        num(p.period) &&
+        positive(p.period) &&
         oneOf('sine', 'triangle', 'saw', 'square')(p.shape) &&
         num(p.cycles) &&
         num(p.phase) &&
@@ -194,7 +198,6 @@ const stage = (v: unknown) =>
   ((v.kind === 'dots' && count(v.cols, MAX_COLS) && count(v.rows, MAX_ROWS)) ||
     (v.kind === 'letters' && str(v.text) && [...v.text].length <= MAX_TEXT));
 
-const positive = (v: unknown) => num(v) && v > 0;
 const mixSettings = (v: unknown) =>
   obj(v) &&
   opt(v.stepMs, (x) => x === 'off' || positive(x)) &&

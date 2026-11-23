@@ -13,7 +13,7 @@ import { cueAll, type Voices } from './cueGroups';
 import { AHEAD } from './events';
 import { type Faults, scopeOf } from './expr';
 import { FRAME } from './frame';
-import { kitOf, type Mixed } from './kit';
+import { colorAxesOf, kitOf, type Mixed } from './kit';
 import { Pointer, usesAround, xyOf } from './pointer';
 import type { FieldError } from './spec';
 import type { Subject } from './stage';
@@ -109,7 +109,7 @@ export function compile(
     faults,
     errors,
     ahead: c.book?.ahead ?? AHEAD,
-    colorAxes: Array.isArray(kit.color.rest) ? kit.color.rest.length : 4,
+    colorAxes: colorAxesOf(kit.color.rest),
     pointer,
   };
   if (opts.listed === false) close(built);

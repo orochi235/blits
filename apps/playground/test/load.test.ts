@@ -26,7 +26,7 @@ describe('load', () => {
 
   it('accepts every patch kind and the optional voice fields', () => {
     const kinds = [
-      { kind: 'fn', period: 0, writes: ['glow'], at: '(p) => ({ glow: p })', state: '(s) => 0' },
+      { kind: 'fn', period: 500, writes: ['glow'], at: '(p) => ({ glow: p })', state: '(s) => 0' },
       { kind: 'spring', channel: 'offset', opts: { to: [0, 4], stiffness: 120 } },
       { kind: 'glide', channel: 'turn', opts: { from: { code: '(s) => s.col' } } },
       { kind: 'tween', channel: 'scale', opts: { from: 1, to: 2, ms: 300 }, ease: 'ease-out' },
@@ -149,8 +149,8 @@ describe('load', () => {
       withVoice({ patch: { kind: 'keys', period: 1200 } }),
       withVoice({ patch: { kind: 'keys', period: 1200, stops: [{ at: 0 }] } }),
       withVoice({ patch: { kind: 'keys', period: 1200, stops: [], ease: 'wobbly' } }),
-      withVoice({ patch: { kind: 'fn', period: 0, writes: ['size'], at: '() => ({})' } }),
-      withVoice({ patch: { kind: 'fn', period: 0, writes: [] } }),
+      withVoice({ patch: { kind: 'fn', period: 1, writes: ['size'], at: '() => ({})' } }),
+      withVoice({ patch: { kind: 'fn', period: 1, writes: [] } }),
       withVoice({ patch: { kind: 'spring', channel: 'size', opts: {} } }),
       withVoice({ patch: { kind: 'spring', channel: 'turn', opts: { to: 'far' } } }),
       withVoice({ patch: { kind: 'shake', period: 1 } }),
@@ -174,6 +174,17 @@ describe('load', () => {
       }),
     ];
     for (const c of bad) expect(load(c), JSON.stringify(c).slice(0, 200)).toBeNull();
+  });
+
+  it('refuses a period of zero or less', () => {
+    const patches = [
+      { kind: 'fn', writes: ['glow'], at: '(p) => ({ glow: p })' },
+      { kind: 'keys', stops: [] },
+      { kind: 'wave', shape: 'sine', cycles: 1, phase: 0, depth: { glow: 1 } },
+    ];
+    for (const p of patches)
+      for (const period of [0, -100])
+        expect(load(withVoice({ patch: { ...p, period } })), `${p.kind} ${period}`).toBeNull();
   });
 });
 

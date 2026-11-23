@@ -17,7 +17,7 @@ import { placesStart } from './anchor';
 import { type Expr, isExpr, type PatchSource, type Voice } from './composition';
 import { compileExpr, type Faults, type Scope } from './expr';
 import { FRAME } from './frame';
-import { type ChannelName, KIT, type Mixed, type Pose } from './kit';
+import { type ChannelName, colorAxesOf, KIT, type Mixed, type Pose } from './kit';
 import type { Subject } from './stage';
 
 export interface FieldError {
@@ -60,8 +60,17 @@ export function specOf(
       return fallback;
     }) as unknown as F;
   };
-  const made = patchOf(v.patch, kit, fn, (field, error) =>
-    errors.push({ voice: v.id, field, error, line: null }),
+  const wrote: Faults = { count: 0, first: null };
+  faults.push(wrote);
+  const made = patchOf(
+    v.patch,
+    kit,
+    fn,
+    (field, error) => errors.push({ voice: v.id, field, error, line: null }),
+    (wrong) => {
+      wrote.count++;
+      wrote.first ??= wrong;
+    },
   );
   const stagger = v.stagger ? fn<(s: Subject) => number>('stagger', v.stagger, 0) : undefined;
   const target = v.target ? fn<(s: Subject) => boolean>('target', v.target, false) : undefined;
@@ -112,6 +121,7 @@ type Fn = <F extends (...a: never[]) => unknown>(
   takes?: (out: unknown) => string | null,
 ) => F | undefined;
 type Fail = (field: string, error: string) => void;
+type Fault = (wrong: string) => void;
 
 const PER_SUBJECT = new Set(['to', 'from', 'velocity']);
 const REQUIRED = { spring: ['to'], glide: ['from'], tween: ['from', 'to', 'ms'] } as const;
@@ -127,8 +137,9 @@ export function refusalOf(
   if (key === 'ms') return (out) => (finite(out) && out > 0 ? null : 'takes a positive number');
   // A channel's shape is the same under every rule, but `last` has no rest to read it from.
   const rest = kit[channel].rest ?? KIT[channel].rest;
-  if (!Array.isArray(rest)) return (out) => (finite(out) ? null : 'takes a number');
-  const n = rest.length;
+  if (channel !== 'color' && !Array.isArray(rest))
+    return (out) => (finite(out) ? null : 'takes a number');
+  const n = channel === 'color' ? colorAxesOf(kit.color.rest) : (rest as unknown[]).length;
   return (out) =>
     Array.isArray(out) && out.length === n && out.every(finite) ? null : `takes ${n} numbers`;
 }
@@ -158,6 +169,7 @@ function patchOf(
   kit: Kit<Mixed>,
   fn: Fn,
   fail: Fail,
+  fault: Fault,
 ): Patch<Subject, Mixed, unknown> | undefined {
   if (p.kind === 'keys') {
     try {
@@ -187,7 +199,27 @@ function patchOf(
     if (!at || (p.state && !state) || (p.step && !step)) return undefined;
     try {
       const authored = at as unknown as (...a: unknown[]) => Partial<Pose>;
-      const mixed = (...a: unknown[]) => mixedDelta(authored(...a));
+      const checks = p.writes.map((ch) => [ch, refusalOf(ch, 'to', kit)] as const);
+      // A wrong value would reach the mix's pull, which throws on it; it rests instead.
+      const mixed = (...a: unknown[]) => {
+        const out: unknown = authored(...a);
+        if (typeof out !== 'object' || out === null) {
+          fault('at takes an object');
+          return {};
+        }
+        let d = mixedDelta(out as Partial<Pose>) as Record<string, unknown>;
+        for (const [ch, refusal] of checks) {
+          if (d[ch] === undefined) continue;
+          const wrong = refusal(d[ch]);
+          if (wrong === null) continue;
+          fault(`at ${ch} ${wrong}`);
+          // A channel without a rest (a `last` rule) rests by going unwritten.
+          const { [ch]: _, ...others } = d;
+          const rest = kit[ch].rest;
+          d = rest === undefined ? others : { ...others, [ch]: rest };
+        }
+        return d;
+      };
       return patch<Subject, Mixed, unknown>(p.period, mixed as never, {
         writes: p.writes,
         ...(state ? { state } : {}),

@@ -163,13 +163,13 @@ function colorChannel({ rule, type }: ColorRuleSpec) {
   return type === 'ink' ? ink(of) : color(of);
 }
 
+/** Numbers in a color whose channel rests at `rest`: a `replace` color has no rest, and takes four. */
+export const colorAxesOf = (rest: unknown): number => (Array.isArray(rest) ? rest.length : 4);
+
 /** The most numbers a subject's color takes under any rule, as a `pull` column holds it. */
 export const COLOR_AXES = Math.max(
   ...COLOR_RULES.flatMap((rule) =>
-    (['color', 'ink'] as const).map((type) => {
-      const rest = colorChannel({ rule, type }).rest;
-      return Array.isArray(rest) ? rest.length : 4;
-    }),
+    (['color', 'ink'] as const).map((type) => colorAxesOf(colorChannel({ rule, type }).rest)),
   ),
 );
 

@@ -4,6 +4,7 @@ import type { Level } from './composition';
 import { EventLog } from './events';
 import { movedElsewhere } from './follow';
 import { COLOR_AXES, type Mixed } from './kit';
+import { messageOf } from './spec';
 import type { Subject } from './stage';
 
 export interface Columns {
@@ -410,9 +411,31 @@ export class Player {
     this.record();
   }
 
+  /**
+   * Reads the frame into the columns. A mix that throws on a value it cannot pull leaves the last
+   * frame standing and goes on the errors, under the voice whose solo throws too, so one bad
+   * composition never stops the player.
+   */
   private pull(): void {
-    this.built.mix.pull(this.subjects, this.columns);
-    for (const solo of this.built.solos.values()) solo.pull(this.subjects, this.scratch);
+    const { mix, solos, errors } = this.built;
+    const report = (voice: string | null, err: unknown) => {
+      const error = messageOf(err);
+      if (!errors.some((e) => e.voice === voice && e.error === error))
+        errors.push({ voice, field: 'patch', error, line: null });
+    };
+    let blamed = false;
+    for (const [id, solo] of solos)
+      try {
+        solo.pull(this.subjects, this.scratch);
+      } catch (err) {
+        report(id, err);
+        blamed = true;
+      }
+    try {
+      mix.pull(this.subjects, this.columns);
+    } catch (err) {
+      if (!blamed) report(null, err);
+    }
   }
 
   /** Moves back to `t` with blits' `seek`; false where history cannot reach it. */
