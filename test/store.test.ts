@@ -13,6 +13,17 @@ describe('Store', () => {
     expect([s.get(7), s.get(8), s.get(9), s.get(10)]).toEqual(['b', 'c', 'd', undefined]);
   });
 
+  it('forgets object keys as well as the rest on clear', () => {
+    const s = new Store<object | string, number>();
+    const key = {};
+    s.set(key, 1);
+    s.set('x', 2);
+    s.clear();
+    expect([s.get(key), s.get('x')]).toEqual([undefined, undefined]);
+    s.set(key, 3);
+    expect(s.get(key)).toBe(3);
+  });
+
   it('deletes the id it holds inline, and takes a new first one after', () => {
     const s = new Store<string, number>();
     s.set('x', 1);

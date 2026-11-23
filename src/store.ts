@@ -62,6 +62,7 @@ export class Store<K, V> {
   }
 
   clear(): void {
+    this.weak = noWeak;
     this.oneKey = none;
     this.oneValue = undefined;
     this.strong.clear();
