@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
-import { patch } from '../src/patch.js';
-import type { Channel } from '../src/types.js';
+import { keys, patch } from '../src/patch.js';
+import { angle, quat } from '../src/rotation.js';
+import type { Channel, Mix } from '../src/types.js';
 
 interface Pose {
   gain: number;
@@ -220,5 +221,77 @@ describe("a channel's rest", () => {
     expect(() =>
       m.cue({ patch: patch<Part, P>(0, () => ({ b: new Box(2) }), { writes: ['b'] }) }),
     ).toThrow(/copy/);
+  });
+});
+
+describe.each([true, false])('a rotation at its rest a different way, lanes %s', (lanes) => {
+  type P = { a: number; q: number[] };
+  const K = kit<P>({ a: angle(), q: quat() });
+  const mixOf = () => mix<Part, P>(K, { lanes });
+
+  it.each([
+    ['an angle a whole turn from 0', { a: 180 }, { a: 360 }],
+    ['a quaternion at minus the identity', { q: [0, 0, 1, 0] }, { q: [0, 0, 0, -1] }],
+  ])('ends a fade at rest on %s', (_, mid: Partial<P>, end: Partial<P>) => {
+    const m = mixOf();
+    const h = m.cue({
+      patch: keys<Part, P>(200, [
+        { at: 0.5, delta: mid },
+        { at: 1, delta: end },
+      ]),
+      freeze: 'after',
+    });
+    for (let t = 0; t <= 300; t += 16) {
+      m.sync(t);
+      m.probe(part);
+    }
+    h.fade({ at: 'rest' });
+    for (let t = 316; t <= 400; t += 16) {
+      m.sync(t);
+      m.probe(part);
+    }
+    expect(h.state).toBe('done');
+  });
+
+  // Moving voices and a crowd of subjects, so the lanes fill and answer `atRest` themselves.
+  const atLoopStart = <O>(m: Mix<Part, O>): boolean[] => {
+    const parts = Array.from({ length: 8 }, (_, i) => ({ id: String(i) }));
+    for (let t = 0; t < 400; t += 16) {
+      m.sync(t);
+      for (const p of parts) m.probe(p);
+    }
+    m.sync(400);
+    return parts.map((p) => m.atRest(p));
+  };
+
+  it('finds an angle a whole turn from 0 at rest', () => {
+    type A = { a: number };
+    const m = mix<Part, A>(kit<A>({ a: angle() }), { lanes });
+    m.cue({
+      patch: keys<Part, A>(100, [
+        { at: 0, delta: { a: 360 } },
+        { at: 0.5, delta: { a: 200 } },
+        { at: 1, delta: { a: 360 } },
+      ]),
+      loop: true,
+    });
+    expect(atLoopStart(m)).toEqual(Array(8).fill(true));
+  });
+
+  it('finds quaternions composing to minus the identity at rest', () => {
+    type Q = { q: number[] };
+    const m = mix<Part, Q>(kit<Q>({ q: quat() }), { lanes });
+    const half = Math.SQRT1_2;
+    for (let i = 0; i < 2; i++)
+      m.cue({
+        patch: keys<Part, Q>(100, [
+          { at: 0, delta: { q: [0, 0, 1, 0] } },
+          { at: 0.5, delta: { q: [0, 0, half, half] } },
+          { at: 1, delta: { q: [0, 0, 1, 0] } },
+        ]),
+        loop: true,
+      });
+    expect(atLoopStart(m)).toEqual(Array(8).fill(true));
+    expect(m.probe({ id: '0' }).q[3]).toBeCloseTo(-1, 12);
   });
 });

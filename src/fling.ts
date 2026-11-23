@@ -38,11 +38,15 @@ export function track<V extends Value = number>(
   const ts: number[] = [];
   const xs: number[][] = [];
   let scalar = true;
+  // Kept across clear, so an empty track still reads a zero as wide as what it tracks.
+  let width = 1;
   return {
     add(t, x) {
       scalar = typeof x === 'number';
+      const at = axes(x);
+      width = at.length;
       ts.push(t);
-      xs.push(axes(x));
+      xs.push(at);
       let drop = 0;
       while (t - (ts[drop] as number) > span) drop++;
       if (drop > 0) {
@@ -52,7 +56,6 @@ export function track<V extends Value = number>(
     },
     velocity(at) {
       const n = ts.length;
-      const width = n === 0 ? 1 : (xs[0] as number[]).length;
       const out = new Array<number>(width).fill(0);
       const last = ts[n - 1] as number;
       if (n >= 2 && !((at ?? last) - last > stop)) {

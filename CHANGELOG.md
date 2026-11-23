@@ -40,6 +40,18 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A subject that left a voice with a stateful patch between two seeks back, with no read of it
   between them, is put back as it stood at the second seek's moment; it was met afresh instead,
   its state starting over.
+- A voice cued `from: 'current'` on an `angle()` or a `quat()` takes over a subject turning across
+  180° at the speed it was turning, as it does anywhere else; it read the wrap as a spin of
+  thousands of degrees a second, and a stop written in the next turn as most of a turn to go, and
+  swung wildly off the short way.
+- An `angle()` a whole number of turns from its rest, 360 for one resting at 0, is at rest, and a
+  `quat()` at minus the identity is too: `atRest` said no, and a `fade({ at: 'rest' })` on a voice
+  ending there stayed `fading` for good.
+- A voice cued `from: 'current'` under an easing that dives below 0 as it starts, a bezier like
+  `[0, -0.5, 0.5, 1]` or a function, runs as written; it bent the first segment to match the
+  subject's speed as though the curve left at a finite slope, overshooting the dip.
+- A `track()` of arrays reads a zero on every axis once cleared, `[0, 0]` for a pointer's x and y;
+  it read `[0]`.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the

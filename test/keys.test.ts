@@ -4,7 +4,7 @@ import { mixHex } from '../src/color.js';
 import { curve } from '../src/easing.js';
 import { mix } from '../src/mixer.js';
 import { evalKeys, keys, patch } from '../src/patch.js';
-import type { Channel, Keyframe } from '../src/types.js';
+import type { Channel, Easing, Keyframe } from '../src/types.js';
 
 interface Pose {
   a: number;
@@ -358,6 +358,45 @@ describe('a retarget from the current pose under an easing with no starting slop
       expect(x).toBeGreaterThan(-50);
       expect(x).toBeLessThan(250);
     }
+  });
+});
+
+describe.each([true, false])('a retarget under an easing that dives, lanes %s', (lanes) => {
+  type P = { x: number };
+  const s = { id: 1 };
+  const travel = (speed: number, ease: Easing) => {
+    const m = mix<typeof s, P>(kit<P>({ x: sum() }), { lanes });
+    const mover = m.cue({
+      patch: patch<typeof s, P>(0, () => ({ x: speed * m.now }), { writes: ['x'] }),
+      role: 'r',
+    });
+    let t = 0;
+    for (; t <= 144; t += 16) {
+      m.sync(t);
+      m.probe(s);
+    }
+    const start = m.probe(s).x;
+    mover.weight = 0;
+    m.cue({
+      patch: keys<typeof s, P>(500, [{ at: 1, delta: { x: start + 20 } }], { ease }),
+      from: 'current',
+      role: 'r',
+    });
+    const out: number[] = [];
+    for (; t <= 144 + 512; t += 32) {
+      m.sync(t);
+      out.push(m.probe(s).x - start);
+    }
+    return out;
+  };
+  it.each([
+    ['a bezier diving by its first point', { bezier: [0, -0.5, 0.5, 1] } as const],
+    ['a bezier diving by its second point', { bezier: [0, 0, 0, -0.5] } as const],
+    ['a function', ((u: number) => u - 2 * Math.sqrt(u) * (1 - u)) as Easing],
+  ])('leaves a barely moving subject as it leaves a still one, with %s', (_, ease) => {
+    const still = travel(0, ease);
+    const moving = travel(0.0001, ease);
+    for (const [i, x] of moving.entries()) expect(x).toBeCloseTo(still[i] as number, 1);
   });
 });
 
