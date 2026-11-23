@@ -170,3 +170,15 @@ describe('a child with no time left, free to play slower without end', () => {
     expect(laid.length).toBeCloseTo(400, 6);
   });
 });
+
+describe('children free to play faster without end, in a span nothing fits', () => {
+  it('play as fast as still shortens it, at a finite rate', () => {
+    const s = span(500, { priority: 'weak', order: 'queue', share: 0 });
+    const inf = Number.POSITIVE_INFINITY;
+    const kids = [kid(300, { faster: inf }), kid(300, { faster: inf, floor: 800 })];
+    const plan = rescale(s, kids, plain(s, kids));
+    expect(plan.rate.every(Number.isFinite)).toBe(true);
+    const fastest = layout(s, kids, { ...plan, rate: [inf, inf] }).length;
+    expect(layout(s, kids, plan).length).toBeLessThanOrEqual(fastest + 1);
+  });
+});
