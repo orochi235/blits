@@ -1,3 +1,4 @@
+import { rampTime } from './clock.js';
 import { clone } from './clone.js';
 import type { Mixer } from './mixer.js';
 import { seek } from './seek.js';
@@ -436,7 +437,14 @@ function hold(t: Transport): Hold {
    * meanwhile is gone, or numbers another, so it is sought by its time instead.
    */
   const pin = (to: number | { readonly frame: number }) => {
-    if (typeof to === 'number') return () => to;
+    if (typeof to === 'number') {
+      // Refused now, as an unheld seek is, rather than from `free`, where it would stop the rest.
+      if (to === Number.POSITIVE_INFINITY)
+        throw new RangeError('blits: a mix seeks to a finite time');
+      if (!(to >= t.born) || (to < t.now && t.frames.at(to) === undefined))
+        throw new Error(`blits: ${to} is older than this mix's history reaches`);
+      return () => to;
+    }
     if (Number.isInteger(to.frame) && !reachable(t, to.frame)) throw unheld(to.frame);
     const f = t.frames.numbered(to.frame);
     if (f === undefined) return () => to;
@@ -460,6 +468,7 @@ function hold(t: Transport): Hold {
     swap(t, 'ramp', (r: number, over: number) => {
       if (!Number.isFinite(r))
         throw new RangeError(`blits: a mix's rate is a finite number, not ${r}`);
+      rampTime(over);
       later(() => ramp.call(t, r, over));
     }),
     swap(t, 'rebase', () => later(() => rebase.call(t))),
@@ -521,7 +530,9 @@ function hold(t: Transport): Hold {
     },
     step(ms) {
       live();
-      if (!(ms > 0)) return;
+      if (!(ms >= 0 && ms < Number.POSITIVE_INFINITY))
+        throw new RangeError(`blits: a hold steps a finite number of ms, 0 or more, not ${ms}`);
+      if (ms === 0) return;
       if (Number.isNaN(line))
         throw new Error('blits: a mix that has never synced has nothing to step');
       // Running back, a later host time is an earlier mix time, so the step is a seek on.
@@ -543,7 +554,15 @@ function hold(t: Transport): Hold {
       try {
         rebase.call(t);
         // Still behind the guard on the tape, so a call made behind its last one cuts nothing.
-        for (const fn of queue) fn();
+        // One that throws now leaves the rest to run, and `free` to finish, as a ticker does.
+        for (const fn of queue)
+          try {
+            fn();
+          } catch (err) {
+            queueMicrotask(() => {
+              throw err;
+            });
+          }
       } finally {
         for (const put of puts.reverse()) put();
         c.held = null;

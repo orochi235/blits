@@ -10,6 +10,7 @@ section here.
 
 ### Fixed
 
+- A hold whose release throws no longer leaves the panel's hold controls stuck on it.
 - A mounted panel forgets number and string subjects once no mix lists them, where it used to
   keep every one it had seen.
 - The `weightOf` plot draws a line for each voice when two share a name, where it used to draw

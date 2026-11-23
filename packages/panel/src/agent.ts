@@ -224,8 +224,10 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   };
 
   const freeHold = () => {
-    hold?.free();
+    // Let go of it first: a hold whose free throws is freed all the same.
+    const h = hold;
     hold = null;
+    h?.free();
   };
 
   const pickMix = (id: number | null) => {

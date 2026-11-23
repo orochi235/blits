@@ -8,6 +8,13 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time
+  that is not one, throws when it is made, as it does unheld. It was taken, and threw from the
+  hold's `free()`, losing every call made after it. A call that still throws as the hold is freed
+  no longer stops the rest. `Hold.step` refuses a negative or non-finite step, where it did
+  nothing.
+- A span child with no time left, free to play slower without end, keeps its rate while the others
+  slow to fill the budget, where it was set to rate 0 and laid out at NaN.
 - `bind(...).drop()`, and quarks' and tone's `drop` through it, cuts every voice cued on the
   subject: one already fading slowly or waiting for rest played on, keeping the mix from going inert
   for good, and one a seek back had brought back after it ended was missed.

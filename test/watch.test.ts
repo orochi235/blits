@@ -371,6 +371,21 @@ describe('holding', () => {
     h.free();
   });
 
+  it("refuses a host's seek or ramp the mix could not make, when made, and plays its later calls", () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 1000, tape } });
+    m.cue({ patch: clock });
+    for (let t = 0; t <= 3000; t += 20) m.sync(t);
+    const h = entryOf(m).hold();
+    expect(() => m.seek(-5000)).toThrow(/older/);
+    expect(() => m.seek(1000)).toThrow(/older/);
+    expect(() => m.ramp(1, Number.NaN)).toThrow(RangeError);
+    expect(() => h.step(Number.NaN)).toThrow(RangeError);
+    expect(() => h.step(-5)).toThrow(RangeError);
+    m.rate = 0.5;
+    h.free();
+    expect(m.rate).toBe(0.5);
+  });
+
   it('hands a watcher the frames a hold plays', () => {
     const { m, e } = setup();
     const seen: number[] = [];
