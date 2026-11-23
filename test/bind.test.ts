@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { bind } from '../src/bind.js';
 import { kit, sum } from '../src/channels.js';
@@ -49,5 +50,37 @@ describe('bind', () => {
     expect(m.probe(a).x).toBe(5);
     expect(own.state).toBe('done');
     expect(other.state).not.toBe('done');
+  });
+
+  it('cuts a voice already fading, slowly or for rest, so the mix can go inert', () => {
+    for (const fade of [{ over: 5000 }, { at: 'rest' as const }]) {
+      const m = mix<object, Pose>(K);
+      const a = {};
+      const self = bind(m, a);
+      const h = self.cue({ patch: push(2), loop: true });
+      m.sync(0);
+      m.probe(a);
+      h.fade(fade);
+      m.sync(10);
+      self.drop();
+      m.sync(20);
+      expect(h.state).toBe('done');
+      expect(m.live).toBe(false);
+    }
+  });
+
+  it('cuts a voice a seek back brought back after it ended', async () => {
+    const m = mix<object, Pose>(K, { history: { ms: 10_000, tape } });
+    const a = {};
+    const self = bind(m, a);
+    const h = self.cue({ patch: patch<object, Pose>(100, () => ({ x: 2 }), { writes: ['x'] }) });
+    for (let t = 0; t <= 500; t += 16) m.sync(t);
+    await h.done;
+    m.seek(50);
+    expect(h.state).toBe('live');
+    self.drop();
+    m.sync(520);
+    expect(h.state).toBe('done');
+    expect(m.probe(a).x).toBe(0);
   });
 });

@@ -20,7 +20,8 @@ export interface Binding<I, O, H = unknown> {
  */
 export function bind<I, O, H = unknown>(mix: Mix<I, O, H>, subject: I): Binding<I, O, H> {
   let dropped = false;
-  const cued = new Set<Handle<I>>();
+  // Weak, and never pruned on `done`: a seek back can bring a voice that ended back on its handle.
+  const cued = new WeakSet<Handle<I>>();
   return {
     cue(spec) {
       if (dropped) throw new Error('blits: that bound subject is dropped');
@@ -28,13 +29,17 @@ export function bind<I, O, H = unknown>(mix: Mix<I, O, H>, subject: I): Binding<
         throw new Error('blits: a bound subject names its own subject; cue it without `subjects`');
       const h = mix.cue({ ...spec, subjects: [subject] } as VoiceSpec<I, O, H>);
       cued.add(h);
-      void h.done.then(() => cued.delete(h));
       return h;
     },
     drop() {
       if (dropped) return;
       dropped = true;
-      for (const h of cued) h.fade({ over: 0 });
+      for (const h of mix.voices())
+        if (cued.has(h)) {
+          // A fade already under way, slow or waiting for rest, is not cut by another.
+          h.rise({ over: 0 });
+          h.fade({ over: 0 });
+        }
       mix.drop(subject);
     },
   };
