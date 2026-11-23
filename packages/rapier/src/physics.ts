@@ -291,16 +291,34 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   const shown = m.pose();
   // Read at the end of each frame, for the next frame's steps to apply.
   let holding: Holds = {};
+  // When each finished authored voice was first seen done. A seek back can make it play again, so
+  // it is let go only once history can no longer reach its end.
+  const doneAt = new Map<Handle<object>, number>();
   const holdsAt = (at: number): Holds => {
     const holds: Holds = {};
     for (const [body, voices] of authored) {
-      const playing = voices.filter((v) => v.state !== 'done');
+      const playing: Handle<object>[] = [];
+      const kept: Handle<object>[] = [];
+      for (const v of voices) {
+        if (v.state !== 'done') {
+          doneAt.delete(v);
+          playing.push(v);
+          kept.push(v);
+          continue;
+        }
+        const end = Math.min(doneAt.get(v) ?? at, at);
+        if (end < at - keep || keep === 0) doneAt.delete(v);
+        else {
+          doneAt.set(v, end);
+          kept.push(v);
+        }
+      }
+      if (kept.length === 0) authored.delete(body);
+      else if (kept.length < voices.length) authored.set(body, kept);
       if (playing.length === 0) {
-        authored.delete(body);
         held.delete(body);
         continue;
       }
-      if (playing.length < voices.length) authored.set(body, playing);
       const p = m.probe(body, shown) as unknown as Placed;
       // Shown with none of the simulation, the body is put where it is shown, so the simulation
       // takes it back from there.
