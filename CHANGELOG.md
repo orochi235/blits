@@ -16,6 +16,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - With lanes on, a motion voice weighted by a signal keeps the value a probe already read this
   frame when the motion is `set`, `push`ed or sent `to` before the next probe, as lanes off does;
   the change showed at once.
+- `inert` reads false after a handle's `seek` takes a motion voice (tween, spring, glide) that had
+  landed back into its stretch; it stayed true while the motion moved again.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the

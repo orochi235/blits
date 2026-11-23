@@ -265,3 +265,31 @@ describe('a motion no probe has sampled', () => {
       expect(read(true)).toEqual(read(false));
     });
 });
+
+describe('a handle seek back into a motion still moving', () => {
+  for (const lanes of [false, true])
+    for (const kind of ['tween', 'spring'] as const)
+      it(`leaves the mix not inert: ${kind} (lanes ${lanes})`, () => {
+        const m = mix<{ id: number }, { x: number }>(kit({ x: sum() }), { lanes });
+        const a = { id: 0 };
+        m.sync(0);
+        const h = m.cue({
+          patch:
+            kind === 'tween'
+              ? tween<{ id: number }, { x: number }>('x', { from: 0, to: 1, ms: 400 })
+              : spring<{ id: number }, { x: number }>('x', { from: 0, to: 1 }),
+        });
+        m.sync(16);
+        m.probe(a);
+        m.sync(3000);
+        m.probe(a);
+        expect(m.inert).toBe(true);
+        h.seek(100);
+        m.sync(3016);
+        const x1 = m.probe(a).x;
+        const inert = m.inert;
+        m.sync(3032);
+        expect(m.probe(a).x).not.toBe(x1);
+        expect(inert).toBe(false);
+      });
+});
