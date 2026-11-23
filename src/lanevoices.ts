@@ -121,7 +121,7 @@ export function reshown<I, O>(this: Lanes<I, O>, id: number): void {
   for (let q = 0; q < lane.list.length; q++) {
     const held = lane.records[q];
     if (held !== undefined) lane.data[q * Row.STRIDE + Row.SINCE] = held.shown;
-    lane.since(lane.data[q * Row.STRIDE + Row.SINCE] as number);
+    lane.noteSince(lane.data[q * Row.STRIDE + Row.SINCE] as number);
   }
 }
 

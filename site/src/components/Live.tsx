@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFocused } from '../explainers/kit/hooks';
 import { onSpace } from '../explainers/kit/space';
-import { HOLD } from '../live/loop';
+import { setHeld } from '../live/loop';
 
 /** A file in `src/live/`: draws into `root` and returns a function that stops it and clears up. */
 type Run = (root: HTMLElement) => () => void;
@@ -44,7 +44,6 @@ export default function Live({ of }: { of: string }) {
     const el = root.current;
     if (el === null || run === null || !allowed || !visible) return;
     const stop = run(el);
-    if (paused) el.dispatchEvent(new CustomEvent(HOLD, { detail: true }));
     return () => {
       stop();
       el.replaceChildren();
@@ -52,7 +51,7 @@ export default function Live({ of }: { of: string }) {
   }, [run, allowed, visible, round]);
 
   useEffect(() => {
-    root.current?.dispatchEvent(new CustomEvent(HOLD, { detail: paused }));
+    if (root.current !== null) setHeld(root.current, paused);
   }, [paused]);
 
   useEffect(() => {

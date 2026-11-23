@@ -1,4 +1,4 @@
-import { type Bound, foundIn } from './bound.js';
+import { type Bound, findIn } from './bound.js';
 import type { Lanes } from './lanes.js';
 import { absent } from './numbers.js';
 import type { Places } from './places.js';
@@ -70,7 +70,7 @@ export function markBounds<I, O>(lanes: Lanes<I, O>): void {
       return;
     }
     const places = b.mix.places as Places<I>;
-    const count = foundIn(b);
+    const count = findIn(b);
     const found = places.found;
     for (let k = 0; k < count; k++) {
       const slot = places.slots[found[k] as number] ?? -1;

@@ -1,5 +1,7 @@
 /** Each source made into a function once, by its parameters and body. */
 const made = new Map<string, unknown>();
+/** How many sources `made` holds before it starts over, for a host that keeps making new kits. */
+const KEPT = 256;
 /** `Function` refused once: under a CSP each refusal fires a violation, so it is not asked again. */
 let refused = false;
 
@@ -14,6 +16,7 @@ export function written<F>(params: readonly string[], body: string): F | undefin
   if (make === undefined && !refused) {
     try {
       make = new Function(...params, body);
+      if (made.size >= KEPT) made.clear();
       made.set(key, make);
     } catch {
       refused = true;

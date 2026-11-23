@@ -58,7 +58,7 @@ export class Numbers<I> {
           this.loneSlot = slot;
           return slot;
         }
-        this.registry = this.registryOf();
+        this.registry = this.createRegistry();
         const first = this.lone.deref();
         if (first !== undefined) this.registry.register(first, this.loneSlot);
         // Collected with no registry to hear of it: released here, once this subject is numbered.
@@ -98,19 +98,22 @@ export class Numbers<I> {
       return false;
     const at = free.lastIndexOf(to);
     if (at < 0) return false;
+    let stale = false;
     if (ref instanceof WeakRef) {
       const subject = ref.deref();
       if (subject === undefined) return false;
       if (ref === this.lone) this.loneSlot = to;
       else if (this.registry !== null) {
         this.registry.register(subject, to);
-        this.staled();
+        stale = true;
       }
     }
     free.splice(at, 1);
     free.push(from);
     this.refs[to] = ref;
     this.refs[from] = undefined;
+    // After the move, so a fresh registry built here registers the subject at `to`, not `from`.
+    if (stale) this.countStale();
     return true;
   }
 
@@ -123,10 +126,10 @@ export class Numbers<I> {
     this.owner.forget(slot);
     if (this.free === null) this.free = [slot];
     else this.free.push(slot);
-    if (live) this.staled();
+    if (live) this.countStale();
   }
 
-  private registryOf(): FinalizationRegistry<number> {
+  private createRegistry(): FinalizationRegistry<number> {
     return new FinalizationRegistry<number>((slot) => {
       const ref = this.refs[slot];
       // A cell left from before a release: its number may hold another subject now, or none.
@@ -140,10 +143,10 @@ export class Numbers<I> {
    * no more cells than numbers. Dropping the old registry drops its pending callbacks, so a number
    * whose subject was already collected is released here.
    */
-  private staled(): void {
+  private countStale(): void {
     if (++this.stale <= Math.max(STALE, this.next)) return;
     this.stale = 0;
-    const registry = this.registryOf();
+    const registry = this.createRegistry();
     this.registry = registry;
     const refs = this.refs;
     for (let slot = 0; slot < this.next; slot++) {

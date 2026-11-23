@@ -372,7 +372,7 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     if (crowdable(v)) join(lanes, v, undefined, undefined, lanes.crowds);
     else enlane(lanes, v);
   }
-  if (left.length > 0 && !leftAlone(lanes, left)) return qualify();
+  if (left.length > 0 && !settleLeft(lanes, left)) return qualify();
   compactSparse(lanes);
   // As a qualify leaving nothing on lanes: no fill comes to let go of what the last probes held.
   if (lanes.lanes.length === 0 && lanes.crowds.every((c) => c.dead === c.size)) lanes.subjects = [];
@@ -380,11 +380,12 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
 }
 
 /**
- * Whether voices that ended off lanes leave the fixed point `qualify` finds where it stands: none
- * writes a numeric channel any voice still present writes, so no channel they closed opens for
- * another. Sets whether the lanes are whole again, as a qualify would.
+ * Settles the lanes after voices ended off lanes, setting whether they are whole again as a qualify
+ * would, where the fixed point `qualify` finds still stands: none of them writes a numeric channel
+ * any voice still present writes, so no channel they closed opens for another. False, changing
+ * nothing, where it does not.
  */
-function leftAlone<I, O>(lanes: Lanes<I, O>, left: readonly Voice<I, O>[]): boolean {
+function settleLeft<I, O>(lanes: Lanes<I, O>, left: readonly Voice<I, O>[]): boolean {
   const host = lanes.host;
   const closed = new Set<number>();
   for (const v of left)

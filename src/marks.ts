@@ -1,5 +1,6 @@
 import { arcMark } from './arcs.js';
 import { inPass, type Listed } from './book.js';
+import { fadeMsFor } from './clock.js';
 import type { Mixer } from './mixer.js';
 import { startOf } from './place.js';
 import type { Transport } from './transport.js';
@@ -137,7 +138,7 @@ export function markOf<I, O>(
   if (mark === 'start') return start;
   if (voice.arc !== null && (mark === 'in' || mark === 'coast' || mark === 'out' || mark === 'end'))
     return arcMark(mix, voice, start, mark as 'in' | 'coast' | 'out' | 'end');
-  if (mark === 'in') return start + (mix.reduced ? 0 : (voice.fade.in ?? 0));
+  if (mark === 'in') return start + fadeMsFor(mix, voice.fade.in ?? 0);
   if (mark === 'coast') return coastOf(mix, voice, start);
   if (mark !== 'out' && mark !== 'end') return insideOf(mix, voice, start, mark);
   const out = voice.out;
@@ -167,7 +168,7 @@ export function markOf<I, O>(
   }
   if (leaves) return outAt;
   const over = Number.isNaN(voice.outOver) ? (voice.fade.out ?? 0) : voice.outOver;
-  return outAt === undefined ? undefined : outAt + (mix.reduced ? 0 : over);
+  return outAt === undefined ? undefined : outAt + fadeMsFor(mix, over);
 }
 
 /** Voice ms within which a mark placed inside a voice counts as reached where the voice starts. */

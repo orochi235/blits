@@ -272,3 +272,8 @@ export function stepOf(
   const tick = voice.spec.stepMs ?? mix.opts.stepMs;
   return tick !== undefined && tick > 0 && !mix.reducedNow ? tick : undefined;
 }
+
+/** How long a fade of `ms` lasts on `mix`: none under reduced motion. */
+export function fadeMsFor(mix: { readonly reduced: boolean }, ms: number): number {
+  return mix.reduced ? 0 : ms;
+}

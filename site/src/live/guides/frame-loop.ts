@@ -1,6 +1,6 @@
 import { kit, mix, patch, sum, ticker } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
-import { HOLD } from '../loop';
+import { isHeld, watchHeld } from '../loop';
 
 interface Bar {
   el: HTMLElement;
@@ -72,7 +72,7 @@ export default function run(root: HTMLElement): () => void {
   let hiding = 0;
   let away = !document.hasFocus();
   // The page's Pause button.
-  let held = false;
+  let held = isHeld(root);
   let rebase = true;
 
   const show = () => {
@@ -138,17 +138,17 @@ export default function run(root: HTMLElement): () => void {
     away = false;
     going();
   };
-  const hold = (e: Event) => {
+  const hold = (now: boolean) => {
     const was = held;
-    held = (e as CustomEvent<boolean>).detail;
+    held = now;
     if (held && !was) stopped();
     else if (!held && was) going();
   };
   window.addEventListener('blur', blur);
   window.addEventListener('focus', focus);
-  root.addEventListener(HOLD, hold);
+  const unwatch = watchHeld(root, hold);
 
-  if (away) state = 'paused';
+  if (away || held) state = 'paused';
   else m.cue({ patch: trip, subjects: [bar], name: 'trip' });
   show();
 
@@ -156,7 +156,7 @@ export default function run(root: HTMLElement): () => void {
     window.clearTimeout(hiding);
     window.removeEventListener('blur', blur);
     window.removeEventListener('focus', focus);
-    root.removeEventListener(HOLD, hold);
+    unwatch();
     unwake();
     unafter();
     remove();

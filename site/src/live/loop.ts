@@ -2,7 +2,25 @@ import type { Handle } from '@msb235/blits';
 import { SETTLE } from '../explainers/kit/settle-ms';
 
 /** Sent to a live demo's root to pause it (`detail: true`) or resume it (`detail: false`). */
-export const HOLD = 'blits:hold';
+const HOLD = 'blits:hold';
+/** Set on a live demo's root while it is paused, for a loop that starts after the event went out. */
+const HELD = 'data-held';
+
+/** Pauses or resumes the live demo at `root`, whether its loop is running yet or not. */
+export function setHeld(root: Element, held: boolean): void {
+  root.toggleAttribute(HELD, held);
+  root.dispatchEvent(new CustomEvent(HOLD, { detail: held }));
+}
+
+/** Whether the live demo at `root` is paused. */
+export const isHeld = (root: Element): boolean => root.hasAttribute(HELD);
+
+/** Calls `fn` each time the live demo at `root` is paused or resumed, until the function returned. */
+export function watchHeld(root: Element, fn: (held: boolean) => void): () => void {
+  const hold = (e: Event) => fn((e as CustomEvent<boolean>).detail);
+  root.addEventListener(HOLD, hold);
+  return () => root.removeEventListener(HOLD, hold);
+}
 
 /** A mix the loop can settle: its voices, and its clock. */
 interface Settles {
@@ -43,7 +61,7 @@ export function loop(
         ? settle()
         : (settle ?? (settles(m) ? [m] : []));
   let away = focus && !document.hasFocus();
-  let held = false;
+  let held = isHeld(root);
   // The voices a settle faded, which rise again; while settling, the mix it reads, the mix time
   // it stops at, and the frame time it stops by whatever that clock does.
   let faded: Handle<never>[] = [];
@@ -106,16 +124,15 @@ export function loop(
   };
   const blur = () => change(() => (away = true));
   const regain = () => change(() => (away = false));
-  const hold = (e: Event) => change(() => (held = (e as CustomEvent<boolean>).detail));
   if (focus) {
     window.addEventListener('blur', blur);
     window.addEventListener('focus', regain);
   }
-  root.addEventListener(HOLD, hold);
+  const unwatch = watchHeld(root, (h) => change(() => (held = h)));
   return () => {
     cancelAnimationFrame(id);
     window.removeEventListener('blur', blur);
     window.removeEventListener('focus', regain);
-    root.removeEventListener(HOLD, hold);
+    unwatch();
   };
 }

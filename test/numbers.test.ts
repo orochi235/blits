@@ -127,4 +127,30 @@ describe('Numbers', () => {
     expect(freed).toEqual([slot]);
     for (const [i, s] of live.entries()) expect(n.subject(i)).toBe(s);
   });
+  it('releases a moved subject at its new number when the move fills the stale count', async () => {
+    const freed: number[] = [];
+    const n = new Numbers<object>({ forget: (slot) => freed.push(slot) });
+    const keep: object[] = [{}, {}];
+    for (const k of keep) n.take(k);
+    let ref: WeakRef<object> | null = null;
+    const [from, to] = (() => {
+      const s = {};
+      ref = new WeakRef(s);
+      const f = n.take(s);
+      const t = n.take({});
+      n.release(t);
+      for (let i = 0; i < 1023; i++) {
+        const o = {};
+        keep.push(o);
+        n.release(n.take(o));
+      }
+      expect(n.move(f, t)).toBe(true);
+      return [f, t];
+    })();
+    freed.length = 0;
+    await collect(() => ref?.deref() !== undefined);
+    expect(freed).toEqual([to]);
+    expect(n.subject(to)).toBe(absent);
+    expect(from).not.toBe(to);
+  });
 });

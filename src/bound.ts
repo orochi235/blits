@@ -119,7 +119,7 @@ export function confine<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
  * Leaves in `places.found` every index within the bound this frame, as `inBound` finds them, and
  * returns how many.
  */
-export function foundIn<I, O>(b: Bound<I, O>): number {
+export function findIn<I, O>(b: Bound<I, O>): number {
   const places = b.mix.places as Places<I>;
   if (b.finder === null) {
     snap(b, b.mix);

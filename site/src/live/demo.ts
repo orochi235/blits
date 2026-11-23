@@ -3,7 +3,7 @@ import { createHistory } from '@weasel-js/history';
 import { type LoopOptions, loop } from './loop';
 
 /** How far back a demo's mixes can seek unless it says otherwise, ms. */
-const KEPT = 10_000;
+export const KEPT = 10_000;
 
 /** What a demo is handed to set itself up with; everything it registers is undone when it stops. */
 export interface Demo {

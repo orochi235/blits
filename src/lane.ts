@@ -387,7 +387,7 @@ export class Lane<I, O> implements Positions<I, O> {
     const o = p * Row.STRIDE;
     this.data[o + Row.DELAY] = held.delay;
     this.data[o + Row.SINCE] = held.shown;
-    this.since(held.shown);
+    this.noteSince(held.shown);
     this.data[o + Row.WEIGHT] = 0;
     this.data[o + Row.PROBED] = 0;
     this.data[o + Row.MSLOT] = -1;
@@ -412,7 +412,7 @@ export class Lane<I, O> implements Positions<I, O> {
    * Takes a position's `Row.SINCE` into `latestSince`. One later than every other, met mid-fill, may
    * still be climbing a fade in this fill weighed flat without it.
    */
-  since(shown: number): void {
+  noteSince(shown: number): void {
     if (!(shown <= this.latestSince)) {
       this.latestSince = Number.isNaN(this.latestSince) ? Number.NaN : shown;
       if ((this.voice.fade.in ?? 0) > 0) this.flat = false;

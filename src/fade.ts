@@ -1,5 +1,5 @@
 import { changed, headOf, slotOf, unlink } from './chain.js';
-import { clampWeight, envelope, fadeInAt, rampTime } from './clock.js';
+import { clampWeight, envelope, fadeInAt, fadeMsFor, rampTime } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
@@ -41,7 +41,7 @@ export function fadeSubject<I, O>(
   if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
   mix.share?.unshare(mix, voice);
   mix.stir();
-  const ms = mix.reduced ? 0 : (over ?? voice.fade.out ?? 0);
+  const ms = fadeMsFor(mix, over ?? voice.fade.out ?? 0);
   const at = nowFor(mix, voice);
   if (ms === 0) {
     part(mix, voice, subject, at);
@@ -209,7 +209,7 @@ export function beginFade<I, O>(
   at?: number,
 ): void {
   if (voice.state === 'done' || voice.state === 'fading') return;
-  const over = mix.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
+  const over = fadeMsFor(mix, opts.over ?? voice.fade.out ?? 0);
   // A voice is linked into its subjects' chains once it plays, and a fading one plays.
   const waiting = voice.state === 'pending';
   if (waiting) changed(mix, voice);
@@ -288,7 +288,7 @@ export function beginRise<I, O>(
   }
   if (voice.state !== 'fading' || out === null) return;
   const at = nowFor(mix, voice);
-  const over = mix.reduced ? 0 : (opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
+  const over = fadeMsFor(mix, opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
   const left = out.rest || out.over === 0 ? 1 : 1 - (at - out.at) / out.over;
   const from = clampWeight(left);
   // A voice faded before its start waits for it again, as a seek back finds it.
@@ -340,7 +340,7 @@ export function rouse<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
   const edge = out.back === true ? voice.soonest : voice.span + voice.latest;
   const reached = voice.reaches(edge);
   const at = Math.max(out.at + out.over, reached <= now ? reached : now);
-  const over = mix.reduced ? 0 : out.over;
+  const over = fadeMsFor(mix, out.over);
   voice.out = null;
   voice.back = over > 0 ? { from: 0, at, over } : null;
   noted(mix, voice);
