@@ -94,20 +94,21 @@ export function stepsOf(c: Curve): number | undefined {
   return stepped.get(c);
 }
 
-/** Each built curve's slope at 0, where its definition gives one: Infinity for a jump. */
+/** Each built curve's slope at 0, where its definition gives one: an infinity for a jump. */
 const starts = new WeakMap<Curve, number>([[linear, 1]]);
 
 /** A bezier's slope at u = 0: dy/dx as t leaves 0, by the first control point that moves x. */
 function bezierStart(x1: number, y1: number, x2: number, y2: number): number {
   if (x1 > 0) return y1 / x1;
-  if (y1 > 0) return Number.POSITIVE_INFINITY;
+  if (y1 !== 0) return y1 > 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
   if (x2 > 0) return y2 / x2;
-  return y2 > 0 ? Number.POSITIVE_INFINITY : 1;
+  if (y2 !== 0) return y2 > 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+  return 1;
 }
 
 /**
- * How fast a curve leaves 0, for bending a retarget to the speed the subject had: Infinity where
- * the curve jumps or leaves vertically, so no finite bend can match it.
+ * How fast a curve leaves 0, for bending a retarget to the speed the subject had: an infinity, of
+ * the jump's sign, where the curve jumps or leaves vertically, so no finite bend can match it.
  */
 export function startSlope(c: Curve): number {
   const known = starts.get(c);
@@ -115,7 +116,8 @@ export function startSlope(c: Curve): number {
   const h = 1e-6;
   const v = c(h);
   // Past a thousandth of the way within a millionth of the time: a jump, not a slope.
-  return v > 1e-3 ? Number.POSITIVE_INFINITY : v / h;
+  if (v > 1e-3) return Number.POSITIVE_INFINITY;
+  return v < -1e-3 ? Number.NEGATIVE_INFINITY : v / h;
 }
 
 /**

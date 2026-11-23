@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice cued `from: 'current'` under an easing that dives below 0 as it starts, a bezier like
+  `[0, -0.5, 0.5, 1]` or a function, runs as written; it bent the first segment to match the
+  subject's speed as though the curve left at a finite slope, overshooting the dip.
 - A `track()` of arrays reads a zero on every axis once cleared, `[0, 0]` for a pointer's x and y;
   it read `[0]`.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any

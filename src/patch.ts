@@ -351,7 +351,7 @@ function read(
   // add c·u(1−u)², which is 0 at both ends, flat at the end, and fixes the slope at the start.
   if (slope === undefined || !first) return value;
   const e0 = ease ? startSlope(ease) : 1;
-  if (e0 === Number.POSITIVE_INFINITY) return value;
+  if (!Number.isFinite(e0)) return value;
   const bend = (s: number, a: number, z: number) =>
     (s * duration * len - (z - a) * e0) * u * (1 - u) * (1 - u);
   if (typeof value === 'number' && typeof slope === 'number')
