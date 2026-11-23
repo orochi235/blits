@@ -54,6 +54,7 @@ export class Frames {
     }
     if (head >= SLACK && head * 2 >= list.length) {
       list.splice(0, head);
+      this.run = Math.max(0, this.run - head);
       head = 0;
     }
     this.head = head;

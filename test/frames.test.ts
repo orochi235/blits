@@ -32,4 +32,25 @@ describe('the frames a transport keeps', () => {
     frames.push({ seq: 2, at: 0, u: 16 });
     expect(frames.at(0)?.seq).toBe(2);
   });
+
+  it('lets go of frames held at one mix time however the list was closed up as the hold began', () => {
+    const settled = (pauseAt: number) => {
+      const frames = new Frames();
+      let seq = 0;
+      for (let i = 0; i < pauseAt; i++) {
+        frames.push({ seq: ++seq, at: 16 * i, u: 16 * i }, 1000);
+        frames.shed(16 * i - 1000);
+      }
+      const held = 16 * (pauseAt - 1);
+      for (let i = pauseAt; i < pauseAt + 3000; i++) {
+        frames.push({ seq: ++seq, at: held, u: 16 * i }, 1000);
+        frames.shed(held - 1000);
+      }
+      return frames.length;
+    };
+    const lengths = [];
+    for (let p = 560; p < 600; p++) lengths.push(settled(p));
+    expect(Math.max(...lengths) - Math.min(...lengths)).toBeLessThan(40);
+  });
 });
+
