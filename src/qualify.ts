@@ -1,3 +1,4 @@
+import { carried } from './around.js';
 import { type Numeric, numericOf } from './channels.js';
 import { flush } from './columns.js';
 import { weighAt } from './everyone.js';
@@ -103,9 +104,14 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     }
     if (split) ({ channels, voices } = qualify(numeric, candidates()));
   }
+  lanes.balls = [];
   present.forEach((v, i) => {
     v.offLane = voices.has(v.id) ? undefined : off(v, i);
+    const ball = v.offLane === undefined ? carried(v.spec.weight) : undefined;
+    if (ball !== undefined && !lanes.balls.includes(ball)) lanes.balls.push(ball);
   });
+  // Unfilled until the next fill snaps them, so `current` cannot match a stale place.
+  lanes.ballsAt.fill(Number.NaN);
   for (const lane of lanes.lanes) if (!voices.has(lane.voice.id)) leave(lanes, lane);
   const kept: Lane<I, O>[] = [];
   let crowded = 0;

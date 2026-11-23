@@ -1,3 +1,4 @@
+import { ballsStand } from './around.js';
 import { flush, pullRun, writeLater } from './columns.js';
 import { type Copier, copy } from './copyout.js';
 import { type Crowd, row } from './crowd.js';
@@ -53,6 +54,7 @@ import { renumber } from './renumber.js';
 import type { Seat } from './seat.js';
 import type { Watcher } from './stretch.js';
 import type { Subject } from './subject.js';
+import type { Ball } from './types.js';
 import type { Voice } from './voice.js';
 
 export type { LaneHost } from './lanehost.js';
@@ -197,6 +199,9 @@ export class Lanes<I, O> implements Watcher {
   /** `reading.moved` and `reading.inputs` at the last fill: see `current`. */
   moved = 0;
   inputs = 0;
+  /** The `around` balls weighing laned voices, and each one's x, y, z and r at the last fill. */
+  balls: Ball[] = [];
+  ballsAt = new Float64Array(0);
   /** The `now` of the latest probe, and the probe count before its first, to tell a probe this frame. */
   frameAt = Number.NaN;
   frameProbes = 0;
@@ -308,15 +313,16 @@ export class Lanes<I, O> implements Watcher {
   /**
    * Whether the last fill still stands: everything a fill reads that can change between two probes,
    * each stamped by `fillAll`. The clock; the mix's version, which voices coming, going, starting
-   * and stopping move; a motion's retargets and pushes; and a `level` set. Whatever else can change
-   * between probes keeps its voice off lanes in `unfit`.
+   * and stopping move; a motion's retargets and pushes; a `level` set; and an `around` ball moved.
+   * Whatever else can change between probes keeps its voice off lanes in `unfit`.
    */
   current(now: number, version: number): boolean {
     return (
       this.filledAt === now &&
       this.filledVersion === version &&
       this.moved === reading.moved &&
-      this.inputs === reading.inputs
+      this.inputs === reading.inputs &&
+      (this.balls.length === 0 || ballsStand(this))
     );
   }
 

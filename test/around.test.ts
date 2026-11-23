@@ -1,5 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { curve, kit, last, mixHex, mul, patch, mix as plain } from '../src/index.js';
+import {
+  curve,
+  keys,
+  kit,
+  last,
+  mixHex,
+  mul,
+  patch,
+  mix as plain,
+  sum,
+  tween,
+} from '../src/index.js';
 import type { Circle, Easing, Handle, Signal } from '../src/types.js';
 
 type Dot = { seed: number; x: number; y: number };
@@ -185,4 +196,41 @@ describe('around', () => {
     const m = plain<Dot, Pose>(K);
     expect(() => m.around(null as never)).toThrow(/around takes a ball/);
   });
+});
+
+describe('a ball moved between two probes of one frame', () => {
+  // The signal reads the ball live; the bound it implies stands as the frame found it.
+  for (const kind of ['tween', 'keys'] as const)
+    for (const resync of [false, true])
+      for (const named of [false, true])
+        it(`reads the same lanes on or off: ${kind}, resync ${resync}, named ${named}`, () => {
+          const read = (lanes: boolean) => {
+            const m = plain<{ id: number }, { x: number }>(kit({ x: sum() }), { lanes });
+            const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+            m.plot(parts, new Float64Array([0, 0, 1, 0, 2, 0, 3, 0]));
+            const ball = { x: 0, y: 0, r: 2 };
+            m.sync(1000);
+            m.cue({
+              patch:
+                kind === 'tween'
+                  ? tween<{ id: number }, { x: number }>('x', { from: 1, to: 1, ms: 300 })
+                  : keys<{ id: number }, { x: number }>(1000, [{ at: 0, delta: { x: 1 } }]),
+              weight: m.around(ball),
+              loop: true,
+              ...(named ? { subjects: parts } : {}),
+            });
+            const out: number[] = [];
+            for (const t of [1100, 1200]) {
+              m.sync(t);
+              for (const p of parts) out.push(m.probe(p).x);
+            }
+            ball.x = 3;
+            if (resync) m.sync(1200);
+            for (const p of parts) out.push(m.probe(p).x);
+            m.sync(1300);
+            for (const p of parts) out.push(m.probe(p).x);
+            return out;
+          };
+          expect(read(true)).toEqual(read(false));
+        });
 });

@@ -1,4 +1,5 @@
 import { curve } from './easing.js';
+import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Ball, Easing, Signal } from './types.js';
 
@@ -8,6 +9,40 @@ const balls = new WeakMap<object, Ball>();
 /** The ball a weight carries: an `around` signal's own, or none. */
 export const carried = (weight: unknown): Ball | undefined =>
   typeof weight === 'function' ? balls.get(weight) : undefined;
+
+/** Keeps where each ball weighing a laned voice stands at a fill, for `ballsStand`. */
+export function snapBalls<I, O>(lanes: Lanes<I, O>): void {
+  const list = lanes.balls;
+  if (lanes.ballsAt.length < 4 * list.length) lanes.ballsAt = new Float64Array(4 * list.length);
+  const at = lanes.ballsAt;
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i] as Ball;
+    at[4 * i] = b.x;
+    at[4 * i + 1] = b.y ?? 0;
+    at[4 * i + 2] = b.z ?? 0;
+    at[4 * i + 3] = b.r;
+  }
+}
+
+/**
+ * Whether every ball weighing a laned voice stands where the last fill found it: a probe on the
+ * general path reads a moved one at once, so lanes fill again.
+ */
+export function ballsStand<I, O>(lanes: Lanes<I, O>): boolean {
+  const list = lanes.balls;
+  const at = lanes.ballsAt;
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i] as Ball;
+    if (
+      at[4 * i] !== b.x ||
+      at[4 * i + 1] !== (b.y ?? 0) ||
+      at[4 * i + 2] !== (b.z ?? 0) ||
+      at[4 * i + 3] !== b.r
+    )
+      return false;
+  }
+  return true;
+}
 
 /**
  * `Mix.around`: 1 at the ball's center, falling with distance over the positions `plot` gave to 0
