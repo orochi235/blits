@@ -11,7 +11,7 @@ const v = sum();
 const p = vec(2, sum());
 const codeOf = (c: Channel<unknown>) => {
   const code = codeFor(c);
-  if (code === undefined) throw new Error('no WGSL');
+  if (code === undefined || 'why' in code) throw new Error('no WGSL');
   return code;
 };
 const lookup = new Map([

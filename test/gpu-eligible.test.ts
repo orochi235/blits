@@ -272,4 +272,15 @@ describe('gpu eligibility', () => {
     expect(e.channels.has('p')).toBe(false);
     expect(e.reasons[0]?.why).toMatch(/axes apart/);
   });
+
+  it('keeps a channel bounded past the largest f32 on the CPU, saying why', () => {
+    const m = mix<C, P>(kit<P>({ y: sum({ bounds: [0, 1e39] }) }));
+    m.cue({ patch: wave, subjects: cells, loop: true });
+    m.sync(0);
+    const e = elig(m);
+    expect(e.channels.has('y')).toBe(false);
+    expect(e.reasons[0]?.why).toBe(
+      'it writes y, whose rule takes 1e+39, past the largest number an f32 holds',
+    );
+  });
 });

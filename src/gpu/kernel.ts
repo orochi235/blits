@@ -2,6 +2,7 @@ import { Col, ROW } from './columns.js';
 import type { Runner } from './runner.js';
 import { type ChannelCode, helpersOf, lerpWgsl } from './wgsl/channels.js';
 import { EASING_WGSL } from './wgsl/easing.js';
+import { literal } from './wgsl/literal.js';
 import { CLOCK_WGSL, FADE_WGSL, NONE, TAKE_WGSL } from './wgsl/timing.js';
 
 /** The most roles one frame's GPU voices may play; a frame with more keeps its channels on the CPU. */
@@ -25,9 +26,6 @@ export interface Kernel {
   /** The subject fields, in the order each subject's take them in the subjects buffer. */
   readonly fields: readonly string[];
 }
-
-/** A number as a WGSL f32 literal. */
-const lit = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
 
 /**
  * A runner body with the names its author wrote made safe: \`out.cast\` becomes \`out.o_cast\`,
@@ -126,7 +124,7 @@ export function kernel(
   add(`@compute @workgroup_size(${GROUP})`, 'fn main(@builtin(global_invocation_id) id: vec3u) {');
   add('  let i = id.x;', '  if (i >= frame.y) { return; }', '  let subject = subjects[i];');
   outputs.forEach((o, c) => {
-    const rest = (channels.get(o.name) as ChannelCode).rest.map(lit);
+    const rest = (channels.get(o.name) as ChannelCode).rest.map((x) => literal(x));
     add(`  var acc_${c} = array<f32, ${o.axes}>(${rest.join(', ')});`);
     add(
       `  var rv_${c}: array<array<f32, ${inputOf(channels.get(o.name))}>, ${MAX_ROLES}>;`,
@@ -180,7 +178,8 @@ export function kernel(
   add('      default: {}', '    }', '  }');
   outputs.forEach((o, c) => {
     const b = (channels.get(o.name) as ChannelCode).bounds;
-    const v = b === undefined ? `acc_${c}[a]` : `clamp(acc_${c}[a], ${lit(b[0])}, ${lit(b[1])})`;
+    const v =
+      b === undefined ? `acc_${c}[a]` : `clamp(acc_${c}[a], ${literal(b[0])}, ${literal(b[1])})`;
     add(
       `  for (var a = 0u; a < ${o.axes}u; a++) { outv[${o.offset}u + i * ${o.axes}u + a] = ${v}; }`,
     );

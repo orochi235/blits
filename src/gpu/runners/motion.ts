@@ -1,7 +1,8 @@
-import { EASED } from '../../closed.js';
+import { BOUND, EASED } from '../../closed.js';
 import { curveData } from '../../easing.js';
 import { motionOf } from '../../motion.js';
 import { SECOND } from '../anchors.js';
+import { BOUND_AXES } from '../run-row.js';
 import {
   type ChannelLookup,
   cachedRunner,
@@ -55,6 +56,10 @@ export function motionPack(patch: object, channels: ChannelLookup): Packed | und
   const law = motions.law();
   const form = law[0] as number;
   if (!FORMS.has(form)) return { why: `the GPU has no WGSL for its law ${form}` };
+  if (form === BOUND && axes > BOUND_AXES)
+    return {
+      why: `it glides inside bounds on ${axes} axes, and the GPU carries the branches of ${BOUND_AXES} at most`,
+    };
   let curve: readonly number[] = [];
   if (form === EASED) {
     const data = curveData(motions.ease);
