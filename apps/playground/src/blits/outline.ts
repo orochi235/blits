@@ -16,7 +16,7 @@ export interface Outlined {
  * by a render, and drops a voice from its outline once the voice is done.
  */
 export function outlineOf(comp: Composition): Outlined {
-  const built = compile(comp, subjectsOf(comp.stage));
+  const built = compile(comp, subjectsOf(comp.stage), { listed: false });
   try {
     const o = built.mix.describe();
     const byHandle = new Map(o.voices.map((v) => [v.id, v]));
