@@ -40,6 +40,8 @@ const cycle = patch<Token, Theme>(
 );
 
 const mute = patch<Token, Theme>(0, () => ({ mute: [0.5, 0, 0, 1] }), { writes: ['mute'] });
+/** Mute at no coverage, which changes nothing: what turning the mute off crossfades to. */
+const unmute = patch<Token, Theme>(0, () => ({ mute: [0.5, 0, 0, 0] }), { writes: ['mute'] });
 
 /** The mock's markup: each element's class, its text, and its tokens as designed, in indigo. */
 const PARTS: [string, string, Partial<Record<Token['prop'], number>>][] = [
@@ -112,27 +114,30 @@ export default demo((d) => {
   const m = mix<Token, Theme>(THEME, d.options('retheme', { transport: show }));
   d.closes(m);
 
-  // Brands share a role, so changing brand crossfades one hue into the next. Which brand is up and
-  // whether it is disabled are read from the mix, which a seek back puts as it was: each voice is
-  // tagged with what it plays, and the one in charge is the newest not fading.
+  // Brands share a role, so changing brand crossfades one hue into the next, and so do the mute
+  // and its unmute. Which brand is up and whether it is disabled are read from the mix, which a
+  // seek back puts as it was: each voice is tagged with what it plays, and each change cues its
+  // voice last, so the newest is in charge, fading or not, as the focus settle fades it.
   const fade = { in: 700, out: 700 };
-  const up = (tag: string) => m.voices(tag).findLast((v) => v.state !== 'fading');
-  const picked = () => {
-    const v = up('brand');
-    return v === undefined ? undefined : BRANDS.findIndex((b) => m.voices(b.name).includes(v));
+  const shown = (tag: string, as: string) => {
+    const v = m.voices(tag).at(-1);
+    return v !== undefined && m.voices(as).includes(v);
   };
+  const picked = () =>
+    m.voices('brand').length === 0 ? undefined : BRANDS.findIndex((b) => shown('brand', b.name));
+  const muted = () => shown('mute', 'Disabled');
   let pressed = '';
   const press = () => {
     const i = picked();
-    const muted = up('mute') !== undefined;
-    const key = `${i} ${muted}`;
+    const off = muted();
+    const key = `${i} ${off}`;
     if (key === pressed) return;
     pressed = key;
     brandButtons.forEach((el, j) => {
       el.ariaPressed = String(j === i);
     });
     cycleButton.ariaPressed = String(i === -1);
-    muteButton.ariaPressed = String(muted);
+    muteButton.ariaPressed = String(off);
   };
   const pick = (i: number) => {
     for (const v of m.voices('brand')) if (v.state !== 'fading') v.fade();
@@ -154,16 +159,17 @@ export default demo((d) => {
   d.on(cycleButton, 'click', () => pick(-1));
 
   d.on(muteButton, 'click', () => {
-    const muted = m.voices('mute').filter((v) => v.state !== 'fading');
-    if (muted.length === 0)
-      m.cue({
-        patch: mute,
-        subjects: tokens,
-        name: 'Disabled',
-        tags: ['mute'],
-        fade: { in: 500, out: 500 },
-      });
-    else for (const v of muted) v.fade();
+    const on = !muted();
+    for (const v of m.voices('mute')) if (v.state !== 'fading') v.fade();
+    const name = on ? 'Disabled' : 'Enabled';
+    m.cue({
+      patch: on ? mute : unmute,
+      subjects: tokens,
+      role: 'mute',
+      name,
+      tags: ['mute', name],
+      fade: { in: 500, out: 500 },
+    });
     press();
   });
   pick(-1);
