@@ -175,6 +175,8 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   if (typeof loop === 'number' && !(Number.isInteger(loop) && loop >= 1))
     throw new RangeError(`blits: loop takes true, false or a whole number of passes, not ${loop}`);
   if (spec.rate !== undefined) finiteRate(spec.rate);
+  if (Number.isNaN(spec.start))
+    throw new RangeError("blits: a voice's start is a time in ms, not NaN");
   if (spec.seek !== undefined && !Number.isFinite(spec.seek))
     throw new RangeError(`blits: a voice's seek is a finite number of ms, not ${spec.seek}`);
   if (spec.stepMs !== undefined && !(spec.stepMs >= 0 && spec.stepMs < Number.POSITIVE_INFINITY))

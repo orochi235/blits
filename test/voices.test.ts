@@ -136,3 +136,13 @@ describe('a loop that is not a whole number of passes', () => {
     expect(() => m.cue({ patch: p, loop })).toThrow(RangeError);
   });
 });
+
+describe('a start that is not a number', () => {
+  it('is refused, for a voice and an owner', () => {
+    type P = { x: number };
+    const m = mix<string, P>(kit<P>({ x: sum() }));
+    const p = keys<string, P>(100, [{ at: 0, delta: { x: 1 } }]);
+    expect(() => m.cue({ patch: p, start: Number.NaN })).toThrow(RangeError);
+    expect(() => m.owns({ start: Number.NaN })).toThrow(RangeError);
+  });
+});
