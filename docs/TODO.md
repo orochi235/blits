@@ -122,11 +122,15 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   not per voice, and linear from 100k up (`runs/2026-11-22-cue-wide-first-scale.txt`). The profile
   (`runs/2026-11-22-cue-wide-first-prof-tree/`) puts it in holding each subject weakly in many
   places at once: the lanes numbering it (`Numbers.take`, a `WeakRef` and a registry cell, 16%),
-  a voice's `subjects` WeakMap (11%), `Filed`'s list and `seen` entries, the chain store, plus the
-  long group's `has` and collection (9%). A cell's unregister token cost 0.17 µs a subject and was
-  dropped on 2026-11-22 (1.35 s to 1.15 at one voice, measured). A `WeakRef` alone costs 0.12 µs
-  and a WeakMap entry 0.06 (`runs/2026-11-22-weakcost.txt`, measured). The lever left is fewer
-  subject-keyed maps a subject enters on its first read, as for a stop above; not tried.
+  a voice's `subjects` WeakMap (11%), `Filed`'s list entry, the chain store, plus the long group's
+  `has` and collection (9%). A cell's unregister token cost 0.17 µs a subject and was dropped on
+  2026-11-22 (1.35 s to 1.15 at one voice, measured). A `WeakRef` alone costs 0.12 µs and a WeakMap
+  entry 0.06 (`runs/2026-11-22-weakcost.txt`, measured). `Filed`'s `seen` entry left the first read
+  on 2026-11-22: the count is read off the subject's list, 164 to 148 ms at 200k subjects (teitou,
+  12 rounds, U 29 of 144, `runs/2026-11-22-filed-seen-ab.txt`). `bench/firstmaps.mjs` counts what a
+  first read enters. Left: the `WeakRef` and cell, which find a subject by its number; a voice's
+  `subjects` entry, one per voice, which finding records through the subject's chain could replace
+  (not tried); the chain store and `Filed`'s list.
 - **[agent] A stop grows with N** (0.52 µs at 1,000 subjects, 1.46 at 10,000, 2.41 at 40,000;
   msb-uai, 2026-11-21, `bench/runs/2026-11-21-row-alloc-restart.txt`) though nothing walks more.
   Every part of it grows (`bench/stopparts.mjs`, `runs/2026-11-21-row-alloc-stopparts.txt`;

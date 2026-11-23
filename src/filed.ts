@@ -193,8 +193,12 @@ export class Filed<I, V extends Filer<I>> {
 
   /** `subject`'s list once each long group made since `get` last asked about it, naming it, is in it. */
   private ask(subject: I, raw: (V | Group<V>)[] | undefined): (V | Group<V>)[] | undefined {
-    const seen = this.seen.get(subject) ?? 0;
-    if (seen === this.made) return raw;
+    const made = this.made;
+    let seen = listedSince(raw);
+    if (seen === made) return raw;
+    const stored = this.seen.get(subject);
+    if (stored !== undefined && stored > seen) seen = stored;
+    if (seen === made) return raw;
     const long = this.long;
     let k = long.length;
     while (k > 0 && (long[k - 1] as Group<V>).seq >= seen) k--;
@@ -207,7 +211,8 @@ export class Filed<I, V extends Filer<I>> {
       } else raw.push(g);
       g.filed++;
     }
-    this.seen.set(subject, this.made);
+    // Most subjects are named by the newest long group, and their list then says this alone.
+    if (listedSince(raw) !== made) this.seen.set(subject, made);
     return raw;
   }
 
@@ -249,6 +254,20 @@ export class Filed<I, V extends Filer<I>> {
       if (typeof subject !== 'object' || subject === null) this.seen.delete(subject);
     }
   }
+}
+
+/**
+ * One past the newest long group listed in `raw`: a group is listed only by `ask`, which asked every
+ * long group older than it at the same time, so none of those need asking again. 0 where none is.
+ */
+function listedSince(raw: readonly unknown[] | undefined): number {
+  let since = 0;
+  if (raw === undefined) return since;
+  for (let k = 0; k < raw.length; k++) {
+    const e = raw[k];
+    if (e instanceof Group && e.seq >= since) since = e.seq + 1;
+  }
+  return since;
 }
 
 function equal(a: readonly unknown[], b: readonly unknown[]): boolean {

@@ -166,6 +166,27 @@ describe('Filed listing a long list where get asks', () => {
     expect(asked).toBe(0);
   });
 
+  it('lists each live long group once after the newest one naming a subject is swept off it', () => {
+    const f = new Filed<number, V>();
+    const a = voice(1, range(20_000));
+    const b = voice(2, range(20_000, 10));
+    const c = voice(3, range(20_000, 20));
+    for (const v of [a, b, c]) f.file(v);
+    expect(f.get(100)).toEqual([a, b, c]);
+    f.unfile(c);
+    settle(f);
+    expect(raw(f, 100)).toEqual([a.group, b.group]);
+    asked = 0;
+    expect(f.get(100)).toEqual([a, b]);
+    expect(f.get(100)).toEqual([a, b]);
+    expect(raw(f, 100)).toEqual([a.group, b.group]);
+    expect(asked).toBe(0);
+    const d = voice(4, range(20_000, 30));
+    f.file(d);
+    expect(f.get(100)).toEqual([a, b, d]);
+    expect(raw(f, 100)).toEqual([a.group, b.group, d.group]);
+  });
+
   it('forgets a long group get never listed the moment its last voice leaves', () => {
     const f = new Filed<number, V>();
     const list = range(10_000);

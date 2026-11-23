@@ -1,0 +1,358 @@
+# teitou (Apple M5 Max), 2026-11-22, quiet: onto do --kind bench --node teitou --quiet --max-cores 2 -- bash -c 'CUES=1 FIRST=1 bench/cuewide.sh run 12 base tree -- 200000 10 2'
+# Built before in a --kind build job (bench/cuewide.sh build base tree). base is 7aafdead; tree reads a subject's long-group
+# count off its list in Filed (src/filed.ts) and stores it only where the newest long group does not name the subject.
+# First frame after the cue, a sync and a probe of every subject, round medians of 10, sorted, ms:
+#   base 153 155 157 162 162 163 166 167 168 175 177 198   tree 143 144 144 144 146 148 148 153 160 164 169 188
+#   median 164.3 -> 148.0 (-9.9%), U 29 of 144
+# The same at 1M, 6 rounds (2026-11-22-filed-seen-ab-1m.txt), read within spread: the node was loaded from round 4 on,
+# both sides 30-40% slower.
+
+  waiting for room
+  waiting: teitou unknown (it runs quiet, and onto jobs there already claim 8.1 of the 5 cores it allows, audit73-diagram.effect.part1-fix has outrun its longest recent run)
+  waiting: teitou unknown (it runs quiet, and onto jobs there already claim 4.0 of the 5 cores it allows, audit73-diagram.effect.part1-fix has outrun its longest recent run)
+  base   7aafdead
+  delta  3 file(s), 0 deleted
+  sent   1 new file(s), 2 already there
+  updated blits-wt1 on teitou at 7aafdead + 3 uncommitted file(s)
+  loaded 2.7s: sync blits apply 0.8s, sync blits check 0.8s, other 0.6s, start 0.4s, sync blits diff 0.1s, sync blits upload 0.0s, gate 0.0s
+  job    46d071bb on teitou
+
+onto: blits-first-frame is already set up
+onto: playwright-browsers-790bd7c0596f is already set up
+# teitou Apple M5 Max 2026-11-22 HEAD 7aafdead, 12 rounds, sides base tree, cue-wide 200000 10 2
+== round 1/12 base
+warm 1/2   N=200000  cue   11.614 ms  named   10.731 ms  first  185.505 ms
+warm 2/2   N=200000  cue    7.314 ms  named   11.352 ms  first  164.277 ms
+1/10       N=200000  cue    8.138 ms  named   10.955 ms  first  153.055 ms
+2/10       N=200000  cue    7.668 ms  named    8.178 ms  first  159.218 ms
+3/10       N=200000  cue    6.208 ms  named    8.057 ms  first  168.215 ms
+4/10       N=200000  cue    9.395 ms  named    8.464 ms  first  176.215 ms
+5/10       N=200000  cue    6.711 ms  named    8.699 ms  first  158.652 ms
+6/10       N=200000  cue    5.812 ms  named    6.057 ms  first  148.645 ms
+7/10       N=200000  cue    5.972 ms  named    7.140 ms  first  150.700 ms
+8/10       N=200000  cue   11.848 ms  named    7.032 ms  first  172.609 ms
+9/10       N=200000  cue    9.507 ms  named    9.229 ms  first  176.379 ms
+10/10      N=200000  cue    6.366 ms  named    8.956 ms  first  162.110 ms
+cue-wide N=200000 CUES=1  cue    7.668 ms  named    8.464 ms  first  162.110 ms  (medians of 10)
+== round 1/12 tree
+warm 1/2   N=200000  cue   10.644 ms  named   10.290 ms  first  192.956 ms
+warm 2/2   N=200000  cue    6.403 ms  named    8.849 ms  first  175.656 ms
+1/10       N=200000  cue    7.114 ms  named   10.214 ms  first  161.156 ms
+2/10       N=200000  cue    6.545 ms  named    8.758 ms  first  143.080 ms
+3/10       N=200000  cue    7.173 ms  named    8.784 ms  first  141.589 ms
+4/10       N=200000  cue    7.565 ms  named    9.046 ms  first  145.077 ms
+5/10       N=200000  cue    5.679 ms  named    9.222 ms  first  138.313 ms
+6/10       N=200000  cue    6.827 ms  named    8.943 ms  first  142.174 ms
+7/10       N=200000  cue    6.951 ms  named    8.182 ms  first  134.418 ms
+8/10       N=200000  cue    6.265 ms  named    7.933 ms  first  144.782 ms
+9/10       N=200000  cue    6.067 ms  named    7.749 ms  first  143.087 ms
+10/10      N=200000  cue    7.276 ms  named    8.622 ms  first  148.225 ms
+cue-wide N=200000 CUES=1  cue    6.951 ms  named    8.784 ms  first  143.087 ms  (medians of 10)
+== round 2/12 tree
+warm 1/2   N=200000  cue   10.313 ms  named    9.249 ms  first  179.993 ms
+warm 2/2   N=200000  cue    7.725 ms  named    9.709 ms  first  152.255 ms
+1/10       N=200000  cue    8.439 ms  named    9.154 ms  first  137.479 ms
+2/10       N=200000  cue    6.976 ms  named    8.309 ms  first  144.244 ms
+3/10       N=200000  cue    7.381 ms  named    7.997 ms  first  156.393 ms
+4/10       N=200000  cue    6.304 ms  named    8.207 ms  first  152.483 ms
+5/10       N=200000  cue    6.367 ms  named    8.579 ms  first  145.423 ms
+6/10       N=200000  cue    5.794 ms  named   10.020 ms  first  140.663 ms
+7/10       N=200000  cue    7.938 ms  named    7.894 ms  first  155.527 ms
+8/10       N=200000  cue    6.380 ms  named    9.281 ms  first  138.296 ms
+9/10       N=200000  cue    6.617 ms  named    9.206 ms  first  134.461 ms
+10/10      N=200000  cue    7.580 ms  named    8.977 ms  first  142.089 ms
+cue-wide N=200000 CUES=1  cue    6.976 ms  named    8.977 ms  first  144.244 ms  (medians of 10)
+== round 2/12 base
+warm 1/2   N=200000  cue   10.076 ms  named    9.149 ms  first  182.266 ms
+warm 2/2   N=200000  cue    6.329 ms  named   12.077 ms  first  159.975 ms
+1/10       N=200000  cue    8.833 ms  named   10.303 ms  first  164.060 ms
+2/10       N=200000  cue    5.821 ms  named    8.615 ms  first  163.274 ms
+3/10       N=200000  cue    6.926 ms  named    9.208 ms  first  145.327 ms
+4/10       N=200000  cue    7.709 ms  named    8.623 ms  first  152.550 ms
+5/10       N=200000  cue    7.363 ms  named    8.908 ms  first  159.197 ms
+6/10       N=200000  cue    6.059 ms  named    8.747 ms  first  149.672 ms
+7/10       N=200000  cue    5.684 ms  named   10.563 ms  first  153.102 ms
+8/10       N=200000  cue    7.391 ms  named    9.745 ms  first  148.261 ms
+9/10       N=200000  cue    6.239 ms  named   10.298 ms  first  156.677 ms
+10/10      N=200000  cue    6.083 ms  named    9.666 ms  first  158.517 ms
+cue-wide N=200000 CUES=1  cue    6.926 ms  named    9.666 ms  first  156.677 ms  (medians of 10)
+== round 3/12 base
+warm 1/2   N=200000  cue   10.017 ms  named    9.523 ms  first  168.796 ms
+warm 2/2   N=200000  cue    5.675 ms  named    8.344 ms  first  165.643 ms
+1/10       N=200000  cue    7.003 ms  named    9.922 ms  first  163.032 ms
+2/10       N=200000  cue    6.317 ms  named    9.585 ms  first  157.331 ms
+3/10       N=200000  cue    7.620 ms  named    9.745 ms  first  161.497 ms
+4/10       N=200000  cue    6.673 ms  named   10.263 ms  first  143.375 ms
+5/10       N=200000  cue    6.741 ms  named    9.597 ms  first  167.830 ms
+6/10       N=200000  cue    6.983 ms  named    8.435 ms  first  166.103 ms
+7/10       N=200000  cue    5.992 ms  named   13.688 ms  first  160.606 ms
+8/10       N=200000  cue    6.647 ms  named    9.414 ms  first  163.810 ms
+9/10       N=200000  cue    5.675 ms  named    9.481 ms  first  161.717 ms
+10/10      N=200000  cue    6.822 ms  named   10.817 ms  first  155.396 ms
+cue-wide N=200000 CUES=1  cue    6.741 ms  named    9.745 ms  first  161.717 ms  (medians of 10)
+== round 3/12 tree
+warm 1/2   N=200000  cue   10.092 ms  named   10.621 ms  first  170.903 ms
+warm 2/2   N=200000  cue    7.522 ms  named   10.290 ms  first  160.194 ms
+1/10       N=200000  cue    7.502 ms  named   10.339 ms  first  138.546 ms
+2/10       N=200000  cue    6.766 ms  named    8.693 ms  first  144.167 ms
+3/10       N=200000  cue    6.284 ms  named    9.378 ms  first  151.943 ms
+4/10       N=200000  cue    5.797 ms  named    8.975 ms  first  153.805 ms
+5/10       N=200000  cue    6.979 ms  named   11.222 ms  first  158.678 ms
+6/10       N=200000  cue    7.844 ms  named    9.964 ms  first  148.290 ms
+7/10       N=200000  cue    7.404 ms  named    8.535 ms  first  151.960 ms
+8/10       N=200000  cue    5.793 ms  named    8.545 ms  first  145.019 ms
+9/10       N=200000  cue    6.277 ms  named   10.559 ms  first  138.524 ms
+10/10      N=200000  cue    6.446 ms  named    9.462 ms  first  138.911 ms
+cue-wide N=200000 CUES=1  cue    6.766 ms  named    9.462 ms  first  148.290 ms  (medians of 10)
+== round 4/12 tree
+warm 1/2   N=200000  cue    9.790 ms  named    9.219 ms  first  171.859 ms
+warm 2/2   N=200000  cue    6.412 ms  named   11.987 ms  first  155.092 ms
+1/10       N=200000  cue    7.228 ms  named    8.020 ms  first  148.975 ms
+2/10       N=200000  cue    5.659 ms  named    8.721 ms  first  149.086 ms
+3/10       N=200000  cue    7.434 ms  named    8.674 ms  first  135.060 ms
+4/10       N=200000  cue    6.685 ms  named    9.258 ms  first  140.497 ms
+5/10       N=200000  cue    7.744 ms  named    8.943 ms  first  142.637 ms
+6/10       N=200000  cue    5.643 ms  named    8.152 ms  first  143.507 ms
+7/10       N=200000  cue    6.035 ms  named   11.285 ms  first  154.543 ms
+8/10       N=200000  cue    6.043 ms  named    8.185 ms  first  142.903 ms
+9/10       N=200000  cue    7.038 ms  named    8.965 ms  first  153.121 ms
+10/10      N=200000  cue    5.568 ms  named    9.930 ms  first  144.168 ms
+cue-wide N=200000 CUES=1  cue    6.685 ms  named    8.943 ms  first  144.168 ms  (medians of 10)
+== round 4/12 base
+warm 1/2   N=200000  cue   10.264 ms  named   10.134 ms  first  201.660 ms
+warm 2/2   N=200000  cue    5.946 ms  named    8.646 ms  first  179.374 ms
+1/10       N=200000  cue    6.936 ms  named    9.983 ms  first  148.981 ms
+2/10       N=200000  cue    6.481 ms  named    8.915 ms  first  154.802 ms
+3/10       N=200000  cue    7.346 ms  named   10.034 ms  first  153.311 ms
+4/10       N=200000  cue    6.132 ms  named   10.631 ms  first  154.429 ms
+5/10       N=200000  cue    6.361 ms  named    9.498 ms  first  143.973 ms
+6/10       N=200000  cue    7.286 ms  named    9.186 ms  first  150.115 ms
+7/10       N=200000  cue    7.366 ms  named    9.707 ms  first  150.836 ms
+8/10       N=200000  cue    5.920 ms  named    8.016 ms  first  149.664 ms
+9/10       N=200000  cue    5.461 ms  named   10.620 ms  first  155.275 ms
+10/10      N=200000  cue    6.930 ms  named   10.308 ms  first  167.480 ms
+cue-wide N=200000 CUES=1  cue    6.930 ms  named    9.983 ms  first  153.311 ms  (medians of 10)
+== round 5/12 base
+warm 1/2   N=200000  cue    9.971 ms  named    7.745 ms  first  185.481 ms
+warm 2/2   N=200000  cue    5.986 ms  named    6.842 ms  first  155.010 ms
+1/10       N=200000  cue   13.882 ms  named    6.104 ms  first  168.800 ms
+2/10       N=200000  cue    8.666 ms  named    9.771 ms  first  154.113 ms
+3/10       N=200000  cue    6.668 ms  named    8.063 ms  first  162.271 ms
+4/10       N=200000  cue    6.075 ms  named   10.369 ms  first  159.460 ms
+5/10       N=200000  cue    7.500 ms  named    8.976 ms  first  163.009 ms
+6/10       N=200000  cue    6.697 ms  named    9.168 ms  first  145.835 ms
+7/10       N=200000  cue    7.185 ms  named   10.151 ms  first  162.736 ms
+8/10       N=200000  cue    6.199 ms  named    8.797 ms  first  168.729 ms
+9/10       N=200000  cue    6.730 ms  named    9.271 ms  first  187.794 ms
+10/10      N=200000  cue    5.447 ms  named    9.723 ms  first  172.233 ms
+cue-wide N=200000 CUES=1  cue    6.730 ms  named    9.271 ms  first  163.009 ms  (medians of 10)
+== round 5/12 tree
+warm 1/2   N=200000  cue   10.425 ms  named   10.568 ms  first  178.549 ms
+warm 2/2   N=200000  cue    8.102 ms  named   11.419 ms  first  158.007 ms
+1/10       N=200000  cue    7.981 ms  named    9.048 ms  first  144.659 ms
+2/10       N=200000  cue    5.878 ms  named    9.052 ms  first  152.926 ms
+3/10       N=200000  cue    6.985 ms  named    8.242 ms  first  134.570 ms
+4/10       N=200000  cue    7.030 ms  named    7.907 ms  first  145.908 ms
+5/10       N=200000  cue    6.155 ms  named    8.125 ms  first  146.152 ms
+6/10       N=200000  cue    5.544 ms  named    7.895 ms  first  144.248 ms
+7/10       N=200000  cue    6.500 ms  named    8.424 ms  first  165.980 ms
+8/10       N=200000  cue    5.779 ms  named    9.306 ms  first  157.613 ms
+9/10       N=200000  cue    6.582 ms  named    8.248 ms  first  178.874 ms
+10/10      N=200000  cue    6.276 ms  named    9.786 ms  first  152.816 ms
+cue-wide N=200000 CUES=1  cue    6.500 ms  named    8.424 ms  first  152.816 ms  (medians of 10)
+== round 6/12 tree
+warm 1/2   N=200000  cue   10.560 ms  named   11.943 ms  first  191.082 ms
+warm 2/2   N=200000  cue    6.569 ms  named    5.940 ms  first  144.077 ms
+1/10       N=200000  cue    7.552 ms  named    6.456 ms  first  133.914 ms
+2/10       N=200000  cue   12.417 ms  named    6.296 ms  first  168.357 ms
+3/10       N=200000  cue    8.699 ms  named    9.336 ms  first  149.096 ms
+4/10       N=200000  cue    6.549 ms  named    8.786 ms  first  158.129 ms
+5/10       N=200000  cue    6.131 ms  named    8.103 ms  first  149.572 ms
+6/10       N=200000  cue    7.939 ms  named    9.204 ms  first  147.783 ms
+7/10       N=200000  cue    6.147 ms  named    8.088 ms  first  145.595 ms
+8/10       N=200000  cue    5.903 ms  named    7.822 ms  first  138.443 ms
+9/10       N=200000  cue    5.811 ms  named    9.715 ms  first  138.220 ms
+10/10      N=200000  cue    7.631 ms  named    9.337 ms  first  146.714 ms
+cue-wide N=200000 CUES=1  cue    7.552 ms  named    8.786 ms  first  147.783 ms  (medians of 10)
+== round 6/12 base
+warm 1/2   N=200000  cue   10.571 ms  named   11.051 ms  first  170.136 ms
+warm 2/2   N=200000  cue    6.537 ms  named    7.013 ms  first  160.981 ms
+1/10       N=200000  cue   10.177 ms  named    6.722 ms  first  164.722 ms
+2/10       N=200000  cue    7.460 ms  named    5.842 ms  first  176.258 ms
+3/10       N=200000  cue    7.261 ms  named    5.932 ms  first  157.830 ms
+4/10       N=200000  cue    7.670 ms  named    6.529 ms  first  169.780 ms
+5/10       N=200000  cue    9.552 ms  named    6.419 ms  first  165.500 ms
+6/10       N=200000  cue    7.228 ms  named    5.989 ms  first  171.980 ms
+7/10       N=200000  cue    7.824 ms  named    6.508 ms  first  158.286 ms
+8/10       N=200000  cue    7.469 ms  named    5.964 ms  first  156.126 ms
+9/10       N=200000  cue    7.920 ms  named    5.833 ms  first  171.986 ms
+10/10      N=200000  cue    7.078 ms  named    5.738 ms  first  164.981 ms
+cue-wide N=200000 CUES=1  cue    7.670 ms  named    5.989 ms  first  165.500 ms  (medians of 10)
+== round 7/12 base
+warm 1/2   N=200000  cue    9.902 ms  named   12.396 ms  first  174.645 ms
+warm 2/2   N=200000  cue    7.333 ms  named   10.089 ms  first  175.793 ms
+1/10       N=200000  cue    7.149 ms  named    9.159 ms  first  183.240 ms
+2/10       N=200000  cue    6.153 ms  named    8.458 ms  first  192.583 ms
+3/10       N=200000  cue    6.530 ms  named    8.379 ms  first  174.731 ms
+4/10       N=200000  cue    7.124 ms  named    8.299 ms  first  172.101 ms
+5/10       N=200000  cue    5.573 ms  named    9.203 ms  first  149.282 ms
+6/10       N=200000  cue    6.317 ms  named   10.136 ms  first  156.919 ms
+7/10       N=200000  cue    6.929 ms  named    9.012 ms  first  150.265 ms
+8/10       N=200000  cue    6.531 ms  named    8.866 ms  first  166.641 ms
+9/10       N=200000  cue    5.825 ms  named    8.777 ms  first  183.745 ms
+10/10      N=200000  cue    7.049 ms  named    9.553 ms  first  179.164 ms
+cue-wide N=200000 CUES=1  cue    6.531 ms  named    9.012 ms  first  174.731 ms  (medians of 10)
+== round 7/12 tree
+warm 1/2   N=200000  cue   10.284 ms  named    9.796 ms  first  168.462 ms
+warm 2/2   N=200000  cue    8.042 ms  named   11.828 ms  first  147.158 ms
+1/10       N=200000  cue    8.231 ms  named    9.038 ms  first  146.883 ms
+2/10       N=200000  cue    7.425 ms  named    9.084 ms  first  138.442 ms
+3/10       N=200000  cue    7.013 ms  named    8.718 ms  first  134.690 ms
+4/10       N=200000  cue    7.055 ms  named    8.863 ms  first  138.012 ms
+5/10       N=200000  cue    6.049 ms  named    9.435 ms  first  145.948 ms
+6/10       N=200000  cue    7.651 ms  named    9.718 ms  first  145.388 ms
+7/10       N=200000  cue    5.805 ms  named    8.821 ms  first  133.784 ms
+8/10       N=200000  cue    5.845 ms  named    9.475 ms  first  140.107 ms
+9/10       N=200000  cue    6.848 ms  named    9.822 ms  first  143.905 ms
+10/10      N=200000  cue    7.451 ms  named   10.286 ms  first  150.353 ms
+cue-wide N=200000 CUES=1  cue    7.055 ms  named    9.435 ms  first  143.905 ms  (medians of 10)
+== round 8/12 tree
+warm 1/2   N=200000  cue   10.190 ms  named    9.683 ms  first  202.963 ms
+warm 2/2   N=200000  cue    6.850 ms  named   10.144 ms  first  173.748 ms
+1/10       N=200000  cue    7.063 ms  named    8.938 ms  first  165.269 ms
+2/10       N=200000  cue    6.679 ms  named    9.510 ms  first  158.321 ms
+3/10       N=200000  cue    8.390 ms  named    8.654 ms  first  147.265 ms
+4/10       N=200000  cue    7.320 ms  named    9.369 ms  first  145.975 ms
+5/10       N=200000  cue    7.986 ms  named    8.491 ms  first  137.218 ms
+6/10       N=200000  cue    6.697 ms  named    9.528 ms  first  135.707 ms
+7/10       N=200000  cue    7.261 ms  named    8.645 ms  first  157.729 ms
+8/10       N=200000  cue    6.542 ms  named    9.794 ms  first  146.361 ms
+9/10       N=200000  cue    6.009 ms  named    9.957 ms  first  143.308 ms
+10/10      N=200000  cue    5.739 ms  named    8.407 ms  first  146.177 ms
+cue-wide N=200000 CUES=1  cue    7.063 ms  named    9.369 ms  first  146.361 ms  (medians of 10)
+== round 8/12 base
+warm 1/2   N=200000  cue   10.205 ms  named   10.925 ms  first  184.534 ms
+warm 2/2   N=200000  cue    7.992 ms  named    8.764 ms  first  167.026 ms
+1/10       N=200000  cue    7.952 ms  named    9.115 ms  first  152.382 ms
+2/10       N=200000  cue    6.386 ms  named   10.070 ms  first  154.955 ms
+3/10       N=200000  cue    6.411 ms  named    9.042 ms  first  150.351 ms
+4/10       N=200000  cue    6.044 ms  named    8.175 ms  first  161.634 ms
+5/10       N=200000  cue    6.022 ms  named   10.604 ms  first  155.152 ms
+6/10       N=200000  cue    7.418 ms  named    6.136 ms  first  154.524 ms
+7/10       N=200000  cue    6.188 ms  named    5.911 ms  first  154.039 ms
+8/10       N=200000  cue   13.717 ms  named    7.409 ms  first  184.245 ms
+9/10       N=200000  cue    6.045 ms  named    8.748 ms  first  142.720 ms
+10/10      N=200000  cue    6.218 ms  named    9.409 ms  first  163.963 ms
+cue-wide N=200000 CUES=1  cue    6.386 ms  named    9.042 ms  first  154.955 ms  (medians of 10)
+== round 9/12 base
+warm 1/2   N=200000  cue   10.618 ms  named   10.911 ms  first  178.818 ms
+warm 2/2   N=200000  cue    6.099 ms  named    7.301 ms  first  177.642 ms
+1/10       N=200000  cue    9.788 ms  named    5.809 ms  first  194.156 ms
+2/10       N=200000  cue    7.160 ms  named    6.323 ms  first  189.074 ms
+3/10       N=200000  cue    7.284 ms  named    6.119 ms  first  181.941 ms
+4/10       N=200000  cue    6.984 ms  named    6.606 ms  first  169.570 ms
+5/10       N=200000  cue    8.661 ms  named    6.119 ms  first  174.079 ms
+6/10       N=200000  cue    7.569 ms  named    5.840 ms  first  156.894 ms
+7/10       N=200000  cue    7.009 ms  named    6.687 ms  first  166.097 ms
+8/10       N=200000  cue    7.269 ms  named    7.451 ms  first  214.368 ms
+9/10       N=200000  cue   12.327 ms  named    5.910 ms  first  176.962 ms
+10/10      N=200000  cue    8.089 ms  named    6.680 ms  first  165.789 ms
+cue-wide N=200000 CUES=1  cue    7.569 ms  named    6.323 ms  first  176.962 ms  (medians of 10)
+== round 9/12 tree
+warm 1/2   N=200000  cue   10.514 ms  named   10.825 ms  first  163.532 ms
+warm 2/2   N=200000  cue    7.817 ms  named   10.168 ms  first  153.391 ms
+1/10       N=200000  cue    6.636 ms  named    9.402 ms  first  145.369 ms
+2/10       N=200000  cue    5.478 ms  named    8.793 ms  first  143.763 ms
+3/10       N=200000  cue    6.140 ms  named   10.489 ms  first  138.320 ms
+4/10       N=200000  cue    6.628 ms  named    9.273 ms  first  140.575 ms
+5/10       N=200000  cue    7.149 ms  named    9.592 ms  first  170.950 ms
+6/10       N=200000  cue    6.511 ms  named   11.567 ms  first  207.998 ms
+7/10       N=200000  cue    6.379 ms  named    8.988 ms  first  172.331 ms
+8/10       N=200000  cue    7.309 ms  named    8.256 ms  first  187.406 ms
+9/10       N=200000  cue    6.475 ms  named    9.563 ms  first  152.846 ms
+10/10      N=200000  cue    7.086 ms  named    8.082 ms  first  159.657 ms
+cue-wide N=200000 CUES=1  cue    6.628 ms  named    9.402 ms  first  159.657 ms  (medians of 10)
+== round 10/12 tree
+warm 1/2   N=200000  cue   10.911 ms  named    9.473 ms  first  175.766 ms
+warm 2/2   N=200000  cue    6.738 ms  named   11.143 ms  first  147.817 ms
+1/10       N=200000  cue    7.617 ms  named    8.258 ms  first  162.225 ms
+2/10       N=200000  cue    6.153 ms  named    9.650 ms  first  165.717 ms
+3/10       N=200000  cue    5.732 ms  named    8.326 ms  first  141.338 ms
+4/10       N=200000  cue    5.978 ms  named    8.276 ms  first  156.455 ms
+5/10       N=200000  cue    6.428 ms  named    9.748 ms  first  160.638 ms
+6/10       N=200000  cue    6.184 ms  named    9.010 ms  first  163.689 ms
+7/10       N=200000  cue   10.238 ms  named    9.955 ms  first  159.962 ms
+8/10       N=200000  cue    6.596 ms  named    8.598 ms  first  174.111 ms
+9/10       N=200000  cue    6.292 ms  named    8.675 ms  first  186.100 ms
+10/10      N=200000  cue    6.421 ms  named    8.298 ms  first  166.281 ms
+cue-wide N=200000 CUES=1  cue    6.421 ms  named    8.675 ms  first  163.689 ms  (medians of 10)
+== round 10/12 base
+warm 1/2   N=200000  cue   10.360 ms  named    9.859 ms  first  212.914 ms
+warm 2/2   N=200000  cue    6.055 ms  named    9.407 ms  first  172.694 ms
+1/10       N=200000  cue    7.412 ms  named    8.644 ms  first  177.933 ms
+2/10       N=200000  cue    6.446 ms  named    9.458 ms  first  161.587 ms
+3/10       N=200000  cue    6.136 ms  named    9.721 ms  first  162.547 ms
+4/10       N=200000  cue    6.249 ms  named    9.701 ms  first  164.733 ms
+5/10       N=200000  cue    6.379 ms  named    5.873 ms  first  165.451 ms
+6/10       N=200000  cue    6.001 ms  named    6.249 ms  first  160.026 ms
+7/10       N=200000  cue   12.688 ms  named    8.001 ms  first  187.339 ms
+8/10       N=200000  cue    5.899 ms  named    8.785 ms  first  168.322 ms
+9/10       N=200000  cue    6.160 ms  named    8.755 ms  first  169.287 ms
+10/10      N=200000  cue    7.011 ms  named    9.150 ms  first  203.690 ms
+cue-wide N=200000 CUES=1  cue    6.379 ms  named    8.785 ms  first  168.322 ms  (medians of 10)
+== round 11/12 base
+warm 1/2   N=200000  cue   11.607 ms  named    9.855 ms  first  209.342 ms
+warm 2/2   N=200000  cue    6.542 ms  named   10.016 ms  first  183.741 ms
+1/10       N=200000  cue    6.860 ms  named    8.440 ms  first  161.834 ms
+2/10       N=200000  cue    5.991 ms  named    9.842 ms  first  174.976 ms
+3/10       N=200000  cue    6.128 ms  named    8.194 ms  first  159.994 ms
+4/10       N=200000  cue    6.188 ms  named    7.972 ms  first  155.582 ms
+5/10       N=200000  cue    5.838 ms  named   11.346 ms  first  163.835 ms
+6/10       N=200000  cue    6.425 ms  named   10.140 ms  first  166.914 ms
+7/10       N=200000  cue    6.093 ms  named    6.882 ms  first  162.648 ms
+8/10       N=200000  cue    6.243 ms  named    8.344 ms  first  180.406 ms
+9/10       N=200000  cue    5.773 ms  named   10.255 ms  first  180.993 ms
+10/10      N=200000  cue    6.307 ms  named   10.299 ms  first  184.576 ms
+cue-wide N=200000 CUES=1  cue    6.188 ms  named    9.842 ms  first  166.914 ms  (medians of 10)
+== round 11/12 tree
+warm 1/2   N=200000  cue   10.732 ms  named    9.551 ms  first  188.146 ms
+warm 2/2   N=200000  cue    6.293 ms  named    9.384 ms  first  185.477 ms
+1/10       N=200000  cue    7.592 ms  named    9.867 ms  first  172.183 ms
+2/10       N=200000  cue    6.233 ms  named    8.494 ms  first  165.988 ms
+3/10       N=200000  cue    6.328 ms  named   11.139 ms  first  161.916 ms
+4/10       N=200000  cue    6.302 ms  named    9.452 ms  first  197.433 ms
+5/10       N=200000  cue    6.436 ms  named    9.797 ms  first  169.376 ms
+6/10       N=200000  cue    6.181 ms  named    9.037 ms  first  165.601 ms
+7/10       N=200000  cue    5.808 ms  named    8.479 ms  first  160.950 ms
+8/10       N=200000  cue    5.891 ms  named    9.317 ms  first  168.932 ms
+9/10       N=200000  cue    9.483 ms  named   10.021 ms  first  180.573 ms
+10/10      N=200000  cue    5.894 ms  named    9.961 ms  first  162.075 ms
+cue-wide N=200000 CUES=1  cue    6.302 ms  named    9.797 ms  first  168.932 ms  (medians of 10)
+== round 12/12 tree
+warm 1/2   N=200000  cue   13.031 ms  named   10.275 ms  first  233.960 ms
+warm 2/2   N=200000  cue    6.832 ms  named    8.555 ms  first  169.488 ms
+1/10       N=200000  cue    7.093 ms  named    8.552 ms  first  155.087 ms
+2/10       N=200000  cue    6.028 ms  named    9.884 ms  first  171.119 ms
+3/10       N=200000  cue    5.548 ms  named   10.608 ms  first  169.311 ms
+4/10       N=200000  cue    6.352 ms  named    9.277 ms  first  175.028 ms
+5/10       N=200000  cue    6.068 ms  named    8.886 ms  first  180.983 ms
+6/10       N=200000  cue    7.310 ms  named   11.722 ms  first  208.392 ms
+7/10       N=200000  cue    7.053 ms  named   11.210 ms  first  196.003 ms
+8/10       N=200000  cue    6.760 ms  named   11.814 ms  first  202.885 ms
+9/10       N=200000  cue    7.815 ms  named    9.584 ms  first  213.482 ms
+10/10      N=200000  cue    6.235 ms  named    8.999 ms  first  188.281 ms
+cue-wide N=200000 CUES=1  cue    6.760 ms  named    9.884 ms  first  188.281 ms  (medians of 10)
+== round 12/12 base
+warm 1/2   N=200000  cue   10.795 ms  named   10.283 ms  first  192.648 ms
+warm 2/2   N=200000  cue    6.605 ms  named    9.722 ms  first  205.873 ms
+1/10       N=200000  cue    8.810 ms  named    7.294 ms  first  238.413 ms
+2/10       N=200000  cue   15.131 ms  named   10.820 ms  first  270.123 ms
+3/10       N=200000  cue    7.333 ms  named    9.666 ms  first  209.266 ms
+4/10       N=200000  cue    6.893 ms  named    9.485 ms  first  227.338 ms
+5/10       N=200000  cue    6.801 ms  named   11.437 ms  first  194.656 ms
+6/10       N=200000  cue    6.405 ms  named    9.604 ms  first  195.190 ms
+7/10       N=200000  cue    7.365 ms  named   10.952 ms  first  197.518 ms
+8/10       N=200000  cue    6.809 ms  named    9.368 ms  first  194.288 ms
+9/10       N=200000  cue    6.441 ms  named   11.760 ms  first  191.829 ms
+10/10      N=200000  cue    6.330 ms  named   10.784 ms  first  173.177 ms
+cue-wide N=200000 CUES=1  cue    6.893 ms  named   10.784 ms  first  197.518 ms  (medians of 10)
