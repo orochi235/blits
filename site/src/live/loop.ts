@@ -80,7 +80,8 @@ export function loop(
       for (const x of mixes())
         for (const h of x.voices())
           if (h.owner === undefined && h.state === 'live' && !faded.includes(h)) {
-            h.fade({ over: Math.max(0, until - at) });
+            // At least 1 ms: a fade over none retires the voice at once, and it could not rise.
+            h.fade({ over: Math.max(1, until - at) });
             faded.push(h);
           }
     const step = Number.isNaN(last) ? 0 : at - last;

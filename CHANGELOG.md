@@ -15,8 +15,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   fade from the moment the owner stopped.
 - A voice cued while the mix is rebased shows on the sync the mix resumes on, where it waited a
   frame.
-- A mix running back and held at the earliest moment history reaches numbers each frame it holds,
-  so a seek to one before a cue made there shows it without the cue.
+- A mix running back and held at the earliest moment history reaches begins a new frame after a
+  call the host makes there, where the frames after it kept the number of the one before, so a seek
+  to one showed another.
+- The functions made for a kit's channels are kept for at most 256 kits, so a host that keeps
+  making mixes with new kits no longer holds every one it ever made.
 - A seek back and on, on the lanes, no longer reads 0 for one frame from a voice weighed by a ball
   (`around` or `within`): the lanes the seek rebuilt counted their fills from 0 again, and met fill
   stamps the voice's bound kept from before.

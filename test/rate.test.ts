@@ -456,7 +456,7 @@ describe('mix rate', () => {
 
 describe('a mix running back, held at the earliest moment history reaches', () => {
   const glow = patch<string, { g: number }>(600, (ph) => ({ g: 2 + ph }), { writes: ['g'] });
-  it('numbers each frame it holds, so a seek to one before a cue shows it without the cue', () => {
+  it('begins a new frame after a cue, so a seek to it shows the cue', () => {
     const m = mix<string, { g: number }>(kit<{ g: number }>({ g: mul() }), {
       history: { ms: 100_000, tape },
     });
@@ -471,13 +471,30 @@ describe('a mix running back, held at the earliest moment history reaches', () =
     m.sync(1159);
     m.sync(1175);
     expect(m.now).toBe(120);
-    const seq = m.seq;
-    const shown = m.probe('s').g;
+    const before = m.seq;
     m.sync(1295);
     m.cue({ patch: glow, subjects: ['s'] });
     m.sync(1311);
-    expect(m.seq).toBeGreaterThan(seq);
-    m.seek({ frame: seq });
+    const after = m.seq;
+    const shown = m.probe('s').g;
+    expect(after).toBeGreaterThan(before);
+    m.seek({ frame: after });
     expect(m.probe('s').g).toBe(shown);
+  });
+
+  it('holds no frame records beyond the calls made while it stays held', () => {
+    const m = mix<string, { g: number }>(kit<{ g: number }>({ g: mul() }), {
+      history: { ms: 1000, tape },
+    });
+    m.sync(0);
+    m.sync(16);
+    m.cue({ patch: glow, subjects: ['x'] });
+    m.sync(32);
+    m.rate = -1;
+    let t = 32;
+    for (let i = 0; i < 1000; i++) m.sync((t += 16));
+    const seq = m.seq;
+    for (let i = 0; i < 1000; i++) m.sync((t += 16));
+    expect(m.seq).toBe(seq);
   });
 });

@@ -353,11 +353,14 @@ export class Transport implements TransportApi {
         this.driving = false;
       }
     } else {
-      // Held where it stands, it is still a frame, numbered so a seek back can find what it showed,
-      // and a call the host made since lands in it.
-      this.tick(t);
+      // Held where it stands, a call the host made since the last frame begins a new one, numbered
+      // so a seek back finds the frame before it as it showed. Ticking every sync would grow the
+      // frame records without end while it stays held.
+      if (this.members.some((m) => m.stirred)) {
+        this.tick(t);
+        for (const m of this.members) if (waits(m)) move(m, t);
+      }
       for (const m of this.members) {
-        if (waits(m)) move(m, t);
         m.frame = nextFrame();
         m.lanes?.refill();
       }
