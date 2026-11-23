@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { multiply } from '../src/blend-modes.js';
 import { kit, last } from '../src/channels.js';
-import { color, ink, oklab } from '../src/color.js';
+import { color, ink, oklab, toHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import type { Channel } from '../src/types.js';
@@ -100,6 +101,31 @@ describe('a tween on ink()', () => {
     const mid = m.probe(a).tint;
     for (let i = 0; i < 4; i++)
       expect(mid[i]).toBe((CYAN[i] as number) + ((RED[i] as number) - (CYAN[i] as number)) * 0.5);
+  });
+});
+
+describe('a tween on ink() under a blend mode', () => {
+  it('goes round the hue as it does under last()', () => {
+    const midway = (tint: Channel<number[]>, lanes: boolean) => {
+      const m = made(tint, lanes);
+      m.cue({
+        patch: tween<Part, Pose, number[]>('tint', {
+          from: RED,
+          to: CYAN,
+          ms: 1000,
+          ease: 'linear',
+        }),
+      });
+      const a = { id: 'a' };
+      m.sync(0);
+      m.probe(a);
+      m.sync(500);
+      return toHex(m.probe(a).tint, 0xffffff);
+    };
+    for (const lanes of [false, true]) {
+      const round = midway(ink(last()), lanes);
+      expect(midway(ink(multiply()), lanes), `multiply, lanes ${lanes}`).toBe(round);
+    }
   });
 });
 

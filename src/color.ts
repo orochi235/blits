@@ -1,4 +1,4 @@
-import { blendCss, blendHex, blending, modeOf } from './blend-modes.js';
+import { blendCss, blendHex, blending, blendRuleOf, modeOf } from './blend-modes.js';
 import { doubles, lerpNumber, numericOf, sum, vec, vouch, type Widen, widen } from './channels.js';
 import { CANCEL, HUES, lchPair, shortWay } from './lch.js';
 import { fromLab, LAB, lab } from './oklab.js';
@@ -127,7 +127,7 @@ function lerpInk(x: number[], y: number[], u: number): number[] {
  */
 export function roundsHue(channel: Channel<unknown>): boolean {
   const lerp = channel.lerp as unknown;
-  return lerp === lerpLch || lerp === lerpInk;
+  return lerp === lerpLch || lerp === lerpInk || blendRuleOf(channel)?.round === true;
 }
 
 /** Whether `of` asks a color channel to average: absent, or a stock `sum` with no turn or bounds. */

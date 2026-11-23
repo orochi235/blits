@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the
+  rest, travels round the hue as `ink`'s own blending does; it cut straight across OKLab.
+- A voice or owner cued with `start: NaN` is refused with a `RangeError`, where it waited for good
+  without a word.
 - A voice anchored on its own name follows the last other voice of that name, as one anchored on
   its own tag does, where it was refused as waiting on itself. It is still refused when no other
   voice carries the name.
