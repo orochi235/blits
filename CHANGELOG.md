@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A fading child whose owner runs or is sought back before the child's start shows as waiting on
+  the lanes too, as it does off them: the lanes went on reading the child's own clock.
 - A voice that ended before a recorded call shows again in the frames before its end after a seek
   back: one sync jumping past that call while the tape played it again left the voice in the
   frame before.
