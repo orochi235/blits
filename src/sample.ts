@@ -328,7 +328,8 @@ export function settle<I, O>(
   lane.fix(p);
   const o = p * Row.STRIDE;
   if (
-    (held.probed === lanes.now && held.seeks === lane.data[o + Row.SEEKS]) ||
+    // A signal's fill stamps `probed` with no delta: that read is not settled.
+    (held.probed === lanes.now && held.seeks === lane.data[o + Row.SEEKS] && held.delta !== null) ||
     !((lanes.per[slot * Per.SLOT + Per.LANE_PROBE] as number) > lanes.frameProbes) ||
     lane.data[o + Row.SAMPLED] !== lanes.per[slot * Per.SLOT + Per.LANE_FILL]
   )

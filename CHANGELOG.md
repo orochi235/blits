@@ -13,6 +13,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - With lanes on, a motion voice (tween, spring, glide) no longer starts for a subject that was
   only probed at weight 0, as at a fade's first frame, on a later frame that probes other
   subjects; it called `from`, made a `read`, and kept `inert` false where lanes off did none.
+- With lanes on, a motion voice weighted by a signal keeps the value a probe already read this
+  frame when the motion is `set`, `push`ed or sent `to` before the next probe, as lanes off does;
+  the change showed at once.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the

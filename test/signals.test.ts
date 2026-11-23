@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { kit, last, mul, sum } from '../src/channels.js';
 import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
+import { tween } from '../src/motion.js';
 import { patch } from '../src/patch.js';
 import { gate, heard, input, lag, level, peak, slew } from '../src/signals.js';
 import type { Setting } from '../src/types.js';
@@ -282,4 +283,28 @@ describe.each([
     expect(w).toBeGreaterThan(0);
     expect(w).toBeLessThanOrEqual(0.05 + 1e-9);
   });
+});
+
+describe('a motion under a signal weight, set between two probes of one frame', () => {
+  // A probe this frame already read keeps the value it read: the set shows on the next frame.
+  for (const named of [false, true])
+    for (const met of [false, true])
+      it(`reads the same before and after the set, lanes on or off (named ${named}, met ${met})`, () => {
+        const read = (lanes: boolean) => {
+          const m = mix<Part, { x: number }>(kit({ x: sum() }), { lanes });
+          const p = tween<Part, { x: number }>('x', { from: 0, to: 1, ms: 300 });
+          m.sync(1000);
+          m.cue({ patch: p, weight: level<Part>(0.5), ...(named ? { subjects: [part] } : {}) });
+          m.sync(1400);
+          if (met) m.probe(part);
+          m.sync(1465);
+          const before = m.probe(part).x;
+          p.set(part, 0.8);
+          const after = m.probe(part).x;
+          p.set(part, 0.2);
+          return [before, after, m.probe(part).x];
+        };
+        expect(read(false)).toEqual([0.5, 0.5, 0.5]);
+        expect(read(true)).toEqual([0.5, 0.5, 0.5]);
+      });
 });
