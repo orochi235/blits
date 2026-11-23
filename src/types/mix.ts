@@ -173,8 +173,9 @@ export interface Mix<I, O, H = unknown> {
    * handle acts on all of them: {@link Handle.rate | `rate`} and {@link Handle.ramp | `ramp`} multiply into theirs, {@link Handle.seek | `seek`} moves their clocks
    * with its own and rebuilds their state as it does a voice's, and {@link Handle.weight | `weight`} and {@link Handle.fade | `fade()`} multiply
    * into their weights, by what its {@link Handle.weightOf | `weightOf`} reports; it fades as a whole, not by subject or at
-   * rest. It is {@link Handle.played | `played`} once every voice it held has finished its passes, and leaves, {@link Handle.done | `done`}, with
-   * its last; a fade that ends takes the rest with it. One that never holds a voice stays until
+   * rest. It is {@link Handle.played | `played`} once every voice it holds has finished its passes: it settles with the last
+   * voice it holds then, and a voice cued into it after does not change it. It leaves, {@link Handle.done | `done`}, with its
+   * last voice, and a fade that ends takes the rest with it. One that never holds a voice stays until
    * faded. Owners nest. Throws for a `loop`: a pass would have to restart its children.
    */
   owns(spec: OwnerSpec<I, H>): Handle<I>;

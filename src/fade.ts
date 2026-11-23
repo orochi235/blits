@@ -261,9 +261,21 @@ export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): vo
  * stays with it instead, quiet while its children are.
  */
 export function release<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>, at: number): void {
-  if (owner.owner !== null && owner.state === 'live' && mix.opts.history !== undefined)
+  if (owner.owner !== null && owner.state === 'live' && mix.opts.history !== undefined) {
+    closed(mix, owner);
     beginFade(mix, owner, { over: 0, stays: true }, at);
-  else retire(mix, owner, at);
+  } else retire(mix, owner, at);
+}
+
+/**
+ * A span takes no more children: it has played, at its coast, where every child it held played
+ * and it has one. Before this a late child could still join its budget and be cut short.
+ */
+function closed<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>): void {
+  const h = owner.holding;
+  if (h === null || owner.fitting === null || h.kids === 0 || h.played !== h.kids) return;
+  const coast = markOf(mix, owner, 'coast');
+  if (coast !== undefined) owner.play(true, coast, mix.transport.seq);
 }
 
 /**
@@ -374,6 +386,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   voice.doneSeq = mix.transport.seq;
   // The frames up to this one showed it, though its fade ended before: it leaves the list now.
   mix.transport.settle();
+  closed(mix, voice);
   voice.play(false, voice.doneAt, voice.doneSeq);
   voice.resolve();
   // An owner takes what it holds with it, and leaves with its last child.

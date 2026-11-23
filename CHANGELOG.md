@@ -23,6 +23,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A span child given `faster: Infinity`, in a span its children cannot fit, plays at a finite rate:
   as fast as still shortens the span, to within 1 ms. It was set to rate Infinity and played in no
   time.
+- A span's `played` settles where its fit ends, its `coast`, true where every voice it held played.
+  It settled once the voices held so far had played, so a span with budget left reported true at
+  its first child's end, while its `coast` read its budget's, and then took a late child that could
+  still be cut short.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the
