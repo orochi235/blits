@@ -163,7 +163,10 @@ function colorChannel({ rule, type }: ColorRuleSpec) {
   return type === 'ink' ? ink(of) : color(of);
 }
 
-/** Numbers in a color whose channel rests at `rest`: a `replace` color has no rest, and takes four. */
+/** Numbers a patch writes a color under every rule: its `oklab()` values. */
+export const COLOR_WRITTEN = 4;
+
+/** Numbers a pull gives a color whose channel rests at `rest`: a `replace` color has no rest, and holds four. */
 export const colorAxesOf = (rest: unknown): number => (Array.isArray(rest) ? rest.length : 4);
 
 /** The most numbers a subject's color takes under any rule, as a `pull` column holds it. */
