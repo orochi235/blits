@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { patch } from '../src/patch.js';
+import { kit, sum } from '../src/channels.js';
+import { mix } from '../src/mixer.js';
+import { keys, patch } from '../src/patch.js';
 import type { Handle, Mix } from '../src/types.js';
 import { agree, frames, type Part, type Pose, slide } from './ways.js';
 
@@ -98,4 +100,33 @@ describe('pull reading a list kept in order by splice', () => {
     // At most a couple a frame, not every subject after the gap (23 before).
     expect(most).toBeLessThanOrEqual(2);
   });
+});
+
+describe('pull after a drop frees a number renumbering hands on', () => {
+  // The dropped subject's remembered position held the number the next renumber gave another.
+  for (const late of [false, true])
+    it(`gives the dropped subject its own values (drop ${late ? 'after' : 'before'} the probes)`, () => {
+      const read = (lanes: boolean) => {
+        const m = mix<Part, { x: number }>(kit({ x: sum() }), { lanes });
+        const P = Array.from({ length: 13 }, (_, id) => ({ id }));
+        const at = (ids: number[]) => ids.map((i) => P[i] as Part);
+        m.sync(1000);
+        for (const p of at([3, 8])) m.probe(p);
+        m.cue({
+          patch: keys<Part, { x: number }>(1000, [{ at: 0, delta: { x: 1 } }]),
+          loop: true,
+          subjects: at([4]),
+        });
+        m.pull(at([0, 2, 4, 5, 6, 7, 8]), { x: new Float64Array(7) });
+        if (!late) m.drop(P[8] as Part);
+        m.sync(2666);
+        for (const p of at(late ? [0, 1, 2, 3, 4, 5, 8] : [0, 1, 2, 3, 4, 5])) m.probe(p);
+        if (late) m.drop(P[8] as Part);
+        const x = new Float64Array(9);
+        m.pull(at([0, 1, 2, 3, 4, 5, 8, 10, 12]), { x });
+        return Array.from(x);
+      };
+      expect(read(false)).toEqual([0, 0, 0, 0, 1, 0, 0, 0, 0]);
+      expect(read(true)).toEqual([0, 0, 0, 0, 1, 0, 0, 0, 0]);
+    });
 });
