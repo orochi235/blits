@@ -99,7 +99,7 @@ describe('track paths', () => {
 });
 
 describe('coursesOf, when a mix throws', () => {
-  it('closes every mix it opened', () => {
+  it('still draws a track for every voice, and closes every mix it opened', () => {
     const probe = mix(KIT);
     const pull = vi.spyOn(Object.getPrototypeOf(probe), 'pull').mockImplementation(() => {
       throw new Error('refused');
@@ -107,7 +107,8 @@ describe('coursesOf, when a mix throws', () => {
     probe.close();
     const open = watched().entries().length;
     try {
-      expect(() => coursesOf(comp([bob], [group({ id: 'g' })]), subjects)).toThrow('refused');
+      const tracks = coursesOf(comp([bob], [group({ id: 'g' })]), subjects, 0, 21);
+      expect([...tracks.keys()].sort()).toEqual(['bob', 'g']);
     } finally {
       pull.mockRestore();
     }

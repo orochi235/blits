@@ -44,6 +44,23 @@ export const copied = (p: Mixed): Mixed => ({
  * the same times, so a scrub shows what playback showed; `seek` calls blits' `seek`, which restores
  * from history and is as sure as it says.
  */
+/**
+ * Pulls `m`'s frame into `out`, and gives what it threw on a value it cannot pull, or null. A mix
+ * that throws leaves `out` holding the last frame.
+ */
+export function tryPull(
+  m: Mix<Subject, Mixed>,
+  subjects: readonly Subject[],
+  out: Columns,
+): string | null {
+  try {
+    m.pull(subjects, out);
+    return null;
+  } catch (err) {
+    return messageOf(err);
+  }
+}
+
 export type SeekBy = 'replay' | 'seek';
 
 /**
@@ -256,8 +273,11 @@ export class Player {
     return this.slid;
   }
 
+  /** Reads voice `id`'s solo frame into `out`; a solo that throws goes on the errors under `id`. */
   solo(id: string, out: Columns): void {
-    this.built.solos.get(id)?.pull(this.subjects, out);
+    const solo = this.built.solos.get(id);
+    const error = solo && tryPull(solo, this.subjects, out);
+    if (error) this.report(id, error);
   }
 
   /** Voice or group `id`'s handle in the full mix. */
@@ -417,25 +437,22 @@ export class Player {
    * composition never stops the player.
    */
   private pull(): void {
-    const { mix, solos, errors } = this.built;
-    const report = (voice: string | null, err: unknown) => {
-      const error = messageOf(err);
-      if (!errors.some((e) => e.voice === voice && e.error === error))
-        errors.push({ voice, field: 'patch', error, line: null });
-    };
+    const { mix, solos } = this.built;
     let blamed = false;
-    for (const [id, solo] of solos)
-      try {
-        solo.pull(this.subjects, this.scratch);
-      } catch (err) {
-        report(id, err);
-        blamed = true;
-      }
-    try {
-      mix.pull(this.subjects, this.columns);
-    } catch (err) {
-      if (!blamed) report(null, err);
+    for (const [id, solo] of solos) {
+      const error = tryPull(solo, this.subjects, this.scratch);
+      if (error === null) continue;
+      this.report(id, error);
+      blamed = true;
     }
+    const error = tryPull(mix, this.subjects, this.columns);
+    if (error !== null && !blamed) this.report(null, error);
+  }
+
+  private report(voice: string | null, error: string): void {
+    const { errors } = this.built;
+    if (!errors.some((e) => e.voice === voice && e.error === error))
+      errors.push({ voice, field: 'patch', error, line: null });
   }
 
   /** Moves back to `t` with blits' `seek`; false where history cannot reach it. */

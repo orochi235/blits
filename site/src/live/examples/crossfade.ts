@@ -61,8 +61,12 @@ export default demo((d) => {
     tags: ['wave'],
     fade: { out: fade.out },
   });
-  // What is playing is read from the mix, which a seek back puts as it was: the loop not fading.
-  const playing = () => (m.voices('pulse').some((v) => v.state !== 'fading') ? 'pulse' : 'wave');
+  // What is playing is read from the mix, which a seek back puts as it was: each switch cues the
+  // new loop last, so the newest voice is in charge, fading or not, as the focus settle fades it.
+  const playing = () => {
+    const newest = m.voices().at(-1);
+    return newest !== undefined && m.voices('pulse').includes(newest) ? 'pulse' : 'wave';
+  };
   const label = () => {
     const text = `Switch to ${playing() === 'wave' ? 'pulse' : 'wave'}`;
     if (button.textContent !== text) button.textContent = text;

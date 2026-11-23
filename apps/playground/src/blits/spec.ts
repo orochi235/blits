@@ -17,7 +17,7 @@ import { placesStart } from './anchor';
 import { type Expr, isExpr, type PatchSource, type Voice } from './composition';
 import { compileExpr, type Faults, type Scope } from './expr';
 import { FRAME } from './frame';
-import { type ChannelName, colorAxesOf, KIT, type Mixed, type Pose } from './kit';
+import { type ChannelName, COLOR_WRITTEN, KIT, type Mixed, type Pose } from './kit';
 import type { Subject } from './stage';
 
 export interface FieldError {
@@ -139,13 +139,14 @@ export function refusalOf(
   const rest = kit[channel].rest ?? KIT[channel].rest;
   if (channel !== 'color' && !Array.isArray(rest))
     return (out) => (finite(out) ? null : 'takes a number');
-  const n = channel === 'color' ? colorAxesOf(kit.color.rest) : (rest as unknown[]).length;
+  const n = channel === 'color' ? COLOR_WRITTEN : (rest as unknown[]).length;
   return (out) =>
     Array.isArray(out) && out.length === n && out.every(finite) ? null : `takes ${n} numbers`;
 }
 
 /** What a motion option gives a subject its expression throws on: a value the channel can take. */
 function fallbackOf(channel: ChannelName, key: string, kit: Kit<Mixed>): number | number[] {
+  if (channel === 'color') return Array(COLOR_WRITTEN).fill(0);
   const rest = (kit[channel].rest ?? KIT[channel].rest) as number | number[] | undefined;
   const zero = Array.isArray(rest) ? rest.map(() => 0) : 0;
   if (key === 'to' || key === 'from') return rest ?? zero;

@@ -1,5 +1,6 @@
 import { compile } from '@pg/blits/compile';
 import type { Composition, PatchSource } from '@pg/blits/composition';
+import { COLOR_RULES } from '@pg/blits/kit';
 import { load } from '@pg/blits/load';
 import { Player } from '@pg/blits/player';
 import { describe, expect, it } from 'vitest';
@@ -41,6 +42,32 @@ describe("an fn patch's values", () => {
     step(p, 10);
     expect(p.built.faults.get('a')?.count).toBe(0);
   });
+});
+
+describe('a color under every rule', () => {
+  const ruled = (c: Composition, rule: string, type: string) =>
+    ({ ...c, rules: { color: { rule, type } } }) as Composition;
+  for (const type of ['color', 'ink'] as const)
+    for (const rule of COLOR_RULES) {
+      it(`takes an fn patch's good value under ${type} ${rule}`, () => {
+        const p = playerOf(ruled(fnVoice(['color'], '() => ({ color: 0xff0000 })'), rule, type));
+        step(p, 10);
+        const faults = p.built.faults.get('a');
+        expect(faults?.count, String(faults?.first)).toBe(0);
+      });
+      it(`rests a motion whose target throws under ${type} ${rule}`, () => {
+        const spring = {
+          kind: 'spring',
+          channel: 'color',
+          opts: { to: { code: '() => { throw 1 }' } },
+        };
+        const p = playerOf(
+          ruled(comp([voice({ id: 'a', patch: spring as PatchSource })]), rule, type),
+        );
+        step(p, 10);
+        expect(p.built.errors).toEqual([]);
+      });
+    }
 });
 
 describe('a keys stop', () => {
@@ -95,6 +122,24 @@ describe('a Player whose mix throws on a pull', () => {
     throwing = true;
     expect(() => step(p, 3)).not.toThrow();
     expect(() => p.rebuild()).not.toThrow();
+    expect(p.built.errors).toContainEqual({
+      voice: 'a',
+      field: 'patch',
+      error: 'boom',
+      line: null,
+    });
+  });
+
+  it('reads a throwing solo as no frame and reports it on the voice', () => {
+    const c = fnVoice(['glow'], '(p) => ({ glow: p })');
+    const p = playerOf(c);
+    step(p, 3);
+    const solo = p.built.solos.get('a');
+    if (!solo) throw new Error('no solo');
+    solo.pull = () => {
+      throw new Error('boom');
+    };
+    expect(() => p.solo('a', Player.columnsFor(subjects.length))).not.toThrow();
     expect(p.built.errors).toContainEqual({
       voice: 'a',
       field: 'patch',
