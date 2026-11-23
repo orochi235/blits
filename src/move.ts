@@ -287,6 +287,11 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
       else retire(mix, voice, at + over);
     }
   }
+  // An owner run back past a fading child's start has it wait, which keeps it off lanes (`unfit`).
+  if (voice.state === 'fading' && voice.owner !== null && !mix.projecting) {
+    const waits = voice.unstarted(now);
+    if (waits ? voice.laned : voice.offLane === 'wait') mix.lanes?.invalidate();
+  }
   if (!mix.projecting) schedule(mix, voice);
   return false;
 }

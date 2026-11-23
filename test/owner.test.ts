@@ -488,3 +488,61 @@ describe('a child cued while the mix is rebased', () => {
     expect(m.probe('s').w).toBe(shown);
   });
 });
+
+describe('a fading child its owner runs back before its start', () => {
+  type W = { x: number; w: number };
+  const KW = kit<W>({ x: sum(), w: sum() });
+  const held = patch<string, W>(600, (_p, _s, st) => ({ x: st.elapsed, w: 1 }), {
+    writes: ['x', 'w'],
+  });
+  type Act = (m: Mix<string, W>, t: number) => void;
+  /** The poses of `b` and `c` at each of `times`, made from 0 with `act` run before each sync. */
+  const poses = (lanes: boolean, times: number[], act: Act) => {
+    const m = mix<string, W>(KW, { lanes });
+    act(m, 0);
+    m.sync(0);
+    return times.map((t) => {
+      act(m, t);
+      m.sync(t);
+      return [m.probe('b'), m.probe('c')];
+    });
+  };
+  const same = (times: number[], act: Act) =>
+    expect(poses(true, times, act)).toEqual(poses(false, times, act));
+
+  it('shows nothing on lanes once a span run back passes it, on a crowd row', () => {
+    let s: Handle<string>;
+    same([33, 83, 100, 133, 166, 200], (m, t) => {
+      if (t === 0) s = m.span({ duration: 316 });
+      if (t === 83) s.rate = 0;
+      if (t === 100)
+        m.cue({ patch: held, subjects: ['b'], loop: false, owner: s, fade: { in: 109, out: 80 } });
+      if (t === 166) s.rate = -1;
+    });
+  });
+
+  it('holds the frame it starts on, on lanes, once its owner is sought back before it and it fades', () => {
+    let o: Handle<string>;
+    let c: Handle<string>;
+    same([100, 200, 216, 232, 248, 264, 300], (m, t) => {
+      if (t === 0) o = m.owns({});
+      if (t === 200)
+        c = m.cue({ patch: held, subjects: ['b'], loop: false, owner: o, freeze: 'before' });
+      if (t === 216) c.seek(300);
+      if (t === 232) o.seek(50);
+      if (t === 248) c.fade({ over: 118 });
+    });
+  });
+
+  it('shows nothing on lanes once its owner runs back past it, over every subject', () => {
+    let o: Handle<string>;
+    let c: Handle<string>;
+    same([16, 50, 100, 116, 140, 180, 260], (m, t) => {
+      if (t === 0) o = m.owns({});
+      if (t === 16) c = m.cue({ patch: held, loop: false, owner: o });
+      if (t === 50) c.seek(300);
+      if (t === 100) o.rate = -1;
+      if (t === 116) c.fade({ over: 230 });
+    });
+  });
+});
