@@ -11,6 +11,7 @@ import { record, taping, unplayable } from './tape.js';
 import type { Voice } from './voice.js';
 
 export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
+  this.attached();
   this.frame = nextFrame();
   const head = headOf(this, subject);
   // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.

@@ -481,6 +481,21 @@ describe('transport', () => {
     expect(t.marks(0, 10_000).some((m) => m.mix === 'runs')).toBe(false);
   });
 
+  it('refuses a mute, a drop and a handle write on a dropped mix', () => {
+    const { t, runs } = stage({ ms: 10_000, tape });
+    t.sync(0);
+    const h = runs.cue({ patch: type(1000), subjects: ['r'], loop: false });
+    t.sync(100);
+    t.drop(runs);
+    expect(() => runs.mute()).toThrow(/dropped/);
+    expect(() => runs.drop('r')).toThrow(/dropped/);
+    expect(() => {
+      h.weight = 0.5;
+    }).toThrow(/dropped/);
+    expect(() => h.fade()).toThrow(/dropped/);
+    expect(h.state).not.toBe('done');
+  });
+
   it('lets a dropped mix go for good without history', () => {
     const { t, runs } = stage();
     t.sync(0);

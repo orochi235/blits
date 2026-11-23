@@ -29,6 +29,8 @@ export interface HandleHost<I, O> {
   record(h: VoiceHandle<I, O>, label: string, again: (h: VoiceHandle<I, O>) => void): void;
   /** Whether `record` keeps a write made now, so a handle can skip making one it would drop. */
   taping(): boolean;
+  /** Throws for a voice of a mix taken off its transport, which takes no more writes. */
+  attached(): void;
 }
 
 /** Refuses a voice rate no clock can run at. */
@@ -119,6 +121,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
 
   set weight(w: number) {
     plainWeight(w);
+    this.#host.attached();
     const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
@@ -149,6 +152,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   ramp(r: number, over: number): void {
     finiteRate(r);
     rampTime(over);
+    this.#host.attached();
     const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
@@ -175,6 +179,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   seek(elapsed: number, opts?: SeekOptions): Doubt {
     if (!Number.isFinite(elapsed))
       throw new RangeError(`blits: a voice seeks to a finite time, not ${elapsed}`);
+    this.#host.attached();
     const voice = this.#cued;
     if (voice === null) return 'exact';
     voice.written = true;
@@ -195,6 +200,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   fade(opts?: FadeOptions<I>): void {
+    this.#host.attached();
     const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
@@ -203,6 +209,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   rise(opts?: RiseOptions): void {
+    this.#host.attached();
     const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
@@ -211,6 +218,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   release(): void {
+    this.#host.attached();
     const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;

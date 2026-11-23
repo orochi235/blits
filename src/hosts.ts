@@ -256,6 +256,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       return mix.share === null ? 0 : mix.share.weightAt(voice, slot);
     },
     taping: () => taping(mix),
+    attached: () => mix.attached(),
     record: (h, label, again) =>
       record(mix, label, (stage) => {
         const to = stage.mix(mix);

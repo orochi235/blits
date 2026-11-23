@@ -650,6 +650,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   mute(opts?: VoiceFade): void {
+    this.attached();
     const owners = opts?.at === 'rest' ? { ...opts, at: undefined } : opts;
     for (const voice of this.cued) {
       voice.written = true;

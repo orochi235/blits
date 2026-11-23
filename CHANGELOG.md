@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A mix dropped from its transport refuses `mute()`, `drop(subject)` and writes through its voices'
+  handles, as it refused `cue` and `touch`: a mute retired every voice of a mix the transport no
+  longer synced.
 - A mix paused at rate 0 under `history` lets go of the frames it holds once they are older than
   `history.ms` of host time, store or not; it kept every one for as long as it stayed paused, 10,002
   records after 10,000 syncs where it now holds 81. `seek({ frame })` reaches a held frame for that
