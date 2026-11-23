@@ -44,6 +44,16 @@ describe('track', () => {
     expect(y).toBeCloseTo(-200, 9);
   });
 
+  it('reads a zero on every axis of an array after clear', () => {
+    const t = track<number[]>();
+    t.add(0, [0, 0]);
+    t.add(10, [1, 2]);
+    t.clear();
+    expect(t.velocity()).toEqual([0, 0]);
+    t.add(20, [3, 4]);
+    expect(t.velocity()).toEqual([0, 0]);
+  });
+
   it('refuses a ms that is not positive', () => {
     expect(() => track({ ms: 0 })).toThrow(RangeError);
   });
