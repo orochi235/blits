@@ -8,7 +8,7 @@ import { spanned } from '../src/gpu/mirrors.js';
 import { motionPack } from '../src/gpu/runners/motion.js';
 import { Timings } from '../src/gpu/timings.js';
 import { unreadOf } from '../src/gpu/unread.js';
-import { kit, mix, spring, sum, tween } from '../src/index.js';
+import { glide, kit, mix, spring, sum, tween, vec } from '../src/index.js';
 import type { Mixer } from '../src/mixer.js';
 import { motionOf } from '../src/motion.js';
 import type { Motions } from '../src/motions.js';
@@ -376,5 +376,28 @@ describe('motion mirror', () => {
     expect(motions.listener).toBeNull();
     s.to(list[0] as C, 9);
     expect(mirror.stirred).toBe(false);
+  });
+});
+
+describe('packing a bounded glide', () => {
+  /** `motionPack` of a bounded glide on a `vec(n, sum())`. */
+  const packed = (n: number) => {
+    const m = mix<C, { p: number[] }>(kit({ p: vec(n, sum()) }), { name: 'bounded' });
+    const g = glide<C, { p: number[] }, number[]>('p', {
+      from: Array<number>(n).fill(1),
+      bounds: [Array<number>(n).fill(0), Array<number>(n).fill(10)],
+    });
+    return motionPack(g, codesOf(mixerOf(m)));
+  };
+
+  it('packs one on 8 axes, whose branches all fit below the second-anchor bit', () => {
+    const got = packed(8);
+    expect(got !== undefined && 'values' in got).toBe(true);
+  });
+
+  it('refuses one on 9 axes, whose branches would reach the second-anchor bit', () => {
+    expect(packed(9)).toEqual({
+      why: 'it glides inside bounds on 9 axes, and the GPU carries the branches of 8 at most',
+    });
   });
 });

@@ -1,8 +1,12 @@
 import { BOUND } from '../closed.js';
 import type { Motions } from '../motions.js';
 import type { Segment } from '../stretch.js';
+import { SECOND } from './anchors.js';
 import { join } from './region.js';
 import { BRANCH_SHIFT, Branch } from './wgsl/closed.js';
+
+/** The most axes a bounded glide's row carries branches for, all of them below `SECOND`. */
+export const BOUND_AXES = (Math.log2(SECOND) - BRANCH_SHIFT) / 2;
 
 /**
  * Writes `seg` as a subject's run at `o` in `rows`, its release time counted from `anchor`. A
