@@ -4,7 +4,8 @@ import { drive as driveSparks } from '@msb235/blits-quarks';
 import { drive as driveSound } from '@msb235/blits-tone';
 import * as Tone from 'tone';
 import { createFrame } from './frame';
-import { BURSTS, createShow, cue, KIT, type Pose, type Shell, type Sound, shell } from './show';
+import { createLauncher } from './launch';
+import { BURSTS, createShow, KIT, type Pose, type Shell, type Sound, shell } from './show';
 import { createSky } from './sky';
 import { createSounds } from './sound';
 
@@ -46,18 +47,16 @@ start.addEventListener('click', async () => {
     },
   });
 
+  const launcher = createLauncher(m, {
+    sparks: {
+      attach: (s) => sparks.attach(s, sky.system, { at: [s.x, 0, 0] }),
+      detach: (s) => sparks.detach(s),
+    },
+    sound,
+    whistles: sounds,
+  });
   const launch = (s: Shell) => {
-    sparks.attach(s, sky.system, { at: [s.x, 0, 0] });
-    const whistle = sounds.borrow();
-    if (whistle) sound.attach(s, whistle);
-    cue(m, s).done.then(() => {
-      sparks.detach(s);
-      if (whistle) {
-        sound.detach(s);
-        sounds.giveBack(whistle);
-      }
-      m.drop(s);
-    });
+    launcher.launch(s);
   };
 
   launchButton.disabled = false;
@@ -93,6 +92,7 @@ start.addEventListener('click', async () => {
   const frame = (now: number) => {
     requestAnimationFrame(frame);
     const seconds = step(now);
+    launcher.tend();
     showRate();
     sparks.write();
     sound.write();
