@@ -43,13 +43,6 @@ Owner tags:
   idempotent `dispose()` that cancels the frame and drops every subscription, or a scoped owner
   that collects removers, and a call on whether a second `add` counts. Either is a public addition,
   so it ships in a minor.
-- **[maintainer] A mix paused at rate 0 keeps a frame record for every sync, without bound**
-  (filed 2026-11-23 from review). Under `history`, each sync while the rate is 0 records a frame at
-  the same mix time, so `seek({ frame })` can reach any of them, and `history.ms` never lets them
-  go since mix time stands still: 10,000 syncs paused hold 10,002 records (measured). A demo left
-  paused for an hour holds about 216,000. Wanted: a call on how many held frames stay seekable,
-  such as those within `history.ms` of host time, or only the frames a host call began. A mix
-  running back and held at history's floor already keeps only the latter (2026-11-23).
 
 ## Speed
 

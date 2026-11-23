@@ -347,9 +347,9 @@ export interface Mix<I, O, H = unknown> {
    * `HistoryMiss` before anything moves.
    *
    * Given `{ frame }`, a number `seq` read, it moves to the end of that frame instead, which is how
-   * a host reaches an earlier one of several frames rate 0 held at one mix time. The frame has to
-   * be one history still holds: not let go with age, and not after a moment an earlier seek went
-   * back to. With a store, one older than memory needs `prepare` of its mix time first.
+   * a host reaches an earlier one of several frames rate 0 held at one mix time, for as long as
+   * `history.ms` of host time keeps them. The frame has to be one history still holds: not let go
+   * with age, and not after a moment an earlier seek went back to. With a store, one older than memory needs `prepare` of its mix time first.
    */
   seek(to: number | { readonly frame: number }): void;
   /** As `Transport.prepare`, for a mix made alone. */

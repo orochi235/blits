@@ -475,7 +475,7 @@ describe('a child cued while the mix is rebased', () => {
     const m = mix<string, { w: number }>(kit({ w: sum() }), { history: { ms: 1e5, tape } });
     m.sync(50);
     // Too short for the child, so the fit jumps it to its end, where it freezes.
-    const owner = m.span({ duration: 665, order: 'all' });
+    const owner = m.span({ duration: 665, order: 'together' });
     m.sync(100);
     m.sync(133);
     m.rebase();

@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A mix paused at rate 0 under `history` lets go of the frames it holds once they are older than
+  `history.ms` of host time, store or not; it kept every one for as long as it stayed paused, 10,002
+  records after 10,000 syncs where it now holds 81. `seek({ frame })` reaches a held frame for that
+  long.
 - A fading child whose owner runs or is sought back before the child's start shows as waiting on
   the lanes too, as it does off them: the lanes went on reading the child's own clock.
 - A voice that ended before a recorded call shows again in the frames before its end after a seek

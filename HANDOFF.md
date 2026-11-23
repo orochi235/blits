@@ -39,6 +39,9 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
   the same change.** The release checks only that a range takes the new engine, not that it leaves
   out engines too old to run the package; quarks, tone and rapier shipped calling `bind` on
   `^1.0.0` and `^1.1.0` (fixed 2026-11-21).
+- **`npm run typecheck` on a fleet node can fail with TS6305** ("output file … has not been built
+  from source file") on the companions: the node's root `dist` build is judged current when it is
+  not. Send `sh -c 'npx tsc -b --force && npm run typecheck'` instead (2026-11-23).
 - **WebGPU tests need a real browser**, so `onto test` leaves them out. Send them with
   `onto do --kind test --node teitou -- npm run test:gpu`.
 - **Explainer source may import only from under `site/src/explainers`**, and blits only as

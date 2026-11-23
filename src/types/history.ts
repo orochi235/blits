@@ -7,7 +7,11 @@ import type { VoiceSpec } from './voice.js';
  * @category mix
  */
 export interface HistoryOptions {
-  /** How much stays in memory, ms of mix time. With a `store`, the rest is paged out, not dropped. */
+  /**
+   * How much stays in memory, ms of mix time. With a `store`, the rest is paged out, not dropped.
+   * Frames held at one mix time, as rate 0 holds them, are let go once older than `ms` of host
+   * time instead, store or not, since mix time stands still there.
+   */
   ms: number;
   every?: number;
   inputs?: boolean;

@@ -497,3 +497,32 @@ describe('a mix running back, held at the earliest moment history reaches', () =
     expect(m.seq).toBe(seq);
   });
 });
+
+describe('a mix paused at rate 0 under history', () => {
+  /** A mix synced every 16 ms with a 1000 ms history, paused after its second frame. */
+  const paused = () => {
+    const m = mix<string, { g: number }>(kit<{ g: number }>({ g: mul() }), {
+      history: { ms: 1000, tape },
+    });
+    m.sync(0);
+    m.sync(16);
+    m.rate = 0;
+    return m;
+  };
+
+  it('lets go of the frames it held longer ago than history reaches in host time', () => {
+    const m = paused();
+    m.sync(32);
+    const old = m.seq;
+    for (let i = 3; i <= 10_000; i++) m.sync(16 * i);
+    expect(() => m.seek({ frame: old })).toThrow(/not one this mix's history holds/);
+  });
+
+  it('keeps the frames it held within that reach, and a seek to one finds it', () => {
+    const m = paused();
+    for (let i = 2; i <= 10_000; i++) m.sync(16 * i);
+    const recent = m.seq - 30;
+    m.seek({ frame: recent });
+    expect(m.seq).toBeGreaterThan(0);
+  });
+});
