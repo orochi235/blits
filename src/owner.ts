@@ -1,7 +1,10 @@
 import { arcShare } from './arcs.js';
 import { backWith, clampWeight, elapsedWith, timeWith, voiceEnvelope } from './clock.js';
 import { shownFrom } from './held.js';
-import { startedAt } from './origin.js';
+import { ownerReading, startedAt } from './origin.js';
+
+export { ownerReading };
+
 import type { Patch } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -47,15 +50,6 @@ export class Holding<V> {
     while (c.length > 0 && (c[c.length - 2] as number) > seq) c.length -= 2;
     if (this.cutSeq > seq) this.cutSeq = Number.POSITIVE_INFINITY;
   }
-}
-
-/**
- * What an owner's clock reads at mix time `now`, through every owner above it: -Infinity before it
- * starts, where its children show nothing.
- */
-export function ownerReading<I, O>(owner: Voice<I, O>, now: number): number {
-  const t = owner.owner === null ? now : ownerReading(owner.owner, now);
-  return t >= owner.start ? elapsedWith(owner, t) : Number.NEGATIVE_INFINITY;
 }
 
 /** What a voice an owner holds reads at mix time `now`: -Infinity before the owner starts. */

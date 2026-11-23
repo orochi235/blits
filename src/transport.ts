@@ -289,9 +289,11 @@ export class Transport implements TransportApi {
     }
     if (!begun) {
       this.tick(now);
-      // Host time moving while the mix clock stands still lands what waits on host time or the host.
+      // Host time moving while the mix clock stands still lands what waits on host time or the host,
+      // and so does the sync a rebase resumes on, which leaves both where they were.
       const moved = now !== this.now;
-      for (const m of this.members) if (moved || (later && pace !== null && waits(m))) move(m, now);
+      const lands = (later && pace !== null) || rebased;
+      for (const m of this.members) if (moved || (lands && waits(m))) move(m, now);
     }
     if (!Number.isNaN(before) && this.now > before)
       for (const m of this.members) {
@@ -350,11 +352,16 @@ export class Transport implements TransportApi {
       } finally {
         this.driving = false;
       }
-    } else
+    } else {
+      // Held where it stands, it is still a frame, numbered so a seek back can find what it showed,
+      // and a call the host made since lands in it.
+      this.tick(t);
       for (const m of this.members) {
+        if (waits(m)) move(m, t);
         m.frame = nextFrame();
         m.lanes?.refill();
       }
+    }
     const c = drive.clock;
     const steady = c.ramp === null || drive.wall >= c.anchorNow + c.ramp.over;
     const rate = rateWith(c, drive.wall);

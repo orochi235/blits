@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -450,5 +451,33 @@ describe('mix rate', () => {
     const off = run(false);
     expect(on.length).toBe(off.length);
     for (let i = 0; i < on.length; i++) expect(Object.is(on[i], off[i]), `${i}`).toBe(true);
+  });
+});
+
+describe('a mix running back, held at the earliest moment history reaches', () => {
+  const glow = patch<string, { g: number }>(600, (ph) => ({ g: 2 + ph }), { writes: ['g'] });
+  it('numbers each frame it holds, so a seek to one before a cue shows it without the cue', () => {
+    const m = mix<string, { g: number }>(kit<{ g: number }>({ g: mul() }), {
+      history: { ms: 100_000, tape },
+    });
+    m.sync(120);
+    m.sync(136);
+    m.rebase();
+    m.sync(886);
+    m.cue({ patch: glow, subjects: ['x'] });
+    m.sync(1006);
+    m.rate = -1;
+    m.sync(1126);
+    m.sync(1159);
+    m.sync(1175);
+    expect(m.now).toBe(120);
+    const seq = m.seq;
+    const shown = m.probe('s').g;
+    m.sync(1295);
+    m.cue({ patch: glow, subjects: ['s'] });
+    m.sync(1311);
+    expect(m.seq).toBeGreaterThan(seq);
+    m.seek({ frame: seq });
+    expect(m.probe('s').g).toBe(shown);
   });
 });

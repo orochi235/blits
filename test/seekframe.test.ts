@@ -1,6 +1,6 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
-import { kit, sum } from '../src/channels.js';
+import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { transport } from '../src/transport.js';
@@ -177,4 +177,31 @@ describe('seek({ frame })', () => {
     m.seek({ frame });
     expect(m.probe(a).x).toBe(poses.get(576));
   });
+});
+
+describe('a voice that ended before a call played again', () => {
+  const glow = patch<string, { g: number }>(600, (ph) => ({ g: 2 + ph }), { writes: ['g'] });
+  for (const to of [655, 690])
+    for (const by of ['frame', 'time'] as const)
+      it(`still shows in a frame before its end, sought by ${by} after one sync jumps to ${to}`, () => {
+        const m = mix<string, { g: number }>(kit<{ g: number }>({ g: mul() }), {
+          history: { ms: 1e5, tape },
+        });
+        m.cue({ patch: glow, subjects: ['s'] });
+        m.sync(0);
+        m.sync(120);
+        const first = m.seq;
+        m.sync(650);
+        // Any call after the voice ended, for the replay below to play again.
+        m.rate = 1;
+        m.sync(700);
+        m.seek({ frame: first });
+        m.sync(740);
+        const seq = m.seq;
+        const shown = m.probe('s').g;
+        m.sync(740 + (to - 160));
+        if (by === 'frame') m.seek({ frame: seq });
+        else m.seek(160);
+        expect(m.probe('s').g).toBe(shown);
+      });
 });

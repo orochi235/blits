@@ -8,6 +8,15 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice that ended before a recorded call shows again in the frames before its end after a seek
+  back: one sync jumping past that call while the tape played it again left the voice in the
+  frame before.
+- A child cued under an owner standing still at rate 0 fades in from its cue, where it counted its
+  fade from the moment the owner stopped.
+- A voice cued while the mix is rebased shows on the sync the mix resumes on, where it waited a
+  frame.
+- A mix running back and held at the earliest moment history reaches numbers each frame it holds,
+  so a seek to one before a cue made there shows it without the cue.
 - A seek back and on, on the lanes, no longer reads 0 for one frame from a voice weighed by a ball
   (`around` or `within`): the lanes the seek rebuilt counted their fills from 0 again, and met fill
   stamps the voice's bound kept from before.

@@ -107,7 +107,21 @@ export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boo
   return voice.owner === null ? t : originOf(voice.owner, t, rebuilt);
 }
 
+/**
+ * What an owner's clock reads at mix time `now`, through every owner above it: -Infinity before it
+ * starts, where its children show nothing.
+ */
+export function ownerReading<I, O>(owner: Voice<I, O>, now: number): number {
+  const t = owner.owner === null ? now : ownerReading(owner.owner, now);
+  return t >= owner.start ? elapsedWith(owner, t) : Number.NEGATIVE_INFINITY;
+}
+
 /** The mix time a voice started, or will by its owners' controls now: where its clock read 0. */
 export function startedAt<I, O>(voice: Voice<I, O>): number {
-  return voice.owner === null ? voice.start : originOf(voice.owner, voice.start, false);
+  const owner = voice.owner;
+  if (owner === null) return voice.start;
+  const t = originOf(owner, voice.start, false);
+  // An owner standing still reads the child's start at every mix time since it stopped; the child
+  // started no earlier than its cue, so its fade in counts from there.
+  return t < voice.cuedAt && ownerReading(owner, voice.cuedAt) === voice.start ? voice.cuedAt : t;
 }

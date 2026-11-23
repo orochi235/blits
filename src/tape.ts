@@ -122,8 +122,11 @@ export function replay(
         last = at;
         onto.u = at;
         const now = onto.pace === null ? at : onto.pace.reading(at);
-        if (now > onto.now) for (const m of onto.members) move(m, now);
-        onto.tick(onto.now);
+        // The frame begins before the mixes move, as a sync's does, so a voice that ends moving
+        // there leaves in this frame, not the one before.
+        const later = now > onto.now;
+        onto.tick(later ? now : onto.now);
+        if (later) for (const m of onto.members) move(m, now);
       }
       transport.replaying = true;
       stage = on;

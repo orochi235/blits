@@ -448,3 +448,43 @@ describe.each([true, false])('an owner cued partway or backward, lanes %s', (lan
     expect(m.probe(a).y).toBe(0);
   });
 });
+
+describe('a child cued under an owner standing still', () => {
+  const held = patch<string, { w: number }>(600, () => ({ w: 1 }), { writes: ['w'] });
+  /** The child's weight a frame after its cue, under an owner that stood still since 33 or ran. */
+  const weightAfterCue = (paused: boolean, lanes: boolean) => {
+    const m = mix<string, { w: number }>(kit({ w: sum() }), { lanes });
+    m.sync(0);
+    const owner = m.span({ duration: 2000 });
+    m.sync(33);
+    if (paused) owner.rate = 0;
+    m.sync(83);
+    m.cue({ patch: held, subjects: ['b'], owner, fade: { in: 109 } });
+    m.sync(84);
+    return m.probe('b').w;
+  };
+  for (const lanes of [false, true])
+    it(`fades in from its cue, not from where the owner stopped (lanes ${lanes})`, () => {
+      expect(weightAfterCue(true, lanes)).toBeCloseTo(weightAfterCue(false, lanes), 9);
+    });
+});
+
+describe('a child cued while the mix is rebased', () => {
+  const ran = patch<string, { w: number }>(600, () => ({ w: 1 }), { writes: ['w'] });
+  it('shows on the sync the mix resumes on, as a seek to that frame does', () => {
+    const m = mix<string, { w: number }>(kit({ w: sum() }), { history: { ms: 1e5, tape } });
+    m.sync(50);
+    // Too short for the child, so the fit jumps it to its end, where it freezes.
+    const owner = m.span({ duration: 665, order: 'all' });
+    m.sync(100);
+    m.sync(133);
+    m.rebase();
+    m.cue({ patch: ran, owner, freeze: 'after' });
+    m.sync(883);
+    const seq = m.seq;
+    const shown = m.probe('s').w;
+    m.seek({ frame: seq });
+    expect(shown).toBe(1);
+    expect(m.probe('s').w).toBe(shown);
+  });
+});
