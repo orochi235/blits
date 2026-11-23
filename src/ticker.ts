@@ -75,6 +75,13 @@ interface Clocks {
   queueMicrotask: (callback: () => void) => void;
 }
 
+/** Throws `err` again on a microtask, so a caller running several callbacks goes on to the rest. */
+export function throwLater(err: unknown): void {
+  (globalThis as unknown as Clocks).queueMicrotask(() => {
+    throw err;
+  });
+}
+
 /** Slack under the interval that still counts as due, for a display whose frames jitter. */
 const SLACK = 1;
 
@@ -104,10 +111,6 @@ export function ticker(opts: TickerOptions = {}): Ticker {
   let last = Number.NaN;
 
   const now = opts.now ?? perfNow;
-  const later = (err: unknown) =>
-    g.queueMicrotask(() => {
-      throw err;
-    });
 
   const request = byFrame
     ? (opts.raf ??
@@ -143,13 +146,13 @@ export function ticker(opts: TickerOptions = {}): Ticker {
       try {
         mix.sync(t);
       } catch (err) {
-        later(err);
+        throwLater(err);
       }
     for (const fn of [...fns])
       try {
         fn(t);
       } catch (err) {
-        later(err);
+        throwLater(err);
       }
     if (holds > 0 || mixes.some((mix) => !mix.inert)) schedule();
   }

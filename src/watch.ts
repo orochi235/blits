@@ -4,6 +4,7 @@ import type { Mixer } from './mixer.js';
 import { seek } from './seek.js';
 import { release } from './shared.js';
 import { hostAhead } from './tape.js';
+import { throwLater } from './ticker.js';
 import type { Transport } from './transport.js';
 import type {
   Handle,
@@ -559,9 +560,7 @@ function hold(t: Transport): Hold {
           try {
             fn();
           } catch (err) {
-            queueMicrotask(() => {
-              throw err;
-            });
+            throwLater(err);
           }
       } finally {
         for (const put of puts.reverse()) put();
