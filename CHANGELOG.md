@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A seek ahead refused because the mix's rate never reaches the time sought leaves the mix where
+  it stood. It had already played the recorded calls on the way, leaving the mix at the moment
+  rate 0 held it, at that rate, with its clock running back on the next sync.
 - A subject that left a voice with a stateful patch between two seeks back, with no read of it
   between them, is put back as it stood at the second seek's moment; it was met afresh instead,
   its state starting over.

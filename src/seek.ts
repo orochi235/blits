@@ -232,44 +232,48 @@ export function seek(transport: Transport, to: number | { readonly frame: number
   }
   if (frame === undefined) {
     // Ahead, under the rate the recorded calls up to `t` set, past any frames rate 0 held at `t`.
-    const last = replay(
-      transport,
-      (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
-    );
+    // Which rate that is shows only once the calls are played, so a seek that cannot reach `t`
+    // puts the mix back where it stood.
+    const seq = transport.seq;
+    const depth = tape.undoDepth();
     const left = transport.left;
-    // Inverting the rate can land an ulp from where the host stood, which every later sync would carry.
-    const at =
-      left !== null &&
-      left.t === t &&
-      left.u >= transport.u &&
-      (transport.pace === null ? left.u : transport.pace.reading(left.u)) === t
-        ? left.u
-        : hostAhead(transport, t);
-    const u = Number.isNaN(last) ? at : Math.max(last, at);
-    if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
+    let u: number;
+    let last: number;
+    try {
+      last = replay(
+        transport,
+        (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
+      );
+      // Inverting the rate can land an ulp from where the host stood, which every later sync would carry.
+      const at =
+        left !== null &&
+        left.t === t &&
+        left.u >= transport.u &&
+        (transport.pace === null ? left.u : transport.pace.reading(left.u)) === t
+          ? left.u
+          : hostAhead(transport, t);
+      u = Number.isNaN(last) ? at : Math.max(last, at);
+      if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
+    } catch (e) {
+      if (transport.seq !== seq || tape.undoDepth() !== depth) {
+        const f = transport.frames.all().find((f) => f.seq === seq) as Frame;
+        tape.goto(depth);
+        backTo(transport, f.at, f);
+        transport.seq = seq;
+        transport.left = left;
+        for (const m of transport.members) m.stir();
+      }
+      throw e;
+    }
     transport.u = u;
     // A call played at `t` itself moved the mixes there before it, as a sync does. The move begins
     // a frame first, as a sync's does, so a voice that ends on the way is done in that frame.
     transport.tick(t);
     if (Number.isNaN(last) || transport.now !== t) for (const m of transport.members) move(m, t);
   } else {
-    // On the frame itself, its own host time: rate 0 may have held the clock there for several.
-    const u = frame.at === t ? frame.u : hostAt(transport, t);
-    const seq = frame.seq;
     transport.left = { t: transport.now, u: transport.u };
-    tape.goto(tape.depthAt(u));
-    transport.undrop(seq);
-    // What history kept after the frame is let go; the tape holds the calls that made it.
-    transport.announced = transport.announced.filter((a) => a.seq <= seq);
-    transport.frames.set(transport.frames.all().filter((f) => f.seq <= seq));
-    if (transport.pacedSeq > seq) {
-      transport.pace = null;
-      transport.pacedSeq = Number.POSITIVE_INFINITY;
-    } else transport.pace?.cut(u);
-    transport.u = u;
-    transport.now = t;
-    for (const m of transport.members) back(m, t, seq, frame.at < t);
-    cut(transport, seq);
+    tape.goto(tape.depthAt(frame.at === t ? frame.u : hostAt(transport, t)));
+    backTo(transport, t, frame);
     transport.tick(t);
   }
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
@@ -282,6 +286,28 @@ export function seek(transport: Transport, to: number | { readonly frame: number
   }
   transport.sought(t);
   told(transport, { at: t, frame: frame?.seq ?? transport.seq, back: frame !== undefined });
+}
+
+/**
+ * Puts the transport and every mix on it back as they stood at mix time `t`, at the end of
+ * `frame`, the tape already there.
+ */
+function backTo(transport: Transport, t: number, frame: Frame): void {
+  // On the frame itself, its own host time: rate 0 may have held the clock there for several.
+  const u = frame.at === t ? frame.u : hostAt(transport, t);
+  const seq = frame.seq;
+  transport.undrop(seq);
+  // What history kept after the frame is let go; the tape holds the calls that made it.
+  transport.announced = transport.announced.filter((a) => a.seq <= seq);
+  transport.frames.set(transport.frames.all().filter((f) => f.seq <= seq));
+  if (transport.pacedSeq > seq) {
+    transport.pace = null;
+    transport.pacedSeq = Number.POSITIVE_INFINITY;
+  } else transport.pace?.cut(u);
+  transport.u = u;
+  transport.now = t;
+  for (const m of transport.members) back(m, t, seq, frame.at < t);
+  cut(transport, seq);
 }
 
 /**
