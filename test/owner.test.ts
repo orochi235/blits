@@ -546,3 +546,19 @@ describe('a fading child its owner runs back before its start', () => {
     });
   });
 });
+
+describe.each([true, false])('an owner’s played, lanes %s', (lanes) => {
+  it('settles with its last child held then, and a child cued after does not change it', async () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const o = m.owns({});
+    m.cue({ patch: ramp, loop: false, owner: o, freeze: 'after' });
+    m.sync(150);
+    expect(await o.played).toBe(true);
+    const late = m.cue({ patch: ramp, loop: false, owner: o });
+    m.sync(170);
+    late.fade({ over: 0 });
+    expect(await late.played).toBe(false);
+    expect(await o.played).toBe(true);
+  });
+});

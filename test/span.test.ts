@@ -263,3 +263,61 @@ describe('spans', () => {
     expect(again.map((x) => x.toFixed(9))).toEqual(straight.slice(6).map((x) => x.toFixed(9)));
   });
 });
+
+describe.each([true, false])('a span’s played, lanes %s', (lanes) => {
+  const tick = () => new Promise((res) => setTimeout(res, 0));
+  const coast = (m: M, id: number) =>
+    m.marks(0, 100_000).find((k) => k.voice === id && k.mark === 'coast')?.timestamp;
+
+  it('resolves where its budget ends, its coast, not where its first child does', async () => {
+    const m = mix<Row, Pose>(K, { lanes });
+    m.sync(0);
+    const s = m.span({ duration: 1000 });
+    m.cue({ patch: write(100), loop: false, owner: s });
+    let at: number | undefined;
+    void s.played.then(() => {
+      at = m.now;
+    });
+    for (let t = 50; t <= 1200; t += 50) {
+      m.sync(t);
+      await tick();
+      if (t === 500) expect(coast(m, s.id)).toBe(1000);
+    }
+    expect(at).toBe(1000);
+  });
+
+  it('settles false when a child joins late and is faded before its passes end', async () => {
+    const m = mix<Row, Pose>(K, { lanes });
+    m.sync(0);
+    const s = m.span({ duration: 1000 });
+    m.cue({ patch: write(100), loop: false, owner: s });
+    m.sync(200);
+    const late = m.cue({ patch: write(300), loop: false, owner: s });
+    m.sync(250);
+    late.fade({ over: 0 });
+    expect(await late.played).toBe(false);
+    m.sync(1100);
+    expect(await s.played).toBe(false);
+  });
+
+  it('settles once, again after a seek back past it', async () => {
+    const m = mix<Row, Pose>(K, { lanes, history: { ms: 10_000, tape } });
+    m.sync(0);
+    const s = m.span({ duration: 500 });
+    m.cue({ patch: write(100), loop: false, owner: s });
+    for (let t = 50; t <= 600; t += 50) m.sync(t);
+    expect(await s.played).toBe(true);
+    m.seek(300);
+    let n = 0;
+    let got: boolean | undefined;
+    void s.played.then((p) => {
+      n++;
+      got = p;
+    });
+    await tick();
+    expect(n).toBe(0);
+    for (let t = 650; t <= 900; t += 50) m.sync(t);
+    await tick();
+    expect([n, got]).toEqual([1, true]);
+  });
+});

@@ -97,10 +97,13 @@ export function plays<I, O>(owner: Voice<I, O>, now: number): boolean {
   return false;
 }
 
-/** A child finished its passes: its owner has played once every child it held has. */
+/**
+ * A child finished its passes: a plain owner has played once every child it held so far has. A
+ * span settles where its fit ends instead, since its budget can still take a late child.
+ */
 export function childPlayed<I, O>(owner: Voice<I, O>, at: number, seq: number): void {
   const h = owner.holding as Holding<Voice<I, O>>;
-  if (++h.played === h.kids) owner.play(true, at, seq);
+  if (++h.played === h.kids && owner.fitting === null) owner.play(true, at, seq);
 }
 
 /** Every voice an owner holds, its children's children included. */
