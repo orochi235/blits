@@ -8,6 +8,20 @@ import { axisOf } from './lanes.js';
 import { Plan } from './Plan.js';
 import type { Series } from './path.js';
 
+/** A line for each voice's weight on the picked subject, keyed by the voice's id and labeled by its name. */
+export function weightSeriesFor(
+  weights: ReadonlyMap<number, readonly number[]>,
+  voices: readonly VoiceInfo[],
+): Series[] {
+  const names = new Map(voices.map((v) => [v.id, v.name]));
+  return [...weights].map(([id, w]) => ({
+    id: String(id),
+    label: names.get(id) ?? `#${id}`,
+    hue: voiceHue(id),
+    values: w,
+  }));
+}
+
 /** The plan, then the picked subject's channels and the voices' weights on it, on one time axis. */
 export function Plots({
   samples,
@@ -40,12 +54,7 @@ export function Plots({
       </div>
     );
   const unread = read[read.length - 1] === true ? ' · read, not shown' : '';
-  const names = new Map(voices.map((v) => [v.id, v.name ?? `#${v.id}`]));
-  const weighed: Series[] = [...weights].map(([id, w]) => ({
-    id: names.get(id) ?? `#${id}`,
-    hue: voiceHue(id),
-    values: w,
-  }));
+  const weighed = weightSeriesFor(weights, voices);
   return (
     <div className="bp-plots">
       {plan}

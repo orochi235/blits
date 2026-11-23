@@ -12,6 +12,8 @@ section here.
 
 - A mounted panel forgets number and string subjects once no mix lists them, where it used to
   keep every one it had seen.
+- The `weightOf` plot draws a line for each voice when two share a name, where it used to draw
+  one. `Series` takes an optional `label`, which `ChannelPlot` shows on hover.
 
 ## 1.4.0
 

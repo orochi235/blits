@@ -1,5 +1,8 @@
 export interface Series {
+  /** Unique among the series one plot draws. */
   id: string;
+  /** What the line is called, shown on hover; the `id` where it is left out. */
+  label?: string;
   hue: number;
   /** Overrides the color a hue gives. */
   color?: string;
