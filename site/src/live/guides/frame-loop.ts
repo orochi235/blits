@@ -104,6 +104,8 @@ export default function run(root: HTMLElement): () => void {
     hiding = window.setTimeout(() => {
       hiding = 0;
       if (rebase) m.rebase();
+      // Still away, it catches up now: the rebase on return takes off only the time after.
+      else if (away || held) m.sync(performance.now());
       if (!away && !held) frames.wake();
       show();
     }, AWAY);
