@@ -43,7 +43,10 @@ const easing = (v: unknown) =>
 
 const byChannel = (ok: (v: unknown) => boolean) => (v: unknown) =>
   obj(v) && Object.entries(v).every(([k, x]) => channel(k) && ok(x));
-const stop = (v: unknown) => obj(v) && num(v.at) && obj(v.delta) && opt(v.ease, easing);
+const pair = (v: unknown) => Array.isArray(v) && v.length === 2 && v.every(num);
+const delta = (v: unknown) =>
+  obj(v) && Object.entries(v).every(([k, x]) => channel(k) && (k === 'offset' ? pair(x) : num(x)));
+const stop = (v: unknown) => obj(v) && num(v.at) && delta(v.delta) && opt(v.ease, easing);
 const option = (v: unknown) => num(v) || (Array.isArray(v) && v.every(num)) || expr(v);
 
 function patch(p: unknown): boolean {
