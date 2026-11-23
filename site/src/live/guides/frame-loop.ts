@@ -100,6 +100,11 @@ export default function run(root: HTMLElement): () => void {
   // A hidden tab gets no frames, so stopping the ticker for a while stands in for one.
   hide.addEventListener('click', () => {
     frames.stop();
+    // Paused, the time already stood still comes off the clock, so a catch-up adds only the hiding.
+    if (away || held) {
+      m.rebase();
+      m.sync(performance.now());
+    }
     state = 'hidden';
     hiding = window.setTimeout(() => {
       hiding = 0;
