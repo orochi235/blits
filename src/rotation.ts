@@ -106,7 +106,7 @@ export function quat(): Channel<Vec<4>> {
     fold: (into, v, w) => multiply(into, into, slerp(scratch, IDENTITY, v, w) as Q) as Q,
     lerp: (a, b, u) => slerp(doubles(4, 0), a, b, u) as Q,
   };
-  vouch(channel as Channel<unknown>, { op: 'own', axes: 4 });
+  vouch(channel as Channel<unknown>, { op: 'own', axes: 4, signless: true });
   lerpsInPlace(
     channel as Channel<unknown>,
     ((out: number[] | undefined, a: Q, b: Q, u: number) =>

@@ -1,3 +1,4 @@
+import { numericOf } from './channels.js';
 import { flush, pullRun, writeLater } from './columns.js';
 import { type Copier, copy } from './copyout.js';
 import { type Crowd, row } from './crowd.js';
@@ -15,6 +16,7 @@ import {
   signalled,
   subjectAt,
 } from './fill.js';
+import { axesRest, nearRest } from './fold.js';
 import { fold, foldDelta, foldInto, foldRun, gate, gather, unplain } from './gather.js';
 import { Arg, Begin, type Lane, type Laned, Per, type Role } from './lane.js';
 import type { LaneHost } from './lanehost.js';
@@ -390,7 +392,7 @@ export class Lanes<I, O> implements Watcher {
 
   /**
    * Whether a subject's laned values are at their channels' rest, as `atRest` reads the pose `copy`
-   * would write: each number within 1e-9 of its rest.
+   * would write, by `restsAt`'s measure.
    */
   rests(slot: number): boolean {
     for (const ch of this.laned) {
@@ -400,15 +402,17 @@ export class Lanes<I, O> implements Watcher {
         continue;
       }
       if (ch.scalar) {
-        if (!(Math.abs((values[slot] as number) - ch.rest) < 1e-9)) return false;
+        if (!nearRest(values[slot] as number, ch.rest, ch.turn)) return false;
         continue;
       }
       // `copy` lengthens a rest shorter than the channel's axes, and a longer array is never near it.
       if (ch.start.length < ch.axes) return false;
       const base = slot * ch.axes;
-      for (let a = 0; a < ch.axes; a++)
-        if (!(Math.abs((values[base + a] as number) - (ch.start[a] as number)) < 1e-9))
-          return false;
+      if (
+        !axesRest(values, base, ch.start, ch.axes, 1) &&
+        !(numericOf(ch.channel)?.signless === true && axesRest(values, base, ch.start, ch.axes, -1))
+      )
+        return false;
     }
     return true;
   }

@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- An `angle()` a whole number of turns from its rest, 360 for one resting at 0, is at rest, and a
+  `quat()` at minus the identity is too: `atRest` said no, and a `fade({ at: 'rest' })` on a voice
+  ending there stayed `fading` for good.
 - A voice cued `from: 'current'` under an easing that dives below 0 as it starts, a bezier like
   `[0, -0.5, 0.5, 1]` or a function, runs as written; it bent the first segment to match the
   subject's speed as though the curve left at a finite slope, overshooting the dip.

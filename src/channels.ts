@@ -48,6 +48,8 @@ export interface Numeric {
    * `ink` widens a color with its chroma. A copy that predates it folds it as `'own'`.
    */
   widens?: Widen;
+  /** A value and its negation are one value, as a quaternion's are: its rest is either sign. */
+  signless?: boolean;
 }
 
 /** A contribution's numbers widened to its channel's axes, into `out` or an array of its own. */

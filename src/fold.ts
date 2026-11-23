@@ -1,11 +1,12 @@
 import { foldAxes } from './axes.js';
-import { foldNumber } from './channels.js';
+import { foldNumber, numericOf } from './channels.js';
 import { copy as copyValue, first } from './clone.js';
 import type { Share } from './everyone.js';
 import { Per } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Subject } from './subject.js';
+import { shortWay } from './turns.js';
 import type { Channel } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -38,9 +39,44 @@ export function near(a: unknown, b: unknown): boolean {
   return a === b;
 }
 
-/** Whether `value` is the channel's rest: near it, or for a channel with none, nothing at all. */
+/**
+ * Whether `value` is the channel's rest: near it, or for a channel with none, nothing at all. An
+ * angle rests a whole number of turns from it too, and a quaternion at either sign of it.
+ */
 export function restsAt(channel: Channel<unknown>, value: unknown): boolean {
-  return channel.rest === undefined ? value === undefined : near(value, channel.rest);
+  const rest = channel.rest;
+  if (rest === undefined) return value === undefined;
+  if (near(value, rest)) return true;
+  const n = numericOf(channel);
+  if (n === undefined) return false;
+  if (n.turn !== undefined)
+    return typeof value === 'number' && typeof rest === 'number' && nearRest(value, rest, n.turn);
+  return (
+    n.signless === true &&
+    indexed(value) &&
+    indexed(rest) &&
+    value.length === rest.length &&
+    axesRest(value as ArrayLike<number>, 0, rest as ArrayLike<number>, rest.length, -1)
+  );
+}
+
+/** Whether a number is its channel's rest number: within 1e-9, or for an angle, of whole turns from it. */
+export function nearRest(v: number, rest: number, turn: number): boolean {
+  const d = v - rest;
+  return Math.abs(turn > 0 ? shortWay(d, turn) : d) < 1e-9;
+}
+
+/** Whether `axes` numbers of `values` from `base` are each within 1e-9 of `rest`'s times `sign`. */
+export function axesRest(
+  values: ArrayLike<number>,
+  base: number,
+  rest: ArrayLike<number>,
+  axes: number,
+  sign: 1 | -1,
+): boolean {
+  for (let a = 0; a < axes; a++)
+    if (!(Math.abs((values[base + a] as number) - sign * (rest[a] as number)) < 1e-9)) return false;
+  return true;
 }
 
 /**
