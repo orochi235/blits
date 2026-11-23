@@ -126,8 +126,10 @@ export default function run(root: HTMLElement): () => void {
   };
   const going = () => {
     if (away || held) return;
+    // While hidden, the timeout decides whether the time away comes off the clock.
+    if (hiding !== 0) return;
     m.rebase();
-    if (hiding === 0) frames.wake();
+    frames.wake();
   };
   const blur = () => {
     away = true;

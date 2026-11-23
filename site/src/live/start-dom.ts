@@ -47,10 +47,11 @@ export default function run(root: HTMLElement): () => void {
   m.cue({ patch: hop, loop: true, stagger: (dot) => dot.index * 80, fade: { in: 600 } });
 
   // A click cues one more voice, on one dot, for one pass. It multiplies with breathe.
-  root.addEventListener('click', (e) => {
+  const click = (e: MouseEvent) => {
     const dot = dots.find((d) => d.el === e.target);
     if (dot) m.cue({ patch: pop, subjects: [dot] });
-  });
+  };
+  root.addEventListener('click', click);
 
   // Once a frame: tell the mix the time, then read each dot's pose and draw it.
   const pose = m.pose();
@@ -64,6 +65,7 @@ export default function run(root: HTMLElement): () => void {
 
   return () => {
     stop();
+    root.removeEventListener('click', click);
     m.close();
   };
 }

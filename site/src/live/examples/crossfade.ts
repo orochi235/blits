@@ -53,25 +53,34 @@ export default demo((d) => {
   const m = mix<Dot, DotPose>(DOT, d.options('crossfade'));
   d.closes(m);
   const fade = { in: 1200, out: 1200 };
-  let playing = 'wave';
-  let current = m.cue({ patch: wave, loop: true, role: 'motion', fade: { out: fade.out } });
-  button.textContent = 'Switch to pulse';
+  m.cue({
+    patch: wave,
+    loop: true,
+    role: 'motion',
+    name: 'wave',
+    tags: ['wave'],
+    fade: { out: fade.out },
+  });
+  // What is playing is read from the mix, which a seek back puts as it was: the loop not fading.
+  const playing = () => (m.voices('pulse').some((v) => v.state !== 'fading') ? 'pulse' : 'wave');
+  const label = () => {
+    const text = `Switch to ${playing() === 'wave' ? 'pulse' : 'wave'}`;
+    if (button.textContent !== text) button.textContent = text;
+  };
+  label();
 
   d.on(button, 'click', () => {
-    current.fade();
-    playing = playing === 'wave' ? 'pulse' : 'wave';
-    current = m.cue({
-      patch: playing === 'wave' ? wave : pulse,
-      loop: true,
-      role: 'motion',
-      fade,
-    });
-    button.textContent = `Switch to ${playing === 'wave' ? 'pulse' : 'wave'}`;
+    const to = playing() === 'wave' ? 'pulse' : 'wave';
+    for (const v of m.voices()) if (v.state !== 'fading') v.fade();
+    const patch = to === 'wave' ? wave : pulse;
+    m.cue({ patch, loop: true, role: 'motion', name: to, tags: [to], fade });
+    label();
   });
 
   const pose: DotPose = { y: 0, scale: 1, color: [0, 0, 0, 0] };
   d.frame(m, (now) => {
     m.sync(now);
+    label();
     for (const dot of dots) {
       m.probe(dot, pose);
       dot.el.style.transform = `translateY(${pose.y}px) scale(${pose.scale})`;
