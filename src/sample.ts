@@ -253,6 +253,15 @@ export function move<I, O>(
     if (ms < 0) {
       const subject = lanes.subjectAt(slot);
       if (subject === absent) return;
+      // A probe at weight 0 met the subject without starting the motion: only a read starts it.
+      if (
+        run.known(subject) === undefined &&
+        !lanes.probedThisFrame(slot) &&
+        !(lanes.pulling !== 0 && lanes.readBy[slot] === lanes.pulling)
+      ) {
+        lanes.late.push(slot);
+        return;
+      }
       ms = run.slot(subject);
       data[o + Row.MSLOT] = ms;
       lane.numbered(p, ms);

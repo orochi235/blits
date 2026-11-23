@@ -10,6 +10,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 - A `pull` after a `drop` reads a dropped subject that joins the list again as itself; with lanes
   on, it could read the values of the subject the pull renumbered into the dropped one's number.
+- With lanes on, a motion voice (tween, spring, glide) no longer starts for a subject that was
+  only probed at weight 0, as at a fade's first frame, on a later frame that probes other
+  subjects; it called `from`, made a `read`, and kept `inert` false where lanes off did none.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the
