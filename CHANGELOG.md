@@ -28,10 +28,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice or owner cued with `start: NaN` is refused with a `RangeError`, where it waited for good
   without a word.
 - A voice anchored on its own name follows the last other voice of that name, as one anchored on
-  its own tag does, where it was refused as waiting on itself. It is still refused when no other
-  voice carries the name.
+  its own tag does, where it was refused as waiting on itself, even one that has left and been
+  forgotten. It is still refused when no voice has carried the name.
+- A numeric placement anchor of `NaN` (`anchor: { in: NaN }` and the rest) is refused with a
+  `RangeError`, where the voice waited for good without a word.
 - A mix dropped from its transport refuses `mute()`, `drop(subject)` and writes through its voices'
-  handles, as it refused `cue` and `touch`: a mute retired every voice of a mix the transport no
+  handles, `to`, `push` and `set` among them, as it refused `cue` and `touch`: a mute retired every voice of a mix the transport no
   longer synced.
 - A mix paused at rate 0 under `history` lets go of the frames it holds once they are older than
   `history.ms` of host time, store or not; it kept every one for as long as it stayed paused, 10,002

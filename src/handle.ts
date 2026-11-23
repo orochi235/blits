@@ -234,18 +234,21 @@ export class VoiceHandle<I, O> implements Handle<I> {
   // The patch records each of these itself, so a seek plays them again without the handle. A done
   // voice's patch has no mix to record to, and a seek back that brings it back would apply the call.
   to(subject: I, target: Value, at?: number): void {
+    this.#host.attached();
     const voice = this.#voice;
     if (voice !== null && voice.state !== 'done')
       moves(voice.patch, 'to', 'a spring or a tween').to(subject, target, at);
   }
 
   push(subject: I, velocity: Value, at?: number): void {
+    this.#host.attached();
     const voice = this.#voice;
     if (voice !== null && voice.state !== 'done')
       moves(voice.patch, 'push', 'a spring or a glide').push(subject, velocity, at);
   }
 
   set(subject: I, value: Value, at?: number): void {
+    this.#host.attached();
     const voice = this.#voice;
     if (voice !== null && voice.state !== 'done')
       moves(voice.patch, 'set', 'a motion patch').set(subject, value, at);

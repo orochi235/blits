@@ -494,6 +494,9 @@ describe('transport', () => {
     }).toThrow(/dropped/);
     expect(() => h.fade()).toThrow(/dropped/);
     expect(h.state).not.toBe('done');
+    expect(() => h.to('r', 5)).toThrow(/dropped/);
+    expect(() => h.push('r', 5)).toThrow(/dropped/);
+    expect(() => h.set('r', 5)).toThrow(/dropped/);
   });
 
   it('lets a dropped mix go for good without history', () => {

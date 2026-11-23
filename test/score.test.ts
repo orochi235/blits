@@ -193,6 +193,28 @@ describe('placement', () => {
     expect([first.state, next.state]).toEqual(['done', 'live']);
   });
 
+  it('follows its own name after every earlier voice of it has left and been forgotten', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(100), name: 'step', start: 0, loop: false });
+    m.cue({ patch: hold(100), name: 'step', loop: false, anchor: { start: { after: 'step' } } });
+    for (const t of [100, 250, 260]) m.sync(t);
+    const next = m.cue({
+      patch: hold(100),
+      name: 'step',
+      loop: false,
+      anchor: { start: { after: 'step' } },
+    });
+    m.sync(270);
+    expect(next.state).toBe('live');
+  });
+
+  it('refuses a numeric anchor that is NaN', () => {
+    const m = mix<Row, Pose>(K);
+    for (const side of ['start', 'in', 'out', 'end'] as const)
+      expect(() => m.cue({ patch: hold(100), anchor: { [side]: Number.NaN } })).toThrow(RangeError);
+  });
+
   it('lets a projection ahead play what the anchors place', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);

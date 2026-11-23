@@ -68,6 +68,9 @@ export function checkPlacement<I, O>(
     throw new Error('blits: a placement anchors out or end, not both');
   if (spec.start !== undefined && (anchor.start !== undefined || anchor.in !== undefined))
     throw new Error('blits: a voice takes start or an anchored start, not both');
+  for (const side of ['start', 'in', 'out', 'end'] as const)
+    if (Number.isNaN(anchor[side]))
+      throw new RangeError(`blits: a placement's ${side} is a time in ms or an anchor, not NaN`);
   const self: Placed<I, O> = {
     id: mix.nextId,
     spec,
@@ -86,6 +89,17 @@ export function checkPlacement<I, O>(
           slot: m.slot,
           writes: v.patch.writes,
         });
+  const forgotten = (
+    q: Query,
+    score: string | undefined,
+    anywhere: boolean,
+    asker: Placed<I, O>,
+  ) => {
+    for (const m of mix.transport.members)
+      for (const d of m.departed.all)
+        if (departedMatches(d, q, score, anywhere, asker.owner?.id ?? -1)) return true;
+    return false;
+  };
   const refuse = (): never => {
     throw new Error(`blits: ${spec.name ?? 'a voice'}'s placement waits on itself`);
   };
@@ -108,9 +122,10 @@ export function checkPlacement<I, O>(
         (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
         (q.writes === undefined || (v.writes as readonly unknown[]).includes(q.writes)),
     );
-    // Only its own name, with no other voice under it to follow, is a voice waiting on itself.
+    // Only its own name, with no other voice under it to follow, is a voice waiting on itself. One
+    // that left and was forgotten still answers, as `timeOf` reads it.
     if (asker === self && met.length === 0 && q.name !== undefined && q.name === spec.name)
-      if (score === spec.score) refuse();
+      if (score === spec.score && !forgotten(q, score, anywhere, asker)) refuse();
     const resolver = q.resolver ?? 'last';
     const picked =
       met.length > 1 && (resolver === 'first' || resolver === 'last')
