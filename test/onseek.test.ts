@@ -1,6 +1,6 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
-import { kit, sum } from '../src/channels.js';
+import { kit, last, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { transport } from '../src/transport.js';
@@ -132,4 +132,26 @@ describe('call', () => {
     bare.call('kick', () => made++);
     expect(made).toBe(1);
   });
+
+  for (const lanes of [true, false])
+    it(`keeps a voice it cues ahead of those cued after it, made again after a seek back${lanes ? '' : ', without lanes'}`, () => {
+      const L = kit<{ x: number }>({ x: last<number>() });
+      const val = (v: number) =>
+        patch<object, { x: number }>(10_000, () => ({ x: v }), { writes: ['x'] });
+      const m = mix<object, { x: number }>(L, { lanes, history: { ms: 100_000, every: 50, tape } });
+      const dot = {};
+      const seen = new Map<number, number>();
+      for (let t = 0; t <= 400; t += 20) {
+        m.sync(t);
+        if (t === 100) m.call('driver', () => m.cue({ patch: val(1) }));
+        if (t === 200) m.cue({ patch: val(2) });
+        seen.set(t, m.probe(dot).x);
+      }
+      expect(seen.get(300)).toBe(2);
+      m.seek(60);
+      for (let t = 420; t <= 660; t += 20) {
+        m.sync(t);
+        expect([m.now, m.probe(dot).x]).toEqual([m.now, seen.get(m.now)]);
+      }
+    });
 });
