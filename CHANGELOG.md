@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
+  other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the
   rest, travels round the hue as `ink`'s own blending does; it cut straight across OKLab.
 - A voice or owner cued with `start: NaN` is refused with a `RangeError`, where it waited for good

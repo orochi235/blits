@@ -524,6 +524,12 @@ function hold(t: Transport): Hold {
       if (!(ms > 0)) return;
       if (Number.isNaN(line))
         throw new Error('blits: a mix that has never synced has nothing to step');
+      // Running back, a later host time is an earlier mix time, so the step is a seek on.
+      if (t.drive !== null) {
+        hushed(() => seek(t, t.now + ms));
+        for (const m of t.members) m.stir();
+        return;
+      }
       const u = hostAhead(t, t.now + ms);
       if (!Number.isFinite(u))
         throw new RangeError("blits: the mix's own rate is 0, so it never moves");
