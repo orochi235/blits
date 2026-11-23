@@ -137,6 +137,12 @@ export class Transport implements TransportApi {
   announced: Announced[] = [];
   /** Numbers voices and announced marks across every member, in the order they were made. */
   nextId = 1;
+  /**
+   * While a recorded call is made again: where the numbers it took the first time end, and the
+   * next one past every number taken since, which it goes on from should it take more this time.
+   */
+  idsTo = Number.NaN;
+  idsTop = Number.NaN;
   readonly tape: Tape | undefined;
   /** With a history store, what left memory for it; null without one. */
   readonly pager: Pager | null;
@@ -420,6 +426,13 @@ export class Transport implements TransportApi {
     for (const m of this.members) m.looked = false;
   }
 
+  /** The number for the next voice or announced mark. */
+  takeId(): number {
+    const id = this.nextId;
+    this.nextId = id + 1 === this.idsTo ? this.idsTop : id + 1;
+    return id;
+  }
+
   rebase(): void {
     this.rebasing = true;
     this.settle();
@@ -531,7 +544,7 @@ export function announce(
     score: opts.score,
     tags: opts.tags ?? [],
     at,
-    order: transport.nextId++,
+    order: transport.takeId(),
     seq: transport.seq,
     slot,
     mix,

@@ -58,7 +58,7 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
               ? Number.POSITIVE_INFINITY
               : mix.now;
   const voice = new Voice<I, O>(
-    mix.nextId++,
+    mix.transport.takeId(),
     spec,
     patch,
     spec.fade ?? noFade,

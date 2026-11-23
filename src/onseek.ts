@@ -33,14 +33,29 @@ export function call<I, O>(this: Mixer<I, O>, label: string, fn: () => void): vo
   const transport = this.transport;
   // What `fn` calls on the mix is the call's own, made again with it, so it is not recorded apart.
   const was = transport.replaying;
+  const from = transport.nextId;
   transport.replaying = true;
   try {
     fn();
   } finally {
     transport.replaying = was;
   }
+  const to = transport.nextId;
   record(this, label, (stage) => {
     // A read ahead holds copies of the mixes, and nothing of what `fn` changes.
-    if (stage.mix(this) === this) fn();
+    if (stage.mix(this) !== this) return;
+    // What `fn` cues takes the numbers it took the first time, so it sorts among later cues, which
+    // the tape makes again with theirs, as it did then.
+    const top = transport.nextId;
+    transport.nextId = to > from ? from : top;
+    transport.idsTo = to;
+    transport.idsTop = top;
+    try {
+      fn();
+    } finally {
+      transport.nextId = Math.max(top, transport.nextId);
+      transport.idsTo = Number.NaN;
+      transport.idsTop = Number.NaN;
+    }
   });
 }

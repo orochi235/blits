@@ -902,6 +902,24 @@ describe('seek and read back, by the frame a change was decided in', () => {
       if (t === 640) m.rate = 0.5;
     }, 512);
   });
+
+  it('leaves the mix as it stood when a seek ahead past where rate 0 holds the clock throws', () => {
+    const line = patch<Part, Pose>(1000, (p) => ({ x: p * 1000 }), { writes: ['x'] });
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, every: 50, tape } });
+    m.sync(0);
+    m.cue({ patch: line });
+    for (let t = 20; t <= 300; t += 20) {
+      m.sync(t);
+      if (t === 100) m.rate = 0;
+      if (t === 200) m.cue({ patch: line, weight: 0.5 });
+    }
+    m.seek(50);
+    const was = { now: m.now, seq: m.seq, x: m.probe(a).x, rate: m.rate };
+    expect(() => m.seek(150)).toThrow(/rate never reaches 150/);
+    expect({ now: m.now, seq: m.seq, x: m.probe(a).x, rate: m.rate }).toEqual(was);
+    m.sync(320);
+    expect([m.now, m.probe(a).x, m.rate]).toEqual([70, 70, 1]);
+  });
 });
 
 describe('a voice clock moved outright', () => {

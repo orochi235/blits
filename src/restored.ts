@@ -26,6 +26,8 @@ export interface Stamp extends Moment {
   /** The records subjects left with after this seek's moment, and where it cut; null for none. */
   left: Leavings<unknown> | null;
   cut: Cut | null;
+  /** Which seek filled it, counted from 1; 0 until then. */
+  n: number;
   /** The store that made it; null on `gone`. */
   readonly of: object | null;
 }
@@ -37,11 +39,14 @@ const stamp = (of: object | null): Stamp => ({
   rank: 0,
   left: null,
   cut: null,
+  n: 0,
   of,
 });
 
 /** What a reaching record a store has let go of is stamped with, so setting it again is seen. */
 const gone = stamp(null);
+// After every seek, so no seek's leavings are taken for a record let go of.
+gone.n = Number.POSITIVE_INFINITY;
 
 /** The root `s` was joined to, halving the path there for the next read. */
 function rootOf(s: Stamp): Stamp {
@@ -76,6 +81,13 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
    * sparing a write here per subject a seek puts back; one that does not may stand for many.
    */
   private readonly at = new Store<I, Stamp>();
+  /**
+   * By subject, the latest seek that took a record it left with off the voice, until its record
+   * is next put back. A seek back takes every leaving after its moment, so a later one takes only
+   * earlier leavings, and the latest holds the record the subject had at the earliest moment since.
+   */
+  private readonly went = new Store<I, Stamp>();
+  private seeks = 0;
   /**
    * The roots, each moment earlier than the next, held weakly: one no record can reach is never
    * read again, and those are cleared out once the list doubles.
@@ -116,9 +128,11 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
   /** A seek back to `t`: `left` has the records subjects left with after `cut`, null for none. */
   back(t: number, cut: Cut, left: Leavings<I> | null): void {
     const s = this.stamp;
+    s.n = ++this.seeks;
     if (left !== null) {
       s.left = left as Leavings<unknown>;
       s.cut = cut;
+      for (const e of left.all()) this.went.set(e.subject, s);
     }
     // Every root at or after `t` now reads `t`, so they and `s` are joined under one.
     const roots = this.roots;
@@ -185,10 +199,15 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     if (at === now) return own;
     if (mark) own.restored = now;
     else this.at.set(key, now);
-    // A subject that left after the moment the next seek sought had the record it left with,
-    // whatever it has now. Leaving is a write, so no later seek's leavings can hold it.
+    // A subject that left after the moment sought had the record it left with, whatever it has
+    // now. Leaving is a write, so only a seek since `at` was filled can have taken that leaving.
     const root = rootOf(at);
-    const left = at.left?.at(key, at.cut as Cut);
+    const went = this.went.get(key);
+    let left: Subject<unknown> | undefined;
+    if (went !== undefined) {
+      this.went.delete(key);
+      if (went.n >= at.n) left = (went.left as Leavings<unknown>).at(key, went.cut as Cut);
+    }
     const live = left ?? this.now(key, own, root);
     const made = live && this.make(live, root, left === undefined);
     // Looked up again, not taken from `own`: a call made while it was put back may have set it.
@@ -217,6 +236,7 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
 
   override delete(key: I): void {
     this.shed(key);
+    this.went.delete(key);
     this.at.set(key, this.stamp);
   }
 
@@ -231,5 +251,6 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     this.sure = false;
     this.own.clear();
     this.at.clear();
+    this.went.clear();
   }
 }

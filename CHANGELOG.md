@@ -31,6 +31,15 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   the largest f32 there; its kernel failed to compile, so `channel()` and `read()` gave null for
   every channel of the mix. One bounded past the largest f32 stays on the CPU, and `reasons()` says
   why.
+- A voice cued inside `Mix.call` keeps its place ahead of voices the host cued after the call when
+  the mix plays past it again after a seek back. Made again, it sorted after them, so on a `last()`
+  channel the earlier voice won.
+- A seek ahead refused because the mix's rate never reaches the time sought leaves the mix where
+  it stood. It had already played the recorded calls on the way, leaving the mix at the moment
+  rate 0 held it, at that rate, with its clock running back on the next sync.
+- A subject that left a voice with a stateful patch between two seeks back, with no read of it
+  between them, is put back as it stood at the second seek's moment; it was met afresh instead,
+  its state starting over.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the

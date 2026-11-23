@@ -163,6 +163,28 @@ describe('seek, many times over', () => {
       expect(alone.b).toBe(asked.b);
       expect(alone.a).toBe(asked.a);
     });
+
+  for (const how of ['drop', 'fade'] as const)
+    for (const between of [false, true])
+      it(`puts back a subject that left between two seeks back by ${how}${between ? ', read between' : ''}`, () => {
+        const m = mix<Part, Pose>(K, { history: { ms: 100_000, every: 50, tape } });
+        const a = { id: 'a' };
+        const seen = new Map<number, number>();
+        m.sync(0);
+        const h = m.cue({ patch: drift() });
+        for (let t = 20; t <= 500; t += 20) {
+          m.sync(t);
+          if (t === 300) {
+            if (how === 'drop') m.drop(a);
+            else h.fade({ subject: a, over: 0 });
+          }
+          seen.set(t, m.probe(a).x);
+        }
+        m.seek(400);
+        if (between) m.probe(a);
+        m.seek(200);
+        expect(m.probe(a).x).toBe(seen.get(200));
+      });
 });
 
 describe("a chain's record found again", () => {
