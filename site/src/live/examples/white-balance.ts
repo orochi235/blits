@@ -171,7 +171,7 @@ export default demo((d) => {
     d.on(castWeight.input, 'input', weigh);
     d.on(fixWeight.input, 'input', weigh);
     weigh();
-    playPause(d, show, play);
+    const relabel = playPause(d, show, play);
 
     // The gray card's middle, for the readouts.
     const card = CELLS.reduce((a, c) =>
@@ -240,6 +240,7 @@ export default demo((d) => {
       show,
       (now) => {
         show.sync(now);
+        relabel();
         if (show.seq === drawn) return;
         drawn = show.seq;
         draw();

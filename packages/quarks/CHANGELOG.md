@@ -10,6 +10,12 @@ section here.
 
 - `@msb235/blits` is a peer at `^1.3.0`, where it was `^1.0.0`: the first engine with `bind`.
 
+### Fixed
+
+- A subject whose probe or `rate` throws in a `write` loses only its own particles that frame. The
+  subjects before it lost theirs too, those after it lost the frame's time, and the authored values
+  were not put back.
+
 ## 0.17.4
 
 ### Changed

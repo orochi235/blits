@@ -237,12 +237,21 @@ export function drive<I, O extends Partial<Emission>>(
       const gone = mix.played - played;
       const dt = gone > 0 ? gone : 0;
       played = mix.played;
+      // A subject that throws loses this frame's particles; the rest still emit, the authored
+      // values always go back, and the first error is rethrown once they have.
+      let failed = false;
+      let first: unknown;
       for (const [subject, b] of bound) {
-        mix.probe(subject, b.pose);
-        const own = typeof b.rate === 'function' ? b.rate() : (b.rate ?? 0);
-        const r = (b.pose.rate ?? 0) + own;
-        if (Number.isFinite(r * dt) && r * dt > 0) b.carry.add(r, dt);
-        b.count = b.carry.take();
+        try {
+          mix.probe(subject, b.pose);
+          const own = typeof b.rate === 'function' ? b.rate() : (b.rate ?? 0);
+          const r = (b.pose.rate ?? 0) + own;
+          if (Number.isFinite(r * dt) && r * dt > 0) b.carry.add(r, dt);
+          b.count = b.carry.take();
+        } catch (err) {
+          if (!failed) first = err;
+          failed = true;
+        }
       }
       if (opts.bursts !== undefined)
         for (const sent of mix.drain<Burst>(opts.bursts)) {
@@ -258,10 +267,6 @@ export function drive<I, O extends Partial<Emission>>(
               break;
             }
         }
-      // A subject that throws loses this frame's particles; the rest still emit, the authored
-      // values always go back, and the first error is rethrown once they have.
-      let failed = false;
-      let first: unknown;
       try {
         for (const [subject, b] of bound) {
           // A burst waits here, not in the probe loop, so a probe that throws does not lose it.

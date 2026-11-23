@@ -123,4 +123,27 @@ describe('bursts', () => {
     expect(() => q.write()).toThrow('gone');
     expect(born(s).map((p) => p.position.y)).toEqual([2, 2, 2]);
   });
+
+  it("keeps the other subjects' rate when one subject's rate throws for a frame", () => {
+    const m = mix<Spot, Emission>(K);
+    const s = system();
+    m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
+    const q = drive(m, { kit: K });
+    q.attach(a, s, { at: [1, 0, 0] });
+    let fail = false;
+    q.attach(b, s, {
+      at: [0, 2, 0],
+      rate: () => {
+        if (fail) throw new Error('gone');
+        return 0;
+      },
+    });
+    for (let t = 0; t <= 1000; t += 100) {
+      m.sync(t);
+      fail = t === 500;
+      if (fail) expect(() => q.write()).toThrow('gone');
+      else q.write();
+    }
+    expect(born(s).filter((p) => p.position.x === 1)).toHaveLength(10);
+  });
 });

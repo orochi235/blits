@@ -338,7 +338,7 @@ export default demo((d) => {
     };
     refresh = rebuild;
 
-    playPause(d, show, play);
+    const relabel = playPause(d, show, play);
 
     const probe = (m: Mix<Cell, Tint> | undefined, v: View) => {
       CELLS.forEach((c, i) => {
@@ -359,6 +359,7 @@ export default demo((d) => {
       show,
       (now) => {
         show.sync(now);
+        relabel();
         const key = `${show.seq}`;
         if (key === drawn) return;
         drawn = key;

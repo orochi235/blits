@@ -75,6 +75,14 @@ export function loop(
     // It stops where one more frame like the last would end the fades on the mix's clock: a voice
     // whose fade ends is done, and cannot rise.
     const at = clock?.now ?? Number.NaN;
+    // One that comes up while settling, as a voice anchored to start then does, settles with the rest.
+    if (clock !== undefined)
+      for (const x of mixes())
+        for (const h of x.voices())
+          if (h.owner === undefined && h.state === 'live' && !faded.includes(h)) {
+            h.fade({ over: Math.max(0, until - at) });
+            faded.push(h);
+          }
     const step = Number.isNaN(last) ? 0 : at - last;
     last = at;
     if (at + 1.5 * step >= until || now >= latest) {

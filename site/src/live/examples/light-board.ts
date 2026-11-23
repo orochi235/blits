@@ -221,21 +221,43 @@ export default demo((d) => {
     // Gels share a role, so a change of look crossfades one gel into the next rather than stacking
     // them. Spots and the blackout come up and go on their own fades. Every look taken is kept, the
     // newest last, so what is lit is read from its voices, which a seek back puts as they were.
-    const taken: { look: number; voices: Handle[] }[] = [];
+    // `n` numbers the show's looks, and `at` is the mix time each was cued at.
+    const taken: { look: number; voices: Handle[]; n: number; at: number }[] = [];
+    let top = -1;
+    let prev: (typeof taken)[number] | undefined;
     let running = true;
-    let named = 0;
     const fade = { in: FADE, out: FADE };
-    const take = (i: number, place: Pick<VoiceSpec<Cell, Light>, 'anchor'> = {}, name?: string) => {
+    const take = (i: number, place: Pick<VoiceSpec<Cell, Light>, 'anchor'> = {}, n = -1) => {
       const look = LOOKS[i] as Look;
       const specs: VoiceSpec<Cell, Light>[] = look.spots.map((p) => ({ patch: p, loop: true }));
       if (look.gel !== undefined) specs.push({ patch: look.gel, role: 'gel' });
       if (look.blackout) specs.push({ patch: dark });
       const voices = specs.map((spec, k) =>
-        m.cue({ ...spec, subjects: CELLS, fade, ...place, ...(k === 0 && name ? { name } : {}) }),
+        m.cue({
+          ...spec,
+          subjects: CELLS,
+          fade,
+          ...place,
+          ...(k === 0 && n >= 0 ? { name: `show ${n}` } : {}),
+        }),
       );
-      taken.push({ look: i, voices });
+      taken.push({ look: i, voices, n, at: show.now });
+      top = Math.max(top, n);
       if (taken.length > 4 * LOOKS.length && taken[0]?.voices.every((v) => v.state === 'done'))
         taken.shift();
+    };
+    // A seek back holds the looks cued after it, out of the mix, until the tape cues them again.
+    const held = (t: (typeof taken)[number]) => {
+      const v = t.voices[0];
+      return v !== undefined && v.state === 'pending' && !m.voices().includes(v);
+    };
+    // Held past its time, or past a call of ours that cut the tape ahead, a look never comes back.
+    const drop = (past: number) => {
+      for (let k = taken.length - 1; k >= 0; k--) {
+        const t = taken[k] as (typeof taken)[number];
+        if (held(t) && t.at <= past) taken.splice(k, 1);
+      }
+      if (prev !== undefined && !taken.includes(prev)) prev = taken.findLast((t) => t.n >= 0);
     };
     const lit = () => {
       for (let k = taken.length - 1; k >= 0; k--) {
@@ -246,18 +268,19 @@ export default demo((d) => {
       return -1;
     };
     const ahead = () => taken.filter((t) => t.voices[0]?.state === 'pending').length;
-    // Running the show, each look starts `HOLD` after the one before and starts to fade as the
-    // next comes up, both anchored on the mix's clock; the frame loop keeps two looks cued ahead.
-    let prev: string | undefined;
-    const next = (from = taken[taken.length - 1]?.look ?? -1) => {
-      const at = (from + 1) % LOOKS.length;
-      const name = `show ${named++}`;
+    // Running the show, each look starts `HOLD` after `prev`, or now without one, and starts to
+    // fade as the next number comes up, both anchored on the mix's clock; the frame loop keeps two
+    // looks cued ahead. A look replacing one held for good takes over its number.
+    const next = (from?: number) => {
+      drop(Number.POSITIVE_INFINITY);
+      if (from === undefined) from = prev?.look ?? -1;
+      const n = (prev === undefined ? top : prev.n) + 1;
       const anchor = {
-        out: { with: `show ${named}` },
-        ...(prev === undefined ? {} : { start: { with: prev, by: HOLD } }),
+        out: { with: `show ${n + 1}` },
+        ...(prev === undefined ? {} : { start: { with: `show ${prev.n}`, by: HOLD } }),
       };
-      prev = name;
-      take(at, { anchor }, name);
+      take((from + 1) % LOOKS.length, { anchor }, n);
+      prev = taken.at(-1);
     };
     const leave = () => {
       for (const t of taken) for (const v of t.voices) if (v.state !== 'done') v.fade();
@@ -277,7 +300,7 @@ export default demo((d) => {
       prev = undefined;
       next(from);
     });
-    playPause(d, show, play);
+    const relabel = playPause(d, show, play);
 
     let draw: () => void;
     let free = () => {};
@@ -323,6 +346,8 @@ export default demo((d) => {
       show,
       (now) => {
         show.sync(now);
+        relabel();
+        drop(show.now);
         while (running && ahead() < 2) next();
         const on = lit();
         buttons.forEach((b, j) => {
