@@ -53,4 +53,3 @@ describe('the frames a transport keeps', () => {
     expect(Math.max(...lengths) - Math.min(...lengths)).toBeLessThan(40);
   });
 });
-
