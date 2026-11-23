@@ -157,3 +157,16 @@ describe('settle', () => {
     expect(settle(span(500), [kid(100), kid(100)], defaultFit, 'instant').fell).toBe(false);
   });
 });
+
+describe('a child with no time left, free to play slower without end', () => {
+  it('keeps its rate while the others slow to fill the budget', () => {
+    const s = span(1000, { priority: 'weak', share: 0 });
+    const kids = [kid(0, { slower: Number.POSITIVE_INFINITY }), kid(100, { slower: 4 })];
+    const plan = rescale(s, kids, plain(s, kids));
+    expect(plan.rate[0]).toBe(1);
+    expect(plan.rate[1]).toBeCloseTo(0.25, 9);
+    const laid = layout(s, kids, plan);
+    expect(laid.at.every(Number.isFinite)).toBe(true);
+    expect(laid.length).toBeCloseTo(400, 6);
+  });
+});

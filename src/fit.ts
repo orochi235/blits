@@ -182,11 +182,13 @@ export function rescale(span: SpanClaim, kids: readonly Claim[], plan: FitPlan):
     return at(least(1, top, (f) => fits(span, kids, at(f))));
   }
   if (!Number.isFinite(span.left)) return plan;
-  const top = Math.max(1, ...kids.map((k) => k.slower));
+  // A child with no time left fills none however slow it plays, and slowing it without end is rate 0.
+  const slower = kids.map((k) => (k.natural > 0 ? k.slower : 1));
+  const top = Math.max(1, ...slower);
   if (top === 1) return plan;
   const at = (f: number): FitPlan => ({
     ...plan,
-    rate: kids.map((k, i) => (plan.rate[i] as number) / Math.min(f, k.slower)),
+    rate: kids.map((_, i) => (plan.rate[i] as number) / Math.min(f, slower[i] as number)),
   });
   // The largest factor that still fits: `least` over the factors that do not.
   const f = least(1, top, (x) => !fits(span, kids, at(x)));
