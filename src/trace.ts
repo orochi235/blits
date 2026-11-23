@@ -13,6 +13,8 @@ const NUDGE = 1e-6;
 /** Two values at one time this close are one point, not a jump. */
 const close = (a: number, b: number): boolean => nearly(a, b, 1e-6);
 
+/** The most points a trace reads on its grid: past it, a window and grid would run out of memory. */
+const MAX_POINTS = 1_000_000;
 /** The most bends one stretch may fit, each a read, before it is read on the grid instead. */
 const MOST_BENDS = 8;
 
@@ -29,6 +31,10 @@ export function traceMix<I, O>(
   const bending = opts.bends === true;
   if (!(grid > 0 && grid < Number.POSITIVE_INFINITY))
     throw new RangeError(`blits: a trace's grid is a finite number of ms above 0, not ${grid}`);
+  if ((to - from) / grid > MAX_POINTS)
+    throw new RangeError(
+      `blits: a trace reads at most ${MAX_POINTS} points; ${to - from} ms on a ${grid} ms grid is more`,
+    );
   const known = knowable(mix, from);
   const projections = new Map<number, Projection<I, O>>();
   const poses = new Map<I, Map<number, O>>();

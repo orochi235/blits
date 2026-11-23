@@ -6,6 +6,7 @@
 export interface TraceOptions {
   /**
    * Where a run cannot be known exactly, how far apart it is read, in ms of mix time. Default 5.
+   * A window and grid giving more than a million points are refused.
    */
   grid?: number;
   /**

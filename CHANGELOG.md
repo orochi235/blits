@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- `trace` refuses a window and `grid` giving more than a million points with a `RangeError`, where
+  it tried to read them all and ran out of memory.
 - Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time
   that is not one, throws when it is made, as it does unheld. It was taken, and threw from the
   hold's `free()`, losing every call made after it. A call that still throws as the hold is freed

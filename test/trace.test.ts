@@ -270,6 +270,7 @@ describe('trace', () => {
     m.cue({ patch: ramp, loop: true });
     m.sync(200);
     expect(() => m.trace(300, 100)).toThrow(RangeError);
+    expect(() => m.trace(0, 1000, { grid: 1e-9 })).toThrow(/at most/);
     const run = m.trace(100, 300, { grid: 50 }).of(a, 'x');
     expect(run.exact).toBe(false);
     expect(run.at).toEqual([100, 150, 200, 250, 300]);
