@@ -1,5 +1,6 @@
 import { inBound } from './bound.js';
 import { slotOf } from './chain.js';
+import { numericOf } from './channels.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, restsAt } from './fold.js';
@@ -14,6 +15,7 @@ import { reading } from './reading.js';
 import { isRested } from './record.js';
 import type { Subject } from './subject.js';
 import type { Sample } from './trail.js';
+import { shortWay } from './turns.js';
 import type { Channel, Patch, Signal } from './types.js';
 import { checkWrites, type Voice } from './voice.js';
 import { Primed } from './weigh.js';
@@ -408,7 +410,8 @@ const still = (a: number, b: number) => nearly(a, b, 1e-12);
 
 /**
  * How fast each numeric channel this voice writes was moving, from the subject's last two probed
- * poses, in units per ms. A channel or axis that stayed put has none, so its first segment runs
+ * poses, in units per ms: an angle the short way round, and a quaternion from the earlier pose's
+ * sign nearer the later. A channel or axis that stayed put has none, so its first segment runs
  * as written rather than easing out of a standstill. Undefined where nothing was moving, or with
  * fewer than two poses on record.
  */
@@ -430,15 +433,23 @@ export function slopeFor<I, O>(
     const b = now[key];
     if (typeof a === 'number' && typeof b === 'number') {
       if (still(a, b)) continue;
-      slope[key] = (b - a) / dt;
+      const turn = numericOf(this.kit[key] as Channel<unknown>)?.turn;
+      slope[key] = (turn === undefined ? b - a : shortWay(b - a, turn)) / dt;
       moving = true;
     } else if (Array.isArray(a) && Array.isArray(b) && a.length === b.length) {
+      let sign = 1;
+      if (numericOf(this.kit[key] as Channel<unknown>)?.signless === true) {
+        let dot = 0;
+        for (let i = 0; i < b.length; i++) dot += (a[i] as number) * (b[i] as number);
+        if (dot < 0) sign = -1;
+      }
       let moved = false;
       const axes = b.map((v, i) => {
         const was = a[i];
-        if (typeof v !== 'number' || typeof was !== 'number' || still(was, v)) return undefined;
+        if (typeof v !== 'number' || typeof was !== 'number') return undefined;
+        if (still(sign * was, v)) return undefined;
         moved = true;
-        return (v - was) / dt;
+        return (v - sign * was) / dt;
       });
       if (!moved) continue;
       slope[key] = axes;

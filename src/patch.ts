@@ -354,23 +354,29 @@ function read(
   if (!Number.isFinite(e0)) return value;
   const bend = (s: number, a: number, z: number) =>
     (s * duration * len - (z - a) * e0) * u * (1 - u) * (1 - u);
-  if (typeof value === 'number' && typeof slope === 'number')
-    return value + bend(slope, aValue as number, bValue as number);
+  // The segment's travel is the lerp's own, from its ends: an angle's short way round, or a
+  // quaternion's b at the sign nearer a, not the stops as written.
+  const by = track.lerp ?? lerp;
+  const own = into !== undefined || (by !== undefined && by !== (lerpNumber as Lerp));
+  let ends: [unknown, unknown] | undefined;
+  const endsOf = (): [unknown, unknown] => {
+    const at = (t: number): unknown =>
+      into !== undefined
+        ? into(undefined, aValue, bValue, t)
+        : by
+          ? by(aValue as never, bValue as never, t)
+          : interpolate(aValue, bValue, t);
+    ends = [at(0), at(1)];
+    return ends;
+  };
+  if (typeof value === 'number' && typeof slope === 'number') {
+    if (!own) return value + bend(slope, aValue as number, bValue as number);
+    const [a0, z1] = endsOf();
+    return value + bend(slope, a0 as number, z1 as number);
+  }
   if (Array.isArray(value) && Array.isArray(slope)) {
     const out = value === lastRead.wrote ? value : new Array<unknown>(value.length);
-    // A stop shorter than the channel reads its missing axes as the lerp does, at each end.
-    let ends: [unknown, unknown] | undefined;
-    const endsOf = (): [unknown, unknown] => {
-      const by = track.lerp ?? lerp;
-      const at = (t: number): unknown =>
-        into !== undefined
-          ? into(undefined, aValue, bValue, t)
-          : by
-            ? by(aValue as never, bValue as never, t)
-            : interpolate(aValue, bValue, t);
-      ends = [at(0), at(1)];
-      return ends;
-    };
+    if (own) endsOf();
     for (let i = 0; i < value.length; i++) {
       const v = value[i];
       const s = slope[i];
@@ -378,8 +384,9 @@ function read(
         out[i] = v;
         continue;
       }
-      let a = (aValue as unknown[])[i];
-      let z = (bValue as unknown[])[i];
+      // A stop shorter than the channel reads its missing axes as the lerp does, at each end.
+      let a = ends === undefined ? (aValue as unknown[])[i] : undefined;
+      let z = ends === undefined ? (bValue as unknown[])[i] : undefined;
       if (typeof a !== 'number' || typeof z !== 'number') {
         const [a0, z1] = ends ?? endsOf();
         a = (a0 as unknown[] | undefined)?.[i];

@@ -198,3 +198,60 @@ describe('quat', () => {
       }
     });
 });
+
+describe.each([true, false])('a retarget from a turning subject, lanes %s', (lanes) => {
+  const wrap = (d: number) => d - 360 * Math.round(d / 360);
+  const degOf = (v: unknown) => {
+    const q = v as number[];
+    return (2 * Math.atan2(q[2] as number, q[3] as number) * 180) / Math.PI;
+  };
+  type P = { r: unknown };
+  // Spins at 0.2°/ms from `base`, then takes over from where it is to 20° on, over 500 ms.
+  const takeover = (
+    channel: Channel<unknown>,
+    as: (deg: number) => unknown,
+    read: (v: unknown) => number,
+    base: number,
+  ): number[] => {
+    const m = mix<string, P>(kit<P>({ r: channel }), { lanes });
+    const spin = m.cue({
+      patch: patch<string, P>(0, () => ({ r: as(base + 0.2 * m.now) }), { writes: ['r'] }),
+      role: 'r',
+    });
+    let t = 0;
+    for (; t <= 144; t += 16) {
+      m.sync(t);
+      m.probe('a');
+    }
+    const start = read(m.probe('a').r);
+    spin.weight = 0;
+    m.cue({
+      patch: keys<string, P>(500, [{ at: 1, delta: { r: as(base + 0.2 * 144 + 20) } }], {
+        ease: 'linear',
+      }),
+      from: 'current',
+      role: 'r',
+    });
+    const rel: number[] = [];
+    for (; t <= 144 + 512; t += 64) {
+      m.sync(t);
+      rel.push(wrap(read(m.probe('a').r) - start));
+    }
+    return rel;
+  };
+  // From 53° nothing crosses 180°; from 153° the subject crosses it just before the takeover, and
+  // from 160° the stop is written past it, in the next turn.
+  it.each([
+    ['an angle', angle() as Channel<unknown>, (d: number) => d, (v: unknown) => v as number],
+    ['a quat', quat() as Channel<unknown>, (d: number) => about(2, d), degOf],
+  ])('takes over %s across 180° as it does away from it', (_, channel, as, read) => {
+    const plain = takeover(channel, as, read, 53);
+    for (const d of plain) expect(Math.abs(d)).toBeLessThan(25);
+    for (const base of [153, 160]) {
+      const crossing = takeover(channel, as, read, base);
+      crossing.forEach((d, i) => {
+        expect(d, `from ${base}, read ${i}`).toBeCloseTo(plain[i] as number, 6);
+      });
+    }
+  });
+});

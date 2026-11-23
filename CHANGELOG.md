@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice cued `from: 'current'` on an `angle()` or a `quat()` takes over a subject turning across
+  180° at the speed it was turning, as it does anywhere else; it read the wrap as a spin of
+  thousands of degrees a second, and a stop written in the next turn as most of a turn to go, and
+  swung wildly off the short way.
 - An `angle()` a whole number of turns from its rest, 360 for one resting at 0, is at rest, and a
   `quat()` at minus the identity is too: `atRest` said no, and a `fade({ at: 'rest' })` on a voice
   ending there stayed `fading` for good.
