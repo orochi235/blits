@@ -491,10 +491,9 @@ describe('a mix running back, held at the earliest moment history reaches', () =
     m.cue({ patch: glow, subjects: ['x'] });
     m.sync(32);
     m.rate = -1;
-    let t = 32;
-    for (let i = 0; i < 1000; i++) m.sync((t += 16));
+    for (let i = 1; i <= 1000; i++) m.sync(32 + 16 * i);
     const seq = m.seq;
-    for (let i = 0; i < 1000; i++) m.sync((t += 16));
+    for (let i = 1001; i <= 2000; i++) m.sync(32 + 16 * i);
     expect(m.seq).toBe(seq);
   });
 });
