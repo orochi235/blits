@@ -30,6 +30,9 @@ oscillator the shell borrows from a pool of six, and hands each hit to `take` be
 its time on the audio clock (`src/sound.ts`). A hit names only a bang or a crackle; `take` reads
 the shell off the hit's `subjects` and pans the sound by where it is and sizes a bang by its stars.
 A shell launched while all six whistles are in the air rises silently and still bangs.
+`src/launch.ts` gives a shell's whistle back to the pool once the shell is over, but keeps its
+sparks attached for the show's 30 s of history, so a seek back into it bursts again and borrows a
+whistle again for a replayed rise.
 
 Each frame, `src/frame.ts` syncs the mix and launches on its clock, then `src/main.ts` writes both
 drivers. The quarks driver emits for the mix time since its last write, and the sparks age by the

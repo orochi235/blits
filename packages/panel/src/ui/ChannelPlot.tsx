@@ -67,7 +67,9 @@ export function ChannelPlot({
             className={ser.thick ? 'bp-plot-thick' : 'bp-plot-thin'}
             d={pathOf(times, ser.values, x, y)}
             stroke={ser.color ?? hueColor(ser.hue)}
-          />
+          >
+            <title>{ser.label ?? ser.id}</title>
+          </path>
         ))}
         <line className="bp-plot-playhead" x1={px} x2={px} y1={0} y2={height} />
       </Plot2D>

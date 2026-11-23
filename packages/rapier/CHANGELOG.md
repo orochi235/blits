@@ -10,6 +10,11 @@ section here.
 
 - `@msb235/blits` is a peer at `^1.3.0`, where it was `^1.1.0`: the first engine with `bind`.
 
+### Fixed
+
+- A seek back into an authored hold whose voices had already finished holds the body again on
+  the replay, where the world used to simulate it freely.
+
 ## 0.7.4
 
 ### Changed

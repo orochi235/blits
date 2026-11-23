@@ -72,7 +72,7 @@ export const panOf = (shell: Shell): number => shell.x / HALF_WIDTH;
 export const sizeOf = (shell: Shell): number => shell.stars / 160;
 
 /** How far back the show's history reaches, so the panel or the DevTools extension can seek it. */
-const HISTORY_MS = 30_000;
+export const HISTORY_MS = 30_000;
 
 /** The show's mix, named and with history whether or not a panel is mounted. */
 export function createShow(): Mix<Shell, Pose> {

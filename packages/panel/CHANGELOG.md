@@ -6,6 +6,15 @@ This package follows [semver](https://semver.org) and shares the engine's versio
 everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- A mounted panel forgets number and string subjects once no mix lists them, where it used to
+  keep every one it had seen.
+- The `weightOf` plot draws a line for each voice when two share a name, where it used to draw
+  one. `Series` takes an optional `label`, which `ChannelPlot` shows on hover.
+
 ## 1.4.0
 
 ### Changed
