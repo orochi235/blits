@@ -129,4 +129,22 @@ describe('a Player whose mix throws on a pull', () => {
       line: null,
     });
   });
+
+  it('reads a throwing solo as no frame and reports it on the voice', () => {
+    const c = fnVoice(['glow'], '(p) => ({ glow: p })');
+    const p = playerOf(c);
+    step(p, 3);
+    const solo = p.built.solos.get('a');
+    if (!solo) throw new Error('no solo');
+    solo.pull = () => {
+      throw new Error('boom');
+    };
+    expect(() => p.solo('a', Player.columnsFor(subjects.length))).not.toThrow();
+    expect(p.built.errors).toContainEqual({
+      voice: 'a',
+      field: 'patch',
+      error: 'boom',
+      line: null,
+    });
+  });
 });

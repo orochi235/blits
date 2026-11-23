@@ -4,7 +4,7 @@ import { close, compile } from './compile';
 import type { Composition } from './composition';
 import { FRAME } from './frame';
 import type { Mixed } from './kit';
-import { Player } from './player';
+import { Player, tryPull } from './player';
 import type { Subject } from './stage';
 
 /** The channels a track can draw as a line, each read as one number off a pose. */
@@ -46,7 +46,7 @@ export function coursesOf(
     for (let f = 0; f <= last && k < n; f++) {
       const host = f * FRAME;
       transport.sync(host);
-      for (const m of [mix, ...solos.values()]) m.pull(subjects, columns);
+      for (const m of [mix, ...solos.values()]) tryPull(m, subjects, columns);
       for (; k < n && frameOf(k) === f; k++) {
         at.push(host);
         for (const [id, h] of weighed) {
