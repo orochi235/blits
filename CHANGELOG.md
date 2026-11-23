@@ -13,9 +13,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - With lanes on, a motion voice (tween, spring, glide) no longer starts for a subject that was
   only probed at weight 0, as at a fade's first frame, on a later frame that probes other
   subjects; it called `from`, made a `read`, and kept `inert` false where lanes off did none.
-- With lanes on, a motion voice weighted by a signal keeps the value a probe already read this
-  frame when the motion is `set`, `push`ed or sent `to` before the next probe, as lanes off does;
-  the change showed at once.
+- With lanes on, a motion voice weighted by a signal keeps the value a probe already read at this
+  time when the motion is `set`, `push`ed or sent `to` before the next probe, in the same frame or
+  after a sync again at the same time, as lanes off does; the change showed at once.
 - `inert` reads false after a handle's `seek` takes a motion voice (tween, spring, glide) that had
   landed back into its stretch; it stayed true while the motion moved again.
 - With lanes on, an `around` ball moved between two probes of one frame changes the weights the

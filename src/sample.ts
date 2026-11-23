@@ -92,10 +92,13 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
         data[o + Row.WEIGHT] = 0;
         continue;
       }
-      // As a keys lane's: this read is where the next one's dt counts from, and a probe reads again.
-      rec.probed = lanes.now;
-      rec.seeks = seeks;
-      rec.delta = null;
+      // As a keys lane's: this read is where the next one's dt counts from, and a probe reads again,
+      // unless one at this time already read it, whose value `move` keeps as the general path does.
+      if (rec.delta === null || rec.probed !== lanes.now || rec.seeks !== seeks) {
+        rec.probed = lanes.now;
+        rec.seeks = seeks;
+        rec.delta = null;
+      }
       w = arg[Arg.WEIGHT] as number;
     } else if (parts) w = weighed(voice.weight, lane.fade, lanes.parting(voice, slot));
     else if (flat) w = whole;
