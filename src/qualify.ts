@@ -107,11 +107,8 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
   lanes.balls = [];
   present.forEach((v, i) => {
     v.offLane = voices.has(v.id) ? undefined : off(v, i);
-    const ball = v.offLane === undefined ? carried(v.spec.weight) : undefined;
-    if (ball !== undefined && !lanes.balls.includes(ball)) lanes.balls.push(ball);
+    if (v.offLane === undefined) holdBall(lanes, v);
   });
-  // Unfilled until the next fill snaps them, so `current` cannot match a stale place.
-  lanes.ballsAt.fill(Number.NaN);
   for (const lane of lanes.lanes) if (!voices.has(lane.voice.id)) leave(lanes, lane);
   const kept: Lane<I, O>[] = [];
   let crowded = 0;
@@ -377,6 +374,7 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
       return qualify();
     if (crowdable(v)) join(lanes, v, undefined, undefined, lanes.crowds);
     else enlane(lanes, v);
+    holdBall(lanes, v);
   }
   if (left.length > 0 && !settleLeft(lanes, left)) return qualify();
   compactSparse(lanes);
@@ -448,6 +446,17 @@ function placeAll<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
     if (lane.idle) reach(lanes, slot, 1);
   }
   lane.every = true;
+}
+
+/**
+ * Has `current` watch the `around` ball weighing a voice just laned or crowded, until a fill
+ * snaps where it stands.
+ */
+function holdBall<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
+  const ball = carried(v.spec.weight);
+  if (ball === undefined || lanes.balls.includes(ball)) return;
+  const i = lanes.balls.push(ball) - 1;
+  if (4 * i < lanes.ballsAt.length) lanes.ballsAt[4 * i] = Number.NaN;
 }
 
 /**

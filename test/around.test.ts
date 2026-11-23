@@ -233,4 +233,47 @@ describe('a ball moved between two probes of one frame', () => {
           };
           expect(read(true)).toEqual(read(false));
         });
+
+  // A voice cued onto lanes that already run is laned without a full qualify.
+  for (const named of [false, true])
+    it(`reads the same lanes on or off for a voice cued onto running lanes (named ${named})`, () => {
+      const read = (lanes: boolean) => {
+        const m = plain<{ id: number }, { x: number }>(kit({ x: mul() }), { lanes });
+        const parts = Array.from({ length: 10 }, (_, id) => ({ id }));
+        const xy = new Float64Array(20);
+        for (let j = 0; j < 10; j++) {
+          xy[2 * j] = j % 7;
+          xy[2 * j + 1] = Math.floor(j / 7);
+        }
+        m.plot(parts, xy);
+        const ball = { x: 3, y: 3, r: 2.5 };
+        m.cue({
+          patch: tween<{ id: number }, { x: number }>('x', { from: 0.7, to: 0.7, ms: 100 }),
+          subjects: [parts[0] as { id: number }],
+          start: 200,
+        });
+        m.sync(0);
+        m.probe(parts[9] as { id: number });
+        m.sync(16);
+        m.cue({
+          patch: tween<{ id: number }, { x: number }>('x', {
+            from: (s) => 1.7 + s.id * 0.01,
+            to: 0.35,
+            ms: 400,
+          }),
+          weight: m.around(ball),
+          ...(named ? { subjects: parts } : {}),
+        });
+        m.probe(parts[2] as { id: number });
+        m.probe(parts[9] as { id: number });
+        m.sync(32);
+        const out = [m.probe(parts[2] as { id: number }).x];
+        ball.x = 0.5;
+        ball.y = 7;
+        ball.r = 4;
+        out.push(m.probe(parts[9] as { id: number }).x);
+        return out;
+      };
+      expect(read(true)).toEqual(read(false));
+    });
 });
