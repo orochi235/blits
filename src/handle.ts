@@ -110,13 +110,13 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   /**
-   * The voice a write reaches: none while a history store holds it, or a seek back to before its
-   * cue has it waiting. It had left, or was yet to be cued, when the host made the write, as on
-   * replay, so the write changes nothing and the tape does not take it.
+   * The voice a write reaches: none once it has left, while a history store holds it, or while a
+   * seek back to before its cue has it waiting. It had left, or was yet to be cued, when the host
+   * made the write, as on replay, so the write changes nothing and the tape does not take it.
    */
   get #cued(): Voice<I, O> | null {
     const voice = this.#voice;
-    return voice === null || voice.parked ? null : voice;
+    return voice === null || voice.parked || voice.state === 'done' ? null : voice;
   }
 
   set weight(w: number) {

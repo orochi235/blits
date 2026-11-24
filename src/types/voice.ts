@@ -449,7 +449,8 @@ export interface SubjectFade<I = unknown> {
 }
 
 /**
- * The live controls on one voice, returned by `cue`.
+ * The live controls on one voice, returned by `cue`. Once the voice is done, a write to them is
+ * ignored.
  *
  * @category voice
  */

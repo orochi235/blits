@@ -313,3 +313,24 @@ describe('a motion call on a done voice', () => {
       expect(m.probe(d).x).toBe((seen[7] as { x: number }).x);
     });
 });
+
+describe('a handle whose voice has left', () => {
+  for (const history of [false, true])
+    it(`leaves the voice as it is, as fade and to do${history ? ', under history' : ''}`, () => {
+      const m = mix<Part, Pose>(K, history ? { history: { ms: 10_000, tape } } : {});
+      m.sync(0);
+      const once = patch<Part, Pose>(100, (ph) => ({ x: ph + 1 }), { writes: ['x'] });
+      const h = m.cue({ patch: once, loop: false });
+      m.sync(50);
+      m.sync(200);
+      expect(h.state).toBe('done');
+      h.seek(10);
+      h.rate = 2;
+      h.ramp(3, 100);
+      h.weight = 0.5;
+      h.release();
+      expect([h.state, h.weight, h.rate, h.elapsed]).toEqual(['done', 1, 1, Number.NaN]);
+      m.sync(216);
+      expect(m.probe(a).x).toBe(0);
+    });
+});
