@@ -2,7 +2,7 @@ import type { Dims, RapierModule, RapierWorld } from './rapier.js';
 
 /**
  * A world as the world subject's state. A copy for history holds only `bytes`, Rapier's snapshot,
- * so a copy blits lets go of is plain memory; `worldOf` rebuilds the world on first use.
+ * so a copy blits lets go of is plain memory; `Worlds.of` rebuilds the world on first use.
  */
 export interface State {
   bytes: Uint8Array | null;
@@ -23,13 +23,56 @@ export type Entry = { at: number; seq: number; key: number } & (
   | { kind: 'impulse'; v: readonly number[] }
 );
 
-/** The state's world, rebuilt from its snapshot where it has none yet. */
-export function worldOf(state: State, rapier: RapierModule): RapierWorld {
-  if (state.world === null) {
-    state.world = rapier.World.restoreSnapshot(state.bytes as Uint8Array);
-    state.bytes = null;
-  }
-  return state.world;
+/**
+ * The worlds a physics has made, which Rapier keeps outside JavaScript's memory until freed. Each
+ * state holding one is listed here till its world is freed or packed back into a snapshot.
+ */
+export interface Worlds {
+  /** A state holding a new, empty world. */
+  create(gravity: unknown): State;
+  /** The state's world, rebuilt from its snapshot where it has none yet. */
+  of(state: State): RapierWorld;
+  /** Puts every world but `live`'s back into a snapshot and frees it; a later `of` rebuilds it. */
+  keep(live: State | undefined): void;
+  /** Frees every world; a state it held one in can no longer be read. */
+  free(): void;
+}
+
+/** Makes a `Worlds` from Rapier's module. */
+export function createWorlds(rapier: RapierModule): Worlds {
+  const holding = new Set<State>();
+  return {
+    create(gravity) {
+      const world = new rapier.World(gravity as never);
+      const state: State = { bytes: null, world, handles: new Map(), t: Number.NaN };
+      holding.add(state);
+      return state;
+    },
+    of(state) {
+      if (state.world === null) {
+        state.world = rapier.World.restoreSnapshot(state.bytes as Uint8Array);
+        state.bytes = null;
+        holding.add(state);
+      }
+      return state.world;
+    },
+    keep(live) {
+      for (const s of holding) {
+        if (s === live || s.world === null) continue;
+        s.bytes = s.world.takeSnapshot();
+        s.world.free();
+        s.world = null;
+        holding.delete(s);
+      }
+    },
+    free() {
+      for (const s of holding) {
+        s.world?.free();
+        s.world = null;
+      }
+      holding.clear();
+    },
+  };
 }
 
 /** A copy sharing nothing with `state`, holding the world as a snapshot. */

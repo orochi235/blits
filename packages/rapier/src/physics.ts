@@ -1,7 +1,6 @@
 import {
   bind,
   type Handle,
-  type HistoryStore,
   type Kit,
   type Mix,
   type MixOptions,
@@ -14,7 +13,18 @@ import {
 } from '@msb235/blits';
 import type { Pose2, Pose3 } from './channels.js';
 import { dimsOf, type Goal, type Placed, type RapierModule, type RapierWorld } from './rapier.js';
-import { applyLog, copy, type Entry, insert, pack, type State, unpack, worldOf } from './world.js';
+import { FRAMES, type Pages, paging, physicsStore } from './store.js';
+import { madeSince, standOf } from './tape.js';
+import {
+  applyLog,
+  copy,
+  createWorlds,
+  type Entry,
+  insert,
+  pack,
+  type State,
+  unpack,
+} from './world.js';
 
 /** Each pushed body's force, then torque, by key. */
 type Pushes = Record<number, number[]>;
@@ -83,58 +93,18 @@ export interface Physics<O, H> {
   step(): void;
   /** The world as it stands after the last `sync`, for reading. A change made to it is lost at the next seek. */
   world(): RapierWorld | undefined;
+  /**
+   * Closes the mix and frees every Rapier world it holds, which JavaScript's collector cannot.
+   * Call it in place of `mix.close` when done; a closed physics no longer steps. Closing it again
+   * does nothing.
+   */
+  close(): void;
 }
 
 const ROLE = 'physics';
 
 const copyOf = (r: number | readonly number[]): number | number[] =>
   typeof r === 'number' ? r : [...r];
-
-/** The subject key the world's frame records go under in a history store, on the `host` stream. */
-const FRAMES = 'blits-rapier frames';
-
-/** A world paging its frames through a store: whose they are, and how to take them back. */
-interface Pages {
-  ours(r: Paged): boolean;
-  restore(records: readonly Paged[], from: number): void;
-  name: string;
-}
-
-const paging = new WeakMap<HistoryStore, Set<Pages>>();
-
-/**
- * Wraps a history store so the worlds of physics mixes on a transport page their log of each
- * frame's pushes through it, and get it back on `prepare`. Make the transport with
- * `history: { ..., store: physicsStore(store) }`; a mix made alone wraps its own store.
- */
-export function physicsStore(store: HistoryStore): HistoryStore {
-  const worlds = new Set<Pages>();
-  const wrapped: HistoryStore = {
-    page: (out) => store.page(out),
-    cut: (seq) => store.cut(seq),
-    async load(t) {
-      const all = await store.load(t);
-      for (const w of worlds) {
-        // A replay to t starts from the world's latest copy at or before it, which needs the frames from there.
-        let from = Number.NEGATIVE_INFINITY;
-        for (const r of all)
-          if (
-            r.mix === w.name &&
-            r.stream === 'snap' &&
-            r.subject === 'world' &&
-            r.at <= t &&
-            r.at > from
-          )
-            from = r.at;
-        if (from === Number.NEGATIVE_INFINITY) from = t;
-        w.restore(from < t ? await store.load(from) : all, from);
-      }
-      return all.filter((r) => !(r.stream === 'host' && r.subject === FRAMES));
-    },
-  };
-  paging.set(wrapped, worlds);
-  return wrapped;
-}
 
 /** Makes a mix that holds a Rapier world, stepped on its `stepMs` clock and replayed by its history. */
 export function physics<O extends Pose2 | Pose3, H extends object = Record<string, never>>(
@@ -145,6 +115,8 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   const dims = dimsOf(rapier);
   const g = gravity ?? (dims.n === 2 ? [0, -9.81] : [0, -9.81, 0]);
   const stepMs = rest.stepMs ?? 1000 / 60;
+  // Two frames' mix times this close are one frame played again, rounded apart.
+  const EPS = stepMs / 1000;
   const name = rest.name ?? 'physics';
   const transport = rest.transport;
   // A mix naming no history keeps the one a debugger gives mixes made from now on.
@@ -177,7 +149,8 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       .map((r) => ({ ...(r.data as Omit<Frame, 'at' | 'seq'>), at: r.at, seq: r.seq }));
     pushLog.unshift(...older);
   };
-  if (store !== undefined) paging.get(store)?.add({ ours, restore, name });
+  const pages: Pages = { ours, restore, name };
+  if (store !== undefined) paging.get(store)?.add(pages);
   // Every subject is the driver's own: the world, each body and each body's controls.
   const keys = new WeakMap<object, string>();
   const m = mix<object, O, H>(kit, {
@@ -202,14 +175,18 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   };
   let seen: State | undefined;
   let live: State | undefined;
+  const worlds = createWorlds(rapier);
+  let closed = false;
 
   const world = patch<object, O, State, H>(
     0,
     (_p, _s, setting) => {
       const s = setting.state;
+      // A closed physics has freed its worlds, which a debugger probing every subject would reach.
+      if (closed) return {};
       // A world first read before it has stepped holds the bodies added before then.
       if (Number.isNaN(s.t)) {
-        applyLog(s, worldOf(s, rapier), log, setting.timestamp, 0, dims);
+        applyLog(s, worlds.of(s), log, setting.timestamp, 0, dims);
         s.t = setting.timestamp;
       }
       seen = s;
@@ -217,14 +194,10 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
     },
     {
       writes: [],
-      state: () => ({
-        bytes: null,
-        world: new rapier.World(dims.vector(g) as never),
-        handles: new Map(),
-        t: Number.NaN,
-      }),
+      state: () => worlds.create(dims.vector(g)),
       step: (s, dt, _subject, setting) => {
-        const w = worldOf(s, rapier);
+        if (closed) return;
+        const w = worlds.of(s);
         w.timestep = dt / 1000;
         applyLog(s, w, log, setting.timestamp, dt / 2, dims);
         const frame = frameAt(setting.timestamp - dt / 2);
@@ -276,7 +249,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       if (setting.timestamp === m.now) fresh();
       const handle = live?.handles.get((subject as Body<O, H>).key);
       if (live === undefined || handle === undefined) return {};
-      const b = worldOf(live, rapier).getRigidBody(handle);
+      const b = worlds.of(live).getRigidBody(handle);
       return { position: dims.position(b), rotation: dims.rotation(b) } as Partial<O>;
     },
     { writes: ['position', 'rotation'] as (keyof O)[] },
@@ -287,10 +260,21 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   // Each body's voices in the simulation's role besides its own, and its pose the last frame they held it.
   const authored = new Map<Body<O, H>, Handle<object>[]>();
   const held = new Map<Body<O, H>, { pose: Placed; at: number }>();
+  const bodies = new Map<number, Body<O, H>>();
   const out = m.pose();
   const shown = m.pose();
   // Read at the end of each frame, for the next frame's steps to apply.
   let holding: Holds = {};
+  /** Takes up the holds a logged frame applies, read at the end of the frame at `at`. */
+  const adopt = (holds: Holds, at: number) => {
+    holding = holds;
+    held.clear();
+    for (const k in holds) {
+      const body = bodies.get(+k);
+      const h = holds[k];
+      if (body !== undefined && h !== undefined) held.set(body, { pose: h.now, at });
+    }
+  };
   // When each finished authored voice was first seen done. A seek back can make it play again, so
   // it is let go only once history can no longer reach its end.
   const doneAt = new Map<Handle<object>, number>();
@@ -343,20 +327,31 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   let from = Number.NEGATIVE_INFINITY;
   // Sought since the world was last read, so the next read steps it to the time sought.
   let stale = false;
+  // The tape as the last frame or seek left it. A call it makes again lands in the sync of the
+  // frame it was made after, before that frame's probe, where the host made it after the probe.
+  let taped = standOf(m.tape);
   m.onSeek((s) => {
+    taped = standOf(m.tape);
     // What was logged after the frame kept is from a future the tape makes again.
     if (s.back)
       for (let i = log.length - 1; i >= 0; i--)
         if ((log[i] as Entry).seq > s.frame) log.splice(i, 1);
     from = s.at;
-    holding = {};
-    held.clear();
+    // The holds and their speed as the frame sought left them, logged by the frame after it.
+    let n = 0;
+    while (n < pushLog.length && (pushLog[n] as Frame).at <= s.at + EPS) n++;
+    const after = pushLog[n];
+    if (after === undefined) adopt({}, s.at);
+    else adopt(after.holds, Math.min(pushLog[n - 1]?.at ?? s.at, s.at));
     stale = true;
   });
   const read = () => {
+    if (closed) return;
     stale = false;
     m.probe(WORLD);
     live = seen;
+    // A seek plays on from a copy, so the world it played before is done with.
+    worlds.keep(live);
   };
   const fresh = () => {
     if (stale) read();
@@ -370,13 +365,27 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
     m.call(label, () => insert(log, entry(now(), m.seq)));
 
   const step = () => {
+    if (closed) return;
     // Cued before the mix has a time, the world would catch up from mix time 0 on its first step.
     if (!started) {
       started = true;
       m.cue({ patch: world, subjects: [WORLD] });
     }
-    const pushes: Pushes = {};
-    const goals: Goals = {};
+    const at = m.now;
+    const seq = m.seq;
+    const was = taped;
+    taped = standOf(m.tape);
+    const made = was === undefined || taped === undefined ? 'none' : madeSince(was, taped);
+    // A host call since the last frame starts a future the frames logged ahead are not from.
+    if (made === 'host') {
+      let n = pushLog.length;
+      while (n > 0 && (pushLog[n - 1] as Frame).at > from) n--;
+      pushLog.length = n;
+    }
+    // On a frame where the tape made calls again, the world takes what the frame read first.
+    const again = made === 'tape' ? pushLog.findIndex((f) => Math.abs(f.at - at) < EPS) : -1;
+    let pushes: Pushes = {};
+    let goals: Goals = {};
     for (const body of driven) {
       const p = m.probe(body.controls, out) as unknown as {
         force: number[];
@@ -394,20 +403,22 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         goals[body.key] = g;
       }
     }
-    const at = m.now;
-    const seq = m.seq;
     if (Number.isNaN(startAt)) startAt = at;
-    // This frame stands for the frames logged after where the mix stood before it, up to its own
-    // time. Those ahead stay for a seek forward, which replays them as the mix's tape does its calls.
-    let end = pushLog.length;
-    while (end > 0 && (pushLog[end - 1] as Frame).at > at) end--;
-    let start = end;
-    while (
-      start > 0 &&
-      ((pushLog[start - 1] as Frame).at > from || (pushLog[start - 1] as Frame).at === at)
-    )
-      start--;
-    pushLog.splice(start, end - start, { at, seq, pushes, holds: holding, goals });
+    const first = pushLog[again];
+    if (first !== undefined) ({ pushes, goals } = first);
+    else {
+      // This frame stands for the frames logged after where the mix stood before it, up to its own
+      // time. Those ahead stay for a seek forward, which replays them as the mix's tape does its calls.
+      let end = pushLog.length;
+      while (end > 0 && (pushLog[end - 1] as Frame).at > at) end--;
+      let start = end;
+      while (
+        start > 0 &&
+        ((pushLog[start - 1] as Frame).at > from || (pushLog[start - 1] as Frame).at === at)
+      )
+        start--;
+      pushLog.splice(start, end - start, { at, seq, pushes, holds: holding, goals });
+    }
     from = at;
     // Stepped before older frames are paged, since a world behind after a seek steps through them.
     read();
@@ -434,6 +445,9 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       if (n > 0) log.splice(0, n);
     }
     holding = holdsAt(at);
+    // The frame after logged the holds as they stood before the calls the tape has made again.
+    const after = first === undefined ? undefined : pushLog[pushLog.indexOf(first) + 1];
+    if (after !== undefined) adopt(after.holds, at);
   };
 
   return {
@@ -463,6 +477,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         },
         drop: () => call('drop body', (at, seq) => ({ at, seq, key, kind: 'drop' })),
       };
+      bodies.set(key, body);
       const self = bind(m, body as object);
       const steer = bind(m, controls);
       keys.set(body, `body ${key}`);
@@ -484,8 +499,19 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
     },
     step,
     world: () => {
+      if (closed) return undefined;
       fresh();
-      return live === undefined ? undefined : worldOf(live, rapier);
+      return live === undefined ? undefined : worlds.of(live);
+    },
+    close() {
+      if (closed) return;
+      closed = true;
+      worlds.free();
+      live = seen = undefined;
+      pushLog.length = 0;
+      log.length = 0;
+      if (store !== undefined) paging.get(store)?.delete(pages);
+      m.close();
     },
   };
 }

@@ -6,6 +6,11 @@ section here.
 
 ## Unreleased
 
+### Added
+
+- `Physics.close()` closes the mix, frees every Rapier world it holds, and takes the physics off
+  its transport's `physicsStore`. Call it in place of `mix.close()`.
+
 ### Changed
 
 - `@msb235/blits` is a peer at `^1.3.0`, where it was `^1.1.0`: the first engine with `bind`.
@@ -14,6 +19,17 @@ section here.
 
 - A seek back into an authored hold whose voices had already finished holds the body again on
   the replay, where the world used to simulate it freely.
+- After a seek back, a call the host made between frames, such as a `drive`, a `cue` or a write to
+  the simulated voice's weight, reaches the world on the frame after it, as it first did, where the
+  replay used to apply it a frame early.
+- A seek into an authored hold keeps the hold and its speed from the frame sought, where the
+  first frame after it placed nothing and the next set the body at rest, so a body let go soon
+  after was released standing still.
+- The README says that a held body is handed back where it was shown, voices outside the
+  simulation's role included, so those voices count twice from then on; it used to say only that
+  they add on top.
+- A world a seek replaces is packed back into a snapshot and freed, where it used to stay
+  allocated in Rapier's memory for the session.
 
 ## 0.7.4
 

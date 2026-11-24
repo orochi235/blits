@@ -7,8 +7,15 @@ import { channels2, type Pose2, physics } from '../src/index.js';
 await R2.init();
 const at = (f: number) => 1000 + (f * 1000) / 60;
 
-/** A ball held at `[4, 0]` by a 500 ms authored voice for `upto` frames, then sought back into the hold if `seek`. */
-function run(seek: boolean, upto = 60) {
+/** Where the world has the ball and how fast it goes. */
+function state(sim: ReturnType<typeof physics<Pose2>>) {
+  const b = (sim.world() as unknown as R2.World).getRigidBody(0);
+  const [t, v] = [b.translation(), b.linvel()];
+  return { x: t.x, y: t.y, r: b.rotation(), vx: v.x, vy: v.y, vr: b.angvel() };
+}
+
+/** A ball held by a 500 ms authored voice at `[4, 0]` for `upto` frames, sought back to 1250 ms if `seek`. */
+function still(seek: boolean, upto = 60) {
   const sim = physics<Pose2>(kit<Pose2>(channels2), {
     rapier: R2,
     history: { ms: 10_000, every: 250, tape },
@@ -29,16 +36,84 @@ function run(seek: boolean, upto = 60) {
     sim.mix.seek(1250);
     for (let f = 1; f <= 45; f++) sim.sync(at(++host));
   }
-  const t = sim.world()?.getRigidBody(0).translation();
-  return { now: sim.mix.now, x: t?.x, y: t?.y };
+  return { now: sim.mix.now, ...state(sim) };
 }
 
 it('replays an authored hold whose voices had finished before a seek back into it', () => {
-  expect(run(true)).toEqual(run(false));
+  expect(still(true)).toEqual(still(false));
 });
 
 it('replays an authored hold sought back while its voice still plays', () => {
-  const a = run(false);
-  const b = run(true, 24);
-  expect({ y: b.y, now: b.now }).toEqual({ y: a.y, now: a.now });
+  expect(still(true, 24)).toEqual(still(false));
+});
+
+/**
+ * With no gravity, a ball carried from x 0 to 2 every 480 ms by an authored voice in the role and
+ * let go at frame 61; given `back`, played to frame 90, sought back to frame `back` and played on.
+ * Each frame from `back` on, as the world has the ball.
+ */
+function carried(back?: number) {
+  const sim = physics<Pose2>(kit<Pose2>(channels2), {
+    rapier: R2,
+    gravity: [0, 0],
+    history: { ms: 10_000, every: 250, tape },
+  });
+  const ball = sim.body(R2.RigidBodyDesc.dynamic(), R2.ColliderDesc.ball(0.5));
+  let shift = 0;
+  const frame = (f: number) => {
+    sim.sync(at(f) + shift);
+    return state(sim);
+  };
+  const out = [];
+  for (let f = 0; f <= 90; f++) {
+    out.push(frame(f));
+    if (f === 0) {
+      ball.simulated.weight = 0;
+      ball.cue({
+        patch: patch<object, Pose2>(480, (u) => ({ position: [u * 2, 0] }), {
+          writes: ['position'],
+        }),
+        role: sim.role,
+        loop: true,
+      });
+    }
+    if (f === 60) ball.simulated.weight = 1;
+  }
+  if (back === undefined) return out;
+  sim.mix.seek(at(back));
+  shift += at(90) - at(back);
+  const replayed = [];
+  for (let f = back + 1; f <= 90; f++) replayed.push(frame(f));
+  return replayed;
+}
+
+it('carries the speed of a hold sought back into through every frame of the replay', () => {
+  const want = carried();
+  expect(want[90]?.vx).toBeGreaterThan(0);
+  expect(carried(28)).toEqual(want.slice(29));
+});
+
+it('hands a body back where it was shown, a voice outside the role included, as the README says', () => {
+  const sim = physics<Pose2>(kit<Pose2>(channels2), {
+    rapier: R2,
+    gravity: [0, 0],
+    history: { ms: 10_000, every: 250, tape },
+  });
+  const ball = sim.body(R2.RigidBodyDesc.dynamic(), R2.ColliderDesc.ball(0.5));
+  sim.sync(at(0));
+  ball.simulated.weight = 0;
+  const hold = ball.cue({
+    patch: patch<object, Pose2>(0, () => ({ position: [4, 0] }), { writes: ['position'] }),
+    role: sim.role,
+  });
+  ball.cue({
+    patch: patch<object, Pose2>(0, () => ({ position: [0, 1] }), { writes: ['position'] }),
+  });
+  for (let f = 1; f <= 10; f++) sim.sync(at(f));
+  const shown = () => [...(sim.mix.probe(ball) as unknown as Pose2).position];
+  expect(shown()).toEqual([4, 1]);
+  ball.simulated.weight = 1;
+  hold.weight = 0;
+  for (let f = 11; f <= 30; f++) sim.sync(at(f));
+  expect(shown()).toEqual([4, 2]);
 });
