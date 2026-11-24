@@ -237,6 +237,20 @@ describe('history with a store', () => {
     }
   });
 
+  it('keeps the calls made before a ramp up from rate 0 once memory pages that rate out', async () => {
+    const scene: Scene = (m, t) => {
+      if (t === 128) {
+        m.cue({ patch: fall });
+        m.rate = 0;
+      }
+      if (t === 160) m.ramp(2, 100);
+    };
+    const frames = every(0, 600, 16);
+    const run = play(scene, frames, paged());
+    await run.m.prepare(32);
+    replays(run, frames, 32);
+  });
+
   for (const lanes of [true, false])
     it(`starts a cue anchored on a mark paged out as it would with every mark in memory${lanes ? '' : ', without lanes'}`, () => {
       const run = (store: boolean) => {

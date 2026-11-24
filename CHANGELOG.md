@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- With a history store, a seek back past memory plays again the calls made before the mix's rate
+  ramped up from 0: once memory paged out the clocks before that ramp, each sync let the tape go
+  of every call made before the ramp began, so a voice cued then never came back.
 - A read ahead past a call the tape holds that refits a span fits it as play did: the read's
   copies numbered their frames from 0, so a child cued in the mix's first frame read as cued in
   the frame the call played in, was laid out again from there, and a staggered child read off.
