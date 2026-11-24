@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `set`, `to` or `push` on a motion voice waits for its time again after a handle `seek` back
+  past it under history, once it is older than `history.ms`: it played early from then on, and a
+  read back disagreed with play.
 - A staggered subject whose voice's clock will never reach it, by its controls then (at rate 0, or
   running back after a handle `seek` sent it before its start), waits for the clock that does: it
   fades in, and a stepping patch steps afresh, from where a later `seek`, `rate` or `ramp` brings

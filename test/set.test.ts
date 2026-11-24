@@ -119,4 +119,23 @@ describe('set', () => {
       m.sync(64);
       expect(m.probe(a).x).toBe(40);
     });
+
+  for (const lanes of [false, true])
+    it(`waits for its time again after a handle seek back past it, though it has left history, lanes ${lanes}`, () => {
+      const run = (put: boolean) => {
+        const s = spring<typeof a, Pose>('x', { from: 0, to: 100 });
+        const m = mix<typeof a, Pose>(K, { lanes, history: { ms: 150 } });
+        const h = m.cue({ patch: s });
+        const xs: number[] = [];
+        for (let t = 0; t <= 320; t += 16) {
+          m.sync(t);
+          if (t === 144 && put) s.set(a, 40);
+          if (t === 208) h.seek(6);
+          xs.push(m.probe(a).x);
+        }
+        return xs;
+      };
+      // Sought back to 6 at 208, the voice is short of the set's 144 through 320.
+      expect(run(true).slice(13)).toEqual(run(false).slice(13));
+    });
 });
