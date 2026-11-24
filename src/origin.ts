@@ -1,4 +1,4 @@
-import { type Clock, elapsedWith, timeWith } from './clock.js';
+import { backsWith, backWith, type Clock, elapsedWith, timeWith } from './clock.js';
 import type { Voice } from './voice.js';
 
 /** A clock a voice ran on before its current one, until its local time `until`. */
@@ -21,10 +21,17 @@ export const MOST = 256;
  */
 export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void {
   const past = voice.clocks;
-  // A voice with neither stagger nor children is only ever asked when its clock read 0.
+  // A voice with neither stagger nor children is only ever asked when its clock read 0, and where
+  // one running back last reached it.
   const reach =
     voice.holding !== null || voice.spec.stagger !== undefined ? Number.POSITIVE_INFINITY : 0;
-  if (past !== null && reached(past, 0) >= reach && reached(past, fresh(voice)) >= reach) return;
+  if (
+    past !== null &&
+    !backsWith(voice) &&
+    reached(past, 0) >= reach &&
+    reached(past, fresh(voice)) >= reach
+  )
+    return;
   const { anchorNow, anchorElapsed, rate, ramp, rebuilds } = voice;
   const n = leftCount(past);
   const left: Past = { anchorNow, anchorElapsed, rate, ramp, until: u, rebuilds, sought, n };
@@ -32,6 +39,23 @@ export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void
   // Down to the latest half, so the copy comes once every MOST / 2 clocks, not on each.
   else if (past.length >= MOST) voice.clocks = [...past.slice(past.length - MOST / 2), left];
   else past.push(left);
+}
+
+/**
+ * The mix time the latest clock a voice left since its last seek ran back to `elapsed` on, before
+ * it was left; NaN where none did.
+ */
+export function pastRunBack<I, O>(voice: Voice<I, O>, elapsed: number): number {
+  const past = voice.clocks;
+  if (past === null) return Number.NaN;
+  for (let i = past.length - 1; i >= 0; i--) {
+    const p = past[i] as Past;
+    if (p.sought) break;
+    if (!backsWith(p)) continue;
+    const t = backWith(p, elapsed);
+    if (t >= p.anchorNow && t <= p.until) return t;
+  }
+  return Number.NaN;
 }
 
 /** How many clocks a voice has left, those let go included. */

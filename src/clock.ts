@@ -239,6 +239,15 @@ export function timeWith(c: Clock, elapsed: number): number {
 }
 
 /**
+ * Whether a clock runs back by its controls: at a rate below 0, or on a ramp between rates neither
+ * of which is above it. A ramp through 0 says neither way until it has turned.
+ */
+export function backsWith(c: Clock): boolean {
+  const r = c.ramp;
+  return r === null ? c.rate < 0 : r.from <= 0 && r.to <= 0 && (r.from < 0 || r.to < 0);
+}
+
+/**
  * The time a clock running back reads `elapsed`: `timeWith` for the clock that reads the negative
  * of this one, which runs forward where this runs back.
  */

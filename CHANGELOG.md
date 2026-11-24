@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A stepping patch frozen before its start, run back past it and then turned by a `rate` or
+  `ramp` write before the next frame, steps to where it reached its start, as it does with no
+  write; it stopped where the frame before had left it, and a seek back to that frame disagreed.
 - A handle's `rate` or `ramp` write after a staggered subject of a stepping patch had started
   steps it on from where it was, where it stepped it again over the time it had already stepped.
 - A `set`, `to` or `push` on a motion voice whose clock stood still, at rate 0, stays out of the

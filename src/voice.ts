@@ -4,6 +4,7 @@ import { type AxisWeights, axisWeights } from './axes.js';
 import type { Blend } from './blend.js';
 import type { Bound } from './bound.js';
 import {
+  backsWith,
   backWith,
   type Clock,
   elapsedWith,
@@ -21,7 +22,7 @@ import type { Leavings } from './leavings.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import { Named, type Recent } from './named.js';
-import { leftCount, type Past, pastAt } from './origin.js';
+import { leftCount, type Past, pastAt, pastRunBack } from './origin.js';
 import {
   childPlayed,
   Holding,
@@ -645,13 +646,9 @@ export class Voice<I, O> {
     return this.owner === null ? t : mixTime(this.owner, t);
   }
 
-  /**
-   * Whether its clock runs back by its controls: at a rate below 0, or on a ramp between rates
-   * neither of which is above it. A ramp through 0 says neither way until it has turned.
-   */
+  /** Whether its clock runs back by its controls: see `backsWith`. */
   get backs(): boolean {
-    const r = this.ramp;
-    return r === null ? this.rate < 0 : r.from <= 0 && r.to <= 0 && (r.from < 0 || r.to < 0);
+    return backsWith(this);
   }
 
   /** Whether its ramp takes its rate through 0, which turns its clock around partway. */
@@ -723,13 +720,17 @@ export class Voice<I, O> {
   }
 
   /**
-   * The mix time its clock ran back to `elapsed` by `now`, by its controls now: where a subject
-   * `elapsed` into it reached its start. NaN where it has not, and for a voice an owner holds.
+   * The mix time its clock last ran back to `elapsed` by `now`, by its controls now or a clock it
+   * left since: where a subject `elapsed` into it reached its start. NaN where it has not, and for
+   * a voice an owner holds.
    */
   ranBackTo(elapsed: number, now: number): number {
-    if (this.beginless || !this.backs || this.owner !== null) return Number.NaN;
-    const t = backWith(this, elapsed);
-    return t >= this.anchorNow && t <= now ? t : Number.NaN;
+    if (this.beginless || this.owner !== null) return Number.NaN;
+    if (this.backs) {
+      const t = backWith(this, elapsed);
+      if (t >= this.anchorNow && t <= now) return t;
+    }
+    return pastRunBack(this, elapsed);
   }
 
   /** Whether it has yet to start at mix time `now`: pending, or fading out from before its start. */
