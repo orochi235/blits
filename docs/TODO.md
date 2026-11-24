@@ -16,20 +16,15 @@ Owner tags:
 
 ## Engine
 
-- **[maintainer] A read ahead cannot see a resting frame it skips** (2026-11-23, replay fuzz program
-  98; 630 and 717 on 2026-11-24, and 620 and 887 shrunk, whose whole programs pass once a read ahead
-  counts a call made before its frame's read as a frame): `fade({ at: 'rest' })` takes a subject out
-  at the first frame its delta equals rest, and a looping keys patch rests at each pass start, so
-  play takes it out only where a frame lands exactly there. A stepped `patch` does at its pass
-  starts too, running back (630) or under a slowed mix (887), and a `wave` at a zero mid-pass (717).
-  A read ahead past that frame reads at known events and the time read, never at the frame, so it
-  still shows the voice. Matching play needs the frames it will play, which a read ahead does not
-  know; decide whether a read ahead should treat every pass start as a frame, or whether this stays
-  a stated limit of the fuzz. Also programs 344, 351, 500, 596 and 619 (2026-11-24, reproduced; each
-  passes with its fade at rest taken out). 596 is 98's case, a wave at its half pass. In the rest
-  the resting frame is the one the fade was called in, which the read ahead stands at as a known
-  event, never as a frame: a wave or keys patch cued at its pass start in that frame (344, 500,
-  619), or a `rate: 0` voice resting from then until a handle `seek` moves it (351).
+- **[maintainer] A read ahead cannot see a resting frame it skips** (2026-11-23, replay fuzz
+  programs 98, 630 and 717, the only programs of 1–1008 still failing on 2026-11-24):
+  `fade({ at: 'rest' })` takes a subject out at the first frame its delta equals rest, and a looping
+  keys patch rests at each pass start, so play takes it out only where a frame lands exactly there.
+  A stepped `patch` does at its pass starts too (630, running back), and a `wave` at a zero
+  mid-pass (717). A read ahead past that frame reads at known events and the time read, never at
+  the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
+  ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
+  whether this stays a stated limit of the fuzz.
 - **[agent] A seek back within memory may miss an announced mark a later one displaced as an end**
   (2026-11-23, reasoned, not reproduced): with a store, memory keeps only the ends of the marks it
   has paged (`endMarks` in `src/paging.ts`) and lets go of one once another takes its place. A mark
