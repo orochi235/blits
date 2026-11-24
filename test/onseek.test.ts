@@ -130,6 +130,55 @@ describe('call', () => {
     expect(d.m.voices()).toHaveLength(2);
   });
 
+  for (const lanes of [true, false]) {
+    it(`keeps what a call that throws made, again after a seek${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+      const dot = {};
+      m.sync(0);
+      m.sync(100);
+      expect(() =>
+        m.call('drv', () => {
+          m.cue({ patch: ramp, subjects: [dot] });
+          throw new Error('drv');
+        }),
+      ).toThrow('drv');
+      m.sync(200);
+      m.sync(300);
+      const live = m.probe(dot).x;
+      const errors = thrownLater(() => {
+        m.seek(50);
+        m.seek(300);
+      });
+      expect(messages(errors)).toEqual(['drv']);
+      expect(m.probe(dot).x).toBe(live);
+      expect(m.voices()).toHaveLength(1);
+    });
+
+    it(`seeks past a call that throws only when made again, throwing it later${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+      const dot = {};
+      m.cue({ patch: ramp, subjects: [dot] });
+      m.sync(0);
+      m.sync(100);
+      let n = 0;
+      m.call('drv', () => {
+        if (n++ === 1) throw new Error('replay');
+      });
+      m.sync(200);
+      m.sync(300);
+      const errors = thrownLater(() => {
+        m.seek(50);
+        m.seek(300);
+      });
+      expect(messages(errors)).toEqual(['replay']);
+      expect(m.now).toBe(300);
+      expect(m.probe(dot).x).toBeCloseTo(0.3);
+      m.seek(50);
+      m.seek(250);
+      expect(n).toBe(3);
+    });
+  }
+
   it('lets go of the calls ahead when the host makes another after a seek back, until switchBranch', () => {
     const d = driven();
     for (let t = 100; t <= 600; t += 100) {

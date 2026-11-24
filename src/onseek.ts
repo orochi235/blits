@@ -57,11 +57,22 @@ export function call<I, O>(this: Mixer<I, O>, label: string, fn: () => void): vo
     fn();
   } finally {
     transport.replaying = was;
+    // What `fn` made before it threw is kept, so it is made again too.
+    recordCall(this, label, fn, from, transport.nextId);
   }
-  const to = transport.nextId;
-  record(this, label, (stage) => {
+}
+
+function recordCall<I, O>(
+  mix: Mixer<I, O>,
+  label: string,
+  fn: () => void,
+  from: number,
+  to: number,
+): void {
+  const transport = mix.transport;
+  record(mix, label, (stage) => {
     // A read ahead holds copies of the mixes, and nothing of what `fn` changes.
-    if (stage.mix(this) !== this) return;
+    if (stage.mix(mix) !== mix) return;
     // What `fn` cues takes the numbers it took the first time, so it sorts among later cues, which
     // the tape makes again with theirs, as it did then.
     const top = transport.nextId;
@@ -70,6 +81,9 @@ export function call<I, O>(this: Mixer<I, O>, label: string, fn: () => void): vo
     transport.idsTop = top;
     try {
       fn();
+    } catch (err) {
+      // Made again, it throws to no host call: the seek or sync playing it goes on.
+      throwLater(err);
     } finally {
       transport.nextId = Math.max(top, transport.nextId);
       transport.idsTo = Number.NaN;

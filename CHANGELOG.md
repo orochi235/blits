@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `call` whose `fn` throws is taped all the same, so what it did before it threw is made again
+  after a seek, where it was lost at the next one. Made again by a seek or a sync, an `fn` that
+  throws no longer fails it: its error is thrown again on a microtask.
 - An `onSeek` listener that seeks again ends the telling of the seek it heard, so the listeners
   after it hear only the seek the mix stands at. They heard the outer seek last, so a driver
   following them took back to a time the mix had left. A listener that throws no longer stops the

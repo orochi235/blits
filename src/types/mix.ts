@@ -431,7 +431,9 @@ export interface Mix<I, O, H = unknown> {
    * calls ahead, it starts a new branch, and what the mix does inside `fn` is part of it, made
    * again with it rather than recorded apart. On a seek back to before it, the driver takes back
    * what `fn` did, by {@link Mix.onSeek | `onSeek`}. A read ahead does not make it. Without a
-   * `history.tape` it only calls `fn`.
+   * `history.tape` it only calls `fn`. An `fn` that throws is kept all the same, with what it did
+   * before it threw, and its error thrown to the host; made again, its error is thrown again on a
+   * microtask, and the seek or sync playing it goes on.
    */
   call(label: string, fn: () => void): void;
   /**
