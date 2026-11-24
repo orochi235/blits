@@ -455,7 +455,6 @@ describe('transport', () => {
       const b = mix<string, { x: number }>(K, { transport: t, lanes });
       t.sync(0);
       const span = b.span({ rate: 0.5, duration: 300, order: 'together' });
-      const shown: number[] = [];
       const seqs: number[] = [];
       // Host times; the last frame is a rebase's, where the mix clock stands still.
       const hosts = [16, 104, 404];
@@ -467,7 +466,7 @@ describe('transport', () => {
         seqs.push(t.seq);
         return b.probe('s').x;
       };
-      hosts.forEach((h, f) => shown.push(frame(h, f, true)));
+      const shown = hosts.map((h, f) => frame(h, f, true));
       // A child the span's fit skips shows its last frame in the frame it is cued in, and no more.
       expect(shown[1]).not.toBe(0);
       expect(shown[2]).toBe(0);
