@@ -10,6 +10,7 @@ import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
 import { nearly } from './nearly.js';
+import { ownerReading } from './origin.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { isRested } from './record.js';
@@ -170,7 +171,7 @@ export function contribution<I, O>(
     // A `from: 'current'` voice takes its base on its first read, silent or not.
     if (voice.built && voice.spec.from === 'current' && held.base === undefined) {
       held.base = this.baseFor(voice, subject);
-      held.slope = this.slopeFor(voice, subject);
+      held.slope = this.slopeFor(voice, subject, now);
     }
   } else if (voice.built) {
     held.phase = phaseOf(elapsed, duration, voice.passes);
@@ -214,7 +215,7 @@ export function keyed<I, O>(
   if (voice.spec.from === 'current') {
     if (held.base === undefined) {
       held.base = this.baseFor(voice, subject);
-      held.slope = this.slopeFor(voice, subject);
+      held.slope = this.slopeFor(voice, subject, this.primed[Primed.NOW] as number);
     }
     base = held.base;
   }
@@ -409,25 +410,35 @@ function lastTwo<I, O>(mix: Mixer<I, O>, subject: I): [Sample, Sample] | undefin
   return [latest, earlier];
 }
 
+/** How many ms a voice's clock runs in a mix ms at mix time `now`, through its owners' clocks. */
+function clockSpeed<I, O>(voice: Voice<I, O>, now: number): number {
+  const owner = voice.owner;
+  if (owner === null) return voice.rateAt(now);
+  return voice.rateAt(ownerReading(owner, now)) * clockSpeed(owner, now);
+}
+
 /** Whether a value read in two frames stayed put, to within rounding. */
 const still = (a: number, b: number) => nearly(a, b, 1e-12);
 
 /**
  * How fast each numeric channel this voice writes was moving, from the subject's last two probed
- * poses, in units per ms: an angle the short way round, and a quaternion from the earlier pose's
- * sign nearer the later. A channel or axis that stayed put has none, so its first segment runs
+ * poses, in units per ms of the voice's clock as it runs at mix time `at`: an angle the short way
+ * round, and a quaternion from the earlier pose's sign nearer the later. A channel or axis that stayed put has none, so its first segment runs
  * as written rather than easing out of a standstill. Undefined where nothing was moving, or with
- * fewer than two poses on record.
+ * fewer than two poses on record, or a clock that is not running forward.
  */
 export function slopeFor<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
+  at: number,
 ): Record<string, unknown> | undefined {
   const two = lastTwo(this, subject);
   if (two === undefined) return undefined;
+  const speed = clockSpeed(voice, at);
+  if (!(speed > 0 && speed < Number.POSITIVE_INFINITY)) return undefined;
   const [latest, earlier] = two;
-  const dt = latest.at - earlier.at;
+  const dt = (latest.at - earlier.at) * speed;
   const now = latest.pose;
   const before = earlier.pose;
   const slope: Record<string, unknown> = {};

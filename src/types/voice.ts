@@ -211,7 +211,11 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   /** @deprecated Renamed `role`. Taken as `role`, with a warning outside production. */
   locus?: string;
 
-  /** A `keys` voice whose first stop reads wherever this subject is now. */
+  /**
+   * A `keys` voice whose first stop reads wherever this subject is now. It leaves at the subject's
+   * speed in mix time, whatever its `rate`; a channel its `delayBy` holds stands still for the
+   * delay first, then leaves at that speed.
+   */
   from?: 'current';
   /**
    * Words a source attaches to this voice. They let its events and its handle be taken as a set.

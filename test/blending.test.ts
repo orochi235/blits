@@ -508,6 +508,57 @@ describe('retarget on interruption', () => {
     expect((b[0] as number) - (a[0] as number)).toBeCloseTo(0.1, 2);
     expect((a[1] as number) - (b[1] as number)).toBeCloseTo(0.05, 6);
   });
+
+  // A subject moving 1 a ms is taken over at mix time 160 by a voice that runs back to where it was.
+  const takeOver = (lanes: boolean, spec: { rate?: number; delay?: number; loop?: number }) => {
+    const m = mix<Part, Pose>(PART, { lanes });
+    const mover = m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: m.now }), { writes: ['crawl'] }),
+      role: 'r',
+    });
+    for (let t = 0; t <= 160; t += 16) {
+      m.sync(t);
+      m.probe(part);
+    }
+    const start = m.probe(part).crawl;
+    mover.weight = 0;
+    const delay = spec.delay;
+    m.cue({
+      patch: keys<Part, Pose>(
+        1000,
+        [{ at: 1, delta: { crawl: start } }],
+        delay === undefined ? {} : { delayBy: () => delay },
+      ),
+      from: 'current',
+      role: 'r',
+      ...(spec.rate === undefined ? {} : { rate: spec.rate }),
+      ...(spec.loop === undefined ? {} : { loop: spec.loop }),
+    });
+    m.sync(160);
+    expect(m.probe(part).crawl).toBeCloseTo(start, 9);
+    // Its speed in the 0.01 ms after mix time `at`.
+    return (at: number) => {
+      m.sync(at);
+      const a = m.probe(part).crawl;
+      m.sync(at + 0.01);
+      return (m.probe(part).crawl - a) / 0.01;
+    };
+  };
+
+  for (const lanes of [true, false]) {
+    const without = lanes ? '' : ', without lanes';
+    it(`leaves at the subject's speed whatever its rate${without}`, () => {
+      for (const rate of [2, 0.5]) expect(takeOver(lanes, { rate })(160)).toBeCloseTo(1, 2);
+    });
+
+    it(`holds a delayed channel still for its delay, then leaves at the subject's speed${without}`, () => {
+      for (const rate of [1, 2]) {
+        const speed = takeOver(lanes, { rate, delay: 500 });
+        expect(speed(160 + 100 / rate)).toBe(0);
+        expect(speed(160 + 500 / rate)).toBeCloseTo(1, 2);
+      }
+    });
+  }
 });
 
 describe('blend between alternatives', () => {

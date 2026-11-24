@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `from: 'current'` voice leaves at the subject's speed whatever its `rate`, where it left at that
+  speed times its rate, and a channel its `delayBy` holds leaves at it once the delay is out, where
+  it left at the speed scaled by the duration over what the delay left of it.
 - A ticker's `stop` called during a frame, from a mix's sync or an `after` callback, stops the
   loop. It was ignored, the frame asking for the next as it ended.
 - A debugger's `watch` callback that throws no longer makes the host's `sync` throw and skip the
