@@ -16,7 +16,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   after a seek, where it was lost at the next one. Made again by a seek or a sync, an `fn` that
   throws no longer fails it: its error is thrown again on a microtask.
 - An `onSeek` listener that seeks again ends the telling of the seek it heard, so the listeners
-  after it hear only the seek the mix stands at. They heard the outer seek last, so a driver
+  after it hear only the seek the mix stands at; so does an `onWake` listener the seek woke that
+  seeks or syncs, where every `onSeek` listener heard the seek it had left. They heard the outer seek last, so a driver
   following them took back to a time the mix had left. A listener that throws no longer stops the
   rest, nor other mixes' on the transport: its error is thrown again on a microtask.
 - A patch's `step` that throws partway through the ticks a `stepMs` frame owes no longer runs the
