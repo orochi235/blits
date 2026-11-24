@@ -16,6 +16,13 @@ Owner tags:
 
 ## Engine
 
+- **[maintainer] A read ahead cannot see a resting frame it skips** (2026-11-23, replay fuzz
+  program 98): `fade({ at: 'rest' })` takes a subject out at the first frame its delta equals rest,
+  and a looping keys patch rests at each pass start, so play takes it out only where a frame lands
+  exactly there. A read ahead past that frame reads at known events and the time read, never at
+  the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
+  ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
+  whether this stays a stated limit of the fuzz.
 - **[agent] A seek back within memory may miss an announced mark a later one displaced as an end**
   (2026-11-23, reasoned, not reproduced): with a store, memory keeps only the ends of the marks it
   has paged (`endMarks` in `src/paging.ts`) and lets go of one once another takes its place. A mark
