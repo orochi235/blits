@@ -145,4 +145,15 @@ describe('a start that is not a number', () => {
     expect(() => m.cue({ patch: p, start: Number.NaN })).toThrow(RangeError);
     expect(() => m.owns({ start: Number.NaN })).toThrow(RangeError);
   });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY])('is refused as an anchor offset: %d', (by) => {
+    type P = { x: number };
+    const m = mix<string, P>(kit<P>({ x: sum() }));
+    const p = keys<string, P>(100, [{ at: 0, delta: { x: 1 } }]);
+    m.cue({ patch: p, name: 'a' });
+    expect(() => m.cue({ patch: p, anchor: { start: { after: 'a', by } } })).toThrow(RangeError);
+    expect(() =>
+      m.cue({ patch: p, anchor: { end: { all: [{ after: 'a' }, { any: [{ with: 'a', by }] }] } } }),
+    ).toThrow(RangeError);
+  });
 });

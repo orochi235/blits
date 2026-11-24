@@ -75,8 +75,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice anchored on its own name follows the last other voice of that name, as one anchored on
   its own tag does, where it was refused as waiting on itself, even one that has left and been
   forgotten. It is still refused when no voice has carried the name.
-- A numeric placement anchor of `NaN` (`anchor: { in: NaN }` and the rest) is refused with a
-  `RangeError`, where the voice waited for good without a word.
+- A numeric placement anchor of `NaN` (`anchor: { in: NaN }` and the rest), or an anchor offset
+  `by` that is not finite, inside `all` and `any` too, is refused with a `RangeError`, where the
+  voice waited for good without a word.
 - A mix dropped from its transport refuses `mute()`, `drop(subject)` and writes through its voices'
   handles, `to`, `push` and `set` among them, as it refused `cue` and `touch`: a mute retired every voice of a mix the transport no
   longer synced.
