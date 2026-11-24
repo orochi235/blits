@@ -22,6 +22,12 @@ Owner tags:
   180° just before a `from: 'current'` takeover reads a speed of about −360° per frame, and the
   voice swings the long way (rotation.test's takeover from 153° on such a channel). One route:
   read the speed through the channel's own lerp, which knows the short way.
+- **[agent] A motion voice sought back into a subject's stagger may go `inert` before the subject
+  is read again** (2026-11-23, unconfirmed whether it is a bug): after a handle `seek` sends a
+  record back before its start, `inert` reads true about 12 ms after the delay runs out, though no
+  probe has read the subject since; the record still showed `since` 100 and `probed` 1600. It
+  behaves the same on main before the 2026-11-23 inert fix. Decide what `inert` should say there,
+  then test it beside "goes inert past the stagger" in `test/motion-edges.test.ts`.
 - **[maintainer] Public renames the 2026-11-09 audit asked about:** `timestamp` on mix-clock
   fields (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a
   Promise); glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the
