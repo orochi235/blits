@@ -87,7 +87,7 @@ export function projectAll(
     copy.slot = mix.slot;
     copy.projecting = true;
     copy.share = mix.share;
-    copy.places = mix.places;
+    copy.places = !ahead && kept ? (mix.places?.backTo(cut) ?? null) : mix.places;
     copies.set(mix, copy);
     if (ahead) copyAhead(mix, copy);
     else if (kept) copyBack(mix, copy, t, cut);

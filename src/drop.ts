@@ -26,7 +26,19 @@ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
   if (this.projecting && !(this.lastPoses instanceof Masked))
     this.lastPoses = new Masked(this.lastPoses);
   if (!this.projecting) {
-    this.places?.drop(subject);
+    const places = this.places;
+    if (places !== null) {
+      const transport = this.transport;
+      if (transport.tape === undefined) places.drop(subject);
+      else {
+        places.prune(transport.keepsFrom());
+        places.drop(subject, {
+          seq: transport.seq,
+          t: transport.now,
+          early: this.moving || !this.looked,
+        });
+      }
+    }
     this.unmet?.(subject);
   }
   this.lastPoses.delete(subject);

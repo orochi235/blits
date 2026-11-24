@@ -1,5 +1,16 @@
+import { type Cut, within } from './cut.js';
 import { Grid } from './grid.js';
 import { Store } from './store.js';
+
+/** An index held for a subject dropped under history, and the frame and mix time of the drop. */
+interface Parked<I> {
+  subject: I;
+  i: number;
+  seq: number;
+  t: number;
+  /** Made before its frame was read. */
+  early: boolean;
+}
 
 /**
  * The index the host gives each subject, by `place` or by its place in the list `plot` was given,
@@ -25,6 +36,8 @@ export class Places<I> extends Grid {
   curSubject: unknown = undefined;
   /** Indices a subject left, for `place` to hand out again. */
   free: number[] = [];
+  /** Indices held for subjects dropped while a seek back may still reach the drop. */
+  private parked: Parked<I>[] = [];
   /** Whether `xy` is the mix's own, grown as `place` hands out indices, rather than the array `plot` was given. */
   owned = true;
   /**
@@ -55,6 +68,8 @@ export class Places<I> extends Grid {
     this.refs = this.keepRefs ? [] : null;
     this.tokens = [];
     this.free = [];
+    this.parked = [];
+    this.viewed = null;
     for (let i = 0; i < n; i++) {
       const subject = list[i] as I;
       // A subject listed twice is at its last index.
@@ -135,14 +150,84 @@ export class Places<I> extends Grid {
     if (this.slots[i] === slot) this.slots[i] = -1;
   }
 
-  /** The host dropped `subject`: its index is freed. */
-  drop(subject: I): void {
+  /**
+   * The host dropped `subject`: its index is freed. Given the drop's frame and mix time, under
+   * history, the index and its position are held for it instead, while a seek back may reach it.
+   */
+  drop(subject: I, when?: { seq: number; t: number; early: boolean }): void {
     const i = this.at.get(subject);
     if (i === undefined) return;
     this.at.delete(subject);
     const token = this.tokens[i];
     if (token !== undefined) this.registry?.unregister(token);
-    this.release(i);
+    if (when === undefined) {
+      this.release(i);
+      return;
+    }
+    this.parked.push({ subject, i, seq: when.seq, t: when.t, early: when.early });
+    this.viewed = null;
+    this.tokens[i] = undefined;
+    if (this.refs !== null) this.refs[i] = undefined;
+    const slot = this.slots[i] as number;
+    if (slot >= 0) this.placeOf[slot] = -1;
+    this.slots[i] = -1;
+  }
+
+  /** Frees the indices held for drops made before mix time `reach`, which no seek back reaches. */
+  prune(reach: number): void {
+    const parked = this.parked;
+    if (parked.length === 0 || !((parked[0] as Parked<I>).t < reach)) return;
+    let n = 0;
+    while (n < parked.length && (parked[n] as Parked<I>).t < reach)
+      this.release((parked[n++] as Parked<I>).i);
+    parked.splice(0, n);
+    this.viewed = null;
+  }
+
+  /** A seek back to the end of frame `seq`: a subject dropped after it has its index again. */
+  back(seq: number): void {
+    if (this.parked.length === 0) return;
+    const kept: Parked<I>[] = [];
+    for (const p of this.parked) {
+      if (p.seq <= seq) {
+        kept.push(p);
+        continue;
+      }
+      const had = this.at.get(p.subject);
+      if (had !== undefined) this.drop(p.subject);
+      this.at.set(p.subject, p.i);
+      this.hold(p.subject, p.i);
+    }
+    this.parked = kept;
+    this.viewed = null;
+  }
+
+  /**
+   * The indices as a read back to `cut` finds them: these, or, where a subject was dropped after
+   * it, a view giving that subject its index again.
+   */
+  backTo(cut: Cut): Places<I> {
+    if (this.parked.length === 0) return this;
+    if (this.viewed?.cut === cut) return this.viewed.view;
+    const after = this.parked.filter((p) => !within(cut, p.seq, p.early));
+    const view = after.length === 0 ? this : this.viewWith(after);
+    this.viewed = { cut, view };
+    return view;
+  }
+
+  /** The last view `backTo` made, and the cut it read, until an index is held or given back. */
+  private viewed: { cut: Cut; view: Places<I> } | null = null;
+
+  private viewWith(after: Parked<I>[]): Places<I> {
+    const base = this.at;
+    const at = Object.create(base) as Store<I, number>;
+    at.get = (subject: I) => {
+      for (const p of after) if (p.subject === subject) return p.i;
+      return base.get(subject);
+    };
+    const view = Object.create(this) as Places<I>;
+    view.at = at;
+    return view;
   }
 
   /** Frees index `i`, its subject dropped or collected. */

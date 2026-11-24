@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under history, a seek or read back to before a `drop` gives the subject its `plot` or `place`
+  index again, so `around` and `within` voices read it as they did then. The drop freed the index
+  for good, and they read 0 for it until a new `plot`. The index is handed out again once history
+  no longer reaches the drop.
 - A motion voice whose subjects were all dropped while they waited out their stagger goes `inert`
   once past it. It kept their records listed as waiting, unread for good, so `inert` never held:
   100 subjects probed and dropped inside a 500 ms stagger left a spring awake to the end.
