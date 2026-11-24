@@ -6,6 +6,11 @@ section here.
 
 ## Unreleased
 
+### Added
+
+- `Physics.close()` closes the mix, frees every Rapier world it holds, and takes the physics off
+  its transport's `physicsStore`. Call it in place of `mix.close()`.
+
 ### Changed
 
 - `@msb235/blits` is a peer at `^1.3.0`, where it was `^1.1.0`: the first engine with `bind`.
@@ -23,6 +28,8 @@ section here.
 - The README says that a held body is handed back where it was shown, voices outside the
   simulation's role included, so those voices count twice from then on; it used to say only that
   they add on top.
+- A world a seek replaces is packed back into a snapshot and freed, where it used to stay
+  allocated in Rapier's memory for the session.
 
 ## 0.7.4
 

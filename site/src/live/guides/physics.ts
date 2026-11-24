@@ -51,7 +51,7 @@ export default demo((d) => {
       history: { ...d.history(), every: 250 },
       weight: share(toward, 0, 2),
     });
-    d.closes(sim.mix);
+    d.closes(sim);
     sim.body(RAPIER.RigidBodyDesc.fixed(), RAPIER.ColliderDesc.cuboid(width, 0.05));
     sim.body(
       RAPIER.RigidBodyDesc.fixed().setTranslation(-0.05, 3),

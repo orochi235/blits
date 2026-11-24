@@ -66,6 +66,11 @@ const { position, rotation } = sim.mix.probe(box);
   twice, as with a `cue`.
 - **`sim.world()`** is the Rapier world as the last `sync` left it, for reading: raycasts, contact
   queries, debugging draws. A change made to it directly is lost at the next seek.
+- **`sim.close()`** closes the mix and frees the Rapier worlds it holds, which live outside
+  JavaScript's memory and are never collected. Call it in place of `sim.mix.close()` when done
+  with the physics; the engine tells a driver nothing when its mix closes, so closing the mix
+  alone leaves the worlds allocated. A closed physics steps nothing, and its `world()` is
+  `undefined`.
 
 ## Channels
 
