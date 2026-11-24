@@ -48,6 +48,38 @@ describe('onSeek', () => {
     t.seek(300);
     expect(heard).toEqual(['t 200', 'a 200', 'b 200', 't 300', 'b 300']);
   });
+
+  for (const lanes of [true, false]) {
+    it(`stops telling a seek once a listener seeks again, so the last heard is where it stands${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+      m.cue({ patch: ramp, subjects: [{}] });
+      for (let t = 0; t <= 800; t += 100) m.sync(t);
+      const heard: number[] = [];
+      m.onSeek((s) => {
+        if (s.at === 400) m.seek(200);
+      });
+      m.onSeek((s) => heard.push(s.at));
+      m.seek(400);
+      expect(m.now).toBe(200);
+      expect(heard).toEqual([200]);
+    });
+
+    it(`goes on past a listener that throws, to every mix on the transport${lanes ? '' : ', without lanes'}`, () => {
+      const t = transport({ history });
+      const a = mix<object, { x: number }>(K, { transport: t, name: 'a', lanes });
+      const b = mix<object, { x: number }>(K, { transport: t, name: 'b', lanes });
+      for (let at = 0; at <= 500; at += 100) t.sync(at);
+      const heard: string[] = [];
+      a.onSeek(() => {
+        throw new Error('a');
+      });
+      a.onSeek((s) => heard.push(`a ${s.at}`));
+      b.onSeek((s) => heard.push(`b ${s.at}`));
+      const errors = thrownLater(() => t.seek(200));
+      expect(messages(errors)).toEqual(['a']);
+      expect(heard).toEqual(['a 200', 'b 200']);
+    });
+  }
 });
 
 describe('call', () => {

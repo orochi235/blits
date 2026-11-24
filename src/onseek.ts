@@ -1,5 +1,6 @@
 import type { Mixer } from './mixer.js';
 import { record } from './tape.js';
+import { throwLater } from './ticker.js';
 import type { Transport } from './transport.js';
 import type { Sought } from './types/mix.js';
 
@@ -18,13 +19,30 @@ export function onSeek<I, O>(this: Mixer<I, O>, fn: (s: Sought) => void): () => 
   return listen(this.seekFns, fn);
 }
 
-/** Tells the transport's listeners where a seek landed, then each mix's on it. */
+/**
+ * Tells the transport's listeners where a seek landed, then each mix's on it, until one moves the
+ * transport on to another frame, by a seek or a sync, whose own news is the latest.
+ */
 export function told(transport: Transport, s: Sought): void {
-  for (const fn of [...transport.seekFns]) fn(s);
+  const seq = transport.seq;
+  if (!tell(transport.seekFns, s, transport, seq)) return;
   for (const m of [...transport.members]) {
     const fns = m.seekFns;
-    if (fns !== null) for (const fn of [...fns]) fn(s);
+    if (fns !== null && !tell(fns, s, transport, seq)) return;
   }
+}
+
+/** Calls each of `fns` with `s` while the transport stays on frame `seq`, and answers whether it did. */
+function tell(fns: ((s: Sought) => void)[], s: Sought, transport: Transport, seq: number): boolean {
+  for (const fn of [...fns]) {
+    try {
+      fn(s);
+    } catch (err) {
+      throwLater(err);
+    }
+    if (transport.seq !== seq) return false;
+  }
+  return true;
 }
 
 /** As `Mix.call`. */

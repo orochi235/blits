@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- An `onSeek` listener that seeks again ends the telling of the seek it heard, so the listeners
+  after it hear only the seek the mix stands at. They heard the outer seek last, so a driver
+  following them took back to a time the mix had left. A listener that throws no longer stops the
+  rest, nor other mixes' on the transport: its error is thrown again on a microtask.
 - A patch's `step` that throws partway through the ticks a `stepMs` frame owes no longer runs the
   ticks before it again on the next read, where a frame owing 10 stepped 14 times; the setting's
   `timestamp` and `dt` go back to the frame's, where they kept the last tick's.
