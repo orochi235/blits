@@ -276,11 +276,11 @@ export function waits<I, O>(
     voice.met ??= new Set();
     voice.met.add(subject);
   }
-  voice.early ??= [];
   const early = voice.early;
   // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
-  if (early.length >= 64 && (early.length & (early.length - 1)) === 0) unearly(voice, now);
-  early.push(held);
+  if (early !== null && early.length >= 64 && (early.length & (early.length - 1)) === 0)
+    unearly(voice, now);
+  (voice.early ??= []).push(held);
 }
 
 /** Lets go of the listed records whose origin has passed by `now`. */

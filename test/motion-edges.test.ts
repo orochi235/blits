@@ -125,6 +125,17 @@ describe.each([{ lanes: false }, { lanes: true }])(
       });
     }
 
+    it('lists a subject still waiting as a prune of the list empties it', () => {
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: spring<Part, Pose>('x', { to: 1 }), stagger: (s) => s.id * 10 + 5 });
+      for (let i = 0; i <= 64; i++) {
+        m.sync(i * 10);
+        m.probe({ id: i });
+      }
+      const early = (m as unknown as { cued: { early: unknown[] | null }[] }).cued[0]?.early;
+      expect(early?.length).toBe(1);
+    });
+
     it('under history, keeps those it met and found read no longer than memory', () => {
       const m = mix<Part, Pose>(K, { lanes, history: { ms: 100 } });
       m.sync(0);
