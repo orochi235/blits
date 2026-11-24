@@ -27,16 +27,12 @@ import { warnOnce } from './warn.js';
 export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
   const spec = roleOf(mix, given);
   const patch = spec.patch;
-  playable(mix, spec);
-  if (spec.from === 'current' && patch.form !== 'keys')
-    throw new Error("blits: from: 'current' needs a keys patch");
+  checkPatch(mix, spec);
   if (spec.subjects !== undefined && spec.target !== undefined)
     throw new Error('blits: a voice takes target or subjects, not both');
   const anchor = spec.anchor;
   const owner = spec.owner === undefined ? null : ownerOf(mix, spec.owner);
   if (anchor) checkPlacement(mix, spec, anchor, owner);
-  if (spec.hits !== undefined) checkHits(spec.hits, patch.duration);
-  if (spec.marks !== undefined) checkMarks(spec.marks, patch.duration);
   checkWithin(mix, spec);
   if (spec.fade?.in !== undefined) rampTime(spec.fade.in);
   if (spec.fade?.out !== undefined) rampTime(spec.fade.out);
@@ -172,6 +168,19 @@ export function roleTags(opts: MixOptions): readonly string[] | undefined {
     throw new Error("blits: a mix takes roles or loci, not both; loci is roles' old name");
   warnOnce(opts, 'the mix option loci is renamed roles; make the mix with roles');
   return loci;
+}
+
+/**
+ * Refuses a spec for what its patch decides: one the mix cannot play, or whose `from`, `hits` or
+ * `marks` the patch does not fit. A blend asks it of every member before it cues any.
+ */
+export function checkPatch<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
+  const patch = spec.patch;
+  playable(mix, spec);
+  if (spec.from === 'current' && patch.form !== 'keys')
+    throw new Error("blits: from: 'current' needs a keys patch");
+  if (spec.hits !== undefined) checkHits(spec.hits, patch.duration);
+  if (spec.marks !== undefined) checkMarks(spec.marks, patch.duration);
 }
 
 /** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */

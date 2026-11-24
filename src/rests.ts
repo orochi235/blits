@@ -1,5 +1,5 @@
 import { restsAt } from './fold.js';
-import { isUnread } from './held.js';
+import { isUnread, metLeft } from './held.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { Store } from './store.js';
@@ -66,26 +66,19 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
   // A seek back drops `early` and forgets reads, so these are asked after by subject.
   const met = voice.met;
   if (met !== null) {
-    const seq = this.transport.seq;
     const history = this.opts.history !== undefined;
-    let kept = 0;
     let waiting = false;
     for (const subject of met) {
-      const h = waiting ? undefined : voice.subjects.get(subject);
-      if (h?.reaches && h.since <= now) {
-        if (!isUnread(h)) {
-          if (history) {
-            voice.metRead ??= [];
-            voice.metRead.push({ subject, seq });
-          }
-          continue;
-        }
+      const h = voice.subjects.get(subject);
+      if (!h?.reaches || !(h.since <= now)) continue;
+      if (isUnread(h)) {
         waiting = true;
+        break;
       }
-      met[kept++] = subject;
+      met.delete(subject);
+      if (history) metLeft(this, voice, subject);
     }
-    met.length = kept;
-    if (kept === 0) voice.met = null;
+    if (met.size === 0) voice.met = null;
     if (waiting) return false;
   }
   return motion.landed(voice.seeks);

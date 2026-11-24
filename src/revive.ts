@@ -192,7 +192,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     parted: [...(voice.parted ?? [])].map(([s, p]) =>
       p.ramp === undefined ? [keys.key(s), p.at, p.seq] : [keys.key(s), p.at, p.seq, p.ramp],
     ),
-    met: voice.met?.map((s) => keys.key(s)) ?? null,
+    met: voice.met === null ? null : [...voice.met].map((s) => keys.key(s)),
     metRead: voice.metRead?.map((e) => [keys.key(e.subject), e.seq]) ?? null,
   };
 }
@@ -265,7 +265,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
         { at, seq, ramp: ramp ?? undefined },
       ]),
     );
-  voice.met = d.met?.map(subjectOf) ?? null;
+  voice.met = d.met ? new Set(d.met.map(subjectOf)) : null;
   voice.metRead = d.metRead?.map(([key, seq]) => ({ subject: subjectOf(key), seq })) ?? null;
   const h = mix.outs?.take(id) as VoiceHandle<I, O> | undefined;
   if (h === undefined) voice.handle = handle(mix, voice);

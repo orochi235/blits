@@ -114,7 +114,55 @@ function replays(run: ReturnType<typeof play>, frames: number[], t: number) {
   }
 }
 
+/** A voice over every subject, met by a new subject each frame and the one before dropped. */
+function churn(opts: MixOptions, frames: number, spec: { stagger?: (p: Part) => number } = {}) {
+  const m = mix<Part, Pose>(KP, opts);
+  m.sync(0);
+  m.cue({
+    patch: patch<Part, Pose>(100, () => ({ x: 1 }), { writes: ['x'] }),
+    loop: true,
+    ...spec,
+  });
+  let last: Part | null = null;
+  for (let i = 0; i < frames; i++) {
+    m.sync((i + 1) * 16);
+    const s = { id: `s${i}` };
+    m.probe(s);
+    if (last !== null) m.drop(last);
+    last = s;
+  }
+  return (m as unknown as { cued: { keyed: Set<unknown> | null; staggers: { size: number } }[] })
+    .cued[0];
+}
+
 describe('history with a store', () => {
+  for (const lanes of [true, false])
+    it(`keeps no key for a subject dropped${lanes ? '' : ', without lanes'}`, () => {
+      const voice = churn(paged(memoryStore(), { lanes }), 2000);
+      expect(voice?.keyed?.size ?? 0).toBeLessThan(10);
+    });
+
+  for (const lanes of [true, false])
+    it(`keeps stagger answers only as long as memory${lanes ? '' : ', without lanes'}`, () => {
+      const voice = churn(paged(memoryStore(), { lanes }), 2000, { stagger: () => 0 });
+      expect(voice?.staggers.size).toBeLessThan(40);
+    });
+
+  it('replays a stagger past memory, asked again, as the live mix played it', async () => {
+    const frames = every(0, 1200, 16);
+    const later = (p: Part) => (p.id === 'a' ? 0 : 150);
+    const scene: Scene = (m, t) => {
+      if (t === 0) m.cue({ patch: wave, loop: true, stagger: later, fade: { in: 100 } });
+      if (t === 304) m.drop(b);
+      if (t === 608) m.drop(a);
+    };
+    for (const t of [96, 400, 656]) {
+      const run = play(scene, frames, paged());
+      await run.m.prepare(t);
+      replays(run, frames, t);
+    }
+  });
+
   for (const lanes of [true, false])
     it(`pages a subject's fade out with the drop that forgot it${lanes ? '' : ', without lanes'}`, async () => {
       const flat = patch<Part, Pose>(1000, () => ({ x: 8 }), { writes: ['x'] });

@@ -3,7 +3,7 @@ import { changed } from './chain.js';
 import { elapsedWith } from './clock.js';
 import { popDue, schedule } from './due.js';
 import { beginFade, part, release, retire, rouse, stay } from './fade.js';
-import { expireGone, keepGone } from './gone.js';
+import { expireGone } from './gone.js';
 import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
@@ -558,12 +558,8 @@ export function forget<I, O>(mix: Mixer<I, O>): void {
   const history = mix.opts.history;
   if (history && mix.gone.length > 0) {
     // With a store a voice that has left pages out where it can, and stays where it cannot.
-    if (mix.transport.pager !== null) {
-      const reach = mix.now - history.ms;
-      keepGone(mix, (v) => v.reachedTo >= reach || !pageVoice(mix, v, reach));
-    } else {
-      expireGone(mix, mix.transport.keepsFrom());
-    }
+    if (mix.transport.pager !== null) expireGone(mix, mix.now - history.ms, pageVoice);
+    else expireGone(mix, mix.transport.keepsFrom());
   }
 }
 

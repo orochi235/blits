@@ -162,7 +162,7 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   voice.early = null;
   if (voice.metRead !== null) {
     const unread = voice.metRead.filter((e) => e.seq > seq).map((e) => e.subject);
-    if (unread.length > 0) voice.met = [...(voice.met ?? []), ...unread];
+    if (unread.length > 0) voice.met = new Set([...(voice.met ?? []), ...unread]);
     const kept = voice.metRead.filter((e) => e.seq <= seq);
     voice.metRead = kept.length === 0 ? null : kept;
   }
@@ -177,6 +177,14 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   fadesThen(voice, voice.left?.after(cut) ?? [], seq);
   voice.left = Leavings.from(left.filter((e) => e.seq <= seq));
   const future = Leavings.from(left.filter((e) => e.seq > seq));
+  // Those that left after it are back, under the keys a store pages them by.
+  const keys = mix.keys;
+  if (keys !== null)
+    for (const e of left) {
+      if (!(e.seq > seq)) continue;
+      voice.keyed ??= new Set();
+      voice.keyed.add(keys.key(e.subject));
+    }
   let records = voice.subjects;
   if (!(records instanceof Restored)) {
     const every = apart(mix.opts.history as { every?: number });

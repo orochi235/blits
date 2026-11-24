@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -130,5 +131,35 @@ describe.each([true, false])('a pending voice, lanes %s', (lanes) => {
     expect(m.probe(a).x).toBe(0);
     expect(h.state).toBe('done');
     expect(await h.played).toBe(true);
+  });
+
+  it('faded, its start passing mid-fade, and raised, began: a seek back finds it live', () => {
+    const run = (fadeIt: boolean) => {
+      const m = mix<Part, Pose>(K, { lanes, history: { ms: 100_000, tape } });
+      m.sync(0);
+      const owner = m.owns({});
+      const h = m.cue({ patch: ramp, owner, start: 100, loop: true });
+      m.probe(a);
+      if (fadeIt) h.fade({ over: 1000 });
+      m.sync(200);
+      m.probe(a);
+      if (fadeIt) h.rise({ over: 0 });
+      m.sync(250);
+      m.probe(a);
+      const risen = m.seq;
+      // Its owner sought before its start leaves it live, which only its having begun says.
+      owner.seek(50);
+      m.sync(260);
+      const sought = m.seq;
+      m.sync(300);
+      const seen: [number, string][] = [];
+      for (const frame of [sought, risen]) {
+        m.seek({ frame });
+        seen.push([m.probe(a).x, h.state]);
+      }
+      return seen;
+    };
+    expect(run(true)).toEqual(run(false));
+    expect(run(true).map(([, state]) => state)).toEqual(['live', 'live']);
   });
 });

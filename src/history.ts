@@ -349,7 +349,7 @@ export function leave<I, O>(
 ): void {
   const history = mix.opts.history;
   if (history === undefined) return;
-  voice.staggers?.leave(subject, mix.now, mix.transport.seq, mix.transport.keepsFrom());
+  voice.staggers?.leave(subject, mix.now, mix.transport.seq, mix.transport.memoryFrom());
   if (held === undefined) return;
   const reach = mix.now - history.ms;
   const left = voice.left ?? new Leavings<I>();

@@ -30,6 +30,35 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   played at the old one; later listeners, a ticker's among them, never heard, and the mix never woke
   again. Its error is thrown again on a microtask, and listeners now hear of a cue, a rate or a
   seek once it is whole, a seek's with every mix on the transport put back.
+- A motion voice lets go of a subject dropped or faded out of it while it waited out its stagger.
+  It kept every such subject, holding the object from being collected, and walked them all each
+  time `inert` asked after the voice. Under history without a store, what it keeps for a seek back
+  goes once memory no longer reaches it.
+- Under a history store, a sync asks once whether each voice gone past memory can page out, and
+  passes over those that cannot from then on. It asked after every one at every sync, so idle frames
+  slowed with each voice cued without `as` that had left: 2,000 syncs over 10,000 such voices took
+  293 ms, against 4 ms now.
+- Under a history store, a staggered voice keeps the `stagger` answers it gave for `history.ms`, as
+  without one, where it kept every one for good: 9,999 after 5,000 frames of a subject met and one
+  dropped each frame. A seek past memory asks `stagger` again for a subject the replay meets
+  afresh, so a stagger that answers one subject differently from call to call replays differently
+  there.
+- Under a history store, a voice lets go of a subject's key when the subject is dropped or faded
+  out of it, and takes it back where a seek back brings the subject back. It kept one per subject
+  it ever met, and walked them all each time it paged out.
+- `blend` checks every member before it cues any, so a member the mix refuses, by its kit, its
+  `hits` or its engine, leaves none behind. The members before it stayed cued, and one alone played
+  at full weight.
+- `fade({ at })` at or behind now, on a voice yet to start, fades from `at` as `fade()` does from
+  now. It began the fade at the voice's start instead, so `fade({ at: now, over: 50 })` of a voice
+  starting 100 ms later played it at partial weight, where `fade({ over: 50 })` showed nothing.
+- A voice faded before its start and raised after it begins as one never faded does. It went live
+  without beginning, so where its owner was sought back before its start, a seek of the mix back
+  read it as still to start, though it had played.
+- A voice faded and raised over and over keeps only the stalls its fade in still climbs through,
+  and none with no fade in. It kept two numbers per rise for good, copied the list at each, and
+  walked all of them at every weight read: with a 100 ms fade in, a thousand frames of alternating
+  fades over 200 subjects went from 144 ms to 3,162 ms after 20,000 frames.
 - `trace` refuses a window and `grid` giving more than a million points with a `RangeError`, where
   it tried to read them all and ran out of memory.
 - Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time

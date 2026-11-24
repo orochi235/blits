@@ -82,7 +82,7 @@ describe.each([{ lanes: false }, { lanes: true }])('handle.rise, lanes $lanes', 
     at(m, 0);
     const h = m.cue({ patch: crawl, start: 500, seek: 100 });
     at(m, 100);
-    h.fade({ over: 80, at: 60 });
+    h.fade({ over: 1000, at: 60 });
     at(m, 200);
     h.rise({ over: 0 });
     expect(h.state).toBe('pending');
@@ -102,7 +102,7 @@ describe.each([{ lanes: false }, { lanes: true }])('handle.rise, lanes $lanes', 
       anchor: { start: { of: 'first', mark: 'start', by: 400 } },
     });
     at(m, 150);
-    h.fade({ over: 80, at: 110 });
+    h.fade({ over: 1000, at: 110 });
     at(m, 200);
     h.rise({ over: 0 });
     expect(h.state).toBe('pending');
@@ -140,3 +140,42 @@ describe('handle.rise in history', () => {
     expect(m.project(60).probe(a).crawl).toBeCloseTo(8, 9);
   });
 });
+
+describe.each([{ lanes: false }, { lanes: true }])(
+  'fade and rise over and over, lanes $lanes',
+  ({ lanes }) => {
+    const stallsOf = (m: unknown) =>
+      (m as { cued: { stalls: readonly number[] | null }[] }).cued[0]?.stalls ?? null;
+    const flat = patch<number, Pose>(100, () => ({ crawl: 10 }), { writes: ['crawl'] });
+
+    it('keeps only the stalls a fade in still climbing through needs', () => {
+      const m = mix<number, Pose>(K, { lanes });
+      m.sync(0);
+      const h = m.cue({ patch: flat, loop: true, fade: { in: 100, out: 200 } });
+      let t = 0;
+      for (let i = 0; i < 4000; i++) {
+        t += 16;
+        m.sync(t);
+        if (i % 2 === 0) h.fade();
+        else h.rise();
+        m.probe(i % 7);
+      }
+      expect(stallsOf(m)?.length ?? 0).toBeLessThan(40);
+      m.sync(t + 1000);
+      expect(m.probe(3).crawl).toBe(10);
+    });
+
+    it('keeps none for a voice with no fade in', () => {
+      const m = mix<number, Pose>(K, { lanes });
+      m.sync(0);
+      const h = m.cue({ patch: flat, loop: true, fade: { out: 200 } });
+      for (let i = 1; i <= 100; i++) {
+        m.sync(i * 16);
+        if (i % 2 === 0) h.fade();
+        else h.rise();
+        m.probe(0);
+      }
+      expect(stallsOf(m)).toBeNull();
+    });
+  },
+);

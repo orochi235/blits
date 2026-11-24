@@ -1,6 +1,7 @@
 import { headOf, unlink } from './chain.js';
 import { leaveVoice, unrecord } from './fade.js';
 import { goneIndex } from './gone.js';
+import { unkey, unmeet } from './held.js';
 import { releasing } from './history.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
@@ -68,7 +69,11 @@ export function dropIn<I, O>(
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   leaveVoice(this, voice, subject, held);
   if (held === undefined) voice.subjects.delete(subject);
-  else unrecord(voice, subject, held);
+  else {
+    unrecord(voice, subject, held);
+    unkey(this, voice, subject);
+  }
+  unmeet(this, voice, subject);
   if (!this.projecting) this.forgot?.(voice, subject);
   if (voice.motion !== undefined) this.releaseIn(voice.motion, subject, kept);
   voice.parts?.delete(subject);

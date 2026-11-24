@@ -114,8 +114,8 @@ export function held<I, O>(
   voice.subjects.set(subject, held);
   waits(voice, held, now);
   if (voice.motion !== undefined && !(held.since <= now)) {
-    voice.met ??= [];
-    voice.met.push(subject);
+    voice.met ??= new Set();
+    voice.met.add(subject);
   }
   voice.made++;
   // A subject a voice saw while it shared one record was counted then.
@@ -140,6 +140,36 @@ export function held<I, O>(
 function leaving<I, O>(voice: Voice<I, O>, now: number): boolean {
   if (voice.state !== 'fading' || voice.out?.stays === true) return false;
   return voice.endsAt() <= now;
+}
+
+/**
+ * Notes, under history, that a subject left a motion voice's `met` in this frame, for a seek back
+ * before it to put back. Only frames memory still holds are kept, where no store reaches past it.
+ */
+export function metLeft<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
+  voice.metRead ??= [];
+  const read = voice.metRead;
+  const n = read.length;
+  const oldest = mix.transport.frames.first?.seq;
+  if (n >= 64 && (n & (n - 1)) === 0 && mix.transport.pager === null && oldest !== undefined) {
+    let kept = 0;
+    for (const e of read) if (e.seq > oldest) read[kept++] = e;
+    read.length = kept;
+  }
+  read.push({ subject, seq: mix.transport.seq });
+}
+
+/** Takes a subject let go of out of a motion voice's `met`, noting it under history. */
+export function unmeet<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
+  const met = voice.met;
+  if (met === null || !met.delete(subject)) return;
+  if (met.size === 0) voice.met = null;
+  if (mix.opts.history !== undefined && !mix.projecting) metLeft(mix, voice, subject);
+}
+
+/** Lets go of the key a store pages a subject's record in this voice under. */
+export function unkey<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
+  if (voice.keyed !== null && mix.keys !== null) voice.keyed.delete(mix.keys.key(subject));
 }
 
 /**

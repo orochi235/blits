@@ -1,6 +1,7 @@
 import { changed, headOf, slotOf, unlink } from './chain.js';
-import { clampWeight, envelope, fadeInAt, fadeMsFor, rampTime } from './clock.js';
+import { clampWeight, envelope, fadeInAt, fadeMsFor, rampTime, stalled } from './clock.js';
 import { schedule } from './due.js';
+import { begin, unkey, unmeet } from './held.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -188,7 +189,9 @@ function letGo<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   if (held !== undefined) {
     leave(mix, voice, subject, held);
     unrecord(voice, subject, held);
+    unkey(mix, voice, subject);
   }
+  unmeet(mix, voice, subject);
   if (head === undefined) return;
   unlink(mix, head);
   if (voice.laned && head.slot >= 0) mix.lanes?.part(voice.id, head.slot);
@@ -319,8 +322,16 @@ export function beginRise<I, O>(
   if (waiting) voice.begunSeq = Number.POSITIVE_INFINITY;
   voice.back = over > 0 && from < 1 ? { from, at, over } : null;
   // Its fade in stood still from where the fade out began, and climbs on from where it stood.
-  if (!out.rest && out.at < at) voice.stalls = [...(voice.stalls ?? []), out.at, at];
+  const fadeIn = voice.fade.in ?? 0;
+  if (fadeIn > 0 && !out.rest && out.at < at) {
+    // A subject ramping out reads its fade in as of its ramp's start.
+    let by = at;
+    if (voice.parts !== null) for (const r of voice.parts.values()) if (r.at < by) by = r.at;
+    voice.stalls = stalled(voice.stalls, out.at, at, fadeIn, by);
+  }
   if (waiting) changed(mix, voice);
+  // One faded before its start and raised after it begins now, as it would have unfaded.
+  else if (voice.begunSeq === Number.POSITIVE_INFINITY) begin(mix, voice, mix.now);
   noted(mix, voice);
   if (waiting) mix.lanes?.invalidate();
   else mix.lanes?.refill();
@@ -339,7 +350,9 @@ export function fadeAt<I, O>(
   if (voice.state === 'done' || voice.state === 'fading') return;
   const now = nowFor(mix, voice);
   if (at <= now) {
-    beginFade(mix, voice, { over }, Math.max(startedAt(voice), at));
+    // Not before it started; one yet to start fades from `at`, as from now.
+    const from = voice.state === 'pending' ? at : Math.max(startedAt(voice), at);
+    beginFade(mix, voice, { over }, from);
     mix.stir();
     return;
   }
