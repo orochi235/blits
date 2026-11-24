@@ -27,6 +27,9 @@ export interface Kernel {
   readonly fields: readonly string[];
 }
 
+/** A name WGSL takes as an identifier once prefixed, as `prefixed` and the kernel's structs spell it. */
+export const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
 /**
  * A runner body with the names its author wrote made safe: \`out.cast\` becomes \`out.o_cast\`,
  * \`subject.\` fields likewise, and \`params.k\` the local \`params_k\`, since WGSL reserves many plain words.

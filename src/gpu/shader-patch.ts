@@ -1,4 +1,5 @@
 import type { Patch, Setting } from '../types.js';
+import { IDENT } from './kernel.js';
 import type { Packed, Runner } from './runner.js';
 
 /**
@@ -101,8 +102,6 @@ export function shaderPack(patch: object): Packed | undefined {
 }
 
 let made = 0;
-
-const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function check(kind: string, names: readonly string[]): void {
   for (const n of names)
