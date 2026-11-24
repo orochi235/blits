@@ -222,9 +222,7 @@ describe('spans', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);
     const s = m.span({ name: 'seq' });
-    expect(() => m.cue({ patch: write(300), owner: s, loop: false, rate: -1 })).toThrow(
-      /backward/,
-    );
+    expect(() => m.cue({ patch: write(300), owner: s, loop: false, rate: -1 })).toThrow(/backward/);
     expect(() => m.blend([write(300)], () => 1, { owner: s, loop: false, rate: -1 })).toThrow(
       /backward/,
     );

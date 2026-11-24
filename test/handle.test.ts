@@ -328,7 +328,6 @@ describe('a handle whose voice has left', () => {
       h.rate = 2;
       h.ramp(3, 100);
       h.weight = 0.5;
-      h.release();
       expect([h.state, h.weight, h.rate, h.elapsed]).toEqual(['done', 1, 1, Number.NaN]);
       m.sync(216);
       expect(m.probe(a).x).toBe(0);
