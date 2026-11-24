@@ -148,7 +148,15 @@ function changeAhead<I, O>(
   if (v !== undefined) {
     // As the patch asks its mix live: a subject faded out of the voice is back, and a change with
     // no time takes the voice's at this frame, or the subject's own where it is yet to be met.
-    const parted = v.parted?.has(subject) === true;
+    // A copy never parts a subject whose ramp out has run (`move`), where play's sync did.
+    const ramp = v.parts?.get(subject);
+    const ran = ramp !== undefined && to.now - ramp.at >= ramp.over;
+    const parted = ran || v.parted?.has(subject) === true;
+    if (ran) {
+      const parts = v.parts as Map<I, unknown>;
+      parts.delete(subject);
+      if (parts.size === 0) v.parts = null;
+    }
     if (parted) {
       unpart(to, v, subject);
       // Met afresh, as live: not with the record the stop before kept while it was faded out.

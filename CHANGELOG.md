@@ -421,6 +421,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `fling` places the subject at the release point and counts it in the launch velocity, and lets
   go at rest when it loses the pointer capture, where the drag stayed stuck and refused the next
   press.
+- A read ahead past a subject whose `fade({ subject, over })` ramp had run out, brought back by a
+  `set`, `to` or `push`, meets it afresh, as play does: a read's copies never take a subject out
+  where its ramp ends, so the change found it still on its way out and it showed nothing.
 
 ## 1.4.0
 

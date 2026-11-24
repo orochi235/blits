@@ -369,4 +369,13 @@ describe('a read ahead restaging at a stop', () => {
       if (t === 192) s.push(a, 300);
     }, 16);
   });
+
+  it('meets afresh a subject whose ramp out ended on the way, brought back by a set', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    readsAhead((m, t, h) => {
+      if (t === 32) h.s = m.cue({ patch: s });
+      if (t === 64) h.s?.fade({ subject: a, over: 100 });
+      if (t === 224) s.set(a, 20);
+    }, 16);
+  });
 });
