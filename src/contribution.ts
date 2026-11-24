@@ -219,6 +219,10 @@ export function keyed<I, O>(
     }
     base = held.base;
   }
+  const slope = voice.setting.pass === 0 ? held.slope : undefined;
+  let ends = held.ends;
+  if (slope !== undefined && base !== undefined && ends?.base !== base)
+    ends = held.ends = { base, list: [] };
   const delta = readKeys(
     voice.built as Built,
     held.phase,
@@ -226,9 +230,10 @@ export function keyed<I, O>(
     base,
     voice.lerps as never,
     // Only its first pass leaves the subject; a loop's later ones start on their own curve.
-    voice.setting.pass === 0 ? held.slope : undefined,
+    slope,
     voice.intos,
     voice.scratch,
+    slope === undefined ? undefined : ends?.list,
   );
   held.delta = delta;
   if (voice.scratch.length > 0) voice.holder = held;

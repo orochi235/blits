@@ -254,6 +254,17 @@ describe.each([true, false])('a retarget from a turning subject, lanes %s', (lan
       });
     }
   });
+
+  it('reads the ends of a lerp of its own that goes the short way round', () => {
+    const lerp = (a: number, b: number, u: number) => a + wrap(b - a) * u;
+    const channel = { ...angle(), lerp } as Channel<unknown>;
+    const same = (d: number) => d;
+    const plain = takeover(channel, same, same as (v: unknown) => number, 53);
+    // From 160° the stop is written past 180°, in the next turn.
+    takeover(channel, same, same as (v: unknown) => number, 160).forEach((d, i) => {
+      expect(d, `read ${i}`).toBeCloseTo(plain[i] as number, 6);
+    });
+  });
 });
 
 describe.each([true, false])(

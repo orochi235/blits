@@ -1,3 +1,4 @@
+import type { Ends } from './patch.js';
 import type { Stamp } from './restored.js';
 
 /**
@@ -107,6 +108,8 @@ export interface Subject<S> {
   base?: Record<string, unknown>;
   /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */
   slope?: Record<string, unknown>;
+  /** The first segment's ends per track, as the lerp reads them from `base`, which they hold for. */
+  ends?: { base: Record<string, unknown>; list: Ends };
   /** What `setting.keep` holds for this voice and subject, by owner; null until it holds any. */
   kept: Map<object, unknown> | null;
   /** Kept state a history store gave back, which each owner takes in turn on its first keep. */

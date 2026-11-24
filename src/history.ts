@@ -130,6 +130,7 @@ export function copyHeld<I, O>(
     copied: h.copied,
     base: h.base === undefined ? undefined : clone(h.base),
     slope: h.slope === undefined ? undefined : clone(h.slope),
+    ends: undefined,
     kept,
     unkept: h.unkept?.map(clone),
     snaps: h.snaps,
@@ -183,6 +184,7 @@ export function copyHeldInto<I, O>(
   into.copied = h.copied;
   into.base = h.base === undefined ? undefined : clone(h.base);
   into.slope = h.slope === undefined ? undefined : clone(h.slope);
+  into.ends = undefined;
   into.kept = keptOf(h);
   into.unkept = h.unkept?.map(clone);
   into.from = h.from;

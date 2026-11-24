@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `from: 'current'` voice on a channel whose own `lerp`, or a patch's `lerpBy`, goes the short
+  way round bends its first segment along that lerp's travel, as it does on `angle()` and `quat()`,
+  where it bent against the stops as written and swung the wrong way round first.
 - A looping `from: 'current'` voice leaves at the subject's speed on its first pass only. Every
   later pass started at that speed again, jumping back toward where the subject had been.
 - A `from: 'current'` voice leaves at the subject's speed whatever its `rate`, where it left at that

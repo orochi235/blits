@@ -1,4 +1,4 @@
-import { doubles, type Vec, vouch } from './channels.js';
+import { doubles, keepsEnds, type Vec, vouch } from './channels.js';
 import { shortWay } from './turns.js';
 import type { Channel } from './types.js';
 
@@ -105,6 +105,7 @@ export function affine(): Channel<Vec<6>> {
     lerp: (a, b, u) => between(doubles(6, 0), a, b, u) as M,
   };
   vouch(channel as Channel<unknown>, { op: 'own', axes: 6 });
+  keepsEnds(channel.lerp);
   return channel;
 }
 

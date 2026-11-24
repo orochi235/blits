@@ -41,6 +41,7 @@ export function wholeRecord(
     copied: false,
     base: undefined,
     slope: undefined,
+    ends: undefined,
     kept: null,
     unkept: undefined,
     snaps: undefined,
