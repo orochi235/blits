@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under a history store, a sync asks once whether each voice gone past memory can page out, and
+  passes over those that cannot from then on. It asked after every one at every sync, so idle frames
+  slowed with each voice cued without `as` that had left: 2,000 syncs over 10,000 such voices took
+  293 ms, against 4 ms now.
 - Under a history store, a staggered voice keeps the `stagger` answers it gave for `history.ms`, as
   without one, where it kept every one for good: 9,999 after 5,000 frames of a subject met and one
   dropped each frame. A seek past memory asks `stagger` again for a subject the replay meets

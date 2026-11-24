@@ -18,6 +18,8 @@ export class GoneIndex<I, O> {
   /** The latest `reachedTo` in `of`, and how far any voice's falls before one listed ahead of it. */
   latest = Number.NEGATIVE_INFINITY;
   slack = 0;
+  /** How many at the front of `of` history no longer reaches and that stay for good, unpaged. */
+  settled = 0;
 }
 
 function add<I, O>(ix: GoneIndex<I, O>, voice: Voice<I, O>): void {
@@ -57,6 +59,7 @@ export function goneIndex<I, O>(mix: Mixer<I, O>): GoneIndex<I, O> {
     ix.of = list;
     ix.latest = Number.NEGATIVE_INFINITY;
     ix.slack = 0;
+    ix.settled = 0;
   }
   for (let i = ix.count; i < list.length; i++) add(ix, list[i] as Voice<I, O>);
   ix.count = list.length;
@@ -94,22 +97,30 @@ export function keepGone<I, O>(mix: Mixer<I, O>, keep: (v: Voice<I, O>) => boole
   scoredCut(mix, list, out);
   ix.of = kept;
   ix.count = kept.length;
+  ix.settled = 0;
 }
 
 /**
  * Lets go of the gone voices no seek or read back to `reach` finds playing: those that finished
  * before it, in a frame before it. Voices go in about that order, so only the front can hold one:
  * past the point where a voice is reached `slack` after `reach`, none behind it falls before.
+ * With `page`, under a store, one goes only where `page` pages it out; one it cannot stays for
+ * good, and those at the front are passed over from then on, not asked again each frame.
  */
-export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
+export function expireGone<I, O>(
+  mix: Mixer<I, O>,
+  reach: number,
+  page?: (mix: Mixer<I, O>, v: Voice<I, O>, reach: number) => boolean,
+): void {
   const ix = goneIndex(mix);
   if (!Number.isFinite(ix.slack)) {
-    keepGone(mix, (v) => v.reachedTo >= reach);
+    keepGone(mix, (v) => v.reachedTo >= reach || (page !== undefined && !page(mix, v, reach)));
     return;
   }
   const list = mix.gone;
   const edge = reach + ix.slack;
-  let end = 0;
+  const from = ix.settled;
+  let end = from;
   let any = false;
   for (let seen = Number.NEGATIVE_INFINITY; end < list.length && seen < edge; end++) {
     const done = (list[end] as Voice<I, O>).reachedTo;
@@ -119,12 +130,17 @@ export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
   if (!any) return;
   // Compacted in place: a spread into `splice` throws past the engine's argument limit.
   const out: Voice<I, O>[] = [];
-  let w = 0;
-  for (let i = 0; i < end; i++) {
+  let w = from;
+  let settled = from;
+  for (let i = from; i < end; i++) {
     const v = list[i] as Voice<I, O>;
-    if (v.reachedTo < reach) out.push(v);
-    else list[w++] = v;
+    if (v.reachedTo < reach && (page === undefined || page(mix, v, reach))) out.push(v);
+    else {
+      if (page !== undefined && settled === w && v.reachedTo < reach) settled++;
+      list[w++] = v;
+    }
   }
+  ix.settled = settled;
   if (w < end) {
     for (let i = end; i < list.length; i++) list[w + i - end] = list[i] as Voice<I, O>;
     list.length -= end - w;
