@@ -181,4 +181,16 @@ describe('children free to play faster without end, in a span nothing fits', () 
     const fastest = layout(s, kids, { ...plan, rate: [inf, inf] }).length;
     expect(layout(s, kids, plan).length).toBeLessThanOrEqual(fastest + 1);
   });
+
+  it.each([
+    ['fits only as the rate grows without end', 500, { floor: 500 }],
+    ['has no budget', 0, {}],
+  ])('play within 1 ms of the shortest layout where the span %s', (_, left, more) => {
+    const s = span(left, { priority: 'weak', share: 0 });
+    const kids = [kid(300, { faster: Number.POSITIVE_INFINITY, ...more })];
+    const plan = rescale(s, kids, plain(s, kids));
+    const fastest = layout(s, kids, { ...plan, rate: [Number.POSITIVE_INFINITY] }).length;
+    expect(layout(s, kids, plan).length).toBeLessThanOrEqual(fastest + 1);
+    expect(plan.rate[0]).toBeLessThan(1000);
+  });
 });

@@ -21,9 +21,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `bind(...).drop()`, and quarks' and tone's `drop` through it, cuts every voice cued on the
   subject: one already fading slowly or waiting for rest played on, keeping the mix from going inert
   for good, and one a seek back had brought back after it ended was missed.
-- A span child given `faster: Infinity`, in a span its children cannot fit, plays at a finite rate:
-  as fast as still shortens the span, to within 1 ms. It was set to rate Infinity and played in no
-  time.
+- A span child given `faster: Infinity`, in a span too short for it, plays no faster than still
+  shortens the span, to within 1 ms. Where its children could not fit it was set to rate Infinity
+  and played in no time, and where they fit only as the rate grew without end, as in a span with
+  no budget, at a rate near 3e11.
 - A span's `played` settles where its fit ends, its `coast`, true where every voice it held played.
   It settled once the voices held so far had played, so a span with budget left reported true at
   its first child's end, while its `coast` read its budget's, and then took a late child that could
