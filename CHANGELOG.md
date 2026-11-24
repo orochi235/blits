@@ -13,8 +13,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time
   that is not one, throws when it is made, as it does unheld. It was taken, and threw from the
   hold's `free()`, losing every call made after it. A call that still throws as the hold is freed
-  no longer stops the rest. `Hold.step` refuses a negative or non-finite step, where it did
-  nothing.
+  no longer stops the rest. A held seek takes a time `prepare` paged back in, as an unheld one
+  does, and refuses a frame that is not a whole number when it is made. `Hold.step` refuses a
+  negative or non-finite step, where it did nothing.
 - A span child with no time left, free to play slower without end, keeps its rate while the others
   slow to fill the budget, where it was set to rate 0 and laid out at NaN.
 - `bind(...).drop()`, and quarks' and tone's `drop` through it, cuts every voice cued on the

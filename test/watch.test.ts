@@ -8,6 +8,7 @@ import { slew } from '../src/signals.js';
 import { transport } from '../src/transport.js';
 import type { Mix, Watched, WatchedFrame } from '../src/types.js';
 import { watched } from '../src/watch.js';
+import { memoryStore } from './store.js';
 
 interface Pose {
   x: number;
@@ -384,6 +385,23 @@ describe('holding', () => {
     m.rate = 0.5;
     h.free();
     expect(m.rate).toBe(0.5);
+  });
+
+  it("takes a host's seek to a time prepare paged back in, and refuses a frame that is not a whole number", async () => {
+    const m = mix<Part, Pose>(K, {
+      history: { ms: 100, tape, store: memoryStore() },
+      keyOf: (p: Part) => p.id,
+    });
+    m.cue({ patch: clock });
+    for (let t = 0; t <= 1200; t += 16) m.sync(t);
+    await m.prepare(400);
+    const h = entryOf(m).hold();
+    expect(() => m.seek(400)).not.toThrow();
+    expect(() => m.seek({ frame: 1.5 })).toThrow(RangeError);
+    expect(() => m.seek({ frame: Number.NaN })).toThrow(RangeError);
+    expect(() => h.free()).not.toThrow();
+    expect(m.now).toBe(400);
+    expect(m.probe(a).x).toBe(400);
   });
 
   it('hands a watcher the frames a hold plays', () => {
