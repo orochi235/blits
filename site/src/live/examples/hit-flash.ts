@@ -5,7 +5,6 @@ import {
   type GpuDevice,
   gpu,
   gpuOf,
-  type Handle,
   kit,
   luminosity,
   type Mix,
@@ -144,6 +143,7 @@ export default demo((d) => {
     const image = ctx?.createImageData(COLS, ROWS);
     const pose: Flash = {};
     const choose = (mode: Mode) => {
+      const on = m === undefined || autoOn();
       m?.close();
       grid?.destroy();
       // Room for eight flashes laid on one cell at once.
@@ -183,7 +183,7 @@ export default demo((d) => {
       }
       for (const { n, b } of modeButtons) b.ariaPressed = String(n === mode);
       drawn = -1;
-      autoHits();
+      if (on) autoHits();
     };
     // Each hit is one voice over every cell, lighting its creature's, for one pass, leaving when
     // the pass ends. A later `start` is on the host's clock, not the mix's.
@@ -197,25 +197,28 @@ export default demo((d) => {
       hit(1);
       hit(1, 70);
     });
-    // Auto is one more voice, looping for good over every cell.
-    let autoOn = true;
-    let looping: Handle<Cell> | undefined;
+    // Auto is one more voice, looping for good over every cell. Whether it is on is read from the
+    // mix, which a seek back puts as it was.
+    const autoOn = () => m?.voices('auto').some((v) => v.state !== 'fading') ?? false;
     const autoHits = () => {
-      looping = autoOn
-        ? m?.cue({
-            patch: rounds,
-            subjects: cells,
-            loop: true,
-            stagger: (c) => Math.max(0, c.who) * EVERY,
-          })
-        : undefined;
+      m?.cue({
+        patch: rounds,
+        subjects: cells,
+        loop: true,
+        stagger: (c) => Math.max(0, c.who) * EVERY,
+        tags: ['auto'],
+      });
     };
-    auto.ariaPressed = 'true';
+    const showAuto = () => {
+      const on = String(autoOn());
+      if (auto.ariaPressed !== on) auto.ariaPressed = on;
+    };
     d.on(auto, 'click', () => {
-      autoOn = !autoOn;
-      auto.ariaPressed = String(autoOn);
-      if (autoOn) autoHits();
-      else looping?.fade({ over: FLASH });
+      if (autoOn())
+        for (const v of m?.voices('auto') ?? [])
+          if (v.state !== 'fading') v.fade({ over: FLASH });
+          else autoHits();
+      showAuto();
     });
     d.on(el, 'click', (e) => {
       const box = el.getBoundingClientRect();
@@ -235,6 +238,7 @@ export default demo((d) => {
       show,
       (now) => {
         show.sync(now);
+        showAuto();
         if (show.seq === drawn) return;
         drawn = show.seq;
         draw();
