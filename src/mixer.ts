@@ -149,6 +149,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   slot = -1;
   /** Taken off its transport, so it takes no more calls until a seek puts it back. */
   dropped = false;
+  /** The transport's mix time when it was dropped, where its clock stands while it is. */
+  droppedAt = Number.NaN;
   readonly name: string | undefined;
   /**
    * This mix's frame among every mix's: moved by a sync or seek, and by a control change, drop,
@@ -429,7 +431,7 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   // The transport's clock, read and written as the mix's own by every module that moves it.
   get now(): number {
-    return this.transport.now;
+    return this.dropped ? this.droppedAt : this.transport.now;
   }
   set now(v: number) {
     this.transport.now = v;

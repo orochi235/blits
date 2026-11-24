@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A mix dropped from its transport reads as it stood at the drop: its clock stays at the
+  transport's mix time then. It read at the transport's clock, so a stepping voice kept playing on
+  whenever it was probed, and a seek to a frame after the drop showed a state no frame had shown.
 - Calls made in the frame after a `rebase` play again in that frame after a seek back, not in the
   frame before it. The two frames shared one host time, so the tape could not tell them apart and
   a seek forward or back to the earlier frame showed the later one's cues. Under a tape a rebase

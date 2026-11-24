@@ -499,6 +499,42 @@ describe('transport', () => {
     expect(() => h.set('r', 5)).toThrow(/dropped/);
   });
 
+  for (const lanes of [true, false])
+    it(`reads a dropped mix as it stood at the drop, a seek after it too (lanes ${lanes})`, () => {
+      const drift = patch<string, { x: number }, { x: number }>(
+        0,
+        (_p, _s, st) => ({ x: st.state.x }),
+        {
+          writes: ['x'],
+          state: () => ({ x: 0 }),
+          step: (s, dt) => {
+            s.x += (50 - s.x) * Math.min(1, dt / 200);
+          },
+        },
+      );
+      const K = kit<{ x: number }>({ x: sum() });
+      const t = transport({ history: { ms: 1e6, every: 50, tape } });
+      mix<string, { x: number }>(K, { transport: t, name: 'a', stepMs: 4, lanes });
+      const b = mix<string, { x: number }>(K, { transport: t, name: 'b', stepMs: 4, lanes });
+      const shown: number[] = [];
+      const seqs: number[] = [];
+      for (const h of [0, 16, 32, 48, 64, 80]) {
+        t.sync(h);
+        if (h === 0) b.cue({ patch: drift, subjects: ['s'] });
+        if (h === 48) t.drop(b);
+        seqs.push(t.seq);
+        shown.push(b.probe('s').x);
+      }
+      expect(b.now).toBe(48);
+      expect(shown[4]).toBe(shown[3]);
+      expect(shown[5]).toBe(shown[3]);
+      t.seek({ frame: seqs[4] as number });
+      expect(b.probe('s').x).toBe(shown[4]);
+      t.seek({ frame: seqs[2] as number });
+      expect(b.now).toBe(32);
+      expect(b.probe('s').x).toBe(shown[2]);
+    });
+
   it('wakes its listeners when a host call follows a sleep while running back', () => {
     const t = transport({ history: { ms: 10_000, tape } });
     const runs = mix<string, Row>(ROWS, { transport: t, name: 'runs' });

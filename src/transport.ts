@@ -186,6 +186,7 @@ export class Transport implements TransportApi {
     this.members.splice(i, 1);
     scoredDrop(m);
     m.dropped = true;
+    m.droppedAt = this.now;
     if (this.history !== undefined) {
       this.dropped.push({ mix: m, at: this.now, seq: this.seq });
       record(this, 'drop', (stage) => {

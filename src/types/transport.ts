@@ -95,7 +95,8 @@ export interface Transport {
   /** As `Mix.onSeek`, for a seek of the transport or any mix on it. */
   onSeek(fn: (sought: Sought) => void): () => void;
   /**
-   * Takes a mix off the transport. It is no longer synced and takes no more calls. With history, a
+   * Takes a mix off the transport. It is no longer synced and takes no more calls, and reads as it
+   * stood at the drop: its clock stays at the transport's mix time then. With history, a
    * seek back before the drop puts it back as it was then, and `project` reads it there; without,
    * it is let go. `marks` lists only the mixes on it now.
    */
