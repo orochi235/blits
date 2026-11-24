@@ -51,7 +51,7 @@ export function turnOf(channel: Channel<unknown>): number {
  * `channel.fold(into, v, w)` for a `vec`, each axis at `w` times its own weight in `ws`, or at
  * `w` alone where `ws` is absent. An axis at weight 0 takes nothing.
  */
-export function foldAxes(
+export function foldAxesApart(
   channel: Channel<unknown>,
   into: number[],
   v: ArrayLike<number>,
