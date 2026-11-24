@@ -23,6 +23,7 @@ import { Inspector } from './Inspector';
 import { type PanelTab, PanelTabs } from './PanelTabs';
 import { ReadBack } from './ReadBack';
 import { Transport } from './Transport';
+import { keepsOwnUndo } from './undoKeys';
 import { useComposition } from './useComposition';
 import { usePlayback } from './usePlayback';
 import { useScore } from './useScore';
@@ -105,7 +106,7 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
-      if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+      if (keepsOwnUndo(e.target)) return;
       e.preventDefault();
       if (e.shiftKey) redo();
       else undo();
