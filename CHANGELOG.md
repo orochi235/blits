@@ -8,6 +8,28 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A ticker's `stop` called during a frame, from a mix's sync or an `after` callback, stops the
+  loop. It was ignored, the frame asking for the next as it ended.
+- A debugger's `watch` callback that throws no longer makes the host's `sync` throw and skip the
+  frame, nor stops the other watchers: its error is thrown again on a microtask.
+- A `call` whose `fn` throws is taped all the same, so what it did before it threw is made again
+  after a seek, where it was lost at the next one. Made again by a seek or a sync, an `fn` that
+  throws no longer fails it: its error is thrown again on a microtask.
+- An `onSeek` listener that seeks again ends the telling of the seek it heard, so the listeners
+  after it hear only the seek the mix stands at. They heard the outer seek last, so a driver
+  following them took back to a time the mix had left. A listener that throws no longer stops the
+  rest, nor other mixes' on the transport: its error is thrown again on a microtask.
+- A patch's `step` that throws partway through the ticks a `stepMs` frame owes no longer runs the
+  ticks before it again on the next read, where a frame owing 10 stepped 14 times; the setting's
+  `timestamp` and `dt` go back to the frame's, where they kept the last tick's.
+- A booker's `take` that throws no longer books the items after it twice, nor stops the sync: its
+  error is thrown again on a microtask and the rest are taken. A `take` that cancels its booker
+  stops the takes after it, where they went on into bookings the cancel had just cleared.
+- An `onWake` listener that throws no longer leaves a cue, a rate or a seek half made. The cue
+  played but was never taped, so the next seek back threw, and the rate was not taped, so a replay
+  played at the old one; later listeners, a ticker's among them, never heard, and the mix never woke
+  again. Its error is thrown again on a microtask, and listeners now hear of a cue, a rate or a
+  seek once it is whole, a seek's with every mix on the transport put back.
 - `trace` refuses a window and `grid` giving more than a million points with a `RangeError`, where
   it tried to read them all and ran out of memory.
 - Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time

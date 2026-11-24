@@ -5,6 +5,7 @@ import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { transport } from '../src/transport.js';
 import type { Sought } from '../src/types.js';
+import { messages, thrownLater } from './later.js';
 
 const K = kit<{ x: number }>({ x: sum() });
 const ramp = patch<object, { x: number }>(1000, (p) => ({ x: p }), { writes: ['x'] });
@@ -47,6 +48,38 @@ describe('onSeek', () => {
     t.seek(300);
     expect(heard).toEqual(['t 200', 'a 200', 'b 200', 't 300', 'b 300']);
   });
+
+  for (const lanes of [true, false]) {
+    it(`stops telling a seek once a listener seeks again, so the last heard is where it stands${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+      m.cue({ patch: ramp, subjects: [{}] });
+      for (let t = 0; t <= 800; t += 100) m.sync(t);
+      const heard: number[] = [];
+      m.onSeek((s) => {
+        if (s.at === 400) m.seek(200);
+      });
+      m.onSeek((s) => heard.push(s.at));
+      m.seek(400);
+      expect(m.now).toBe(200);
+      expect(heard).toEqual([200]);
+    });
+
+    it(`goes on past a listener that throws, to every mix on the transport${lanes ? '' : ', without lanes'}`, () => {
+      const t = transport({ history });
+      const a = mix<object, { x: number }>(K, { transport: t, name: 'a', lanes });
+      const b = mix<object, { x: number }>(K, { transport: t, name: 'b', lanes });
+      for (let at = 0; at <= 500; at += 100) t.sync(at);
+      const heard: string[] = [];
+      a.onSeek(() => {
+        throw new Error('a');
+      });
+      a.onSeek((s) => heard.push(`a ${s.at}`));
+      b.onSeek((s) => heard.push(`b ${s.at}`));
+      const errors = thrownLater(() => t.seek(200));
+      expect(messages(errors)).toEqual(['a']);
+      expect(heard).toEqual(['a 200', 'b 200']);
+    });
+  }
 });
 
 describe('call', () => {
@@ -96,6 +129,55 @@ describe('call', () => {
     expect(d.ats()).toEqual([[100, 0]]);
     expect(d.m.voices()).toHaveLength(2);
   });
+
+  for (const lanes of [true, false]) {
+    it(`keeps what a call that throws made, again after a seek${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+      const dot = {};
+      m.sync(0);
+      m.sync(100);
+      expect(() =>
+        m.call('drv', () => {
+          m.cue({ patch: ramp, subjects: [dot] });
+          throw new Error('drv');
+        }),
+      ).toThrow('drv');
+      m.sync(200);
+      m.sync(300);
+      const live = m.probe(dot).x;
+      const errors = thrownLater(() => {
+        m.seek(50);
+        m.seek(300);
+      });
+      expect(messages(errors)).toEqual(['drv']);
+      expect(m.probe(dot).x).toBe(live);
+      expect(m.voices()).toHaveLength(1);
+    });
+
+    it(`seeks past a call that throws only when made again, throwing it later${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+      const dot = {};
+      m.cue({ patch: ramp, subjects: [dot] });
+      m.sync(0);
+      m.sync(100);
+      let n = 0;
+      m.call('drv', () => {
+        if (n++ === 1) throw new Error('replay');
+      });
+      m.sync(200);
+      m.sync(300);
+      const errors = thrownLater(() => {
+        m.seek(50);
+        m.seek(300);
+      });
+      expect(messages(errors)).toEqual(['replay']);
+      expect(m.now).toBe(300);
+      expect(m.probe(dot).x).toBeCloseTo(0.3);
+      m.seek(50);
+      m.seek(250);
+      expect(n).toBe(3);
+    });
+  }
 
   it('lets go of the calls ahead when the host makes another after a seek back, until switchBranch', () => {
     const d = driven();
@@ -154,4 +236,88 @@ describe('call', () => {
         expect([m.now, m.probe(dot).x]).toEqual([m.now, seen.get(m.now)]);
       }
     });
+});
+
+describe.each([true, false])('an onWake listener, lanes %s', (lanes) => {
+  it('that throws leaves a cue made and taped, and the listeners after it told', () => {
+    const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+    const dot = {};
+    m.sync(0);
+    m.sync(100);
+    let woke = 0;
+    const off = m.onWake(() => {
+      throw new Error('boom');
+    });
+    m.onWake(() => woke++);
+    const errors = thrownLater(() => m.cue({ patch: ramp, subjects: [dot] }));
+    off();
+    expect(messages(errors)).toEqual(['boom']);
+    expect(woke).toBe(1);
+    m.sync(200);
+    m.sync(300);
+    const live = m.probe(dot).x;
+    m.seek(50);
+    m.seek(300);
+    expect(m.probe(dot).x).toBe(live);
+    expect(m.voices().length).toBe(1);
+  });
+
+  it('that throws leaves a rate write taped', () => {
+    const long = patch<object, { x: number }>(10_000, (p) => ({ x: p }), { writes: ['x'] });
+    const m = mix<object, { x: number }>(K, { history: { ms: 100_000, tape }, name: 'r', lanes });
+    const dot = {};
+    m.cue({ patch: long, subjects: [dot] });
+    for (const t of [0, 100, 200]) m.sync(t);
+    const off = m.onWake(() => {
+      throw new Error('rate');
+    });
+    const errors = thrownLater(() => {
+      m.rate = 0;
+    });
+    off();
+    expect(messages(errors)).toEqual(['rate']);
+    m.sync(300);
+    m.sync(400);
+    const live = [m.now, m.probe(dot).x];
+    m.seek(100);
+    for (const t of [500, 600, 700]) m.sync(t);
+    expect([m.now, m.probe(dot).x]).toEqual(live);
+    expect(m.rate).toBe(0);
+  });
+
+  it('that throws leaves a seek whole, and its onSeek listeners told', () => {
+    const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
+    m.cue({ patch: ramp, subjects: [{}] });
+    for (let t = 0; t <= 800; t += 100) m.sync(t);
+    const heard: number[] = [];
+    m.onSeek((s) => heard.push(s.at));
+    const off = m.onWake(() => {
+      throw new Error('seek');
+    });
+    const errors = thrownLater(() => m.seek(400));
+    off();
+    expect(messages(errors)).toEqual(['seek']);
+    expect(m.now).toBe(400);
+    expect(heard).toEqual([400]);
+  });
+
+  it('is told of a seek once every mix on the transport is back', () => {
+    const t = transport({ history });
+    const a = mix<object, { x: number }>(K, { transport: t, name: 'a', lanes });
+    const b = mix<object, { x: number }>(K, { transport: t, name: 'b', lanes });
+    const da = {};
+    const db = {};
+    a.cue({ patch: ramp, subjects: [da] });
+    b.cue({ patch: ramp, subjects: [db] });
+    for (let at = 0; at <= 800; at += 100) {
+      t.sync(at);
+      a.probe(da);
+      b.probe(db);
+    }
+    const seen: number[][] = [];
+    a.onWake(() => seen.push([a.now, b.now, b.probe(db).x]));
+    t.seek(300);
+    expect(seen).toEqual([[300, 300, b.probe(db).x]]);
+    expect(seen[0]?.[2]).toBeCloseTo(0.3);
+  });
 });

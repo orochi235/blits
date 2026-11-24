@@ -498,6 +498,40 @@ describe('stepMs', () => {
     m.probe(part);
     expect(count).toBe(4);
   });
+
+  for (const lanes of [true, false])
+    it(`steps no tick twice past a step that throws${lanes ? '' : ', without lanes'}`, () => {
+      let throwAt = 50;
+      const read: number[][] = [];
+      const counted = patch<Part, Pose, { n: number }>(
+        10_000,
+        (_p, _s, set) => {
+          read.push([set.timestamp, set.dt]);
+          return { crawl: set.state.n };
+        },
+        {
+          writes: ['crawl'],
+          state: () => ({ n: 0 }),
+          step: (st, _dt, _s, set) => {
+            if (set.timestamp === throwAt) {
+              throwAt = Number.NaN;
+              throw new Error('step');
+            }
+            st.n++;
+          },
+        },
+      );
+      const m = mix<Part, Pose>(PART, { stepMs: 10, lanes });
+      const part = { id: 'a' };
+      m.cue({ patch: counted, subjects: [part] });
+      m.sync(0);
+      m.probe(part);
+      m.sync(100);
+      expect(() => m.probe(part)).toThrow('step');
+      read.length = 0;
+      expect(m.probe(part).crawl).toBe(10);
+      expect(read.map(([timestamp]) => timestamp)).toEqual([100]);
+    });
 });
 
 describe('stepMs at an interval that is not a whole number of ms', () => {

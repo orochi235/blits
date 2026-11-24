@@ -409,15 +409,19 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Calls `fn` when a host call makes the mix need frames again after a sync. Such a call is a cue,
    * a fade, a handle's or the mix's rate, a seek, a `drop`, or a motion retargeted. It fires once
-   * until the next sync clears the change, and never during `sync`. Returns a function that
-   * unsubscribes `fn`. A frame loop sleeping on `inert` subscribes here to wake.
+   * until the next sync clears the change, and never during `sync`; after a cue, a rate or a seek,
+   * once the call is done, a seek's before its `onSeek` listeners. A listener that throws stops
+   * neither the call nor the other listeners: its error is thrown again on a microtask. Returns a
+   * function that unsubscribes `fn`. A frame loop sleeping on `inert` subscribes here to wake.
    */
   onWake(fn: () => void): () => void;
   /**
    * Calls `fn` each time the mix is sought, by its own `seek` or its transport's, once the seek has
    * landed: the mix can be read at the time sought, before any sync, as a paused host scrubbing
-   * reads it. A driver holding state of its own learns here what to take back. Returns a function
-   * that unsubscribes `fn`.
+   * reads it. A driver holding state of its own learns here what to take back. A listener that
+   * seeks or syncs ends the telling of this seek, so the last seek heard is where the mix stands;
+   * one that throws stops no other, its error thrown again on a microtask. Returns a function that
+   * unsubscribes `fn`.
    */
   onSeek(fn: (sought: Sought) => void): () => void;
   /**
@@ -427,7 +431,9 @@ export interface Mix<I, O, H = unknown> {
    * calls ahead, it starts a new branch, and what the mix does inside `fn` is part of it, made
    * again with it rather than recorded apart. On a seek back to before it, the driver takes back
    * what `fn` did, by {@link Mix.onSeek | `onSeek`}. A read ahead does not make it. Without a
-   * `history.tape` it only calls `fn`.
+   * `history.tape` it only calls `fn`. An `fn` that throws is kept all the same, with what it did
+   * before it threw, and its error thrown to the host; made again, its error is thrown again on a
+   * microtask, and the seek or sync playing it goes on.
    */
   call(label: string, fn: () => void): void;
   /**

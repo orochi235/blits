@@ -156,7 +156,8 @@ export interface BookOptions<E = unknown, I = unknown> {
    * clock's now; it is 0 for one booked ahead. Return a {@link Taken.cancel | `cancel`} to hear about a booking whose time moved by
    * more than 1 ms or that went away (a seek, a rate or ramp on the voice or the mix, a fade, a
    * {@link Mix.rebase | `rebase`}, an anchor's target moving, the voice leaving); the item is then booked again, at its
-   * new time, at the same sync.
+   * new time, at the same sync. A take that throws stops neither the sync nor the takes after it,
+   * and its item is not taken again; its error is thrown again on a microtask.
    */
   take(item: Marked | BookedHit<E, I>, when: number, lateBy: number): Taken | undefined;
   /** Book only the voices, and announced marks, carrying this tag. */

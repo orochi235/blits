@@ -328,14 +328,18 @@ export function tick<I, O>(
   }
   const step = voice.patch.step as NonNullable<Patch<I, O, unknown>['step']>;
   setting.dt = tick;
-  for (n++; n <= due; n++) {
-    setting.timestamp = held.since + n * tick;
-    step(held.state as never, tick, subject, setting as never);
+  // Counted step by step, so a step that throws leaves those before it taken.
+  try {
+    for (n++; n <= due; n++) {
+      setting.timestamp = held.since + n * tick;
+      step(held.state as never, tick, subject, setting as never);
+      held.ticks = n;
+    }
+  } finally {
+    held.stepped = held.since + held.ticks * tick;
+    setting.timestamp = now;
+    setting.dt = frameDt;
   }
-  held.ticks = due > held.ticks ? due : held.ticks;
-  held.stepped = held.since + held.ticks * tick;
-  setting.timestamp = now;
-  setting.dt = frameDt;
 }
 
 /**

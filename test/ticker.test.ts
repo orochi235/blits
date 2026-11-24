@@ -3,6 +3,7 @@ import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys } from '../src/patch.js';
 import { type Ticked, ticker } from '../src/ticker.js';
+import { messages, thrownLater } from './later.js';
 
 interface Pose {
   crawl: number;
@@ -218,6 +219,21 @@ describe('ticker', () => {
     expect(errors.map((e) => (e as Error).message)).toEqual(['a', 'after', 'a', 'after']);
   });
 
+  it('wakes on a mix whose onWake listener before its own throws', () => {
+    const { t, step, waiting } = harness();
+    const m = mix<typeof part, Pose>(PART);
+    m.onWake(() => {
+      throw new Error('host');
+    });
+    t.add(m);
+    step(16);
+    expect(waiting()).toBe(0);
+    const errors = thrownLater(() => m.cue({ patch: ramp(), subjects: [part] }));
+    expect(messages(errors)).toEqual(['host']);
+    expect(m.voices().length).toBe(1);
+    expect(waiting()).toBe(1);
+  });
+
   it('stop cancels the waiting frame until something wakes it', () => {
     const { t, step, waiting } = harness();
     const a = fake(false);
@@ -227,6 +243,34 @@ describe('ticker', () => {
     a.stir();
     step(16);
     expect(a.synced).toEqual([16]);
+  });
+
+  it('stops from inside a frame, from a mix or an after callback, until something wakes it', () => {
+    for (const from of ['mix', 'after'] as const) {
+      const { t, step, waiting } = harness();
+      const a = fake(false);
+      let frames = 0;
+      if (from === 'mix') {
+        a.sync = (at) => {
+          a.synced.push(at);
+          t.stop();
+        };
+        t.after(() => frames++);
+      } else
+        t.after(() => {
+          frames++;
+          t.stop();
+        });
+      t.add(a);
+      step(16);
+      expect(waiting()).toBe(0);
+      step(32);
+      expect(frames).toBe(1);
+      a.stir();
+      expect(waiting()).toBe(1);
+      step(48);
+      expect(a.synced).toEqual([16, 48]);
+    }
   });
 
   it('wake starts a stopped loop over a mix changed before the stop', () => {

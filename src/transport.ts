@@ -19,6 +19,7 @@ import { projectAll } from './project.js';
 import { type ScoreHolders, scoredDrop, scoredJoin } from './scored.js';
 import { seek } from './seek.js';
 import { hostAt, record, replay, tapeOf } from './tape.js';
+import { throwLater } from './ticker.js';
 import { gave, historyFor } from './watch.js';
 
 /** How far the tape's reach moves before it is pruned again, ms of mix time. */
@@ -244,7 +245,28 @@ export class Transport implements TransportApi {
   woke(): void {
     if (this.woken) return;
     this.woken = true;
-    for (const fn of [...this.wakeFns]) fn();
+    for (const fn of [...this.wakeFns])
+      try {
+        fn();
+      } catch (err) {
+        throwLater(err);
+      }
+  }
+
+  /**
+   * How many host calls under way hold back `onWake`, so a listener hears of a call once it is
+   * whole: recorded, and after a seek every mix put back.
+   */
+  hushed = 0;
+
+  /** Ends a call `hushed` counted, telling the listeners of each mix it stirred. */
+  unhush(): void {
+    if (--this.hushed > 0) return;
+    for (const m of this.members)
+      if (m.unwoken) {
+        m.unwoken = false;
+        if (!m.syncing) m.wake();
+      }
   }
 
   sync(timestamp: number): void {
@@ -514,8 +536,13 @@ export class Transport implements TransportApi {
     }
     const reach = this.history === undefined ? Number.NEGATIVE_INFINITY : this.keepsFrom();
     this.pace.change(this.u, rate, over, reach, this.seq);
-    for (const m of this.members) m.stir();
-    record(this, 'rate', (stage) => stage.transport(this).ramp(rate, over));
+    this.hushed++;
+    try {
+      for (const m of this.members) m.stir();
+      record(this, 'rate', (stage) => stage.transport(this).ramp(rate, over));
+    } finally {
+      this.unhush();
+    }
   }
 }
 
