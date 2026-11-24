@@ -654,6 +654,36 @@ describe('sync', () => {
   });
 });
 
+describe('a call in the frame after a rebase', () => {
+  const up = patch<Part, Pose>(1000, (ph) => ({ x: 1 + ph }), { writes: ['x'] });
+  for (const lanes of [true, false])
+    it(`plays again in that frame, not the one before it (lanes ${lanes})`, () => {
+      const m = mix<Part, Pose>(K, { history: { ms: 1e6, every: 50, tape }, stepMs: 4, lanes });
+      const shown: number[] = [];
+      const seqs: number[] = [];
+      for (const h of [0, 16, 32, 48, 364, 380]) {
+        if (h === 364) m.rebase();
+        m.sync(h);
+        if (h === 364) m.cue({ patch: up, subjects: [a] });
+        seqs.push(m.seq);
+        shown.push(m.probe(a).x);
+      }
+      expect(shown[3]).toBe(0);
+      expect(shown[4]).toBe(1);
+      m.seek({ frame: seqs[4] as number });
+      expect(m.probe(a).x).toBe(shown[4]);
+      m.seek({ frame: seqs[3] as number });
+      expect(m.probe(a).x).toBe(shown[3]);
+      m.seek(16);
+      const again: number[] = [];
+      for (const h of [396, 412, 428]) {
+        m.sync(h);
+        again.push(m.probe(a).x);
+      }
+      expect(again).toEqual([shown[2], shown[3], shown[5]]);
+    });
+});
+
 describe('project', () => {
   it('reads by mix time, which a rebase leaves where it was', () => {
     const rise = keys<Part, Pose>(1000, [

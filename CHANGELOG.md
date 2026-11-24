@@ -8,6 +8,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Calls made in the frame after a `rebase` play again in that frame after a seek back, not in the
+  frame before it. The two frames shared one host time, so the tape could not tell them apart and
+  a seek forward or back to the earlier frame showed the later one's cues. Under a tape a rebase
+  now holds the mix clock for 2⁻¹⁰ host ms, as rate 0 would, giving that frame a host time of its
+  own.
 - A seek back holds back only the events a subject sends again while it steps back up to the
   moment sought. It held back every event stamped at or before that moment, so one first sent
   after it was lost on the way forward again: a voice cued later with `seek` or a `start` in the
