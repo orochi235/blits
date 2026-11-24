@@ -13,6 +13,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A read ahead to the moment of an instant `fade({ subject, over: 0 })` reads nothing of that
   subject on a voice cued on the way, as play does, where it still read the subject from the stop
   before the fade.
+- A span's `out` and `end` marks are where its fit ends, with no `fade.out` of its own added, as
+  it leaves in play: a read ahead started a voice anchored `{ after }` a span with `fade.out` that
+  much later than play did, and `marks` listed the span's `end` that much late.
 - A motion voice whose subjects were all dropped while they waited out their stagger goes `inert`
   once past it. It kept their records listed as waiting, unread for good, so `inert` never held:
   100 subjects probed and dropped inside a 500 ms stagger left a spring awake to the end.

@@ -297,4 +297,26 @@ describe('a read ahead restaging at a stop', () => {
     m.seek(16);
     expect(m.project(64).probe(a).x).toBe(shown);
   });
+
+  it('starts a voice anchored after a fading span where play starts it', () => {
+    const scene = (x: Mix<string, P>, t: number) => {
+      if (t === 0) x.span({ name: 's', duration: 300, fade: { in: 100, out: 100 } });
+      if (t === 160)
+        x.cue({ patch: climb(1000), subjects: ['a'], anchor: { start: { after: 's' } } });
+    };
+    const played = mix<string, P>(KP, { stepMs: 4 });
+    let shown = 0;
+    for (let t = 0; t <= 352; t += 16) {
+      played.sync(t);
+      scene(played, t);
+      shown = played.probe('a').x;
+    }
+    const ahead = mix<string, P>(KP, { stepMs: 4 });
+    for (let t = 0; t <= 256; t += 16) {
+      ahead.sync(t);
+      scene(ahead, t);
+      ahead.probe('a');
+    }
+    expect(ahead.project(352).probe('a').x).toBe(shown);
+  });
 });
