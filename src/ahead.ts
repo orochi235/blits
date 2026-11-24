@@ -51,9 +51,7 @@ export function playAhead(
       const next = restage(c);
       for (const [mix, copy] of copies) {
         const on = new Mixer<unknown, unknown>(copy.kit, { ...copy.opts, transport: next }, null);
-        on.slot = copy.slot;
-        on.projecting = true;
-        on.share = copy.share;
+        standIn(copy, on);
         copyAhead(copy, on);
         const stages = earlier.get(mix);
         if (stages === undefined) earlier.set(mix, { at: [copy], met: new Set() });
@@ -68,6 +66,14 @@ export function playAhead(
     if (tape !== undefined && tape.undoDepth() !== depth) tape.goto(depth);
   }
   return c;
+}
+
+/** Gives a projection's copy of `mix` what it takes of the mix before anything is copied into it. */
+export function standIn<I, O>(mix: Mixer<I, O>, copy: Mixer<I, O>): void {
+  copy.slot = mix.slot;
+  copy.projecting = true;
+  copy.share = mix.share;
+  copy.places = mix.places;
 }
 
 /**
@@ -346,6 +352,8 @@ function carry<I, O>(
 ): Subject<unknown> | undefined {
   const mix = link.mix as unknown as Mixer<I, O>;
   const voice = link.voice as unknown as Voice<I, O>;
+  // Faded out on the way, before the copy first asked for it: the record left with it.
+  if (copy.parted?.has(subject)) return undefined;
   let live: Subject<unknown> | undefined;
   if (known && !voice.sharing) live = standing(mix, voice, subject, before);
   else {

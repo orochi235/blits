@@ -262,3 +262,61 @@ describe('a read ahead past many known events', () => {
     expect(asks).toEqual([a, b]);
   });
 });
+
+describe('a read ahead restaging at a stop', () => {
+  type P = { x: number };
+  const KP = kit<P>({ x: sum() });
+  const climb = (ms: number) => patch<unknown, P>(ms, (ph) => ({ x: 1 + ph }), { writes: ['x'] });
+
+  it('keeps an around voice reading its plot after a call the tape holds', () => {
+    const m = mix<{ id: number }, P>(KP, kept());
+    const s = { id: 0 };
+    m.plot([s, { id: 1 }], new Float64Array([0, 0, 1, 0]));
+    let shown = -1;
+    for (const t of [0, 16, 32, 48, 64]) {
+      m.sync(t);
+      if (t === 0)
+        m.cue({ patch: climb(1000), weight: m.around({ x: 0, y: 0, r: 2 }), loop: true });
+      if (t === 48) m.cue({ patch: climb(1000), weight: 0 });
+      shown = m.probe(s).x;
+    }
+    m.seek(16);
+    expect(m.project(64).probe(s).x).toBe(shown);
+  });
+
+  it('reads nothing of a subject at the moment of its instant fade on a voice cued on the way', () => {
+    const m = mix<Part, Pose>(K, kept());
+    let h: Handle<Part> | undefined;
+    let shown = -1;
+    for (const t of [0, 16, 32, 48, 64]) {
+      m.sync(t);
+      if (t === 32) h = m.cue({ patch: drift() });
+      if (t === 64) h?.fade({ subject: a, over: 0 });
+      shown = m.probe(a).x;
+    }
+    m.seek(16);
+    expect(m.project(64).probe(a).x).toBe(shown);
+  });
+
+  it('starts a voice anchored after a fading span where play starts it', () => {
+    const scene = (x: Mix<string, P>, t: number) => {
+      if (t === 0) x.span({ name: 's', duration: 300, fade: { in: 100, out: 100 } });
+      if (t === 160)
+        x.cue({ patch: climb(1000), subjects: ['a'], anchor: { start: { after: 's' } } });
+    };
+    const played = mix<string, P>(KP, { stepMs: 4 });
+    let shown = 0;
+    for (let t = 0; t <= 352; t += 16) {
+      played.sync(t);
+      scene(played, t);
+      shown = played.probe('a').x;
+    }
+    const ahead = mix<string, P>(KP, { stepMs: 4 });
+    for (let t = 0; t <= 256; t += 16) {
+      ahead.sync(t);
+      scene(ahead, t);
+      ahead.probe('a');
+    }
+    expect(ahead.project(352).probe('a').x).toBe(shown);
+  });
+});

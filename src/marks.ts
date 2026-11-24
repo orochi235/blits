@@ -143,13 +143,14 @@ export function markOf<I, O>(
   if (mark !== 'out' && mark !== 'end') return insideOf(mix, voice, start, mark);
   const out = voice.out;
   let outAt: number | undefined;
-  // An owner leaves with its last child, over no fade of its own.
+  // An owner leaves with its last child, and a span where its fit ends, over no fade of its own.
   let leaves = false;
   if (out !== null) outAt = out.at;
   else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
   else if (voice.fitting !== null) {
     const t = voice.timeAt(voice.fitting.end);
     if (Number.isFinite(t)) outAt = Math.max(start, t);
+    leaves = true;
   } else if (voice.holding !== null) {
     const t = lastChild(mix, voice.holding.children, 'end');
     if (t !== undefined) {
