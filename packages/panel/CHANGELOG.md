@@ -10,6 +10,9 @@ section here.
 
 ### Fixed
 
+- The scrub bar stays where it was put until the page reports the clock, where it snapped back to
+  the time before the seek and could seek back there. In the DevTools extension, whose replies
+  come late, a scrub mostly went nowhere.
 - A hold whose release throws no longer leaves the panel's hold controls stuck on it.
 - A mounted panel forgets number and string subjects once no mix lists them, where it used to
   keep every one it had seen.

@@ -28,10 +28,12 @@ jobs:
           - name: playground
             run: npm run playground:smoke
           - name: panel
-            run: npm run smoke -w @msb235/blits-panel
+            run: npm run smoke -w @msb235/blits-panel -- --shots "$RUNNER_TEMP/shots"
           - name: devtools
-            run: npm run smoke -w @blits/devtools
+            run: npm run smoke -w @blits/devtools -- --shots "$RUNNER_TEMP/shots"
     name: ${{ matrix.name }}
+    # The scripts fail a stuck step within minutes; this catches anything they can't.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -42,3 +44,9 @@ jobs:
       - if: matrix.name != 'bundles'
         run: npx playwright install --with-deps chromium
       - run: ${{ matrix.run }}
+      - if: failure() && (matrix.name == 'panel' || matrix.name == 'devtools')
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.name }}-shots
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: ignore

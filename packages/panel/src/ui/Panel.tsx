@@ -121,6 +121,10 @@ export function Panel({ source, docked = false, bar }: PanelProps) {
     }
   }, [hovered, s.subjects, source]);
   const frontier = useRef(Number.NEGATIVE_INFINITY);
+  // Where the scrub bar was put, shown until the page's next clock reading, which can come frames
+  // later: without it the bar snaps back to the reading before the seek.
+  const [sought, setSought] = useState<{ to: number; on: HoldInfo } | null>(null);
+  const scrubAt = sought !== null && sought.on === s.hold ? sought.to : s.hold.now;
 
   useEffect(() => {
     // Samples and the clock come every frame of the mix; both are drawn at most once a frame here.
@@ -215,8 +219,15 @@ export function Panel({ source, docked = false, bar }: PanelProps) {
         min={held ? s.hold.reach : 0}
         max={held ? frontier.current : 1}
         step="any"
-        value={held ? s.hold.now : 0}
-        onChange={(e) => send({ kind: 'seek', to: Number(e.currentTarget.value) })}
+        value={held ? scrubAt : 0}
+        onChange={(e) => {
+          // Every `change` follows an `input` with the same value; by then React may have put the
+          // reading before the seek back in the bar, and seeking to that would undo the seek.
+          if (e.nativeEvent.type === 'change') return;
+          const to = Number(e.currentTarget.value);
+          setSought({ to, on: s.hold });
+          send({ kind: 'seek', to });
+        }}
       />
     </>
   );
