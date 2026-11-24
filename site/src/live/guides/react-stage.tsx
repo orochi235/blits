@@ -21,6 +21,8 @@ const CARD = kit<CardPose>({ y: sum(), scale: mul() });
 interface Stage {
   mix: Mix<HTMLElement, CardPose> | null;
   track(el: HTMLElement | null): (() => void) | undefined;
+  /** Calls `fn` after every frame, until the returned function is called. */
+  everyFrame(fn: () => void): () => void;
 }
 
 const StageContext = createContext<Stage | null>(null);
@@ -41,6 +43,7 @@ function StageProvider({
   onFrame: () => void;
 }) {
   const elements = useRef(new Set<HTMLElement>()).current;
+  const frames = useRef(new Set<() => void>()).current;
   const [m, setMix] = useState<Mix<HTMLElement, CardPose> | null>(null);
   useRendered();
 
@@ -57,13 +60,14 @@ function StageProvider({
         m.probe(el, pose);
         el.style.transform = `translateY(${pose.y}px) scale(${pose.scale})`;
       }
+      for (const fn of frames) fn();
       onFrame();
     });
     return () => {
       stop();
       m.close();
     };
-  }, [elements, onFrame, root]);
+  }, [elements, frames, onFrame, root]);
 
   const stage = useMemo<Stage>(
     () => ({
@@ -76,8 +80,12 @@ function StageProvider({
           m?.drop(el);
         };
       },
+      everyFrame(fn) {
+        frames.add(fn);
+        return () => frames.delete(fn);
+      },
     }),
-    [m, elements],
+    [m, elements, frames],
   );
   return <StageContext.Provider value={stage}>{children}</StageContext.Provider>;
 }
@@ -102,6 +110,16 @@ function Card({ title }: { title: string }) {
   const latest = useRef<Handle | undefined>(undefined);
   const [lifted, setLifted] = useState(false);
   useRendered();
+  // Read from the voice each frame, so a seek that takes the lift back or plays it again shows;
+  // React renders only when the answer changes.
+  useEffect(
+    () =>
+      stage.everyFrame(() => {
+        const state = latest.current?.state;
+        setLifted(state === 'live' || state === 'fading');
+      }),
+    [stage],
+  );
   return (
     <div className="react-card">
       <button
@@ -120,8 +138,6 @@ function Card({ title }: { title: string }) {
           const h = stage.mix?.cue({ patch: lift, subjects: [e.currentTarget] });
           if (h === undefined) return;
           latest.current = h;
-          setLifted(true);
-          void h.done.then(() => latest.current === h && setLifted(false));
         }}
       >
         {title}
