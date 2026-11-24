@@ -83,5 +83,5 @@ export function picking(
     hooks.arming(on);
   };
 
-  return { arm, outline };
+  return { arm, outline, armed: () => armed };
 }

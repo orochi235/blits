@@ -355,6 +355,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       });
       fn({ kind: 'hold', hold: holdInfo() });
       fn({ kind: 'circles', on: circling });
+      fn({ kind: 'arming', on: page.armed() });
       const e = current();
       if (e !== null) fn({ kind: 'subjects', subjects: subjectList(e) });
       fn({ kind: 'voices', voices: voices() });
