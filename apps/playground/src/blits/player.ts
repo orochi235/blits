@@ -40,11 +40,6 @@ export const copied = (p: Mixed): Mixed => ({
 });
 
 /**
- * How the player moves back: `replay` rebuilds and plays again from 0 what the host did, syncing at
- * the same times, so a scrub shows what playback showed; `seek` calls blits' `seek`, which restores
- * from history and is as sure as it says.
- */
-/**
  * Pulls `m`'s frame into `out`, and gives what it threw on a value it cannot pull, or null. A mix
  * that throws leaves `out` holding the last frame.
  */
@@ -61,6 +56,11 @@ export function tryPull(
   }
 }
 
+/**
+ * How the player moves back: `replay` rebuilds and plays again from 0 what the host did, syncing at
+ * the same times, so a scrub shows what playback showed; `seek` calls blits' `seek`, which restores
+ * from history and is as sure as it says.
+ */
 export type SeekBy = 'replay' | 'seek';
 
 /**
