@@ -333,3 +333,47 @@ describe.each([true, false])('a span’s played, lanes %s', (lanes) => {
     expect([n, got]).toEqual([1, true]);
   });
 });
+
+describe('a child cued into a span mid-frame', () => {
+  const rise = (ms: number) =>
+    patch<Row, Pose>(ms, (phase) => ({ x: 1 + phase }), { writes: ['x'] });
+  for (const lanes of [true, false])
+    for (const skip of [false, true])
+      it(`shows in its cue frame, as a plain voice does, and a seek or read back agrees${skip ? ', one the fit skips' : ''}${lanes ? '' : ', without lanes'}`, () => {
+        const m = mix<Row, Pose>(K, { lanes, history: { ms: 1e6, every: 50, tape }, stepMs: 4 });
+        const r = { id: 'r' };
+        let span: ReturnType<M['span']> | undefined;
+        const shown: { seq: number; x: number }[] = [];
+        for (const t of [0, 16, 176, 192, 208]) {
+          m.sync(t);
+          if (t === 0) span = m.span({ duration: 600, order: 'together' });
+          // 1000 ms where 424 are left skips it, which puts it at its end, as a cue there does.
+          if (t === 176) m.cue({ patch: rise(skip ? 500 : 100), owner: span, loop: skip ? 2 : 1 });
+          shown.push({ seq: m.seq, x: m.probe(r).x });
+        }
+        expect(shown[2]?.x).toBe(skip ? 2 : 1);
+        for (const s of shown) expect(m.project({ frame: s.seq }).probe(r).x).toBe(s.x);
+        for (const s of shown.slice(1, -1).reverse()) {
+          m.seek({ frame: s.seq });
+          expect(m.probe(r).x).toBe(s.x);
+        }
+      });
+
+  it('waits again where a later cue in the frame ranks ahead of it in the sequence', () => {
+    const m = mix<Row, Pose>(K, { history: { ms: 1e6, every: 50, tape } });
+    const r = { id: 'r' };
+    m.sync(0);
+    m.sync(16);
+    const span = m.span({ duration: 1000 });
+    m.cue({ patch: rise(100), owner: span, rank: 1, name: 'second' });
+    expect(m.probe(r).x).toBe(1);
+    const tens = patch<Row, Pose>(100, (phase) => ({ x: 10 + phase }), { writes: ['x'] });
+    m.cue({ patch: tens, owner: span, rank: 0, name: 'first' });
+    const seq = m.seq;
+    expect(m.probe(r).x).toBe(10);
+    expect(m.project({ frame: seq }).probe(r).x).toBe(10);
+    m.sync(32);
+    expect(m.probe(r).x).toBe(10.16);
+    expect(startOf(m, 'second')).toEqual([116]);
+  });
+});

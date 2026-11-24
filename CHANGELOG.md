@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A child cued into a span mid-frame plays in that frame from where the span's fit puts it, as a
+  voice cued at its start does, and one the fit skips shows its last frame there. It waited for the
+  next frame, so its cue frame showed nothing where a seek or read back to that frame showed it
+  playing. One a later cue in the same frame ranks behind waits again.
 - A handle `seek` that takes an owner, such as an arc, past a waiting child's start starts that child
   in the same frame, as a voice cued at its start does. It waited for the next frame that moved the
   clock, so the frame of the seek showed the child's first frame where a read back of it showed

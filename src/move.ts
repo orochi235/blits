@@ -300,7 +300,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
  * Whether a pending voice starts with its owner's clock at `t`: at its very start only on a clock
  * not running back, where it would leave as it starts, as one passed between frames never starts.
  */
-function starts<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
+export function starts<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
   return (
     t > voice.start ||
     (t === voice.start && (voice.owner === null || heading(voice.owner, now) >= 0))
