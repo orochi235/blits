@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Fading or muting a child its owner keeps quiet past its passes under history leaves it quiet. It
+  started a fade from full weight, so its last frame came back for the length of the fade, where
+  without history the child had left and read 0.
 - A motion voice whose subjects were all dropped while they waited out their stagger goes `inert`
   once past it. It kept their records listed as waiting, unread for good, so `inert` never held:
   100 subjects probed and dropped inside a 500 ms stagger left a spring awake to the end.
