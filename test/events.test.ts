@@ -90,7 +90,7 @@ describe('events', () => {
   });
 
   // Outside the ball the weight reads 0 unasked, but the patch still steps there.
-  it('stamps what a subject outside its voice\'s bound sent with that subject and voice', () => {
+  it("stamps what a subject outside its voice's bound sent with that subject and voice", () => {
     const a = { id: 'a' };
     const far = { id: 'far' };
     const m = mix<Part, Pose>(PART, { stepMs: 5 });
