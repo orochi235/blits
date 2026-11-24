@@ -350,8 +350,14 @@ export class Transport implements TransportApi {
     this.kept();
     const reach = this.keepsFrom();
     // In steps: the tape shifts every entry it keeps to let go of the oldest, and one a second
-    // behind reach is never played again.
-    if (this.tape !== undefined && history !== undefined && !(reach - this.taped < TAPE_STEP_MS)) {
+    // behind reach is never played again. A store's reach has no end: under a rate whose older
+    // clocks it paged out, the host time of -Infinity reads as where the oldest still held begins.
+    if (
+      this.tape !== undefined &&
+      history !== undefined &&
+      Number.isFinite(reach) &&
+      !(reach - this.taped < TAPE_STEP_MS)
+    ) {
       const from = hostAt(this, reach);
       if (from < Number.POSITIVE_INFINITY) this.tape.prune(from);
       this.taped = reach;

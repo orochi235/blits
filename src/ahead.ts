@@ -161,6 +161,7 @@ function restage(c: Transport): Transport {
   next.offset = c.offset;
   next.u = c.u;
   next.nextId = c.nextId;
+  next.seq = c.seq;
   next.now = c.now;
   next.pace = c.pace === null ? null : c.pace.until(Number.POSITIVE_INFINITY);
   next.announced = c.announced.map((a) => ({ ...a }));
