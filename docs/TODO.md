@@ -23,14 +23,21 @@ Owner tags:
   the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
   ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
   whether this stays a stated limit of the fuzz.
-- **[agent] A seek holds back events a put-back record sends after the moment sought, stamped at
-  or before it** (2026-11-23, replay fuzz programs 553, 737, 754, 888 and 986): a
-  record a seek put back stays in `mix.resent` for good, and `heldTo` drops every event its steps
-  stamp at or before `sentTo`, taking them for ones sent the first time. A voice turned to run
-  back (handle `rate = -1`), a handle `ramp`, or a `rise` after a fade at rest makes a later step
-  stamp a time before the moment sought, which play sent and the seek's replay drops. One route:
-  hold back only up to where the record had stepped by the moment sought, and take it out of
-  `resent` once it steps past there.
+- **[agent] A seek back near a fade at rest steps a record where play's stood still** (2026-11-24,
+  replay fuzz programs 754 and 888, reproduced): under `fade({ at: 'rest' })` (888 rises it again
+  later), the read in the seek frame steps a put-back record through stamps play's record only
+  stepped past at the rise, so they go out in the seek frame instead of later (888, subject 0's
+  first event, 1060); in 754, after a handle `seek` and `rate = -1`, two records send their whole
+  history again at frame 11, as records stepped afresh. Until the put-back fix of the same day the
+  stamp hold dropped 888's in the seek frame, so it never went out, and 754 failed sooner, at
+  frame 6, on an event that fix now sends. One route: compare what
+  `restedBy` and `sentBack` decide for these records at the moment sought with play's records then.
+- **[agent] With a store, a seek past memory holds back a put-back record's steps by stamp**
+  (2026-11-24, reasoned): `mix.sends` keeps the step count each record had sent from for the
+  frames memory reaches, and a mark for the rest, so a seek to an earlier frame after the record's
+  first send cannot tell its count and holds back what its steps stamp at or before the moment
+  sought, as before 2026-11-24: one first sent after the moment, stamped before it, is lost. One
+  route: page the log with the record's copies.
 - **[agent] A read ahead across a cue joining a span reads its children off** (2026-11-23, replay
   fuzz program 463): a span (`duration: 600`, `order: 'together'`) holds a staggered `turn` child,
   and a second child is cued at frame 10 anchored after the first by −20. Sought back to frame 9,

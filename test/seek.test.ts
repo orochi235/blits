@@ -289,6 +289,69 @@ describe('seek', () => {
         expect([frame(80, 48), frame(96, 64)]).toEqual(sent.slice(3));
       });
 
+  for (const lanes of [true, false])
+    it(`sends again what a record put back steps after the moment, stamped before it (lanes ${lanes})`, () => {
+      // Sends at each 50 ms of steps. Run back past the subject's start and turned forward after
+      // the moment, its record catches up in one frame from where its start was, before the moment.
+      const sender = patch<Part, Pose, { n: number }>(200, () => ({}), {
+        writes: [],
+        state: () => ({ n: 0 }),
+        step: (st, dt, _s, setting) => {
+          const before = Math.floor(st.n / 50);
+          st.n += dt;
+          if (Math.floor(st.n / 50) !== before) setting.send(Math.floor(st.n / 50));
+        },
+      });
+      const m = mix<Part, Pose>(K, { history: { ms: 1e6, tape }, stepMs: 8, lanes });
+      let h: Handle<Part> | undefined;
+      const frame = (host: number, t: number) => {
+        m.sync(host);
+        if (host === t && t === 0)
+          h = m.cue({ patch: sender, subjects: [a], seek: 130, rate: -1, stagger: () => 80 });
+        if (host === t && t === 48) h?.ramp(0.5, 100);
+        m.probe(a);
+        return m.drain().map((e) => `${e.timestamp}:${e.event}`);
+      };
+      const ts = Array.from({ length: 20 }, (_, i) => i * 16);
+      const sent = ts.map((t) => frame(t, t));
+      // All four first sent at 208, the first stamped 56.
+      expect(sent[13]).toEqual(['56:1', '104:2', '152:3', '200:4']);
+      m.seek(80);
+      m.probe(a);
+      m.drain();
+      const again = ts.slice(6).map((t, i) => frame(320 + 16 * i, t));
+      expect(again).toEqual(sent.slice(6));
+    });
+
+  for (const lanes of [true, false])
+    it(`sends again what a record rebuilt by a handle seek steps after the moment (lanes ${lanes})`, () => {
+      const sender = patch<Part, Pose, { n: number }>(0, () => ({}), {
+        writes: [],
+        state: () => ({ n: 0 }),
+        step: (st, _dt, _s, setting) => {
+          st.n++;
+          if (st.n % 4 === 0) setting.send(st.n);
+        },
+      });
+      const m = mix<Part, Pose>(K, { history: { ms: 1e6, every: 16, tape }, stepMs: 8, lanes });
+      let h: Handle<Part> | undefined;
+      const frame = (host: number, t: number) => {
+        m.sync(host);
+        if (host === t && t === 0) h = m.cue({ patch: sender, subjects: [a] });
+        // Back to its start, its steps count from 0 again.
+        if (host === t && t === 128) h?.seek(0);
+        m.probe(a);
+        return m.drain().map((e) => `${e.timestamp}:${e.event}`);
+      };
+      const ts = Array.from({ length: 16 }, (_, i) => i * 16);
+      const sent = ts.map((t) => frame(t, t));
+      m.seek(144);
+      m.probe(a);
+      m.drain();
+      const again = ts.slice(10).map((t, i) => frame(256 + 16 * i, t));
+      expect(again).toEqual(sent.slice(10));
+    });
+
   it('brings back a subject faded out of a voice after the moment as it stood, until the fade plays again', () => {
     const m = mix<Part, Pose>(K, { history: { ms: 5000, tape }, stepMs: 5 });
     m.sync(0);

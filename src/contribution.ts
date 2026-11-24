@@ -47,6 +47,8 @@ function rebuild<I, O>(
   held.ticks = 0;
   held.stepped = held.since < now ? held.since : now;
   held.probed = Number.NaN;
+  // Its steps count from 0 again, so a seek back to here holds back none of them.
+  if (mix.sends?.has(held)) logSend(mix, held, 0);
 }
 
 /** Whether a seek since its last read moved a stateful record's origin, as one back before it does. */
@@ -348,20 +350,55 @@ export function tick<I, O>(
   }
   const step = voice.patch.step as NonNullable<Patch<I, O, unknown>['step']>;
   setting.dt = tick;
-  this.heldTo = heldToFor(this, held);
+  // Put back by a seek, its steps up to the count play had sent from were sent the first time,
+  // whatever they stamp: a clock turned back or a start moved since can stamp a later one earlier.
+  // Where history no longer knows the count, those stamped up to the moment sought were.
+  const sent = this.resent?.get(held) ?? Number.NaN;
+  const counted = !Number.isNaN(sent);
+  this.heldTo = counted ? Number.NEGATIVE_INFINITY : heldToFor(this, held);
+  const logs = this.opts.history !== undefined && !this.projecting;
   // Counted step by step, so a step that throws leaves those before it taken.
   try {
     for (n++; n <= due; n++) {
       setting.timestamp = held.since + n * tick;
+      if (counted) this.heldTo = n <= sent ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+      const before = this.sent.length;
       step(held.state as never, tick, subject, setting as never);
       held.ticks = n;
+      if (logs && this.sent.length !== before) logSend(this, held, n);
     }
+    if (counted && held.ticks > sent) this.resent?.delete(held);
   } finally {
     held.stepped = held.since + held.ticks * tick;
     setting.timestamp = now;
     setting.dt = frameDt;
     this.heldTo = this.sentTo;
   }
+}
+
+/** Notes that a record's step `n` sent in this frame, letting go of frames history no longer reaches. */
+function logSend<I, O>(mix: Mixer<I, O>, held: Subject<unknown>, n: number): void {
+  mix.sends ??= new WeakMap();
+  let log = mix.sends.get(held);
+  if (log === undefined) {
+    log = [];
+    mix.sends.set(held, log);
+  }
+  const seq = mix.transport.seq;
+  if (log.length > 0 && log[log.length - 3] === seq) {
+    log[log.length - 1] = n;
+    return;
+  }
+  log.push(seq, mix.now, n);
+  // The latest frame before memory's reach stays, for a seek to a frame between it and the next;
+  // those before it give way to a mark, frame -1 and then the first frame it sent in, before which
+  // it had sent nothing, and between which and the frames kept its count is not known.
+  const reach = mix.transport.memoryFrom();
+  const head = log[0] === -1 ? 3 : 0;
+  let cut = head;
+  while (log.length - cut > 3 && (log[cut + 4] as number) < reach) cut += 3;
+  if (cut > head)
+    log.splice(0, cut, -1, head === 3 ? (log[1] as number) : (log[0] as number), Number.NaN);
 }
 
 /**
