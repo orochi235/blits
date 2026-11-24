@@ -163,4 +163,26 @@ describe('set', () => {
       m.seek({ frame: set });
       expect(m.probe(a).x).toBe(40);
     });
+  it('reads a retarget made before the frame read the same with lanes on and off, its clock where it stood', () => {
+    const read = (lanes: boolean) => {
+      const tw = tween<typeof a, Pose>('x', {
+        from: 0.36,
+        to: 0.15,
+        ms: 300,
+        ease: { steps: 2, jump: 'start' },
+      });
+      const m = mix<typeof a, Pose>(K, { lanes });
+      m.sync(0);
+      m.cue({ patch: tw, weight: 0.375, loop: 2 });
+      m.sync(416);
+      m.probe(a);
+      m.sync(432);
+      m.probe(a);
+      // A second frame at the same time: nothing has read it when the retarget comes.
+      m.sync(432);
+      tw.to(a, 2.5);
+      return m.probe(a).x;
+    };
+    expect(read(true)).toBe(read(false));
+  });
 });

@@ -90,28 +90,25 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
  * A motion change to a subject its voice's record read at the time the clock stands at: let go of
  * that read now where nothing was read this frame, else at the next frame, so a probe this frame
  * keeps what it read and a clock held at that time still shows the change, as a seek there does.
+ * The lanes, which keep a read in their rows rather than on the record, start a frame of their own
+ * at the same moment, whether or not the record holds one.
  */
 function unshow<I, O>(m: Mixer<I, O>, id: number, subject: I): void {
+  const early = m.syncing || !m.looked;
+  if (early) m.lanes?.restart();
+  else m.unshown ??= [];
   const held = cuedById(m, id)?.subjects.get(subject);
   if (held === undefined || held.delta === null || held.probed !== m.now) return;
-  if (m.syncing || !m.looked) {
-    held.delta = null;
-    m.lanes?.restart();
-    return;
-  }
-  m.unshown ??= [];
-  m.unshown.push(held);
+  if (early) held.delta = null;
+  else m.unshown?.push(held);
 }
 
 /** At the start of a frame at mix time `at`: lets go of the reads `unshow` held back for it. */
 export function letGo<I, O>(m: Mixer<I, O>, at: number): void {
   const list = m.unshown as Subject<unknown>[];
   m.unshown = null;
-  for (const held of list)
-    if (held.probed === at) {
-      held.delta = null;
-      m.lanes?.restart();
-    }
+  m.lanes?.restart();
+  for (const held of list) if (held.probed === at) held.delta = null;
 }
 
 // Apart from `changed`, whose body would otherwise make this closure's context on every change.

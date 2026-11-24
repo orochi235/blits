@@ -32,12 +32,6 @@ Owner tags:
   the frame-3 sets put it at; without a store it matches. Filed under the rate-0 `set` entry until
   that fix of the same day showed it is a separate cause. One route: check which motion changes
   `unpage` and `rewind` keep for a seek to a frame before them.
-- **[agent] Lanes on and off read a retargeted looping tween differently** (2026-11-24, reproduced
-  on batch/2026-11-24-review6 at 96b9c6f2, not checked on main): `test/differential.test.ts` fails
-  every sweep on seed 583, `shrink(583, {})` in `test/fuzz/scene.ts`: a `tween` of `heading` eased
-  by `steps`, `loop: 2`, cued at 0, probed at 416 and 432, then retargeted at 432 `over: 100`; the
-  probe after reads heading 0.5012 without lanes and 0.0576 with them. One route: bisect the
-  batch's merges into `src/` against that shrink.
 - **[agent] A seek back near a fade at rest steps a record where play's stood still** (2026-11-24,
   replay fuzz programs 754 and 888, reproduced): under `fade({ at: 'rest' })` (888 rises it again
   later), the read in the seek frame steps a put-back record through stamps play's record only
