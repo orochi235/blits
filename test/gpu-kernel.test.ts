@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kernel, prefixed } from '../src/gpu/kernel.js';
+import { groupsFor, kernel, prefixed } from '../src/gpu/kernel.js';
 import { packOf, type Runner } from '../src/gpu/runner.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { literal } from '../src/gpu/wgsl/literal.js';
@@ -152,5 +152,12 @@ describe('WGSL literals', () => {
     expect(kernel([stub], bounded, 1).code).toContain(
       'clamp(acc_0[a], 0.0, 3.4028234663852886e+38)',
     );
+  });
+
+  it('dispatches past one row of workgroups in rows the device takes', () => {
+    expect(groupsFor(257)).toEqual([5, 1]);
+    expect(groupsFor(65_535 * 64)).toEqual([65_535, 1]);
+    expect(groupsFor(65_536 * 64)).toEqual([65_535, 2]);
+    expect(groupsFor(10 * 64, 4)).toEqual([4, 3]);
   });
 });

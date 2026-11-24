@@ -10,6 +10,19 @@ export const MAX_ROLES = 8;
 /** Invocations per workgroup. */
 export const GROUP = 64;
 
+/** The workgroups a dispatch takes in one dimension where the device says nothing larger. */
+export const MOST_GROUPS = 65_535;
+
+/**
+ * The workgroups a fold over `n` subjects dispatches, `[x, y]`: in rows of at most `most`, which the
+ * kernel numbers its subjects across.
+ */
+export function groupsFor(n: number, most = MOST_GROUPS): [number, number] {
+  const groups = Math.ceil(n / GROUP);
+  const x = Math.min(groups, most);
+  return [x, x === 0 ? 0 : Math.ceil(groups / x)];
+}
+
 /** A channel the kernel folds, and where its values land in the output buffer. */
 export interface Output {
   readonly name: string;
@@ -124,8 +137,15 @@ export function kernel(
         return `      case ${i}u: { let d = run_${i}(tk.phase, tk.pass_index, subject, base, ${sub}, tk.lag); ${inner} }`;
       })
       .join('\n');
-  add(`@compute @workgroup_size(${GROUP})`, 'fn main(@builtin(global_invocation_id) id: vec3u) {');
-  add('  let i = id.x;', '  if (i >= frame.y) { return; }', '  let subject = subjects[i];');
+  add(
+    `@compute @workgroup_size(${GROUP})`,
+    'fn main(@builtin(global_invocation_id) id: vec3u, @builtin(num_workgroups) groups: vec3u) {',
+  );
+  add(
+    `  let i = id.x + id.y * groups.x * ${GROUP}u;`,
+    '  if (i >= frame.y) { return; }',
+    '  let subject = subjects[i];',
+  );
   outputs.forEach((o, c) => {
     const rest = (channels.get(o.name) as ChannelCode).rest.map((x) => literal(x));
     add(`  var acc_${c} = array<f32, ${o.axes}>(${rest.join(', ')});`);
