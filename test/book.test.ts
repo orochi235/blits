@@ -293,7 +293,7 @@ describe('book', () => {
             threw = true;
             throw new Error('take');
           }
-          taken.push((item as Marked).name);
+          taken.push((item as Marked).name ?? '');
           return undefined;
         },
       });
@@ -318,7 +318,7 @@ describe('book', () => {
         ahead: 100,
         late: 1000,
         take(item) {
-          taken.push((item as Marked).name);
+          taken.push((item as Marked).name ?? '');
           booker.cancel();
           return undefined;
         },
