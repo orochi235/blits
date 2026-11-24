@@ -373,7 +373,13 @@ function flush(mix: Any): void {
   const frame = t?.frame;
   if (t === undefined || frame == null) return;
   t.frame = null;
-  for (const fn of [...t.fns]) fn(frame);
+  // A debugger's watcher that throws stops neither the host's call nor the other watchers.
+  for (const fn of [...t.fns])
+    try {
+      fn(frame);
+    } catch (err) {
+      throwLater(err);
+    }
 }
 
 function copy<T>(pose: T): T {

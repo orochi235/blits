@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A debugger's `watch` callback that throws no longer makes the host's `sync` throw and skip the
+  frame, nor stops the other watchers: its error is thrown again on a microtask.
 - A `call` whose `fn` throws is taped all the same, so what it did before it threw is made again
   after a seek, where it was lost at the next one. Made again by a seek or a sync, an `fn` that
   throws no longer fails it: its error is thrown again on a microtask.

@@ -8,6 +8,7 @@ import { slew } from '../src/signals.js';
 import { transport } from '../src/transport.js';
 import type { Mix, Watched, WatchedFrame } from '../src/types.js';
 import { watched } from '../src/watch.js';
+import { messages, thrownLater } from './later.js';
 
 interface Pose {
   x: number;
@@ -149,6 +150,26 @@ describe('watching', () => {
     expect(frames[0]?.pulled[0]?.columns.x).not.toBe(into.x);
     off();
   });
+
+  for (const lanes of [true, false])
+    it(`syncs on past a watcher that throws, and still hands the frame to the rest${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: clock, start: 0 });
+      const e = entryOf(m);
+      const bad = e.watch(() => {
+        throw new Error('watch');
+      });
+      const nows: number[] = [];
+      const good = e.watch((f) => nows.push(f.now));
+      m.sync(0);
+      m.probe(a);
+      const errors = thrownLater(() => m.sync(100));
+      expect(messages(errors)).toEqual(['watch']);
+      expect(m.now).toBe(100);
+      expect(nows).toEqual([0]);
+      bad();
+      good();
+    });
 
   it('puts the methods back once the last watcher stops', () => {
     const m = mix<Part, Pose>(K);

@@ -60,8 +60,9 @@ export interface Watched<I = unknown, O = unknown> {
   label(subject: I): string;
   /**
    * Calls `fn` with each frame the host read, once the next one begins. While anyone watches, the
-   * mix records what {@link Mix.probe | `probe`}, `pull` and `drain` give the host, and nothing else changes. Returns
-   * a function that stops watching.
+   * mix records what {@link Mix.probe | `probe`}, `pull` and `drain` give the host, and nothing else changes. An `fn`
+   * that throws stops neither the host's call nor other watchers: its error is thrown again on a
+   * microtask. Returns a function that stops watching.
    */
   watch(fn: (frame: WatchedFrame<I, O>) => void): () => void;
   /**
