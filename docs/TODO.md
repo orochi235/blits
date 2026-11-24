@@ -23,6 +23,12 @@ Owner tags:
   the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
   ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
   whether this stays a stated limit of the fuzz.
+- **[agent] With a store, a seek back shows a motion `set` made in a later frame** (2026-11-24,
+  replay fuzz programs 470 and 809, store only, reproduced): a spring (470, a `vspring` cued at
+  frame 0 and set twice at frame 3) shows at frame 2 after `prepare` and a seek there the values
+  the frame-3 sets put it at; without a store it matches. Filed under the rate-0 `set` entry until
+  that fix of the same day showed it is a separate cause. One route: check which motion changes
+  `unpage` and `rewind` keep for a seek to a frame before them.
 - **[agent] A seek back near a fade at rest steps a record where play's stood still** (2026-11-24,
   replay fuzz programs 754 and 888, reproduced): under `fade({ at: 'rest' })` (888 rises it again
   later), the read in the seek frame steps a put-back record through stamps play's record only
