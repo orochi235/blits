@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A patch's `step` that throws partway through the ticks a `stepMs` frame owes no longer runs the
+  ticks before it again on the next read, where a frame owing 10 stepped 14 times; the setting's
+  `timestamp` and `dt` go back to the frame's, where they kept the last tick's.
 - A booker's `take` that throws no longer books the items after it twice, nor stops the sync: its
   error is thrown again on a microtask and the rest are taken. A `take` that cancels its booker
   stops the takes after it, where they went on into bookings the cancel had just cleared.
