@@ -227,6 +227,21 @@ describe('the agent', () => {
     expect(picked?.subject).not.toBeNull();
   });
 
+  it('tells a panel that subscribes whether picking is armed', () => {
+    const { a } = setup();
+    const heard = () => {
+      const events: Event[] = [];
+      const off = a.subscribe((e) => events.push(e));
+      off();
+      return [...events].reverse().find((e) => e.kind === 'arming');
+    };
+    expect(heard()).toEqual({ kind: 'arming', on: false });
+    a.send({ kind: 'arm', on: true });
+    expect(heard()).toEqual({ kind: 'arming', on: true });
+    a.send({ kind: 'arm', on: false });
+    expect(heard()).toEqual({ kind: 'arming', on: false });
+  });
+
   it('picks through the app’s own function for subjects the DOM cannot see', () => {
     const m = mix<unknown, Pose>(K, { name: 'agent-g' });
     const mesh = { name: 'mesh' };

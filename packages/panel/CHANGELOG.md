@@ -15,6 +15,9 @@ section here.
   keep every one it had seen.
 - The `weightOf` plot draws a line for each voice when two share a name, where it used to draw
   one. `Series` takes an optional `label`, which `ChannelPlot` shows on hover.
+- A panel that outlives its page's agent (a DevTools panel across a reload) no longer keeps
+  "◎ pick" lit when the new agent is not picking, where the first press to turn it off did
+  nothing.
 
 ## 1.4.0
 

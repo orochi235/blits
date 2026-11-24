@@ -4,6 +4,7 @@ import { withKey } from '@pg/blits/keyed';
 import { ControlPanel, f, resolveConfigSchema } from '@weasel-js/labkit';
 import s from './App.module.css';
 import { docOf } from './docs';
+import { useDraft } from './drafting';
 
 /** What maxDt turns on at, having no value of its own until one is typed. */
 const MAX_DT = 50;
@@ -84,9 +85,17 @@ export function MixPanel({
         return set('lanes', value ? undefined : false);
     }
   };
+  const draft = useDraft(write);
   return (
     <section className={s.panel} aria-label="mix">
-      <ControlPanel title="mix" collapsible schema={SCHEMA} config={config} setConfig={write} />
+      <ControlPanel
+        title="mix"
+        collapsible
+        schema={SCHEMA}
+        config={config}
+        setConfig={write}
+        draftConfig={draft}
+      />
     </section>
   );
 }

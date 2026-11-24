@@ -9,6 +9,7 @@ import { anchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { blendRow } from './BlendField';
 import { docOf } from './docs';
+import { useDraft } from './drafting';
 import { hintsConfig, hintsGroup, writtenHints } from './HintsFields';
 import { marksConfig, marksNodes, writtenMarks } from './MarksFields';
 import { ownerRow } from './OwnerField';
@@ -224,6 +225,7 @@ export function VoicePanel(p: VoicePanelProps) {
     else if (path === 'blend') p.onBlend(value as Expr | undefined);
     else p.onChange(written(v, path, value));
   };
+  const draft = useDraft(write);
   return (
     <section className={s.panel} aria-label={`voice ${v.name}`}>
       <SpecProvider
@@ -241,6 +243,7 @@ export function VoicePanel(p: VoicePanelProps) {
           schema={SCHEMA}
           config={configOf(v, p.comp, spanned)}
           setConfig={write}
+          draftConfig={draft}
           errors={rowErrors(p.errors, v.id, ROWED)}
         />
       </SpecProvider>

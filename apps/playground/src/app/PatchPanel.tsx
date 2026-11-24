@@ -19,6 +19,7 @@ import { type CSSProperties, useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
 import { docOf } from './docs';
+import { useDraft } from './drafting';
 import { EaseField } from './EaseField';
 import { KeyEditor } from './KeyEditor';
 import m from './PatchLive.module.css';
@@ -223,6 +224,7 @@ export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPa
     }
     if (head === 'wave' && p.kind === 'wave') set(writtenWave(p, rest.join('.'), value));
   };
+  const draft = useDraft(setConfig);
 
   const code =
     (field: 'at' | 'state' | 'step', label: string, rows?: number): LeafRenderer =>
@@ -322,6 +324,7 @@ export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPa
         schema={schema}
         config={config}
         setConfig={setConfig}
+        draftConfig={draft}
         renderers={renderers}
         pack="auto"
       />

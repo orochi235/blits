@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
 import { StageControls } from './CompositionControls';
 import { DiagramTabs } from './DiagramTabs';
+import { Drafting } from './drafting';
 import { EventsPanel } from './EventsPanel';
 import { freshVoice } from './freshVoice';
 import { Header } from './Header';
@@ -22,6 +23,7 @@ import { Inspector } from './Inspector';
 import { type PanelTab, PanelTabs } from './PanelTabs';
 import { ReadBack } from './ReadBack';
 import { Transport } from './Transport';
+import { keepsOwnUndo } from './undoKeys';
 import { useComposition } from './useComposition';
 import { usePlayback } from './usePlayback';
 import { useScore } from './useScore';
@@ -34,7 +36,8 @@ const NOTICE_MS = 3000;
 const PANEL_WIDTH = 440;
 
 export function App() {
-  const { comp, set, undo, redo, share, refusedLink } = useComposition(DEFAULT);
+  const { comp, set, drafting, undo, redo, canUndo, canRedo, share, refusedLink } =
+    useComposition(DEFAULT);
   const compRef = useRef(comp);
   compRef.current = comp;
   const subjects = useMemo(() => subjectsOf(comp.stage), [comp.stage]);
@@ -103,7 +106,7 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
-      if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+      if (keepsOwnUndo(e.target)) return;
       e.preventDefault();
       if (e.shiftKey) redo();
       else undo();
@@ -158,7 +161,17 @@ export function App() {
     set(preset.comp);
     setSelected(null);
   };
-  const header = <Header comp={comp} onComp={set} onPreset={loadPreset} />;
+  const header = (
+    <Header
+      comp={comp}
+      onComp={set}
+      onPreset={loadPreset}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      onUndo={undo}
+      onRedo={redo}
+    />
+  );
   const panels = (
     <PanelTabs
       tab={tab}
@@ -197,96 +210,98 @@ export function App() {
   );
 
   return (
-    <LabShell title="blits playground" mode="dark" header={header}>
-      <Split
-        className={s.split}
-        contentClassName={s.grid}
-        side="end"
-        label="panels"
-        width={panelWidth}
-        defaultWidth={PANEL_WIDTH}
-        minWidth={280}
-        maxWidth={960}
-        contentMinWidth={560}
-        onWidthChange={setPanelWidth}
-        sidebar={panels}
-      >
-        <section className={s.stage} aria-label="stage">
-          <StageControls comp={comp} onChange={set} />
-          <Stage
-            stage={comp.stage}
-            subjects={subjects}
-            columns={player.columns}
-            colorAxes={player.built.colorAxes}
-            frame={frame}
-            picked={shown}
-            onPick={setPicked}
-            onPoint={(x, y) => {
-              player.point(x, y);
-              tick();
-            }}
-          />
-        </section>
-        <DiagramTabs
-          comp={comp}
-          faulted={faulted}
-          player={player}
-          selected={selected}
-          onVoice={pickVoice}
-          onComp={set}
-        />
-        <section className={s.score}>
-          <Transport
-            playing={playing}
-            onPlaying={play}
-            rate={player.rate}
-            onRate={(r) => {
-              player.setRate(r, live ? over : undefined);
-              tick();
-            }}
-            loop={loop}
-            onLoop={setLoop}
-            t={player.t}
-            length={comp.length}
-            live={live}
-            onLive={setLive}
-            livened={player.livened}
-            seekBy={seekBy}
-            onSeekBy={setSeekBy}
-            onStep={(n) => scrub(player.t + n * FRAME)}
-            clock={player.clock}
-            over={over}
-            onOver={setOver}
-            onMute={(over) => {
-              player.liveMix((m) => m.mute(over === undefined ? undefined : { over }));
-              tick();
-            }}
-            levels={comp.levels}
-            moved={player.moved}
-            onLevel={(name, v) => {
-              player.setLevel(name, v);
-              tick();
-            }}
-            tracksOpen={tracksOpen}
-            onTracks={toggleTracks}
-          />
-          <ScoreLanes
-            clips={clips}
-            links={links}
-            headers={headers}
-            marks={marks}
-            onFold={fold}
-            tracks={tracks}
-            open={tracksOpen}
-            duration={comp.length}
-            playhead={player.t}
+    <Drafting.Provider value={drafting}>
+      <LabShell title="blits playground" mode="dark" header={header}>
+        <Split
+          className={s.split}
+          contentClassName={s.grid}
+          side="end"
+          label="panels"
+          width={panelWidth}
+          defaultWidth={PANEL_WIDTH}
+          minWidth={280}
+          maxWidth={960}
+          contentMinWidth={560}
+          onWidthChange={setPanelWidth}
+          sidebar={panels}
+        >
+          <section className={s.stage} aria-label="stage">
+            <StageControls comp={comp} onChange={set} />
+            <Stage
+              stage={comp.stage}
+              subjects={subjects}
+              columns={player.columns}
+              colorAxes={player.built.colorAxes}
+              frame={frame}
+              picked={shown}
+              onPick={setPicked}
+              onPoint={(x, y) => {
+                player.point(x, y);
+                tick();
+              }}
+            />
+          </section>
+          <DiagramTabs
+            comp={comp}
+            faulted={faulted}
+            player={player}
             selected={selected}
-            onSelect={pickVoice}
-            onScrub={scrub}
-            onEdit={edit}
+            onVoice={pickVoice}
+            onComp={set}
           />
-        </section>
-      </Split>
-    </LabShell>
+          <section className={s.score}>
+            <Transport
+              playing={playing}
+              onPlaying={play}
+              rate={player.rate}
+              onRate={(r) => {
+                player.setRate(r, live ? over : undefined);
+                tick();
+              }}
+              loop={loop}
+              onLoop={setLoop}
+              t={player.t}
+              length={comp.length}
+              live={live}
+              onLive={setLive}
+              livened={player.livened}
+              seekBy={seekBy}
+              onSeekBy={setSeekBy}
+              onStep={(n) => scrub(player.t + n * FRAME)}
+              clock={player.clock}
+              over={over}
+              onOver={setOver}
+              onMute={(over) => {
+                player.liveMix((m) => m.mute(over === undefined ? undefined : { over }));
+                tick();
+              }}
+              levels={comp.levels}
+              moved={player.moved}
+              onLevel={(name, v) => {
+                player.setLevel(name, v);
+                tick();
+              }}
+              tracksOpen={tracksOpen}
+              onTracks={toggleTracks}
+            />
+            <ScoreLanes
+              clips={clips}
+              links={links}
+              headers={headers}
+              marks={marks}
+              onFold={fold}
+              tracks={tracks}
+              open={tracksOpen}
+              duration={comp.length}
+              playhead={player.t}
+              selected={selected}
+              onSelect={pickVoice}
+              onScrub={scrub}
+              onEdit={edit}
+            />
+          </section>
+        </Split>
+      </LabShell>
+    </Drafting.Provider>
   );
 }
