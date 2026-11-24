@@ -447,6 +447,76 @@ describe.each([true, false])('an owner cued partway or backward, lanes %s', (lan
     expect([c.state, o.state]).toEqual(['done', 'done']);
     expect(m.probe(a).y).toBe(0);
   });
+
+  const kept = (history: boolean): MixOptions =>
+    history ? { lanes, history: { ms: 5000, tape } } : { lanes };
+
+  it.each([false, true])(
+    'cued backward with no seek, a child placed after 0 leaves at once, history %s',
+    (history) => {
+      const m = mix<Part, Pose>(K, kept(history));
+      m.sync(0);
+      const o = m.owns({ rate: -1 });
+      const c = m.cue({ patch: ramp, loop: false, owner: o, start: 50 });
+      for (const t of [10, 100, 1000]) {
+        m.sync(t);
+        m.probe(a);
+      }
+      expect([c.state, o.state, m.live, m.inert]).toEqual(['done', 'done', false, true]);
+    },
+  );
+
+  it.each([false, true])(
+    'turned back with a child still to start, leaves at its start with the one it played, history %s',
+    (history) => {
+      const m = mix<Part, Pose>(K, kept(history));
+      m.sync(0);
+      const o = m.owns({});
+      const played = m.cue({ patch: ramp, loop: false, owner: o, start: 0 });
+      const ahead = m.cue({ patch: ramp, loop: false, owner: o, start: 500 });
+      m.sync(50);
+      o.rate = -1;
+      m.sync(60);
+      expect([played.state, ahead.state, o.state]).toEqual(['live', 'pending', 'live']);
+      m.sync(100);
+      expect([played.state, ahead.state, o.state, m.live]).toEqual(['done', 'done', 'done', false]);
+      const end = (v: Handle<Part>) =>
+        m.marks(0, 1000).find((k) => k.voice === v.id && k.mark === 'end')?.timestamp;
+      if (history) expect([end(o), end(ahead)]).toEqual([100, 100]);
+    },
+  );
+
+  it('turned back and forward again before its start, still starts a child placed ahead', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const o = m.owns({});
+    m.cue({ patch: ramp, loop: false, owner: o, start: 0 });
+    const ahead = m.cue({ patch: ramp, loop: false, owner: o, start: 500 });
+    m.sync(50);
+    o.rate = -1;
+    m.sync(80);
+    o.rate = 1;
+    // Its clock reads 20 at 80, so 500 at 560.
+    m.sync(550);
+    expect(ahead.state).toBe('pending');
+    m.sync(610);
+    expect([ahead.state, o.state]).toEqual(['live', 'live']);
+    expect(m.probe(a).y).toBeCloseTo(5, 9);
+  });
+
+  it('seeks back to before it turned, with the child still to start waiting again', () => {
+    const m = mix<Part, Pose>(K, kept(true));
+    m.sync(0);
+    const o = m.owns({});
+    const played = m.cue({ patch: ramp, loop: false, owner: o, start: 0 });
+    const ahead = m.cue({ patch: ramp, loop: false, owner: o, start: 500 });
+    m.sync(50);
+    o.rate = -1;
+    m.sync(200);
+    expect([played.state, ahead.state, o.state]).toEqual(['done', 'done', 'done']);
+    m.seek(40);
+    expect([played.state, ahead.state, o.state, m.live]).toEqual(['live', 'pending', 'live', true]);
+  });
 });
 
 describe('a child cued under an owner standing still', () => {
