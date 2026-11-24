@@ -201,7 +201,7 @@ export function contribution<I, O>(
     return NOTHING;
   }
 
-  if (voice.out?.rest && this.isRest(delta)) {
+  if (voice.out?.rest && !this.stop && this.isRest(delta)) {
     held.weight = 0;
     held.restedAt = now;
     voice.restedCount++;

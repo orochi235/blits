@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A read ahead takes a subject out of a voice faded `at: 'rest'` only where the time read finds it
+  resting, as play does at a frame: one resting at a known event on the way, such as the voice's
+  own start, which no frame landed on, read as gone though play still showed it.
 - A seek back and play on through a `rebase` whose sync holds a host call moves every mix waiting
   on something to land, as play did: a mix cued into in the frame before still showed that
   frame, such as a child its span's fit skipped holding its last frame a frame too long.

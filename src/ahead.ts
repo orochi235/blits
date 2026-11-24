@@ -53,6 +53,7 @@ export function playAhead(
         const on = new Mixer<unknown, unknown>(copy.kit, { ...copy.opts, transport: next }, null);
         standIn(copy, on);
         copyAhead(copy, on);
+        copy.stop = true;
         const stages = earlier.get(mix);
         if (stages === undefined) earlier.set(mix, { at: [copy], met: new Set() });
         else stages.at.push(copy);
