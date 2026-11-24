@@ -3,7 +3,7 @@
 // screenshots, which otherwise go to a temp directory removed on exit.
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { smoke } from '../../../apps/fireworks/scripts/smoke-harness.mjs';
+import { changed, smoke } from '../../../apps/fireworks/scripts/smoke-harness.mjs';
 
 await smoke('panel', { port: 4899 }, async ({ origin, shots, step, watch, defer }) => {
   const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
@@ -51,13 +51,11 @@ await smoke('panel', { port: 4899 }, async ({ origin, shots, step, watch, defer 
     const still = await time();
     if (before !== still) throw new Error(`held clock moved: ${before} → ${still}`);
     await page.click('.bp-bar button[title="step one frame"]');
-    await page.waitForTimeout(200);
-    const stepped = await time();
-    if (stepped === still) throw new Error(`step did not move the clock from ${still}`);
+    const stepped = await changed(time, still, 'step');
     const scrub = page.locator('.bp-bar .bp-scrub');
     if (await scrub.isDisabled()) throw new Error('scrub bar stayed off with history added');
     await scrub.fill(String(Number(await scrub.getAttribute('min')) + 100));
-    await page.waitForTimeout(200);
+    await changed(time, stepped, 'scrub');
   });
   await page.screenshot({ path: join(shots, 'held.png') });
   await step('free the clock and unmount nothing broken', async () => {

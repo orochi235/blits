@@ -20,6 +20,21 @@ const within = (ms, what, promise) => {
 };
 
 /**
+ * Reads `read()` until it differs from `from`, and returns it; throws after `ms`. A readout the
+ * page draws on its next frame can take longer than any fixed wait where frames are slow, as they
+ * are with software WebGL on a CI runner.
+ */
+export async function changed(read, from, what, ms = 5000) {
+  const end = Date.now() + ms;
+  for (;;) {
+    const now = await read();
+    if (now !== from) return now;
+    if (Date.now() > end) throw new Error(`${what} did not move the clock from ${from}`);
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+
+/**
  * Serves the app on `port` and runs `body({ origin, shots, step, watch, defer })`, then exits the
  * process: 0 if every step passed, 1 otherwise. `step(name, fn, ms)` runs one step under a limit of
  * `ms` (30 s by default); `watch(label, page)` screenshots the page if the run fails; `defer(fn)`

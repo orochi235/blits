@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { smoke } from '../../fireworks/scripts/smoke-harness.mjs';
+import { changed, smoke } from '../../fireworks/scripts/smoke-harness.mjs';
 
 const ext = fileURLToPath(new URL('../dist/', import.meta.url));
 
@@ -82,8 +82,7 @@ await smoke('devtools', { port: 4897 }, async ({ origin, shots, step, watch, def
     const later = await time();
     if (later !== still) throw new Error(`held clock moved: ${still} → ${later}`);
     await panel.click('.bp-bar button[title="step one frame"]');
-    await panel.waitForTimeout(200);
-    if ((await time()) === still) throw new Error(`step did not move the clock from ${still}`);
+    await changed(time, still, 'step');
     await panel.click('.bp-bar button[title="free the clock"]');
   });
   await step('reload with history', async () => {
@@ -105,17 +104,8 @@ await smoke('devtools', { port: 4897 }, async ({ origin, shots, step, watch, def
     const scrub = panel.locator('.bp-bar .bp-scrub');
     if (await scrub.isDisabled()) throw new Error('scrub bar stayed off with history');
     const held = await time();
-    const [min, max, value] = await scrub.evaluate((el) => [el.min, el.max, el.value]);
-    await scrub.fill(min);
-    await panel.waitForTimeout(200);
-    const after = await time();
-    if (after === held) {
-      const seen = await app.evaluate(() => document.visibilityState);
-      throw new Error(
-        `scrub did not move the clock: ${held} before and after; ` +
-          `bar min ${min}, max ${max}, value ${value}; app tab ${seen}`,
-      );
-    }
+    await scrub.fill(await scrub.getAttribute('min'));
+    await changed(time, held, 'scrub');
   });
   await panel.screenshot({ path: join(shots, 'scrubbed.png') });
   await step('no page errors', async () => {
