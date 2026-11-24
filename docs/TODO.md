@@ -279,6 +279,12 @@ built and what is deliberately not offered.
   next()` in `light-board.ts`), rather than from a voice. What is lit is read back from its voices
   (2026-11-23), so a panel seek back shows the right look; moving the cueing onto voices too is a
   redesign.
+- **[maintainer] Two explainer files import from outside `site/src/explainers`** (2026-11-23):
+  `hues.ts` takes `logoHues` from `@brand/hues.js`, and `kit/Timeline.tsx` takes the track drawing
+  from `@pg/widgets/ScoreLanes/track`, though HANDOFF's Traps say explainer source may import only
+  from under `site/src/explainers`. Both predate that line, nothing in the repo enforces it, and the
+  site builds. Decide whether the rule still holds; if it does, one route is a lint rule
+  (`noRestrictedImports` scoped to the folder) and moving the two shared pieces under it.
 - **[maintainer] Should the built-on page's Libraries table list every consumer?** It names
   klieg, magicsmoke, weasel and agnew; the README's status names nine. Which are public decides it.
 - **[maintainer] CI never runs `test:gpu`.** It needs real WebGPU, which GitHub's hosted runners
