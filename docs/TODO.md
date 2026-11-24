@@ -28,6 +28,13 @@ Owner tags:
   probe has read the subject since; the record still showed `since` 100 and `probed` 1600. It
   behaves the same on main before the 2026-11-23 inert fix. Decide what `inert` should say there,
   then test it beside "goes inert past the stagger" in `test/motion-edges.test.ts`.
+- **[agent] A hold's `reach` can sit one ulp past its `now`** (2026-11-23): a mix whose every
+  sync follows a `rebase` (fireworks' frame does one on any gap over 250 ms, which is every frame
+  on a slow GPU) stays at `born` less an ulp, as the comment in `Transport.sync` says, while
+  `reachOf` in `src/watch.ts` answers `born`. Reproduced: first sync at 842.1, then frames 333.3
+  ms apart each after a `rebase`, holds at `now` 842.0999999999999 with `reach` 842.1. The
+  panel's scrub bar then stays off, as `frontier > reach` never holds. Either keep `now` at
+  `born` across a rebase, or clamp `reach` to `now`.
 - **[maintainer] Public renames the 2026-11-09 audit asked about:** `timestamp` on mix-clock
   fields (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a
   Promise); glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the
