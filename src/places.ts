@@ -16,8 +16,13 @@ export class Places<I> extends Grid {
   placeOf = new Int32Array(0);
   /** Outside production, by index, its subject, for the check that a bound does not clip a signal. */
   refs: (WeakRef<object> | I | undefined)[] | null = null;
-  /** While a bounded fill reads the subject at an index, that index, so `around` need not look it up; else -1. */
+  /**
+   * While a bounded fill reads the subject at an index, that index, so `around` need not look it up;
+   * else -1. It holds for `curSubject` alone: a patch the fill runs may probe another subject.
+   */
   cur = -1;
+  /** The subject at `cur`, while it is set. */
+  curSubject: unknown = undefined;
   /** Indices a subject left, for `place` to hand out again. */
   free: number[] = [];
   /** Whether `xy` is the mix's own, grown as `place` hands out indices, rather than the array `plot` was given. */

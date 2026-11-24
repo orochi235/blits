@@ -72,11 +72,15 @@ export interface Transport {
   readonly history: TransportOptions['history'];
   /** Puts a named mark on a score every mix on it sees. Throws without a {@link AnnounceOptions.score | `score`}. */
   announce(name: string, opts: AnnounceOptions & { score: string }): void;
-  /** Every mark of every mix on it, and every mark announced on it, earliest first. */
+  /**
+   * Every mark of every mix on it now, and every mark announced on it, earliest first. A dropped
+   * mix's marks are left out, even between times before its drop; `project` reads one back.
+   */
   marks(from: number, to: number): Marked[];
   /**
    * Every mix on it read together at another time. The time is mix time `at`, or the frame
-   * `{ frame }` names, and reading them together lets anchors across them answer.
+   * `{ frame }` names, and reading them together lets anchors across them answer. With history, a
+   * read back before a drop reads the dropped mix too, as a seek there puts it back.
    */
   project(at: number | { readonly frame: number }): TransportProjection;
   /** Any mix on it live. */
@@ -92,7 +96,8 @@ export interface Transport {
   onSeek(fn: (sought: Sought) => void): () => void;
   /**
    * Takes a mix off the transport. It is no longer synced and takes no more calls. With history, a
-   * seek back before the drop puts it back as it was then; without, it is let go.
+   * seek back before the drop puts it back as it was then, and `project` reads it there; without,
+   * it is let go. `marks` lists only the mixes on it now.
    */
   drop<I, O, H>(mix: Mix<I, O, H>): void;
 }

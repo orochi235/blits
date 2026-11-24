@@ -333,6 +333,8 @@ export function runBounded<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, b: Bound<
   b.lit.length = 0;
   b.spare = old;
   const voice = lane.voice;
+  // Only a weight read per subject reads `around`, for the subject the fill looks up for it anyway.
+  const signal = typeof voice.spec.weight === 'function';
   const inAt = b.inAt;
   const found = places.found;
   const slots = places.slots;
@@ -344,10 +346,12 @@ export function runBounded<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, b: Bound<
     if (p < 0) continue;
     lit(b, slot, fills);
     places.cur = found[k] as number;
+    places.curSubject = signal ? lanes.subjectAt(slot) : undefined;
     try {
       lanes.one(lane, p, slot);
     } finally {
       places.cur = -1;
+      places.curSubject = undefined;
     }
     if (voice.keeping) return;
   }

@@ -66,7 +66,14 @@ export function projectAll(
     ahead ? transport.announced : transport.announced.filter((a) => within(cut, a.seq))
   ).map((a) => ({ ...a }));
   const copies = new Map<Mixer<unknown, unknown>, Mixer<unknown, unknown>>();
-  for (const mix of transport.members) {
+  // Read back, a mix dropped after the cut is on, as a seek there puts it back.
+  let members = transport.members;
+  if (!ahead && kept && transport.dropped.some((d) => !within(cut, d.seq)))
+    members = [
+      ...members,
+      ...transport.dropped.filter((d) => !within(cut, d.seq)).map((d) => d.mix),
+    ].sort((a, b) => a.slot - b.slot);
+  for (const mix of members) {
     const copy = new Mixer<unknown, unknown>(
       mix.kit,
       {
