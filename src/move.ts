@@ -258,7 +258,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
             {
               back,
               opening: !back && owned < 0,
-              stays: voice.owner !== null && mix.opts.history !== undefined,
+              stays: voice.owner !== null && mix.holdsQuiet,
             },
             Math.max(startOf(voice), Math.min(now, voice.endsAt())),
           );
@@ -283,8 +283,11 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
       if (out) retire(mix, voice, at + (deadline as number));
       else if (settled) retire(mix, voice);
     } else if (spent >= over) {
-      if (voice.out.stays) stay(mix, voice, at + over);
-      else retire(mix, voice, at + over);
+      if (voice.out.stays) {
+        stay(mix, voice, at + over);
+        // A seek during the fade put its clock back in its passes: it comes back from the fade's end.
+        if (!voice.quietAt(now)) rouse(mix, voice, now);
+      } else retire(mix, voice, at + over);
     }
   }
   // An owner run back past a fading child's start has it wait, which keeps it off lanes (`unfit`).

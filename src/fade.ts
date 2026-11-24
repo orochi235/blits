@@ -8,7 +8,7 @@ import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { nowFor, nowSoFar } from './now.js';
 import { startedAt } from './origin.js';
-import { type Holding, orphan, ownerReading, plays } from './owner.js';
+import { type Holding, mixTime, orphan, ownerReading, plays, turnedBack } from './owner.js';
 import { isRested } from './record.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
@@ -267,7 +267,7 @@ export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): vo
  * stays with it instead, quiet while its children are.
  */
 export function release<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>, at: number): void {
-  if (owner.owner !== null && owner.state === 'live' && mix.opts.history !== undefined) {
+  if (owner.owner !== null && owner.state === 'live' && mix.holdsQuiet) {
     closed(mix, owner);
     beginFade(mix, owner, { over: 0, stays: true }, at);
   } else retire(mix, owner, at);
@@ -371,14 +371,23 @@ export function fadeAt<I, O>(
  */
 export function rouse<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
   const out = voice.out as Ramp;
-  const edge = out.back === true ? voice.soonest : voice.span + voice.latest;
-  const reached = voice.reaches(edge);
-  const at = Math.max(out.at + out.over, reached <= now ? reached : now);
+  const at = Math.max(out.at + out.over, cameBack(voice, now));
   const over = fadeMsFor(mix, out.over);
   voice.out = null;
   voice.back = over > 0 ? { from: 0, at, over } : null;
   noted(mix, voice);
   mix.lanes?.refill();
+}
+
+/**
+ * The mix time by `now` its clock came back into its passes: where it ran in across the edge it
+ * runs from, or, already in them there, at its anchor, where a seek or a rate change put it.
+ */
+function cameBack<I, O>(voice: Voice<I, O>, now: number): number {
+  const back = voice.backs !== (voice.owner !== null && turnedBack(voice));
+  const ran = voice.reaches(back ? voice.span + voice.latest : voice.soonest);
+  const anchor = voice.owner === null ? voice.anchorNow : mixTime(voice.owner, voice.anchorNow);
+  return Math.min(now, Math.max(ran, anchor));
 }
 
 /** Whether a motion patch still asks this voice of this mix for its time. */

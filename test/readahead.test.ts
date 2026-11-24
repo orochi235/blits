@@ -370,6 +370,20 @@ describe('a read ahead restaging at a stop', () => {
     }, 16);
   });
 
+  for (const seekAt of [96, 208])
+    it(`brings back a child an owner kept quiet where a seek at ${seekAt} put its clock`, () =>
+      readsAhead((m, t, h) => {
+        if (t === 0) {
+          h.o = m.owns({});
+          m.cue({ patch: wave, loop: true, owner: h.o, subjects: [b] });
+        }
+        if (t === 64) {
+          h.w = m.cue({ patch: wave, owner: h.o, loop: 2, fade: { in: 80, out: 80 } });
+          (h.w as { rate: number }).rate = -1;
+        }
+        if (t === seekAt) h.w?.seek(336);
+      }, 16));
+
   it('meets afresh a subject whose ramp out ended on the way, brought back by a set', () => {
     const s = spring<Part, Pose>('x', { from: 0, to: 100 });
     readsAhead((m, t, h) => {

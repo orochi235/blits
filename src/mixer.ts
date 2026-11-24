@@ -124,6 +124,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   scored = new ScoreIndex<I, O>();
   /** Set on a projection's own mixer: it sends nothing, keeps no history, and reads without committing. */
   projecting = false;
+  /**
+   * Whether an owner keeps a child whose passes ran out with it, quiet, rather than let it leave:
+   * under history, and on a projection's copy of a mix under it, which keeps none of its own.
+   */
+  holdsQuiet = false;
   /** Set on a projection reading back: a subject it has nothing on starts from its voice's start. */
   backward = false;
   /**
@@ -432,6 +437,7 @@ export class Mixer<I, O> implements Mix<I, O> {
       this.transport = shared;
     } else this.transport = new Transport(opts.history, false);
     this.keepsInputs = this.opts.history?.inputs === true;
+    this.holdsQuiet = this.opts.history !== undefined;
     if (this.transport.pager !== null) {
       this.keys = new Keys(opts.keyOf);
       this.outs = new Outs();
