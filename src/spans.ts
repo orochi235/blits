@@ -62,6 +62,10 @@ export function checkPatchChild<I, O>(spec: VoiceSpec<I, O>): void {
 function unplaced<I, O>(spec: VoiceSpec<I, O>): void {
   if (spec.start !== undefined || spec.anchor?.start !== undefined || spec.anchor?.in !== undefined)
     throw new Error('blits: a span places the voices it holds, so one takes no start of its own');
+  if ((spec.rate ?? 1) < 0)
+    throw new Error(
+      'blits: a span lays out its children forward, so one is not cued backward; its handle turns it once it plays',
+    );
 }
 
 const endless = (): Error => new Error('blits: a span cannot fit a voice that never ends');

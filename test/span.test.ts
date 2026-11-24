@@ -218,6 +218,24 @@ describe('spans', () => {
     expect(c.state).toBe('done');
   });
 
+  it('refuses a child cued at a rate below 0, which its handle turns once it plays', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const s = m.span({ name: 'seq' });
+    expect(() => m.cue({ patch: write(300), owner: s, loop: false, rate: -1 })).toThrow(
+      /backward/,
+    );
+    expect(() => m.blend([write(300)], () => 1, { owner: s, loop: false, rate: -1 })).toThrow(
+      /backward/,
+    );
+    const c = m.cue({ patch: write(300), owner: s, loop: false });
+    m.sync(100);
+    c.rate = -1;
+    m.sync(150);
+    expect(c.state).toBe('live');
+    expect(c.elapsed).toBe(50);
+  });
+
   it('cued with a seek, starts that far into its budget', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);

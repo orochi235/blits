@@ -190,7 +190,7 @@ export interface Mix<I, O, H = unknown> {
    * sooner: true where every voice it held finished its passes, false where one did not. A voice
    * that loops for good cannot join one. Throws for a `rate` below 0: a
    * span lays its children out forward from its start, and its handle's `rate` turns it once it
-   * plays.
+   * plays. A child cued at a rate below 0 is refused for the same reason, and its handle turns it.
    */
   span(spec: SpanSpec<I, H>): SpanHandle<I>;
   /**
