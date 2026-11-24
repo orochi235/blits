@@ -109,12 +109,16 @@ export default demo((d) => {
       tags: ['hop'],
     });
   });
-  let idling = true;
+  // Whether it idles is read from the mix, which a seek back puts as it was.
+  const idling = () => m.voices('idle').some((h) => h.state !== 'fading');
+  const showIdle = () => {
+    const text = idling() ? 'Stop idle' : 'Start idle';
+    if (idleButton.textContent !== text) idleButton.textContent = text;
+  };
   d.on(idleButton, 'click', () => {
-    idling = !idling;
-    if (idling) idle();
-    else for (const h of m.voices('idle')) h.fade({ over: 1200 });
-    idleButton.textContent = idling ? 'Stop idle' : 'Start idle';
+    if (!idling()) idle();
+    else for (const h of m.voices('idle')) if (h.state !== 'fading') h.fade({ over: 1200 });
+    showIdle();
   });
 
   // The site mounts the panel at page load for `?panel`, before any mix is made, so it can scrub.
@@ -137,6 +141,7 @@ export default demo((d) => {
   const pose = m.pose();
   d.frame(m, (now) => {
     m.sync(now);
+    showIdle();
     for (const el of lamps) {
       m.probe(el, pose);
       el.style.setProperty('--y', `${pose.y.toFixed(2)}px`);
