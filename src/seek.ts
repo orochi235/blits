@@ -266,19 +266,23 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
     const seq = transport.seq;
     const depth = tape.undoDepth();
     const left = transport.left;
+    // The frame being played is its own end: a call ahead that rate 0 holds at `t` is a later one's.
+    const here = typeof to !== 'number';
     let u: number;
-    let last: number;
+    let last = Number.NaN;
     try {
-      last = replay(
-        transport,
-        (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
-      );
+      if (!here)
+        last = replay(
+          transport,
+          (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
+        );
       // Inverting the rate can land an ulp from where the host stood, which every later sync would carry.
-      const at =
-        left !== null &&
-        left.t === t &&
-        left.u >= transport.u &&
-        (transport.pace === null ? left.u : transport.pace.reading(left.u)) === t
+      const at = here
+        ? transport.u
+        : left !== null &&
+            left.t === t &&
+            left.u >= transport.u &&
+            (transport.pace === null ? left.u : transport.pace.reading(left.u)) === t
           ? left.u
           : hostAhead(transport, t);
       u = Number.isNaN(last) ? at : Math.max(last, at);
