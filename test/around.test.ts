@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   curve,
+  gate,
+  input,
   keys,
   kit,
   last,
+  level,
   mixHex,
   mul,
   patch,
+  peak,
   mix as plain,
   sum,
   tween,
@@ -272,6 +276,45 @@ describe('a ball moved between two probes of one frame', () => {
         ball.y = 7;
         ball.r = 4;
         out.push(m.probe(parts[9] as { id: number }).x);
+        return out;
+      };
+      expect(read(true)).toEqual(read(false));
+    });
+});
+
+describe('a ball read through a combinator', () => {
+  // Lanes watch every ball a weight reads, not only a bare `around`'s.
+  for (const wrap of ['peak', 'gate', 'input', 'blend'] as const)
+    it(`reads the same lanes on or off when the ball moves between probes: ${wrap}`, () => {
+      const read = (lanes: boolean) => {
+        type P = { id: number };
+        const m = plain<P, { x: number }>(kit({ x: sum() }), { lanes });
+        const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+        m.plot(parts, new Float64Array([0, 0, 1, 0, 2, 0, 3, 0]));
+        const ball = { x: 0, y: 0, r: 2 };
+        const near = m.around(ball);
+        const one = keys<P, { x: number }>(1000, [{ at: 0, delta: { x: 1 } }]);
+        m.sync(1000);
+        if (wrap === 'blend')
+          m.blend([one, keys<P, { x: number }>(1000, [])], near, { loop: true });
+        else
+          m.cue({
+            patch: one,
+            loop: true,
+            weight:
+              wrap === 'peak'
+                ? peak(near, level(0))
+                : wrap === 'gate'
+                  ? gate(near, 0.25)
+                  : input((s, setting) => near(s, setting) * 0.5, [near]),
+          });
+        const out: number[] = [];
+        for (const t of [1100, 1200]) {
+          m.sync(t);
+          out.push(...parts.map((p) => m.probe(p).x));
+        }
+        ball.x = 3;
+        out.push(...parts.map((p) => m.probe(p).x));
         return out;
       };
       expect(read(true)).toEqual(read(false));

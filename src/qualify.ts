@@ -1,4 +1,4 @@
-import { carried } from './around.js';
+import { eachBall } from './around.js';
 import { type Numeric, numericOf } from './channels.js';
 import { flush } from './columns.js';
 import { weighAt } from './everyone.js';
@@ -453,10 +453,11 @@ function placeAll<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
  * snaps where it stands.
  */
 function holdBall<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
-  const ball = carried(v.spec.weight);
-  if (ball === undefined || lanes.balls.includes(ball)) return;
-  const i = lanes.balls.push(ball) - 1;
-  if (4 * i < lanes.ballsAt.length) lanes.ballsAt[4 * i] = Number.NaN;
+  eachBall(v.blend?.of.by ?? v.spec.weight, (ball) => {
+    if (lanes.balls.includes(ball)) return;
+    const i = lanes.balls.push(ball) - 1;
+    if (4 * i < lanes.ballsAt.length) lanes.ballsAt[4 * i] = Number.NaN;
+  });
 }
 
 /**
