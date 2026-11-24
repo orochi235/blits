@@ -60,6 +60,37 @@ export function fadeInAt(
 }
 
 /**
+ * `stalls` with the pair `a`..`b` added, joined to a last pair it meets, less the leading pairs
+ * that `fadeIn` or more of climbing before mix time `by` follows: no fade in `fadeInAt` reads from
+ * then on still stands in them. A new array, as a logged control keeps the one it had.
+ */
+export function stalled(
+  stalls: readonly number[] | null,
+  a: number,
+  b: number,
+  fadeIn: number,
+  by: number,
+): number[] {
+  const s = stalls ?? [];
+  let n = s.length;
+  if (n > 0 && a <= (s[n - 1] as number)) {
+    a = s[n - 2] as number;
+    n -= 2;
+  }
+  let stood = Math.max(0, Math.min(b, by) - a);
+  let keep = n;
+  for (let i = n - 2; i >= 0; i -= 2) {
+    const end = s[i + 1] as number;
+    if (by - end - stood >= fadeIn) break;
+    keep = i;
+    stood += Math.max(0, Math.min(end, by) - (s[i] as number));
+  }
+  const kept = s.slice(keep, n);
+  kept.push(a, b);
+  return kept;
+}
+
+/**
  * A voice's own fade this frame, 0..1: in from `since` over `fadeIn`, out along its ramp, and back
  * up the same curve where a fade out was turned around.
  */

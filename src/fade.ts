@@ -1,5 +1,5 @@
 import { changed, headOf, slotOf, unlink } from './chain.js';
-import { clampWeight, envelope, fadeInAt, fadeMsFor, rampTime } from './clock.js';
+import { clampWeight, envelope, fadeInAt, fadeMsFor, rampTime, stalled } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
@@ -313,7 +313,13 @@ export function beginRise<I, O>(
   if (waiting) voice.begunSeq = Number.POSITIVE_INFINITY;
   voice.back = over > 0 && from < 1 ? { from, at, over } : null;
   // Its fade in stood still from where the fade out began, and climbs on from where it stood.
-  if (!out.rest && out.at < at) voice.stalls = [...(voice.stalls ?? []), out.at, at];
+  const fadeIn = voice.fade.in ?? 0;
+  if (fadeIn > 0 && !out.rest && out.at < at) {
+    // A subject ramping out reads its fade in as of its ramp's start.
+    let by = at;
+    if (voice.parts !== null) for (const r of voice.parts.values()) if (r.at < by) by = r.at;
+    voice.stalls = stalled(voice.stalls, out.at, at, fadeIn, by);
+  }
   if (waiting) changed(mix, voice);
   noted(mix, voice);
   if (waiting) mix.lanes?.invalidate();

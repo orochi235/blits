@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice faded and raised over and over keeps only the stalls its fade in still climbs through,
+  and none with no fade in. It kept two numbers per rise for good, copied the list at each, and
+  walked all of them at every weight read: with a 100 ms fade in, a thousand frames of alternating
+  fades over 200 subjects went from 144 ms to 3,162 ms after 20,000 frames.
 - `trace` refuses a window and `grid` giving more than a million points with a `RangeError`, where
   it tried to read them all and ran out of memory.
 - Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time
