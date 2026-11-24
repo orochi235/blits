@@ -48,7 +48,7 @@ function restore<I, O>(
     // stands for every subject a voice does not reach, so that one is copied.
     const h = mine && live.reaches ? unread(live) : copyHeld(voice, live);
     if (h.stepped > t) h.stepped = h.since > t && !voice.freezesBefore ? h.since : t;
-    restedBy(h, live, t);
+    restedBy(h, live.restedAt, t);
     h.weight = 0;
     h.inputs = inputs;
     if (!(h.since <= t)) origin(mix, voice, h);
@@ -66,7 +66,7 @@ function restore<I, O>(
   if (i < 0) return undefined;
   const snap = snaps[i] as NonNullable<typeof snaps>[number];
   // What the record replaced held, which a record put back over it would lose.
-  const { ticks, since, rebuilt, state, slot, restored } = live;
+  const { ticks, since, rebuilt, state, slot, restored, restedAt } = live;
   let h: Subject<unknown>;
   if (mine && live.reaches) {
     // Its chain may still read its number from it, and its store has just stamped it.
@@ -75,7 +75,7 @@ function restore<I, O>(
     h.restored = restored;
   } else h = copyHeld(voice, snap.held, true);
   h.weight = 0;
-  restedBy(h, live, t);
+  restedBy(h, restedAt, t);
   if (snap.at < t) h.copied = true;
   const kept = i + 1;
   // The record replaced is let go, so its list is cut where it stands.
