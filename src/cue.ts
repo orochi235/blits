@@ -301,6 +301,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     mix.playing.set(motion, (mix.playing.get(motion) ?? 0) + 1);
     mix.owner ??= motionOwner(new WeakRef(mix));
     motion.owner = mix.owner;
+    motion.pagedBy = mix.owner;
     motion.ownerId = voice.id;
   }
   // In id order, which a voice cued again after later ones keeps by going in at its place.

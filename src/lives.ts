@@ -46,7 +46,7 @@ export function release<I>(
     for (const e of this.released)
       if (e.at >= reach) kept.push(e);
       else
-        this.owner?.page(this.ownerId, 'released', e.subject, [
+        (this.owner ?? this.pagedBy)?.page(this.ownerId, 'released', e.subject, [
           { at: e.at, seq: e.seq, data: { ...runOf(e), early: e.early } },
         ]);
     this.released = kept;
@@ -191,8 +191,9 @@ export function prune<I>(this: Motions<I>, s: number): void {
   if (n === 0) return;
   const out = list.splice(0, n);
   const subject = this.numbers.subject(s);
-  if (this.owner !== null && subject !== absent)
-    this.owner.page(
+  const owner = this.owner ?? this.pagedBy;
+  if (owner !== null && subject !== absent)
+    owner.page(
       this.ownerId,
       'stretch',
       subject,

@@ -404,6 +404,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
     mix.playing.set(motion, (mix.playing.get(motion) ?? 0) + 1);
     if (mix.owner !== null) {
       motion.owner = mix.owner;
+      motion.pagedBy = mix.owner;
       motion.ownerId = voice.id;
     }
   }

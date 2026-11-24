@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- With a history store, a motion patch whose voice has ended still pages a dropped subject's run and
+  its older stretches as they leave memory. It let them go unpaged, so a seek or read back past
+  memory lost a `set` made on a subject later dropped once any other subject was dropped after the
+  voice ended, and played the subject from its first stretch.
 - Under history, a seek or read back to before a `drop` gives the subject its `plot` or `place`
   index again, so `around` and `within` voices read it as they did then. The drop freed the index
   for good, and they read 0 for it until a new `plot`. The index is handed out again once history
