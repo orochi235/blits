@@ -255,3 +255,44 @@ describe.each([true, false])('a retarget from a turning subject, lanes %s', (lan
     }
   });
 });
+
+describe.each([true, false])(
+  'a retarget on a channel whose lerp keeps its ends, lanes %s',
+  (lanes) => {
+    it('calls the lerp once per read of the first segment', () => {
+      type P = { at: number[] };
+      const base = vec(2, sum()) as Channel<number[]>;
+      const by = base.lerp as NonNullable<Channel<number[]>['lerp']>;
+      let calls = 0;
+      const channel: Channel<number[]> = {
+        ...base,
+        lerp: (a, b, u) => {
+          calls++;
+          return by(a, b, u);
+        },
+      };
+      const m = mix<string, P>(kit<P>({ at: channel }), { lanes });
+      const run = m.cue({
+        patch: patch<string, P>(0, () => ({ at: [0.1 * m.now, 0] }), { writes: ['at'] }),
+        role: 'at',
+      });
+      let t = 0;
+      for (; t <= 48; t += 16) {
+        m.sync(t);
+        m.probe('a');
+      }
+      run.weight = 0;
+      m.cue({
+        patch: keys<string, P>(500, [{ at: 1, delta: { at: [20, 5] } }]),
+        from: 'current',
+        role: 'at',
+      });
+      m.sync(t);
+      m.probe('a');
+      calls = 0;
+      m.sync(t + 16);
+      m.probe('a');
+      expect(calls).toBe(1);
+    });
+  },
+);

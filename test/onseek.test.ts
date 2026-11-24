@@ -4,7 +4,7 @@ import { kit, last, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { transport } from '../src/transport.js';
-import type { Sought } from '../src/types.js';
+import type { Handle, Sought } from '../src/types.js';
 import { messages, thrownLater } from './later.js';
 
 const K = kit<{ x: number }>({ x: sum() });
@@ -230,6 +230,30 @@ describe('call', () => {
         seen.set(t, m.probe(dot).x);
       }
       expect(seen.get(300)).toBe(2);
+      m.seek(60);
+      for (let t = 420; t <= 660; t += 20) {
+        m.sync(t);
+        expect([m.now, m.probe(dot).x]).toEqual([m.now, seen.get(m.now)]);
+      }
+    });
+
+  for (const lanes of [true, false])
+    it(`acts on a voice it cued through the handle kept, played again after a seek back${lanes ? '' : ', without lanes'}`, () => {
+      const val = patch<object, { x: number }>(10_000, () => ({ x: 1 }), { writes: ['x'] });
+      const m = mix<object, { x: number }>(K, { lanes, history: { ms: 100_000, every: 50, tape } });
+      const dot = {};
+      const seen = new Map<number, number>();
+      let h: Handle<object> | undefined;
+      for (let t = 0; t <= 400; t += 20) {
+        m.sync(t);
+        if (t === 100)
+          m.call('driver', () => {
+            h = m.cue({ patch: val });
+          });
+        if (t === 200) h?.fade({ over: 0 });
+        seen.set(t, m.probe(dot).x);
+      }
+      expect([seen.get(160), seen.get(300)]).toEqual([1, 0]);
       m.seek(60);
       for (let t = 420; t <= 660; t += 20) {
         m.sync(t);

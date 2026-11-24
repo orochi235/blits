@@ -16,7 +16,7 @@ import type {
   Watched,
   WatchedFrame,
 } from './types.js';
-import { reachable, unheld } from './unpage.js';
+import { seekable, seekableFrame } from './unpage.js';
 
 type Change = Parameters<Parameters<Registry['on']>[0]>[0];
 type Any = Mixer<unknown, unknown>;
@@ -446,13 +446,10 @@ function hold(t: Transport): Hold {
   const pin = (to: number | { readonly frame: number }) => {
     if (typeof to === 'number') {
       // Refused now, as an unheld seek is, rather than from `free`, where it would stop the rest.
-      if (to === Number.POSITIVE_INFINITY)
-        throw new RangeError('blits: a mix seeks to a finite time');
-      if (!(to >= t.born) || (to < t.now && t.frames.at(to) === undefined))
-        throw new Error(`blits: ${to} is older than this mix's history reaches`);
+      seekable(t, to);
       return () => to;
     }
-    if (Number.isInteger(to.frame) && !reachable(t, to.frame)) throw unheld(to.frame);
+    seekableFrame(t, to.frame);
     const f = t.frames.numbered(to.frame);
     if (f === undefined) return () => to;
     return () => (t.frames.numbered(f.seq) === f ? to : f.at);

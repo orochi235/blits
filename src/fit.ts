@@ -179,9 +179,9 @@ export function rescale(span: SpanClaim, kids: readonly Claim[], plan: FitPlan):
       ...plan,
       rate: kids.map((k, i) => Math.max(plan.rate[i] as number, Math.min(f, k.faster))),
     });
-    // Where nothing fits, an unbounded hint goes only as fast as still shortens the layout, to
-    // within 1 ms: past that it gains nothing, and rate Infinity plays a child in no time.
-    if (top === Number.POSITIVE_INFINITY && !fits(span, kids, at(top))) {
+    // An unbounded hint goes only as fast as still shortens the layout, to within 1 ms: past that
+    // it gains nothing, and rate Infinity plays a child in no time.
+    if (top === Number.POSITIVE_INFINITY) {
       const shortest = layout(span, kids, at(top)).length;
       top = least(1, top, (f) => layout(span, kids, at(f)).length <= shortest + 1);
     }

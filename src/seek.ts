@@ -21,7 +21,7 @@ import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, replay } from './tape.js';
 import type { Frame, Transport } from './transport.js';
 import type { Sought } from './types/mix.js';
-import { cover, coverFrame, cut } from './unpage.js';
+import { cover, coverFrame, cut, seekable } from './unpage.js';
 import type { Controls, Voice } from './voice.js';
 
 /**
@@ -227,9 +227,7 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
   let frame: Frame | undefined;
   if (typeof to === 'number') {
     t = to;
-    if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
-    if (!(t >= transport.born))
-      throw new Error(`blits: ${t} is older than this mix's history reaches`);
+    seekable(transport, t);
     cover(transport, t);
     if (t < transport.now) {
       frame = transport.frames.at(t);

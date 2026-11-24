@@ -16,10 +16,17 @@ export const subjectFree = (signal: object): boolean => alike.has(signal);
 const inputOf = (signals: readonly { readonly input?: boolean }[]): boolean =>
   signals.some((s) => s.input);
 
+/** The signals a combinator reads, for whatever has to see through it to theirs. */
+const parts = new WeakMap<object, readonly object[]>();
+
+/** The signals `signal` is built on, where a combinator or `input(read, of)` made it. */
+export const partsOf = (signal: object): readonly object[] | undefined => parts.get(signal);
+
 const marked = <I, H>(
   read: (subject: I, setting: Setting<void, H>) => number,
   of: readonly Signal<I, H>[],
 ): Signal<I, H> => {
+  parts.set(read, of);
   if (!inputOf(of)) return read as Signal<I, H>;
   if (of.every((s) => !s.input || told.has(s))) told.add(read);
   return Object.assign(read, { input: true }) as Signal<I, H>;

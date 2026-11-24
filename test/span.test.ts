@@ -300,6 +300,18 @@ describe.each([true, false])('a span’s played, lanes %s', (lanes) => {
     expect(await s.played).toBe(false);
   });
 
+  for (const history of [false, true])
+    it(`settles true when faded before its coast after every child it held played (history ${history})`, async () => {
+      const m = mix<Row, Pose>(K, { lanes, ...(history ? { history: { ms: 10_000, tape } } : {}) });
+      m.sync(0);
+      const s = m.span({ duration: 1000 });
+      m.cue({ patch: write(100), loop: false, owner: s });
+      for (let t = 50; t <= 500; t += 50) m.sync(t);
+      s.fade({ over: 0 });
+      for (let t = 550; t <= 1200; t += 50) m.sync(t);
+      expect(await s.played).toBe(true);
+    });
+
   it('settles once, again after a seek back past it', async () => {
     const m = mix<Row, Pose>(K, { lanes, history: { ms: 10_000, tape } });
     m.sync(0);

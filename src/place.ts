@@ -68,9 +68,18 @@ export function checkPlacement<I, O>(
     throw new Error('blits: a placement anchors out or end, not both');
   if (spec.start !== undefined && (anchor.start !== undefined || anchor.in !== undefined))
     throw new Error('blits: a voice takes start or an anchored start, not both');
-  for (const side of ['start', 'in', 'out', 'end'] as const)
-    if (Number.isNaN(anchor[side]))
+  const offsets = (side: string, a: Anchor): void => {
+    if ('all' in a) for (const m of a.all) offsets(side, m);
+    else if ('any' in a) for (const m of a.any) offsets(side, m);
+    else if (a.by !== undefined && !Number.isFinite(a.by))
+      throw new RangeError(`blits: a placement's ${side} is offset by a finite ms, not ${a.by}`);
+  };
+  for (const side of ['start', 'in', 'out', 'end'] as const) {
+    const a = anchor[side];
+    if (Number.isNaN(a))
       throw new RangeError(`blits: a placement's ${side} is a time in ms or an anchor, not NaN`);
+    if (typeof a === 'object') offsets(side, a);
+  }
   const self: Placed<I, O> = {
     id: mix.nextId,
     spec,

@@ -2,7 +2,7 @@ import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Paced } from './pace.js';
 import { type PackedRecord, unpackHeld } from './pack.js';
-import { HistoryMiss, type Keys } from './paging.js';
+import { HistoryMiss, type Keys, type Pager } from './paging.js';
 import { type PackedVoice, reviveVoice } from './revive.js';
 import { scoredLeft } from './scored.js';
 import type { Run } from './stretch.js';
@@ -19,20 +19,8 @@ type Member = Mixer<unknown, unknown>;
  */
 export function cover(transport: Transport, t: number): boolean {
   if (transport.reaches(t)) return false;
-  const pager = transport.pager;
-  if (pager === null) throw new Error(`blits: ${t} is older than this mix's history reaches`);
-  const loaded = pager.loaded;
-  if (loaded === null || loaded.t > t) {
-    const last = pager.last;
-    throw new HistoryMiss(last?.mix ?? '', last?.stream ?? 'history', t);
-  }
-  for (const m of [...transport.members, ...transport.dropped.map((d) => d.mix)]) {
-    const name = m.name ?? '';
-    const id = m.outs?.missing(loaded.t, (v) =>
-      loaded.records.some((r) => r.stream === 'voice' && r.voice === v && r.mix === name),
-    );
-    if (id !== undefined) throw new HistoryMiss(name, 'voice', t);
-  }
+  const pager = transport.pager as Pager;
+  const loaded = covering(transport, t);
   pager.loaded = null;
   unpage(transport, loaded.records);
   transport.floor = loaded.t;
@@ -44,8 +32,7 @@ export function cover(transport: Transport, t: number): boolean {
  * loaded. Throws before anything moves for a frame history does not hold.
  */
 export function coverFrame(transport: Transport, seq: number): Frame {
-  if (!Number.isInteger(seq))
-    throw new RangeError(`blits: a frame is a number \`seq\` read, not ${seq}`);
+  whole(seq);
   let frame = transport.frames.numbered(seq);
   const pager = transport.pager;
   if (frame === undefined && pager !== null && seq <= transport.seq) {
@@ -63,6 +50,49 @@ export function coverFrame(transport: Transport, seq: number): Frame {
   if (frame === undefined) throw unheld(seq);
   cover(transport, frame.at);
   return frame;
+}
+
+/** What `prepare` loaded that reaches mix time `t`, out of memory's reach; throws where none does. */
+function covering(transport: Transport, t: number): NonNullable<Pager['loaded']> {
+  const pager = transport.pager;
+  if (pager === null) throw new Error(`blits: ${t} is older than this mix's history reaches`);
+  const loaded = pager.loaded;
+  if (loaded === null || loaded.t > t) {
+    const last = pager.last;
+    throw new HistoryMiss(last?.mix ?? '', last?.stream ?? 'history', t);
+  }
+  for (const m of [...transport.members, ...transport.dropped.map((d) => d.mix)]) {
+    const name = m.name ?? '';
+    const id = m.outs?.missing(loaded.t, (v) =>
+      loaded.records.some((r) => r.stream === 'voice' && r.voice === v && r.mix === name),
+    );
+    if (id !== undefined) throw new HistoryMiss(name, 'voice', t);
+  }
+  return loaded;
+}
+
+/**
+ * Throws, before anything moves, where a seek to mix time `t` could not be made: past history,
+ * memory or what `prepare` loaded. A time ahead is checked only as the calls ahead are played.
+ */
+export function seekable(transport: Transport, t: number): void {
+  if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
+  if (!(t >= transport.born))
+    throw new Error(`blits: ${t} is older than this mix's history reaches`);
+  if (!transport.reaches(t)) covering(transport, t);
+  else if (t < transport.now && transport.frames.at(t) === undefined)
+    throw new Error(`blits: ${t} is older than this mix's history reaches`);
+}
+
+/** Throws, before anything moves, where a seek to frame `seq` could not be made. */
+export function seekableFrame(transport: Transport, seq: number): void {
+  whole(seq);
+  if (!reachable(transport, seq)) throw unheld(seq);
+}
+
+function whole(seq: number): void {
+  if (!Number.isInteger(seq))
+    throw new RangeError(`blits: a frame is a number \`seq\` read, not ${seq}`);
 }
 
 /** Whether frame `seq` is one a seek could reach: held in memory, or older than it and paged. */

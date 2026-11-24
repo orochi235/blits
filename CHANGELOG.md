@@ -35,27 +35,30 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time
   that is not one, throws when it is made, as it does unheld. It was taken, and threw from the
   hold's `free()`, losing every call made after it. A call that still throws as the hold is freed
-  no longer stops the rest. `Hold.step` refuses a negative or non-finite step, where it did
-  nothing.
+  no longer stops the rest. A held seek takes a time `prepare` paged back in, as an unheld one
+  does, and refuses a frame that is not a whole number when it is made. `Hold.step` refuses a
+  negative or non-finite step, where it did nothing.
 - A span child with no time left, free to play slower without end, keeps its rate while the others
   slow to fill the budget, where it was set to rate 0 and laid out at NaN.
 - `bind(...).drop()`, and quarks' and tone's `drop` through it, cuts every voice cued on the
   subject: one already fading slowly or waiting for rest played on, keeping the mix from going inert
   for good, and one a seek back had brought back after it ended was missed.
-- A span child given `faster: Infinity`, in a span its children cannot fit, plays at a finite rate:
-  as fast as still shortens the span, to within 1 ms. It was set to rate Infinity and played in no
-  time.
-- A span's `played` settles where its fit ends, its `coast`, true where every voice it held played.
-  It settled once the voices held so far had played, so a span with budget left reported true at
-  its first child's end, while its `coast` read its budget's, and then took a late child that could
-  still be cut short.
+- A span child given `faster: Infinity`, in a span too short for it, plays no faster than still
+  shortens the span, to within 1 ms. Where its children could not fit it was set to rate Infinity
+  and played in no time, and where they fit only as the rate grew without end, as in a span with
+  no budget, at a rate near 3e11.
+- A span's `played` settles where its fit ends, its `coast`, or as it leaves where a fade cuts it
+  sooner, true where every voice it held played. It settled once the voices held so far had
+  played, so a span with budget left reported true at its first child's end, while its `coast`
+  read its budget's, and then took a late child that could still be cut short.
 - A channel bounded at an infinity, `sum({ bounds: [0, Infinity] })`, folds on the GPU, clamped to
   the largest f32 there; its kernel failed to compile, so `channel()` and `read()` gave null for
   every channel of the mix. One bounded past the largest f32 stays on the CPU, and `reasons()` says
   why.
 - A voice cued inside `Mix.call` keeps its place ahead of voices the host cued after the call when
   the mix plays past it again after a seek back. Made again, it sorted after them, so on a `last()`
-  channel the earlier voice won.
+  channel the earlier voice won. A host's call on the handle it gave, a `fade` say, acts on the
+  voice made again, where it acted on the one the seek let go and was lost.
 - A seek ahead refused because the mix's rate never reaches the time sought leaves the mix where
   it stood. It had already played the recorded calls on the way, leaving the mix at the moment
   rate 0 held it, at that rate, with its clock running back on the next sync.
@@ -85,7 +88,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `inert` reads false after a handle's `seek` takes a motion voice (tween, spring, glide) that had
   landed back into its stretch; it stayed true while the motion moved again.
 - With lanes on, an `around` ball moved between two probes of one frame changes the weights the
-  next probe reads, as it does with lanes off; the lanes kept the weights of their last fill.
+  next probe reads, as it does with lanes off; the lanes kept the weights of their last fill. This
+  holds for a ball read through `peak`, `share`, `slew`, `lag`, `gate`, `input(read, of)` or a
+  blend's signal too, where only a bare `around` weight was watched.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the
@@ -95,8 +100,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A voice anchored on its own name follows the last other voice of that name, as one anchored on
   its own tag does, where it was refused as waiting on itself, even one that has left and been
   forgotten. It is still refused when no voice has carried the name.
-- A numeric placement anchor of `NaN` (`anchor: { in: NaN }` and the rest) is refused with a
-  `RangeError`, where the voice waited for good without a word.
+- A numeric placement anchor of `NaN` (`anchor: { in: NaN }` and the rest), or an anchor offset
+  `by` that is not finite, inside `all` and `any` too, is refused with a `RangeError`, where the
+  voice waited for good without a word.
 - A mix dropped from its transport refuses `mute()`, `drop(subject)` and writes through its voices'
   handles, `to`, `push` and `set` among them, as it refused `cue` and `touch`: a mute retired every voice of a mix the transport no
   longer synced.

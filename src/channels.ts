@@ -87,6 +87,19 @@ export function reusesHeld(channel: Channel<unknown>): boolean {
   return inPlace.has(channel) || intoFolds.has(channel);
 }
 
+const bent = shared<object, true>('lerp-moves-ends@1');
+
+/**
+ * Marks a stock lerp whose ends are not the stops as written: an angle's far stop the short way
+ * round, a quaternion's at the sign nearer the first.
+ */
+export function movesEnds(lerp: object): void {
+  bent.set(lerp, true);
+}
+
+/** Whether a lerp's ends can differ from the stops it is given; see `movesEnds`. */
+export const endsMove = (lerp: object): boolean => bent.has(lerp);
+
 /** Vouches for a stock channel made outside this module, as `color` makes its own. */
 export function vouch(channel: Channel<unknown>, numeric: Numeric): void {
   numerics.set(channel, numeric);

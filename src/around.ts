@@ -1,6 +1,7 @@
 import { curve } from './easing.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
+import { partsOf } from './signals.js';
 import type { Ball, Easing, Signal } from './types.js';
 
 /** Each `around` signal's ball, which a voice it weighs is bounded to as if cued `within` it. */
@@ -9,6 +10,15 @@ const balls = new WeakMap<object, Ball>();
 /** The ball a weight carries: an `around` signal's own, or none. */
 export const carried = (weight: unknown): Ball | undefined =>
   typeof weight === 'function' ? balls.get(weight) : undefined;
+
+/** Calls `fn` with each ball a weight reads: its own, or one a signal it is built on reads. */
+export function eachBall(weight: unknown, fn: (ball: Ball) => void): void {
+  if (typeof weight !== 'function') return;
+  const own = balls.get(weight);
+  if (own !== undefined) fn(own);
+  const of = partsOf(weight);
+  if (of !== undefined) for (const s of of) eachBall(s, fn);
+}
 
 /** Keeps where each ball weighing a laned voice stands at a fill, for `ballsStand`. */
 export function snapBalls<I, O>(lanes: Lanes<I, O>): void {
