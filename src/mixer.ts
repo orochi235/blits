@@ -7,7 +7,7 @@ import type { Book } from './book.js';
 import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto, reusesHeld, STOCK_BAND, scalarOp } from './channels.js';
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
-import { cue, roleTags } from './cue.js';
+import { checkPatch, cue, roleOf, roleTags } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import { describe } from './describe.js';
 import { drop, dropIn, recordDrop, releaseIn } from './drop.js';
@@ -483,8 +483,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'role' | 'locus' | 'within'> = {},
   ): Handle<I>[] {
     const role = `blend:${this.nextId}`;
-    const of = blendOf<I, O>(by, members.length - 1);
-    return members.map((member, i) => {
+    const owns = members.map((member) => {
       const own: VoiceSpec<I, O> = {
         ...spec,
         patch: member as Patch<I, O, unknown>,
@@ -498,6 +497,17 @@ export class Mixer<I, O> implements Mix<I, O> {
         if (member.hits !== undefined) own.hits = member.hits;
         if (member.track !== undefined) own.track = member.track;
       }
+      return own;
+    });
+    // Every member is checked before any is cued, so a refused one leaves none playing.
+    const engine = this.opts.engine;
+    for (const own of owns) {
+      if (engine !== undefined && !engine.runs.has(own.patch.form))
+        throw new Error(`blits: engine ${engine.name} does not run ${own.patch.form} patches`);
+      checkPatch(this, roleOf(this, own));
+    }
+    const of = blendOf<I, O>(by, members.length - 1);
+    return owns.map((own, i) => {
       const handle = this.cue(own);
       const voice = this.cued[this.cued.length - 1] as Voice<I, O>;
       voice.blend = { of, i };

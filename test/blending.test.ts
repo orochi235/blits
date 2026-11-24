@@ -528,6 +528,18 @@ describe('blend between alternatives', () => {
     expect(m.probe(part).crawl).toBeCloseTo(20, 9);
   });
 
+  it('refusing one member, cues none of them', () => {
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    const stray = patch<Part, { y: number }>(0, () => ({ y: 1 }), { writes: ['y'] });
+    const hits = { hits: [{ at: -1, event: 'early' }] };
+    for (const second of [stray, { patch: holds('crawl', 10), ...hits }])
+      expect(() => m.blend([holds('crawl', 5), second as never], level<Part>(0))).toThrow();
+    m.sync(16);
+    expect(m.voices()).toHaveLength(0);
+    expect(m.probe(part).crawl).toBe(0);
+  });
+
   for (const lanes of [true, false])
     describe(`with lanes ${lanes ? 'on' : 'off'}`, () => {
       const parts = Array.from({ length: 5 }, (_, i) => ({ id: `p${i}` }));
