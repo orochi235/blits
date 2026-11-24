@@ -103,6 +103,13 @@ Owner tags:
   that collects removers, and a call on whether a second `add` counts. Either is a public addition,
   so it ships in a minor.
 
+- **[agent] A record's "unmet since the seek" mark (`metSeq`) is lost or kept wrongly in three
+  places** (2026-11-24, read from the code, not reproduced): a record that comes back from a store
+  or a revive, or one a lane reads without going through `remember`, counts as met, so an untimed
+  `to` or `push` the host makes on it after a seek back lands at once instead of at the subject's
+  next read; and a record first read after a seek, then sought back to a frame after that read,
+  still counts as unmet. The last needs the host's reads to differ from the recorded run. One
+  route: carry `metSeq` in the packed record and set it in the lane's read as `remember` does.
 - **[agent] Unconfirmed suspicions from the 2026-11-24 review pass**, each read from the code, not
   reproduced; confirm with a failing test before fixing, and drop the line if it does not fail.
   - `wave` takes `cycles` of `NaN` or `±Infinity`, or a `depth` key set to `undefined`, and writes
@@ -118,6 +125,10 @@ Owner tags:
 ## Speed
 
 Measure every change on the fleet before the next starts; `bench/README.md` has the method.
+
+- **[agent] Measure what `metSeq`, `bandLog` and `mix.sends` cost** (2026-11-24): the review
+  pass added a field and a band-change log to every record, and a per-record send log under
+  history, without timing or weighing them. Run the record-heavy benches against `62ce1c10`.
 
 - **[agent] `redo` at 1,000 subjects and 32 voices: an audit slowdown that did not reproduce.**
   Three runs read the end of the 2026-11-09 audit (`41628a3b`) slower than its base (`efc4950`):
