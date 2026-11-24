@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A read ahead past a call the tape holds that refits a span fits it as play did: the read's
+  copies numbered their frames from 0, so a child cued in the mix's first frame read as cued in
+  the frame the call played in, was laid out again from there, and a staggered child read off.
 - A call the tape plays again after a seek back, in a frame where rate 0 held the mix clock,
   lands what the host's sync there landed: a span child played in its cue frame stayed on in that
   frame, where play had already let it go.

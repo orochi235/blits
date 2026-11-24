@@ -57,6 +57,8 @@ export function projectAll(
   c.offset = transport.offset;
   c.u = u;
   c.nextId = transport.nextId;
+  // Numbered on from the live frames, so a frame the copies play is none a copied voice was cued in.
+  c.seq = ahead ? transport.seq : cut.seq;
   c.now = ahead ? transport.now : t;
   c.pace =
     pace === null || !within(cut, transport.pacedSeq)

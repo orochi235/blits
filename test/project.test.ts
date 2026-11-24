@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -193,6 +194,27 @@ describe('project ahead', () => {
     m.probe(a);
     m.project(100).probe(a);
     expect(m.drain()).toEqual([]);
+  });
+
+  it('refits a span at a cue the tape plays as play did, past one cued in the first frame', () => {
+    const subjects = ['a', 'b', 'c', 'd'].map((id) => ({ id }));
+    const turn = keys<Part, Pose>(500, [
+      { at: 0, delta: { x: 10 } },
+      { at: 1, delta: { x: 280 } },
+    ]);
+    const m = mix<Part, Pose>(K, { history: { ms: 5000, every: 50, tape }, stepMs: 4 });
+    m.sync(0);
+    // Too long for the span, so its fit skips it, staggered so each subject shows it differently.
+    const s = m.span({ duration: 600, order: 'together' });
+    m.cue({ patch: turn, owner: s, loop: 2, subjects, stagger: (p) => subjects.indexOf(p) * 80 });
+    for (let t = 20; t <= 200; t += 20) {
+      m.sync(t);
+      for (const p of subjects) m.probe(p);
+    }
+    m.cue({ patch: turn, owner: s });
+    const played = subjects.map((p) => m.probe(p).x);
+    m.seek(180);
+    expect(subjects.map((p) => m.project(200).probe(p).x)).toEqual(played);
   });
 });
 

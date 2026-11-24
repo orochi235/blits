@@ -41,11 +41,6 @@ Owner tags:
   stamp a time before the moment sought, which play sent and the seek's replay drops. One route:
   hold back only up to where the record had stepped by the moment sought, and take it out of
   `resent` once it steps past there.
-- **[agent] A read ahead across a cue joining a span reads its children off** (2026-11-23, replay
-  fuzz program 463): a span (`duration: 600`, `order: 'together'`) holds a staggered `turn` child,
-  and a second child is cued at frame 10 anchored after the first by −20. Sought back to frame 9,
-  a read ahead to frame 10's time reads the angles 7–18° off what play showed, though playing
-  on from that seek matches. One route: compare the copies' refit at the cue with the live mix's, step by step.
 - **[agent] A seek past memory with a store loses a voice cued while rate 0 held the clock**
   (2026-11-23, replay fuzz program 964, store only): a `pick` voice of a role, `rate: 0`,
   `freeze: 'both'`, is cued at frame 6 in the frame the mix's rate goes to 0, and frame 7 ramps
