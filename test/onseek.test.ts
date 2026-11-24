@@ -177,6 +177,34 @@ describe('call', () => {
       m.seek(250);
       expect(n).toBe(3);
     });
+
+    it(`wakes its onWake listeners once the call is taped, so what they do is taped apart${lanes ? '' : ', without lanes'}`, () => {
+      const t = transport({ history });
+      const a = mix<object, { x: number }>(K, { transport: t, name: 'a', lanes });
+      const b = mix<object, { x: number }>(K, { transport: t, name: 'b', lanes });
+      const da = {};
+      const db = {};
+      t.sync(0);
+      t.sync(100);
+      const off = a.onWake(() => {
+        off();
+        b.cue({ patch: ramp, subjects: [db] });
+      });
+      a.call('drv', () => {
+        a.cue({ patch: ramp, subjects: [da] });
+        a.cue({ patch: ramp, subjects: [{}] });
+      });
+      t.sync(200);
+      t.sync(300);
+      const live = b.probe(db).x;
+      expect(live).toBeCloseTo(0.2);
+      t.seek(50);
+      expect(b.voices()).toHaveLength(0);
+      t.seek(300);
+      expect(a.voices()).toHaveLength(2);
+      expect(b.voices()).toHaveLength(1);
+      expect(b.probe(db).x).toBe(live);
+    });
   }
 
   it('lets go of the calls ahead when the host makes another after a seek back, until switchBranch', () => {

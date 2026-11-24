@@ -52,13 +52,19 @@ export function call<I, O>(this: Mixer<I, O>, label: string, fn: () => void): vo
   // What `fn` calls on the mix is the call's own, made again with it, so it is not recorded apart.
   const was = transport.replaying;
   const from = transport.nextId;
-  transport.replaying = true;
+  // Hushed, so an onWake listener runs once the call is taped, and what it does is taped apart.
+  transport.hushed++;
   try {
-    fn();
+    transport.replaying = true;
+    try {
+      fn();
+    } finally {
+      transport.replaying = was;
+      // What `fn` made before it threw is kept, so it is made again too.
+      recordCall(this, label, fn, from, transport.nextId);
+    }
   } finally {
-    transport.replaying = was;
-    // What `fn` made before it threw is kept, so it is made again too.
-    recordCall(this, label, fn, from, transport.nextId);
+    transport.unhush();
   }
 }
 

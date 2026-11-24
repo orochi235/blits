@@ -30,7 +30,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   played but was never taped, so the next seek back threw, and the rate was not taped, so a replay
   played at the old one; later listeners, a ticker's among them, never heard, and the mix never woke
   again. Its error is thrown again on a microtask, and listeners now hear of a cue, a rate or a
-  seek once it is whole, a seek's with every mix on the transport put back.
+  seek once it is whole, a seek's with every mix on the transport put back, and of a `call` once it
+  is taped. Woken inside the call, what a listener did was taken as the call's own and never taped,
+  so a seek back lost it.
 - A motion voice lets go of a subject dropped or faded out of it while it waited out its stagger.
   It kept every such subject, holding the object from being collected, and walked them all each
   time `inert` asked after the voice. Under history, what it keeps for a seek back goes once memory
