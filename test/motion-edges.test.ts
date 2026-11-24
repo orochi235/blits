@@ -82,3 +82,44 @@ describe('a motion with an infinite parameter', () => {
       ).toThrow(RangeError);
   });
 });
+
+describe.each([{ lanes: false }, { lanes: true }])(
+  'a motion voice meeting subjects inside their stagger, lanes $lanes',
+  ({ lanes }) => {
+    const metOf = (m: unknown) => {
+      const v = (m as { cued: { met: Iterable<unknown> | null; metRead: unknown[] | null }[] })
+        .cued[0];
+      return { met: [...(v?.met ?? [])], metRead: v?.metRead ?? [] };
+    };
+
+    it('keeps no subject dropped while it waited', () => {
+      const m = mix<Part, Pose>(K, { lanes });
+      m.sync(0);
+      m.cue({ patch: spring<Part, Pose>('x', { to: 1 }), stagger: (s) => 1e6 + s.id });
+      for (let i = 0; i < 1000; i++) {
+        const s = { id: i };
+        m.probe(s);
+        m.drop(s);
+      }
+      expect(m.inert).toBe(false);
+      expect(metOf(m).met).toHaveLength(0);
+    });
+
+    it('under history, keeps those it met and found read no longer than memory', () => {
+      const m = mix<Part, Pose>(K, { lanes, history: { ms: 100 } });
+      m.sync(0);
+      // Each subject is met 14 ms before its stagger runs out, and read at the next frame.
+      m.cue({ patch: spring<Part, Pose>('x', { to: 1 }), stagger: (s) => s.id * 16 + 30 });
+      const live: Part[] = [];
+      for (let i = 0; i < 2000; i++) {
+        m.sync((i + 1) * 16);
+        live.push({ id: i });
+        for (const s of live) m.probe(s);
+        void m.inert;
+        if (live.length > 3) m.drop(live.shift() as Part);
+      }
+      const { met, metRead } = metOf(m);
+      expect(met.length + metRead.length).toBeLessThan(40);
+    });
+  },
+);

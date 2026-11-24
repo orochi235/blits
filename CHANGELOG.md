@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A motion voice lets go of a subject dropped or faded out of it while it waited out its stagger.
+  It kept every such subject, holding the object from being collected, and walked them all each
+  time `inert` asked after the voice. Under history without a store, what it keeps for a seek back
+  goes once memory no longer reaches it.
 - Under a history store, a sync asks once whether each voice gone past memory can page out, and
   passes over those that cannot from then on. It asked after every one at every sync, so idle frames
   slowed with each voice cued without `as` that had left: 2,000 syncs over 10,000 such voices took

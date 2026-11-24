@@ -279,7 +279,7 @@ export class Voice<I, O> {
    * which `still` asks after. Unlike `early` it outlives a seek back, whose records come back only
    * as something reads them, their reads forgotten; null while none are.
    */
-  met: I[] | null = null;
+  met: Set<I> | null = null;
   /** Under history, those `still` found read, with the frame it did, for a seek back before it. */
   metRead: { subject: I; seq: number }[] | null = null;
   /**
