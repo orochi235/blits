@@ -8,6 +8,34 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A child cued backward into a span (`rate` below 0) is refused at cue, as a span cued backward
+  is; it was laid out with a negative length, placed at its start and let go on the first frame,
+  and the span read a length of 0. Its handle can still turn it once it plays.
+- A write to a handle whose voice is done is ignored: `seek`, `rate`, `ramp`, `weight` and
+  `release` still changed what the handle read and were recorded for replay, where `fade`, `rise`,
+  `to`, `push` and `set` were already ignored.
+- A transport's clock moves while no mix is on it, so a mix joining later cues from the joining
+  frame; it read NaN, and a voice cued then started at mix time 0.
+- A mix on a transport whose history keeps inputs records what its input signals read, so a read
+  back gets the value play read; the mix read its options before the transport's history replaced
+  them, and asked the signal again.
+- A subject dropped twice since a seek back gets back the index it had before the first drop,
+  where it took its later index and read another subject's place, or none.
+- A seek to the frame being played stays there: after a seek back into frames that rate 0 held at
+  one mix time, it played again the calls held at that time and landed on a later frame's state.
+- An event a stateful patch sends while stepping a subject outside its voice's bound (outside an
+  `around` ball) names that voice and subject, where it named whichever was weighed last.
+- A read back (`project` to a past frame) carries a subject's rest, as a seek does, so a subject a
+  `fade({ at: 'rest' })` had taken out reads as gone where it showed the voice again.
+- `mix.trace` of a `wave` with negative `cycles` finds its corners and jumps; a triangle, saw or
+  square running backward traced as straight lines and still read `exact`.
+- A read ahead gives a staggered subject the delay a seek back left standing, where it asked
+  `stagger` again and could read a different one.
+- On the GPU, a channel whose name is no WGSL identifier (`'bg-tint'`) stays on the CPU; it made
+  every kernel fail to compile, so nothing folded on the GPU.
+- On the GPU, a fold over more than 4,194,240 subjects runs, in rows of workgroups; it went past
+  the 65,535 workgroups a dispatch takes in one dimension and every subject read 0.
+
 - A call the tape plays again after a seek back, in a frame where rate 0 held the mix clock,
   lands what the host's sync there landed: a span child played in its cue frame stayed on in that
   frame, where play had already let it go.
