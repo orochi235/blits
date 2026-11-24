@@ -52,6 +52,14 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   from by the moment sought, whatever they stamp: a voice run back past a subject's start and
   turned forward, or a ramp or start moved since, steps later with stamps before the moment, which
   play sent and the seek's replay held back for good.
+- With a history store, that holds past memory too: a seek back past memory holds back a put-back
+  record's sends by the steps play had sent from by the moment sought, where it fell back to their
+  stamps and lost what play first sent after the moment, stamped before it. The store is given
+  each record's step count by frame as stream `sent`.
+- With a history store, a seek back past memory to before a motion `set`, `to` or `push` shows the
+  stretch the subject was playing then, where it showed the change's: the store kept one of the
+  stretches two changes in one frame left, and dropped one released at the very time the next
+  was, as under a voice clock at rate 0.
 - A motion `set`, `to` or `push` shows while the mix's rate 0 holds its clock, from the next frame
   on, as a seek to that frame shows it, and in its own frame where nothing was read before it: a
   probe kept the value read at that time until the clock moved again.

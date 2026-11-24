@@ -30,18 +30,6 @@ Owner tags:
   the resting frame is the one the fade was called in, which the read ahead stands at as a known
   event, never as a frame: a wave or keys patch cued at its pass start in that frame (344, 500,
   619), or a `rate: 0` voice resting from then until a handle `seek` moves it (351).
-- **[agent] With a store, a seek back shows a motion `set` made in a later frame** (2026-11-24,
-  replay fuzz programs 470, 732 and 809, store only, reproduced): a spring (470, a `vspring` cued at
-  frame 0 and set twice at frame 3) shows at frame 2 after `prepare` and a seek there the values
-  the frame-3 sets put it at; without a store it matches. Filed under the rate-0 `set` entry until
-  that fix of the same day showed it is a separate cause. One route: check which motion changes
-  `unpage` and `rewind` keep for a seek to a frame before them.
-- **[agent] With a store, a seek past memory holds back a put-back record's steps by stamp**
-  (2026-11-24, reasoned): `mix.sends` keeps the step count each record had sent from for the
-  frames memory reaches, and a mark for the rest, so a seek to an earlier frame after the record's
-  first send cannot tell its count and holds back what its steps stamp at or before the moment
-  sought, as before 2026-11-24: one first sent after the moment, stamped before it, is lost. One
-  route: page the log with the record's copies.
 - **[agent] A seek back within memory may miss an announced mark a later one displaced as an end**
   (2026-11-23, reasoned, not reproduced): with a store, memory keeps only the ends of the marks it
   has paged (`endMarks` in `src/paging.ts`) and lets go of one once another takes its place. A mark

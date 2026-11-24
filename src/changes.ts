@@ -104,6 +104,8 @@ export function dueTo<I>(this: Motions<I>, s: number): readonly Change[] | undef
  * kept, with the changes made by then queued to be applied again.
  */
 export function rewind<I>(this: Motions<I>, seq: number): void {
+  // The store forgets what came after the frame, and what is paged next is from a new future.
+  this.paged = null;
   this.unrelease(seq);
   for (let s = 0; s < this.numbers.size; s++)
     if (this.numbers.subject(s) !== absent) this.cut(s, seq);

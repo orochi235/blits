@@ -61,17 +61,19 @@ export interface HistoryStore {
 
 /**
  * Which kind of thing a history record holds. It is a voice's `controls`, a stateful record's
- * `snap`, an `input` signal's reading, a record's `band` state for its rest-less channels, a
- * subject's record when it `left` a voice, a motion subject's `released` run or older `stretch`, a
- * motion voice's subject leaving `met` (read at last after it was met inside its stagger), the
- * `host` fields patches read, a whole `voice` that has left, or the transport's own: a `mark`
- * announced on it, a change of its `pace`, and a `frame` it played.
+ * `snap`, how many `stepMs` steps a stateful record had taken by a frame they `sent` events in, an
+ * `input` signal's reading, a record's `band` state for its rest-less channels, a subject's record
+ * when it `left` a voice, a motion subject's `released` run or older `stretch`, a motion voice's
+ * subject leaving `met` (read at last after it was met inside its stagger), the `host` fields
+ * patches read, a whole `voice` that has left, or the transport's own: a `mark` announced on it, a
+ * change of its `pace`, and a `frame` it played.
  *
  * @category mix
  */
 export type PagedStream =
   | 'voice'
   | 'snap'
+  | 'sent'
   | 'input'
   | 'band'
   | 'left'
