@@ -17,7 +17,7 @@ import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
 import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
 import { insertById } from './sorted.js';
-import { checkChild, refit } from './spans.js';
+import { checkChild, checkPatchChild, refit } from './spans.js';
 import { cuedById, motionOwner } from './strays.js';
 import { record, taping, unplayable } from './tape.js';
 import type { Channel, FadeSpec, Handle, Kit, MixOptions, Patch, VoiceSpec } from './types.js';
@@ -327,6 +327,11 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
 }
 
 /** The owner a handle names, refused where it is not one of this mix's or has left. */
+/** Refuses, before its voice is made, a patch's voice its owner's span could not fit, as `cue` would. */
+export function checkFitted<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
+  if (spec.owner !== undefined && ownerOf(mix, spec.owner).fitting) checkPatchChild(spec);
+}
+
 function ownerOf<I, O>(mix: Mixer<I, O>, handle: Handle<I>): Voice<I, O> {
   const found = mix.owners?.find((v) => v.handle === handle);
   if (found === undefined)

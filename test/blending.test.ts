@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { kit, last, max, mul, sum, vec } from '../src/channels.js';
 import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
-import { tween } from '../src/motion.js';
+import { spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import { level, share } from '../src/signals.js';
 import type { MixOptions, Setting } from '../src/types.js';
@@ -598,6 +598,31 @@ describe('blend between alternatives', () => {
     expect(m.voices()).toHaveLength(0);
     expect(m.probe(part).crawl).toBe(0);
   });
+
+  it('refusing one member a span cannot fit, cues none of them', () => {
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    const owner = m.span({ duration: 1000 });
+    const ends = patch<Part, Pose>(500, () => ({ crawl: 5 }), { writes: ['crawl'] });
+    const endless = spring<Part, Pose>('crawl', { to: 1 });
+    expect(() => m.blend([ends, endless], level<Part>(0), { owner })).toThrow(/never ends/);
+    m.sync(16);
+    expect(m.voices().filter((v) => v !== owner)).toHaveLength(0);
+    expect(m.probe(part).crawl).toBe(0);
+  });
+
+  for (const lanes of [true, false])
+    it(`wakes its onWake listeners once, with every member blended, lanes ${lanes}`, () => {
+      const m = mix<Part, Pose>(PART, { lanes });
+      m.sync(0);
+      m.sync(16);
+      const seen: [number, number][] = [];
+      m.onWake(() => seen.push([m.voices().length, m.probe(part).crawl]));
+      m.blend([holds('crawl', 0), holds('crawl', 10), holds('crawl', 20)], level<Part>(0.5));
+      expect(seen).toHaveLength(1);
+      expect(seen[0]?.[0]).toBe(3);
+      expect(seen[0]?.[1]).toBeCloseTo(10, 9);
+    });
 
   for (const lanes of [true, false])
     describe(`with lanes ${lanes ? 'on' : 'off'}`, () => {

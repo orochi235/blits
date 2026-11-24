@@ -32,7 +32,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   after a seek, where it was lost at the next one. Made again by a seek or a sync, an `fn` that
   throws no longer fails it: its error is thrown again on a microtask.
 - An `onSeek` listener that seeks again ends the telling of the seek it heard, so the listeners
-  after it hear only the seek the mix stands at. They heard the outer seek last, so a driver
+  after it hear only the seek the mix stands at; so does an `onWake` listener the seek woke that
+  seeks or syncs, where every `onSeek` listener heard the seek it had left. They heard the outer seek last, so a driver
   following them took back to a time the mix had left. A listener that throws no longer stops the
   rest, nor other mixes' on the transport: its error is thrown again on a microtask.
 - A patch's `step` that throws partway through the ticks a `stepMs` frame owes no longer runs the
@@ -45,11 +46,14 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   played but was never taped, so the next seek back threw, and the rate was not taped, so a replay
   played at the old one; later listeners, a ticker's among them, never heard, and the mix never woke
   again. Its error is thrown again on a microtask, and listeners now hear of a cue, a rate or a
-  seek once it is whole, a seek's with every mix on the transport put back.
+  seek once it is whole, a seek's with every mix on the transport put back, and of a `call` once it
+  is taped. Woken inside the call, what a listener did was taken as the call's own and never taped,
+  so a seek back lost it.
 - A motion voice lets go of a subject dropped or faded out of it while it waited out its stagger.
   It kept every such subject, holding the object from being collected, and walked them all each
-  time `inert` asked after the voice. Under history without a store, what it keeps for a seek back
-  goes once memory no longer reaches it.
+  time `inert` asked after the voice. Under history, what it keeps for a seek back goes once memory
+  no longer reaches it; a history store pages it as stream `met`, so a seek past memory still puts
+  back a subject met and unread then. With a store it kept them all: 3,997 after 4,000 frames of one met and one dropped each.
 - Under a history store, a sync asks once whether each voice gone past memory can page out, and
   passes over those that cannot from then on. It asked after every one at every sync, so idle frames
   slowed with each voice cued without `as` that had left: 2,000 syncs over 10,000 such voices took
@@ -63,8 +67,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   out of it, and takes it back where a seek back brings the subject back. It kept one per subject
   it ever met, and walked them all each time it paged out.
 - `blend` checks every member before it cues any, so a member the mix refuses, by its kit, its
-  `hits` or its engine, leaves none behind. The members before it stayed cued, and one alone played
-  at full weight.
+  `hits`, its engine or a span owner that cannot fit it, leaves none behind. The members before it
+  stayed cued, and one alone played at full weight. An `onWake` listener hears of a blend once
+  it is whole, where it woke after the first member, which it read playing alone.
 - `fade({ at })` at or behind now, on a voice yet to start, fades from `at` as `fade()` does from
   now. It began the fade at the voice's start instead, so `fade({ at: now, over: 50 })` of a voice
   starting 100 ms later played it at partial weight, where `fade({ over: 50 })` showed nothing.

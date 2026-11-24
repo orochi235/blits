@@ -233,6 +233,15 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
         held.inputs ?? [],
       );
   }
+  const met = of('met');
+  if (met.length > 0) {
+    const read = voice.metRead ?? [];
+    const first = read[0]?.seq ?? Number.POSITIVE_INFINITY;
+    const back = met
+      .filter((r) => r.seq < first)
+      .map((r) => ({ subject: keys.subject(r.subject), seq: r.seq }));
+    voice.metRead = [...back, ...read];
+  }
   const motion = voice.motion;
   if (motion === undefined) return;
   for (const r of of('released'))

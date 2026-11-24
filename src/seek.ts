@@ -214,12 +214,15 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
 export function seek(transport: Transport, to: number | { readonly frame: number }): void {
   transport.hushed++;
   let sought: Sought;
+  let seq = Number.NaN;
   try {
     sought = seekTo(transport, to);
+    seq = transport.seq;
   } finally {
     transport.unhush();
   }
-  told(transport, sought);
+  // An onWake listener that moved the mix ends the telling, as an onSeek listener's does.
+  if (transport.seq === seq) told(transport, sought);
 }
 
 function seekTo(transport: Transport, to: number | { readonly frame: number }): Sought {

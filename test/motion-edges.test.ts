@@ -1,8 +1,10 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
+import { memoryStore } from './store.js';
 
 interface Pose {
   x: number;
@@ -120,6 +122,68 @@ describe.each([{ lanes: false }, { lanes: true }])(
       }
       const { met, metRead } = metOf(m);
       expect(met.length + metRead.length).toBeLessThan(40);
+    });
+
+    it('under a history store, keeps them no longer than memory either', () => {
+      const store = memoryStore();
+      const m = mix<Part, Pose>(K, {
+        lanes,
+        history: { ms: 100, tape, store },
+        keyOf: (p: Part) => p.id,
+      });
+      m.sync(0);
+      m.cue({ patch: spring<Part, Pose>('x', { to: 1 }), stagger: (s) => s.id * 16 + 30 });
+      const live: Part[] = [];
+      for (let i = 0; i < 4000; i++) {
+        m.sync((i + 1) * 16);
+        live.push({ id: i });
+        for (const s of live) m.probe(s);
+        void m.inert;
+        if (live.length > 3) m.drop(live.shift() as Part);
+      }
+      const { met, metRead } = metOf(m);
+      expect(met.length + metRead.length).toBeLessThan(80);
+    });
+
+    it('under a history store, a seek past memory puts back those met and unread then', async () => {
+      // `x` is met at 16, inside its stagger, and read again only from 160; then churn carries
+      // memory well past both, paging out the note that `x` left `met`.
+      const play = () => {
+        const m = mix<Part, Pose>(K, {
+          lanes,
+          history: { ms: 100, tape, store: memoryStore() },
+          keyOf: (p: Part) => p.id,
+        });
+        const x = { id: -1 };
+        const at = new Map<number, { inert: boolean; met: unknown[] }>();
+        m.sync(0);
+        m.cue({
+          patch: spring<Part, Pose>('x', { to: 1 }),
+          stagger: (s) => (s.id < 0 ? 40 : s.id * 16 + 200),
+        });
+        const live: Part[] = [];
+        for (let i = 1; i <= 250; i++) {
+          const t = i * 16;
+          m.sync(t);
+          if (t === 16 || t >= 160) m.probe(x);
+          if (i >= 12) {
+            live.push({ id: i });
+            for (const s of live) m.probe(s);
+            if (live.length > 3) m.drop(live.shift() as Part);
+          }
+          at.set(t, { inert: m.inert, met: metOf(m).met });
+        }
+        return { m, at };
+      };
+      const straight = play();
+      expect(straight.at.get(48)?.met).toEqual([{ id: -1 }]);
+      for (const t of [48, 96, 144]) {
+        const run = play();
+        await run.m.prepare(t);
+        run.m.seek(t);
+        expect(run.m.inert).toBe(straight.at.get(t)?.inert);
+        expect(metOf(run.m).met).toEqual(expect.arrayContaining(straight.at.get(t)?.met ?? []));
+      }
     });
   },
 );
