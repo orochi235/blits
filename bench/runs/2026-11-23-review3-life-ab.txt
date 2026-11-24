@@ -1,0 +1,117 @@
+# studio, 2026-11-23, quiet, --max-cores 1: AB_EACH=1 AB_BENCH=bench/frame.mjs bench/ab.sh 58ecdb64 ebf0253d 6 keys:10000:3 role:10000:3 springs:10000:1 churn:10000:1
+# 58ecdb64 is main before the third review batch; ebf0253d carries its voice-lifecycle fixes (fade-in stalls pruned, gone voices a store cannot page passed over, a motion voice's met a Set let go of on drop).
+# Medians: keys -0.5% (U 16), springs -0.5% (U 12), churn -0.2% (U 12.5); role +18.3% (U 18) is bimodal on both sides (4.9-5.0 or 5.9-6.3 ms), re-run in 2026-11-23-review3-life-ab-role.txt.
+  waiting for room
+studio  chosen: 8.0 cores free, 16.0G available (env: 5 past runs, worst 4.3 cores / 2.8G)
+  msb-uai  scored 1.70 against studio's 1.86
+  keiei    it runs quiet, and onto jobs there already claim 0.0 of the 3 cores it allows
+  orochi   refuses rotation
+  teitou   it runs quiet, and onto jobs there already claim 4.4 of the 5 cores it allows
+  fleet    35.4 cores spare: 37.4 free on 5 nodes, 2 held back for quick jobs
+  cost     up to 5 core-min (4.3 cores for 1m), displaces 0 core-min of other work
+  base   ebf0253d
+  commits sent directly, 158.4 KiB (not on origin)
+  updated blits-wt1 on studio at ebf0253d
+  loaded 4.0s: sync blits commits 1.6s, sync blits apply 0.9s, sync blits check 0.6s, start 0.5s, sync blits diff 0.0s, sync blits upload 0.0s, gate 0.0s
+  job    30a77459 on studio
+
+onto: agent-ac47e1650a8cae39d is already set up
+onto: playwright-browsers-790bd7c0596f is already set up
+built 58ecdb64 (58ecdb64f29d8067d41646bd3c7d84e32c62c01f)
+built ebf0253d (ebf0253d20bf5171f48b46aad09bc54a88cf403c)
+== round 1/6 58ecdb64
+ 1/1  keys       N= 10000 V=3     1.618 ms/frame     54 ns/subject·voice  p50    1.583  p99    1.870  worst    1.969  first    26.1 ms  gc    6    0.6 ms     180.4 kB/frame
+== round 1/6 58ecdb64
+ 1/1  role       N= 10000 V=3     4.932 ms/frame    164 ns/subject·voice  p50    4.869  p99    5.757  worst    5.894  first    36.0 ms  gc   24   14.2 ms    2435.7 kB/frame
+== round 1/6 58ecdb64
+ 1/1  springs    N= 10000 V=1     1.535 ms/frame    154 ns/subject·voice  p50    1.498  p99    1.698  worst    5.301  first    65.9 ms  gc    2    4.4 ms     177.2 kB/frame
+== round 1/6 58ecdb64
+ 1/1  churn      N= 10000 V=1     1.172 ms/frame    117 ns/subject·voice  p50    1.152  p99    1.407  worst    1.470  first    62.4 ms  gc    0    0.0 ms      44.9 kB/frame
+== round 1/6 ebf0253d
+ 1/1  keys       N= 10000 V=3     1.641 ms/frame     55 ns/subject·voice  p50    1.637  p99    1.920  worst    1.966  first    24.1 ms  gc    6    0.7 ms     186.7 kB/frame
+== round 1/6 ebf0253d
+ 1/1  role       N= 10000 V=3     6.201 ms/frame    207 ns/subject·voice  p50    6.030  p99    8.522  worst    9.426  first    36.4 ms  gc   10    7.6 ms    2432.3 kB/frame
+== round 1/6 ebf0253d
+ 1/1  springs    N= 10000 V=1     1.527 ms/frame    153 ns/subject·voice  p50    1.507  p99    1.605  worst    5.915  first    65.0 ms  gc    2    5.0 ms     173.4 kB/frame
+== round 1/6 ebf0253d
+ 1/1  churn      N= 10000 V=1     1.156 ms/frame    116 ns/subject·voice  p50    1.148  p99    1.321  worst    1.352  first    60.1 ms  gc    0    0.0 ms      67.9 kB/frame
+== round 2/6 ebf0253d
+ 1/1  keys       N= 10000 V=3     1.629 ms/frame     54 ns/subject·voice  p50    1.622  p99    1.882  worst    2.041  first    25.7 ms  gc    6    0.8 ms     186.1 kB/frame
+== round 2/6 ebf0253d
+ 1/1  role       N= 10000 V=3     5.908 ms/frame    197 ns/subject·voice  p50    5.777  p99    7.723  worst    9.284  first    35.1 ms  gc   10    8.0 ms    2430.2 kB/frame
+== round 2/6 ebf0253d
+ 1/1  springs    N= 10000 V=1     1.526 ms/frame    153 ns/subject·voice  p50    1.500  p99    1.684  worst    4.975  first    64.7 ms  gc    2    4.2 ms     173.5 kB/frame
+== round 2/6 ebf0253d
+ 1/1  churn      N= 10000 V=1     1.168 ms/frame    117 ns/subject·voice  p50    1.157  p99    1.322  worst    1.365  first    59.5 ms  gc    0    0.0 ms      49.5 kB/frame
+== round 2/6 58ecdb64
+ 1/1  keys       N= 10000 V=3     1.590 ms/frame     53 ns/subject·voice  p50    1.604  p99    1.873  worst    2.011  first    25.9 ms  gc    6    0.7 ms     183.8 kB/frame
+== round 2/6 58ecdb64
+ 1/1  role       N= 10000 V=3     4.966 ms/frame    166 ns/subject·voice  p50    4.871  p99    6.656  worst    6.898  first    35.4 ms  gc   11    7.6 ms    2429.8 kB/frame
+== round 2/6 58ecdb64
+ 1/1  springs    N= 10000 V=1     1.578 ms/frame    158 ns/subject·voice  p50    1.562  p99    1.794  worst    3.588  first    61.2 ms  gc    2    2.1 ms     178.3 kB/frame
+== round 2/6 58ecdb64
+ 1/1  churn      N= 10000 V=1     1.147 ms/frame    115 ns/subject·voice  p50    1.143  p99    1.278  worst    1.335  first    59.7 ms  gc    0    0.0 ms      54.7 kB/frame
+== round 3/6 58ecdb64
+ 1/1  keys       N= 10000 V=3     1.659 ms/frame     55 ns/subject·voice  p50    1.654  p99    1.885  worst    2.005  first    26.4 ms  gc    6    0.8 ms     179.8 kB/frame
+== round 3/6 58ecdb64
+ 1/1  role       N= 10000 V=3     6.023 ms/frame    201 ns/subject·voice  p50    5.933  p99    8.144  worst    9.002  first    39.1 ms  gc   10    7.8 ms    2430.6 kB/frame
+== round 3/6 58ecdb64
+ 1/1  springs    N= 10000 V=1     1.543 ms/frame    154 ns/subject·voice  p50    1.510  p99    1.751  worst    3.630  first    61.8 ms  gc    2    2.1 ms     181.9 kB/frame
+== round 3/6 58ecdb64
+ 1/1  churn      N= 10000 V=1     1.138 ms/frame    114 ns/subject·voice  p50    1.132  p99    1.258  worst    1.431  first    60.6 ms  gc    0    0.0 ms      53.2 kB/frame
+== round 3/6 ebf0253d
+ 1/1  keys       N= 10000 V=3     1.692 ms/frame     56 ns/subject·voice  p50    1.668  p99    2.091  worst    2.192  first    24.1 ms  gc    3    0.4 ms     181.9 kB/frame
+== round 3/6 ebf0253d
+ 1/1  role       N= 10000 V=3     6.098 ms/frame    203 ns/subject·voice  p50    5.953  p99    8.017  worst    8.856  first    35.5 ms  gc   10    7.3 ms    2430.7 kB/frame
+== round 3/6 ebf0253d
+ 1/1  springs    N= 10000 V=1     1.535 ms/frame    153 ns/subject·voice  p50    1.522  p99    1.723  worst    3.622  first    59.9 ms  gc    2    2.1 ms     178.5 kB/frame
+== round 3/6 ebf0253d
+ 1/1  churn      N= 10000 V=1     1.116 ms/frame    112 ns/subject·voice  p50    1.112  p99    1.227  worst    1.364  first    57.7 ms  gc    0    0.0 ms      64.0 kB/frame
+== round 4/6 ebf0253d
+ 1/1  keys       N= 10000 V=3     1.625 ms/frame     54 ns/subject·voice  p50    1.637  p99    1.898  worst    1.936  first    23.7 ms  gc    6    0.7 ms     177.8 kB/frame
+== round 4/6 ebf0253d
+ 1/1  role       N= 10000 V=3     6.019 ms/frame    201 ns/subject·voice  p50    5.913  p99    7.905  worst    8.942  first    35.6 ms  gc   10    7.4 ms    2432.9 kB/frame
+== round 4/6 ebf0253d
+ 1/1  springs    N= 10000 V=1     1.543 ms/frame    154 ns/subject·voice  p50    1.533  p99    2.080  worst    4.058  first    60.2 ms  gc    2    3.8 ms     175.2 kB/frame
+== round 4/6 ebf0253d
+ 1/1  churn      N= 10000 V=1     1.134 ms/frame    113 ns/subject·voice  p50    1.122  p99    1.286  worst    1.409  first    58.7 ms  gc    0    0.0 ms      50.1 kB/frame
+== round 4/6 58ecdb64
+ 1/1  keys       N= 10000 V=3     1.663 ms/frame     55 ns/subject·voice  p50    1.653  p99    1.970  worst    2.025  first    25.5 ms  gc    6    0.7 ms     184.4 kB/frame
+== round 4/6 58ecdb64
+ 1/1  role       N= 10000 V=3     6.265 ms/frame    209 ns/subject·voice  p50    6.117  p99    8.814  worst    9.210  first    35.5 ms  gc   10    7.4 ms    2431.9 kB/frame
+== round 4/6 58ecdb64
+ 1/1  springs    N= 10000 V=1     1.518 ms/frame    152 ns/subject·voice  p50    1.495  p99    1.620  worst    5.142  first    64.4 ms  gc    2    4.3 ms     172.9 kB/frame
+== round 4/6 58ecdb64
+ 1/1  churn      N= 10000 V=1     1.168 ms/frame    117 ns/subject·voice  p50    1.161  p99    1.325  worst    1.340  first    60.1 ms  gc    0    0.0 ms      52.2 kB/frame
+== round 5/6 58ecdb64
+ 1/1  keys       N= 10000 V=3     1.637 ms/frame     55 ns/subject·voice  p50    1.599  p99    1.984  worst    2.049  first    26.0 ms  gc    6    0.7 ms     185.2 kB/frame
+== round 5/6 58ecdb64
+ 1/1  role       N= 10000 V=3     6.115 ms/frame    204 ns/subject·voice  p50    5.991  p99    7.502  worst    7.921  first    37.4 ms  gc   24   22.1 ms    2432.6 kB/frame
+== round 5/6 58ecdb64
+ 1/1  springs    N= 10000 V=1     1.561 ms/frame    156 ns/subject·voice  p50    1.544  p99    1.741  worst    3.713  first    61.2 ms  gc    2    2.2 ms     180.8 kB/frame
+== round 5/6 58ecdb64
+ 1/1  churn      N= 10000 V=1     1.173 ms/frame    117 ns/subject·voice  p50    1.165  p99    1.337  worst    1.369  first    57.2 ms  gc    0    0.0 ms      58.7 kB/frame
+== round 5/6 ebf0253d
+ 1/1  keys       N= 10000 V=3     1.629 ms/frame     54 ns/subject·voice  p50    1.631  p99    1.919  worst    2.024  first    24.8 ms  gc    9    6.3 ms     174.3 kB/frame
+== round 5/6 ebf0253d
+ 1/1  role       N= 10000 V=3     5.956 ms/frame    199 ns/subject·voice  p50    5.850  p99    7.960  worst    8.874  first    35.2 ms  gc   10    7.3 ms    2433.5 kB/frame
+== round 5/6 ebf0253d
+ 1/1  springs    N= 10000 V=1     1.525 ms/frame    152 ns/subject·voice  p50    1.508  p99    1.697  worst    3.544  first    61.3 ms  gc    2    2.0 ms     184.8 kB/frame
+== round 5/6 ebf0253d
+ 1/1  churn      N= 10000 V=1     1.145 ms/frame    115 ns/subject·voice  p50    1.134  p99    1.331  worst    1.358  first    59.2 ms  gc    0    0.0 ms      60.2 kB/frame
+== round 6/6 ebf0253d
+ 1/1  keys       N= 10000 V=3     1.601 ms/frame     53 ns/subject·voice  p50    1.583  p99    1.854  worst    1.982  first    25.8 ms  gc    6    0.6 ms     177.7 kB/frame
+== round 6/6 ebf0253d
+ 1/1  role       N= 10000 V=3     4.898 ms/frame    163 ns/subject·voice  p50    4.826  p99    5.696  worst    5.836  first    34.6 ms  gc   24   13.0 ms    2436.3 kB/frame
+== round 6/6 ebf0253d
+ 1/1  springs    N= 10000 V=1     1.536 ms/frame    154 ns/subject·voice  p50    1.510  p99    1.680  worst    5.027  first    62.8 ms  gc    2    4.2 ms     177.0 kB/frame
+== round 6/6 ebf0253d
+ 1/1  churn      N= 10000 V=1     1.165 ms/frame    116 ns/subject·voice  p50    1.154  p99    1.321  worst    1.367  first    59.5 ms  gc    0    0.0 ms      53.1 kB/frame
+== round 6/6 58ecdb64
+ 1/1  keys       N= 10000 V=3     1.662 ms/frame     55 ns/subject·voice  p50    1.640  p99    2.440  worst    5.225  first    26.4 ms  gc    6    0.8 ms     179.3 kB/frame
+== round 6/6 58ecdb64
+ 1/1  role       N= 10000 V=3     5.034 ms/frame    168 ns/subject·voice  p50    4.941  p99    6.003  worst    7.838  first    35.3 ms  gc   24   16.1 ms    2432.7 kB/frame
+== round 6/6 58ecdb64
+ 1/1  springs    N= 10000 V=1     1.532 ms/frame    153 ns/subject·voice  p50    1.506  p99    2.213  worst    4.476  first    65.8 ms  gc    2    4.4 ms     176.4 kB/frame
+== round 6/6 58ecdb64
+ 1/1  churn      N= 10000 V=1     1.131 ms/frame    113 ns/subject·voice  p50    1.121  p99    1.284  worst    1.355  first    59.8 ms  gc    0    0.0 ms      55.4 kB/frame
