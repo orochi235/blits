@@ -1,6 +1,7 @@
 import { curve } from './easing.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
+import { reading } from './reading.js';
 import { partsOf } from './signals.js';
 import type { Ball, Easing, Signal } from './types.js';
 
@@ -67,8 +68,9 @@ export function around<I, O>(
     throw new TypeError('blits: around takes a ball, { x, y?, z?, r }');
   const shape = curve(opts.ease ?? 'linear');
   const read = (subject: I): number => {
-    const places = this.places;
-    if (places === null) return 0;
+    const live = this.places;
+    if (live === null) return 0;
+    const places = reading.back === null ? live : live.backTo(reading.back);
     const i =
       places.cur >= 0 && subject === places.curSubject
         ? places.cur

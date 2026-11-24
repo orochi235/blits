@@ -7,7 +7,7 @@ import { schedule } from './due.js';
 import { beginRise, fadeVoice } from './fade.js';
 import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
-import { patchKeeps, reorigin, voiceKeeps } from './held.js';
+import { begin, patchKeeps, reorigin, voiceKeeps } from './held.js';
 import { noted, remember } from './history.js';
 import { Arg } from './lane.js';
 import type { LaneHost, Lanes } from './lanes.js';
@@ -15,7 +15,7 @@ import { leap } from './leaps.js';
 import { hostOf, listed, markOf, readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
-import { descendants, ownWeight, signalled } from './owner.js';
+import { descendants, ownerReading, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
 import { heard } from './signals.js';
@@ -232,6 +232,16 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
           if (rebuild) v.rebuilds++;
           const d = seekDoubt(mix, v, rebuild);
           if (RANK[d] > RANK[doubt]) doubt = d;
+          // A part the seek took its owner to starts now, as a voice cued at its start does,
+          // where it would wait for a frame that moves the clock; a read back finds it started.
+          const owner = v.owner as Voice<I, O>;
+          if (
+            v.state === 'pending' &&
+            !Number.isNaN(mix.now) &&
+            owner.fitting === null &&
+            ownerReading(owner, mix.now) >= v.start
+          )
+            begin(mix, v, mix.now);
           schedule(mix, v);
         });
       return doubt;

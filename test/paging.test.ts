@@ -2,7 +2,7 @@ import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
-import { spring } from '../src/motion.js';
+import { glide, spring } from '../src/motion.js';
 import { HistoryMiss } from '../src/paging.js';
 import { keys, patch } from '../src/patch.js';
 import { level, slew } from '../src/signals.js';
@@ -364,6 +364,35 @@ describe('history with a store', () => {
       replays(run, frames, t);
     }
   });
+
+  for (const lanes of [true, false])
+    it(`pages a dropped subject's motion run after its voice ended, so a seek back keeps its set${lanes ? '' : ', without lanes'}`, async () => {
+      const m = mix<string, P>(K, {
+        lanes,
+        history: { ms: 150, every: 50, tape, store: memoryStore() },
+        stepMs: 4,
+        keyOf: (s: string) => s,
+      });
+      let h: Handle<string> | undefined;
+      let at40 = 0;
+      for (let t = 0; t < 600; t += 20) {
+        m.sync(t);
+        if (t === 0) h = m.cue({ patch: glide<string, P>('x', { from: 0, velocity: 100 }) });
+        if (t === 20) h?.set('a', 5);
+        if (t === 200) m.drop('a');
+        // Its voice ends, so the motion patch has no voice asking it when `b`'s drop pages `a`'s run.
+        if (t === 380) m.mute({ over: 0 });
+        if (t === 520) m.drop('b');
+        if (t === 40) at40 = m.probe('a').x;
+        m.probe('a');
+        m.probe('b');
+      }
+      await m.prepare(40);
+      expect(m.project(40).probe('a').x).toBe(at40);
+      await m.prepare(40);
+      m.seek(40);
+      expect(m.probe('a').x).toBe(at40);
+    });
 
   it('reads input signals and host fields back past memory as they were', async () => {
     const host = { pointer: { x: 0 } };

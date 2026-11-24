@@ -2,10 +2,10 @@ import { arcEnd } from './arcs.js';
 import { elapsedWith, passesOf, retime, spanOf } from './clock.js';
 import { release } from './fade.js';
 import { type Claim, defaultFit, type Fit, layout, type SpanClaim, settle } from './fit.js';
-import { reorigin } from './held.js';
+import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
-import { nextFrame } from './move.js';
+import { nextFrame, starts } from './move.js';
 import { leave, MOST } from './origin.js';
 import { type Holding, ownerReading, plays } from './owner.js';
 import { resolve } from './place.js';
@@ -172,7 +172,26 @@ function readingAt<I, O>(voice: Voice<I, O>, at: number): number {
  * moment between frames keeps a child whose start that moment had passed where it is.
  */
 function begun<I, O>(child: Voice<I, O>, by: number): boolean {
-  return child.state !== 'pending' || child.start < by;
+  return (child.state !== 'pending' && !cuedNow(child)) || child.start < by;
+}
+
+/**
+ * The frame a fit from now is made in, NaN for a fit from earlier: a child its cue started in it
+ * has played no time, so a fit for a later cue in the frame places it again as one still to start.
+ */
+let fitFrame = Number.NaN;
+
+function cuedNow<I, O>(child: Voice<I, O>): boolean {
+  return child.cuedSeq === fitFrame && child.begunSeq === fitFrame;
+}
+
+/** A child started by its cue this frame, which a later fit placed ahead: it waits again. */
+function unbegin<I, O>(mix: Mixer<I, O>, child: Voice<I, O>): void {
+  child.state = 'pending';
+  child.begunSeq = Number.POSITIVE_INFINITY;
+  mix.frame = nextFrame();
+  reorigin(mix, child, mix.now);
+  noted(mix, child);
 }
 
 /** What a child's own clock reads at its span's `local`, 0 while it waits. */
@@ -194,8 +213,18 @@ function leftOf<I, O>(child: Voice<I, O>, local: number, by: number): number {
  * after. A span its clock ran back over keeps the layout it made going forward.
  */
 export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now): void {
-  const fitting = span.fitting as Fitting;
   if (span.state === 'done') return;
+  const outer = fitFrame;
+  fitFrame = from === mix.now ? mix.transport.seq : Number.NaN;
+  try {
+    fit(mix, span, from);
+  } finally {
+    fitFrame = outer;
+  }
+}
+
+function fit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from: number): void {
+  const fitting = span.fitting as Fitting;
   const local = clockOf(span, from);
   if (ranBackOver(span, local)) return;
   const by = from < mix.now ? local : Number.NEGATIVE_INFINITY;
@@ -259,8 +288,15 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
       reorigin(mix, c, mix.now);
       noted(mix, c);
     }
+    // One cued in this frame plays in it from where the fit puts it, as a voice cued at its start
+    // does: a fit skipping it shows its last frame. Placed later by a later cue's fit, it waits.
+    if (c.cuedSeq !== fitFrame) return;
+    const t = ownerReading(span, mix.now);
+    if (c.state === 'pending' && starts(c, t, mix.now)) begin(mix, c, mix.now);
+    else if (c.state !== 'pending' && !starts(c, t, mix.now)) unbegin(mix, c);
   });
   for (const c of waiting) {
+    if (c.cuedSeq === fitFrame && c.state !== 'pending') unbegin(mix, c);
     if (c.start === Number.POSITIVE_INFINITY) continue;
     c.start = Number.POSITIVE_INFINITY;
     c.anchorNow = Number.POSITIVE_INFINITY;

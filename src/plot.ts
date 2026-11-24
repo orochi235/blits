@@ -45,7 +45,9 @@ export function plot<I, O>(
 
 /** `Mix.place`: the subject's index, its own or a new one, which a `within` finder names it by. */
 export function place<I, O>(this: Mixer<I, O>, subject: I): number {
-  return placesOf(this).place(subject);
+  const places = placesOf(this);
+  if (this.transport.tape !== undefined) places.prune(this.transport.keepsFrom());
+  return places.place(subject);
 }
 
 /**

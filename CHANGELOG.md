@@ -23,6 +23,22 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A span's `out` and `end` marks are where its fit ends, with no `fade.out` of its own added, as
   it leaves in play: a read ahead started a voice anchored `{ after }` a span with `fade.out` that
   much later than play did, and `marks` listed the span's `end` that much late.
+- A child cued into a span mid-frame plays in that frame from where the span's fit puts it, as a
+  voice cued at its start does, and one the fit skips shows its last frame there. It waited for the
+  next frame, so its cue frame showed nothing where a seek or read back to that frame showed it
+  playing. One a later cue in the same frame ranks behind waits again.
+- A handle `seek` that takes an owner, such as an arc, past a waiting child's start starts that child
+  in the same frame, as a voice cued at its start does. It waited for the next frame that moved the
+  clock, so the frame of the seek showed the child's first frame where a read back of it showed
+  where the seek put it, and with the mix's `rate` at 0 it waited for good.
+- With a history store, a motion patch whose voice has ended still pages a dropped subject's run and
+  its older stretches as they leave memory. It let them go unpaged, so a seek or read back past
+  memory lost a `set` made on a subject later dropped once any other subject was dropped after the
+  voice ended, and played the subject from its first stretch.
+- Under history, a seek or read back to before a `drop` gives the subject its `plot` or `place`
+  index again, so `around` and `within` voices read it as they did then. The drop freed the index
+  for good, and they read 0 for it until a new `plot`. The index is handed out again once history
+  no longer reaches the drop.
 - A motion voice whose subjects were all dropped while they waited out their stagger goes `inert`
   once past it. It kept their records listed as waiting, unread for good, so `inert` never held:
   100 subjects probed and dropped inside a 500 ms stagger left a spring awake to the end.

@@ -130,6 +130,11 @@ export class Motions<I> {
    */
   owner: MotionOwner | null = null;
   ownerId = -1;
+  /**
+   * The mix that last cued the patch, kept once its voice retires: what leaves memory after that is
+   * still paged under `ownerId`, where it would otherwise be lost.
+   */
+  pagedBy: MotionOwner | null = null;
   /** Whether the channel it was cued on holds a number; undefined until it is cued. */
   private holdsNumber: boolean | undefined = undefined;
   private channel = '';

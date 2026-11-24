@@ -85,6 +85,7 @@ export function projectAll(
       null,
     );
     standIn(mix, copy);
+    if (!ahead && kept) copy.places = mix.places?.backTo(cut) ?? null;
     copies.set(mix, copy);
     if (ahead) copyAhead(mix, copy);
     else if (kept) copyBack(mix, copy, t, cut);
