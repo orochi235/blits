@@ -25,10 +25,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   shortens the span, to within 1 ms. Where its children could not fit it was set to rate Infinity
   and played in no time, and where they fit only as the rate grew without end, as in a span with
   no budget, at a rate near 3e11.
-- A span's `played` settles where its fit ends, its `coast`, true where every voice it held played.
-  It settled once the voices held so far had played, so a span with budget left reported true at
-  its first child's end, while its `coast` read its budget's, and then took a late child that could
-  still be cut short.
+- A span's `played` settles where its fit ends, its `coast`, or as it leaves where a fade cuts it
+  sooner, true where every voice it held played. It settled once the voices held so far had
+  played, so a span with budget left reported true at its first child's end, while its `coast`
+  read its budget's, and then took a late child that could still be cut short.
 - A channel bounded at an infinity, `sum({ bounds: [0, Infinity] })`, folds on the GPU, clamped to
   the largest f32 there; its kernel failed to compile, so `channel()` and `read()` gave null for
   every channel of the mix. One bounded past the largest f32 stays on the CPU, and `reasons()` says

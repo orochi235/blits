@@ -174,7 +174,8 @@ export interface Mix<I, O, H = unknown> {
    * with its own and rebuilds their state as it does a voice's, and {@link Handle.weight | `weight`} and {@link Handle.fade | `fade()`} multiply
    * into their weights, by what its {@link Handle.weightOf | `weightOf`} reports; it fades as a whole, not by subject or at
    * rest. It is {@link Handle.played | `played`} once every voice it holds has finished its passes: it settles with the last
-   * voice it holds then, and a voice cued into it after does not change it. It leaves, {@link Handle.done | `done`}, with its
+   * voice it holds then, and a voice cued into it after does not change it; a {@link Mix.span | `span`} settles at its
+   * coast instead. It leaves, {@link Handle.done | `done`}, with its
    * last voice, and a fade that ends takes the rest with it. One that never holds a voice stays until
    * faded. Owners nest. Throws for a `loop`: a pass would have to restart its children.
    */
@@ -185,7 +186,9 @@ export interface Mix<I, O, H = unknown> {
    * set, so it takes neither {@link VoiceSpec.start | `start`} nor an anchored start; its `SpanHints` say how it may give
    * way. A span with a budget stays until the budget has passed, though its children finish sooner,
    * so late ones can still join, and its `end` mark is where its children end or its budget does,
-   * whichever is later. A voice that loops for good cannot join one. Throws for a `rate` below 0: a
+   * whichever is later. Its {@link Handle.played | `played`} settles at its `coast`, or as it leaves where a fade cuts it
+   * sooner: true where every voice it held finished its passes, false where one did not. A voice
+   * that loops for good cannot join one. Throws for a `rate` below 0: a
    * span lays its children out forward from its start, and its handle's `rate` turns it once it
    * plays.
    */

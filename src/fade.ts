@@ -269,13 +269,19 @@ export function release<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>, at: number):
 
 /**
  * A span takes no more children: it has played, at its coast, where every child it held played
- * and it has one. Before this a late child could still join its budget and be cut short.
+ * and it has one. Before this a late child could still join its budget and be cut short. One that
+ * `leaves` before its coast settles as it leaves.
  */
-function closed<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>): void {
+function closed<I, O>(
+  mix: Mixer<I, O>,
+  owner: Voice<I, O>,
+  leaves = Number.POSITIVE_INFINITY,
+): void {
   const h = owner.holding;
   if (h === null || owner.fitting === null || h.kids === 0 || h.played !== h.kids) return;
   const coast = markOf(mix, owner, 'coast');
-  if (coast !== undefined) owner.play(true, coast, mix.transport.seq);
+  const at = coast === undefined ? leaves : Math.min(coast, leaves);
+  if (Number.isFinite(at)) owner.play(true, at, mix.transport.seq);
 }
 
 /**
@@ -386,7 +392,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   voice.doneSeq = mix.transport.seq;
   // The frames up to this one showed it, though its fade ended before: it leaves the list now.
   mix.transport.settle();
-  closed(mix, voice);
+  closed(mix, voice, voice.doneAt);
   voice.play(false, voice.doneAt, voice.doneSeq);
   voice.resolve();
   // An owner takes what it holds with it, and leaves with its last child.
