@@ -114,7 +114,34 @@ function replays(run: ReturnType<typeof play>, frames: number[], t: number) {
   }
 }
 
+/** A voice over every subject, met by a new subject each frame and the one before dropped. */
+function churn(opts: MixOptions, frames: number, spec: { stagger?: (p: Part) => number } = {}) {
+  const m = mix<Part, Pose>(KP, opts);
+  m.sync(0);
+  m.cue({
+    patch: patch<Part, Pose>(100, () => ({ x: 1 }), { writes: ['x'] }),
+    loop: true,
+    ...spec,
+  });
+  let last: Part | null = null;
+  for (let i = 0; i < frames; i++) {
+    m.sync((i + 1) * 16);
+    const s = { id: `s${i}` };
+    m.probe(s);
+    if (last !== null) m.drop(last);
+    last = s;
+  }
+  return (m as unknown as { cued: { keyed: Set<unknown> | null; staggers: { size: number } }[] })
+    .cued[0];
+}
+
 describe('history with a store', () => {
+  for (const lanes of [true, false])
+    it(`keeps no key for a subject dropped${lanes ? '' : ', without lanes'}`, () => {
+      const voice = churn(paged(memoryStore(), { lanes }), 2000);
+      expect(voice?.keyed?.size ?? 0).toBeLessThan(10);
+    });
+
   for (const lanes of [true, false])
     it(`pages a subject's fade out with the drop that forgot it${lanes ? '' : ', without lanes'}`, async () => {
       const flat = patch<Part, Pose>(1000, () => ({ x: 8 }), { writes: ['x'] });

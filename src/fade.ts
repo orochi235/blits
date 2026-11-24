@@ -1,7 +1,7 @@
 import { changed, headOf, slotOf, unlink } from './chain.js';
 import { clampWeight, envelope, fadeInAt, fadeMsFor, rampTime, stalled } from './clock.js';
 import { schedule } from './due.js';
-import { begin } from './held.js';
+import { begin, unkey } from './held.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -189,6 +189,7 @@ function letGo<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   if (held !== undefined) {
     leave(mix, voice, subject, held);
     unrecord(voice, subject, held);
+    unkey(mix, voice, subject);
   }
   if (head === undefined) return;
   unlink(mix, head);

@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under a history store, a voice lets go of a subject's key when the subject is dropped or faded
+  out of it, and takes it back where a seek back brings the subject back. It kept one per subject
+  it ever met, and walked them all each time it paged out.
 - `blend` checks every member before it cues any, so a member the mix refuses, by its kit, its
   `hits` or its engine, leaves none behind. The members before it stayed cued, and one alone played
   at full weight.

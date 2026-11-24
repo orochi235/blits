@@ -142,6 +142,11 @@ function leaving<I, O>(voice: Voice<I, O>, now: number): boolean {
   return voice.endsAt() <= now;
 }
 
+/** Lets go of the key a store pages a subject's record in this voice under. */
+export function unkey<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
+  if (voice.keyed !== null && mix.keys !== null) voice.keyed.delete(mix.keys.key(subject));
+}
+
 /**
  * Where a new record met at `now` starts stepping, and its first `dt` counts from: its `since`,
  * still ahead or not, or from `now` for one shown frozen before it, and for a voice that catches up
