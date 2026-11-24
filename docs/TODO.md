@@ -28,6 +28,11 @@ Owner tags:
   probe has read the subject since; the record still showed `since` 100 and `probed` 1600. It
   behaves the same on main before the 2026-11-23 inert fix. Decide what `inert` should say there,
   then test it beside "goes inert past the stagger" in `test/motion-edges.test.ts`.
+- **[maintainer] A probe of one role's blend alone** (2026-11-23), for rapier's hand-back: a held
+  body is placed at its whole shown pose, so voices outside `sim.role` count twice once physics
+  takes it back (`packages/rapier/README.md` says so, and a test pins it). Placing it at the role's
+  blend needs a public read of one role, such as `probe(subject, out, { role })`; a public
+  addition, so it ships in a minor.
 - **[maintainer] Public renames the 2026-11-09 audit asked about:** `timestamp` on mix-clock
   fields (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a
   Promise); glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the
