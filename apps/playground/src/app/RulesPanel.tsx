@@ -24,6 +24,7 @@ import { Button, PropertyControl, PropertyRow, RowScope } from '@weasel-js/ui';
 import { useMemo } from 'react';
 import s from './App.module.css';
 import { actionRow, useLatest } from './CompositionControls';
+import { useBurst } from './drafting';
 import r from './Rows.module.css';
 
 type NumberChannel = Exclude<keyof Rules, 'color'>;
@@ -65,6 +66,7 @@ export function RulesPanel({
   comp: Composition;
   onChange(c: Composition): void;
 }) {
+  const burst = useBurst();
   const rules = { ...DEFAULT_RULES, ...comp.rules };
   const kit = kitOf(comp.rules);
   const set = <K extends keyof Rules>(ch: K, spec: Rules[K]) => {
@@ -177,7 +179,7 @@ export function RulesPanel({
           value={i === 0 ? lo : hi}
           step={0.1}
           onInput={ignore}
-          onChange={edit(i)}
+          onChange={burst(edit(i))}
         />
       );
       return (

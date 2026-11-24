@@ -60,4 +60,17 @@ describe('createEdits', () => {
     e.undo();
     expect(e.now()).toBe(1);
   });
+
+  it('settle records the drafts on screen as one step, and does nothing with none', () => {
+    const { e } = track(1);
+    e.settle();
+    expect(e.canUndo()).toBe(false);
+    e.draft(2);
+    e.draft(3);
+    e.settle();
+    expect(e.now()).toBe(3);
+    e.undo();
+    expect(e.now()).toBe(1);
+    expect(e.canUndo()).toBe(false);
+  });
 });

@@ -5,6 +5,7 @@ import { type Mixed, SWINGS, type SwingName } from '@pg/blits/kit';
 import { f, type LeafRenderer } from '@weasel-js/labkit';
 import { PropertyControl, PropertyRow } from '@weasel-js/ui';
 import { docOf } from './docs';
+import type { Burst } from './drafting';
 import m from './PatchLive.module.css';
 
 type Wave = Extract<PatchSource, { kind: 'wave' }>;
@@ -48,6 +49,7 @@ export function depthRenderers(
   p: Wave,
   kit: Kit<Mixed>,
   onChange: (p: Wave) => void,
+  burst: Burst,
 ): Record<string, LeafRenderer> {
   const setDepth = (ch: SwingName, d: number | undefined) =>
     onChange({ ...p, depth: withKey(p.depth, ch, d) });
@@ -68,9 +70,9 @@ export function depthRenderers(
               name={`${ch} depth`}
               disabled={d === undefined}
               value={d ?? START[ch]}
-              onChange={(n) => {
+              onChange={burst((n: number) => {
                 if (Number.isFinite(n)) setDepth(ch, n);
-              }}
+              })}
             />
           </div>
         </PropertyRow>

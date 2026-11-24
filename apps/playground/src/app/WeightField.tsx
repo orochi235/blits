@@ -1,6 +1,7 @@
 import type { Expr } from '@pg/blits/composition';
 import type { LeafRenderer } from '@weasel-js/labkit';
 import { type LeafContext, MenuButton, PropertyControl } from '@weasel-js/ui';
+import { useBurst } from './drafting';
 import g from './Group.module.css';
 import { ExprRow, errorOf, Row, useSpec } from './SpecFields';
 
@@ -21,6 +22,7 @@ export const weightRow: LeafRenderer = (row) => <WeightRow row={row} />;
 
 function WeightRow({ row }: { row: LeafContext }) {
   const spec = useSpec();
+  const burst = useBurst();
   const value = row.value as number | Expr;
   const isNum = typeof value === 'number';
   return (
@@ -43,7 +45,7 @@ function WeightRow({ row }: { row: LeafContext }) {
               max={1}
               step={0.01}
               value={value}
-              onChange={(n) => row.setValue(n)}
+              onChange={burst(row.setValue)}
             />
           </span>
         ) : (

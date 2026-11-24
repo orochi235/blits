@@ -14,6 +14,7 @@ import {
   RowScope,
 } from '@weasel-js/ui';
 import { createContext, type ReactNode, useContext } from 'react';
+import { useBurst } from './drafting';
 import { EaseField } from './EaseField';
 import g from './Group.module.css';
 
@@ -120,27 +121,31 @@ export function Row({
 /** The leaf's own control, with `hint` after its label, or `off` while it is disabled. */
 export const noted =
   (hint?: string, off?: string): LeafRenderer =>
-  (row) => {
-    const field = prefFieldProps(row.pref, { value: row.value, setValue: row.setValue }, 'lab');
-    if (!field) return null;
-    return (
-      <RowScope error={row.error}>
-        <PropertyRow
-          label={row.pref.name}
-          description={row.pref.description || undefined}
-          hint={row.disabled ? (off ?? hint) : hint}
+  (row) => <NotedRow row={row} hint={hint} off={off} />;
+
+function NotedRow({ row, hint, off }: { row: LeafContext; hint?: string; off?: string }) {
+  const burst = useBurst();
+  const setValue = row.pref.kind === 'number' ? burst(row.setValue) : row.setValue;
+  const field = prefFieldProps(row.pref, { value: row.value, setValue }, 'lab');
+  if (!field) return null;
+  return (
+    <RowScope error={row.error}>
+      <PropertyRow
+        label={row.pref.name}
+        description={row.pref.description || undefined}
+        hint={row.disabled ? (off ?? hint) : hint}
+        disabled={row.disabled}
+      >
+        <PropertyControl
+          {...field}
+          {...(field.kind === 'number' ? { onInput: () => {} } : {})}
+          name={row.pref.name}
           disabled={row.disabled}
-        >
-          <PropertyControl
-            {...field}
-            {...(field.kind === 'number' ? { onInput: () => {} } : {})}
-            name={row.pref.name}
-            disabled={row.disabled}
-          />
-        </PropertyRow>
-      </RowScope>
-    );
-  };
+        />
+      </PropertyRow>
+    </RowScope>
+  );
+}
 
 export interface OptionalNumber {
   placeholder: string | ((spec: Spec) => string);
@@ -156,6 +161,7 @@ const read = <T,>(v: T | ((spec: Spec) => T), spec: Spec): T =>
 /** A number that may be unset, which blits then defaults: emptied, the field writes undefined. */
 function OptionalNumberRow({ row, o }: { row: LeafContext; o: OptionalNumber }) {
   const spec = useSpec();
+  const burst = useBurst();
   const value = typeof row.value === 'number' ? row.value : undefined;
   return (
     <Row row={row} hint={o.hint === undefined ? undefined : read(o.hint, spec)}>
@@ -169,7 +175,9 @@ function OptionalNumberRow({ row, o }: { row: LeafContext; o: OptionalNumber }) 
           step={o.step}
           unit={o.unit}
           disabled={row.disabled}
-          onChange={(n) => row.setValue(o.min !== undefined && n < o.min ? o.min : n)}
+          onChange={burst((n: number) =>
+            row.setValue(o.min !== undefined && n < o.min ? o.min : n),
+          )}
           onClear={() => row.setValue(undefined)}
         />
       </span>

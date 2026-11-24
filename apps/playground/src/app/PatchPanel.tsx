@@ -19,7 +19,7 @@ import { type CSSProperties, useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
 import { docOf } from './docs';
-import { useDraft } from './drafting';
+import { useBurst, useDraft } from './drafting';
 import { EaseField } from './EaseField';
 import { KeyEditor } from './KeyEditor';
 import m from './PatchLive.module.css';
@@ -187,6 +187,7 @@ export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPa
   const [mode, setMode] = useState<'dope' | 'graph'>('dope');
   const schema = useMemo(schemaOf, []);
   const set = (patch: PatchSource) => onChange({ ...v, patch });
+  const burst = useBurst();
   const mine = errors.filter((e) => e.voice === v.id);
   const err = (field: string) => mine.find((e) => e.field === field);
   const whole = wholeErrors(mine, p);
@@ -284,7 +285,7 @@ export function PatchPanel({ voice: v, kit, errors, elapsed, onChange }: PatchPa
     renderers['fn.state'] = code('state', 'state (s) => initial', 2);
     renderers['fn.step'] = code('step', 'step (state, dt, s, setting) => void', 3);
   }
-  if (p.kind === 'wave') Object.assign(renderers, depthRenderers(p, kit, set));
+  if (p.kind === 'wave') Object.assign(renderers, depthRenderers(p, kit, set, burst));
   if (isMotion(p)) {
     for (const k of OPTIONS[p.kind])
       renderers[`${p.kind}.${k}`] = (row) => (

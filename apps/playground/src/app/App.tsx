@@ -36,7 +36,7 @@ const NOTICE_MS = 3000;
 const PANEL_WIDTH = 440;
 
 export function App() {
-  const { comp, set, drafting, undo, redo, canUndo, canRedo, share, refusedLink } =
+  const { comp, set, drafts, undo, redo, canUndo, canRedo, share, refusedLink } =
     useComposition(DEFAULT);
   const compRef = useRef(comp);
   compRef.current = comp;
@@ -210,7 +210,7 @@ export function App() {
   );
 
   return (
-    <Drafting.Provider value={drafting}>
+    <Drafting.Provider value={drafts}>
       <LabShell title="blits playground" mode="dark" header={header}>
         <Split
           className={s.split}
