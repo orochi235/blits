@@ -1,4 +1,4 @@
-import { copyAhead, copyVoices, playAhead, recordOf, type Stages } from './ahead.js';
+import { copyAhead, copyVoices, playAhead, recordOf, type Stages, standIn } from './ahead.js';
 import { heldAt } from './chain.js';
 import { stepOf } from './clock.js';
 import { type Cut, within } from './cut.js';
@@ -84,10 +84,7 @@ export function projectAll(
       },
       null,
     );
-    copy.slot = mix.slot;
-    copy.projecting = true;
-    copy.share = mix.share;
-    copy.places = mix.places;
+    standIn(mix, copy);
     copies.set(mix, copy);
     if (ahead) copyAhead(mix, copy);
     else if (kept) copyBack(mix, copy, t, cut);

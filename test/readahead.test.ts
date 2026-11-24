@@ -262,3 +262,25 @@ describe('a read ahead past many known events', () => {
     expect(asks).toEqual([a, b]);
   });
 });
+
+describe('a read ahead restaging at a stop', () => {
+  type P = { x: number };
+  const KP = kit<P>({ x: sum() });
+  const climb = (ms: number) => patch<unknown, P>(ms, (ph) => ({ x: 1 + ph }), { writes: ['x'] });
+
+  it('keeps an around voice reading its plot after a call the tape holds', () => {
+    const m = mix<{ id: number }, P>(KP, kept());
+    const s = { id: 0 };
+    m.plot([s, { id: 1 }], new Float64Array([0, 0, 1, 0]));
+    let shown = -1;
+    for (const t of [0, 16, 32, 48, 64]) {
+      m.sync(t);
+      if (t === 0)
+        m.cue({ patch: climb(1000), weight: m.around({ x: 0, y: 0, r: 2 }), loop: true });
+      if (t === 48) m.cue({ patch: climb(1000), weight: 0 });
+      shown = m.probe(s).x;
+    }
+    m.seek(16);
+    expect(m.project(64).probe(s).x).toBe(shown);
+  });
+});
