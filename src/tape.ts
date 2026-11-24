@@ -20,6 +20,18 @@ const live: Stage = { transport: (of) => of, mix: (of) => of };
 let stage = live;
 /** What a call threw on a read ahead's stage, for `replay` to throw once the tape has the entry back. */
 let failed: { error: unknown } | undefined;
+/** The mixes whose frame read after a call a read ahead's stage has made again, since `takeFramed`. */
+let shown = new Set<Mixer<unknown, unknown>>();
+
+/**
+ * The mixes whose frame at the time of the calls a read ahead's stage made since the last ask read
+ * after one of them, so that time was a frame there; and forgets them.
+ */
+export function takeFramed(): ReadonlySet<Mixer<unknown, unknown>> {
+  const out = shown;
+  if (out.size > 0) shown = new Set();
+  return out;
+}
 
 /** Refuses a recorded call a read ahead's copies cannot take. */
 export function unplayable(what: string): never {
@@ -46,6 +58,7 @@ export function tapeOf(transport: Transport): Tape | undefined {
 }
 
 interface Recorder {
+  readonly members?: readonly Mixer<unknown, unknown>[];
   readonly tape: Tape | undefined;
   readonly replaying: boolean;
   readonly projecting: boolean;
@@ -63,17 +76,24 @@ export function taping(on: Recorder): boolean {
 export function record(on: Recorder, label: string, again: (stage: Stage) => void): void {
   const tape = on.tape;
   if (tape === undefined || !taping(on)) return;
+  // A call made before anything read its mix this frame shows in that frame's read.
+  const before = (on.members ?? [on as unknown as Mixer<unknown, unknown>]).filter(
+    (m) => m.syncing || !m.looked,
+  );
   const op: TapeOp = {
     label,
     apply() {
-      if (stage === live) again(stage);
+      if (stage === live) {
+        again(stage);
+        return;
+      }
+      for (const m of before) shown.add(m);
       // Thrown inside the tape's `redo`, it would leave the tape without the entry.
-      else
-        try {
-          again(stage);
-        } catch (e) {
-          failed ??= { error: e };
-        }
+      try {
+        again(stage);
+      } catch (e) {
+        failed ??= { error: e };
+      }
     },
     invert: () => undone,
   };

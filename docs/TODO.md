@@ -16,19 +16,28 @@ Owner tags:
 
 ## Engine
 
-- **[maintainer] A read ahead cannot see a resting frame it skips** (2026-11-23, replay fuzz
-  program 98): `fade({ at: 'rest' })` takes a subject out at the first frame its delta equals rest,
-  and a looping keys patch rests at each pass start, so play takes it out only where a frame lands
-  exactly there. A read ahead past that frame reads at known events and the time read, never at
-  the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
-  ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
-  whether this stays a stated limit of the fuzz.
+- **[maintainer] A read ahead cannot see a resting frame it skips** (2026-11-23, replay fuzz program
+  98; 630 and 717 on 2026-11-24, and 620 and 887 shrunk, whose whole programs pass once a read ahead
+  counts a call made before its frame's read as a frame): `fade({ at: 'rest' })` takes a subject out
+  at the first frame its delta equals rest, and a looping keys patch rests at each pass start, so
+  play takes it out only where a frame lands exactly there. A stepped `patch` does at its pass
+  starts too, running back (630) or under a slowed mix (887), and a `wave` at a zero mid-pass (717).
+  A read ahead past that frame reads at known events and the time read, never at the frame, so it
+  still shows the voice. Matching play needs the frames it will play, which a read ahead does not
+  know; decide whether a read ahead should treat every pass start as a frame, or whether this stays
+  a stated limit of the fuzz.
 - **[agent] With a store, a seek back shows a motion `set` made in a later frame** (2026-11-24,
-  replay fuzz programs 470 and 809, store only, reproduced): a spring (470, a `vspring` cued at
+  replay fuzz programs 470, 732 and 809, store only, reproduced): a spring (470, a `vspring` cued at
   frame 0 and set twice at frame 3) shows at frame 2 after `prepare` and a seek there the values
   the frame-3 sets put it at; without a store it matches. Filed under the rate-0 `set` entry until
   that fix of the same day showed it is a separate cause. One route: check which motion changes
   `unpage` and `rewind` keep for a seek to a frame before them.
+- **[agent] Lanes on and off read a retargeted looping tween differently** (2026-11-24, reproduced
+  on batch/2026-11-24-review6 at 96b9c6f2, not checked on main): `test/differential.test.ts` fails
+  every sweep on seed 583, `shrink(583, {})` in `test/fuzz/scene.ts`: a `tween` of `heading` eased
+  by `steps`, `loop: 2`, cued at 0, probed at 416 and 432, then retargeted at 432 `over: 100`; the
+  probe after reads heading 0.5012 without lanes and 0.0576 with them. One route: bisect the
+  batch's merges into `src/` against that shrink.
 - **[agent] A seek back near a fade at rest steps a record where play's stood still** (2026-11-24,
   replay fuzz programs 754 and 888, reproduced): under `fade({ at: 'rest' })` (888 rises it again
   later), the read in the seek frame steps a put-back record through stamps play's record only
