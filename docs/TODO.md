@@ -23,6 +23,12 @@ Owner tags:
   the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
   ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
   whether this stays a stated limit of the fuzz.
+- **[agent] Lanes on and off read a tween retargeted in a second frame at one mix time apart**
+  (2026-11-24, reproduced, `test/differential.test.ts` seed 583 in the default, pull, history and
+  seek sweeps, failing on the `batch/2026-11-24-review6` tip): a looping (`loop: 2`) 300 ms `tween`
+  on `heading` with stepped easing, probed at 416 and 432, then in a second frame at 432 given a
+  `retarget` with `x` over 100 ms and probed, reads 0.501 with lanes off and 0.058 with lanes on.
+  `shrink(583, {})` in `test/fuzz/scene.ts` prints the case.
 - **[agent] A seek back near a fade at rest steps a record where play's stood still** (2026-11-24,
   replay fuzz programs 754 and 888, reproduced): under `fade({ at: 'rest' })` (888 rises it again
   later), the read in the seek frame steps a put-back record through stamps play's record only
