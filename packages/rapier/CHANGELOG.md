@@ -32,6 +32,9 @@ section here.
   they add on top.
 - A world a seek replaces is packed back into a snapshot and freed, where it used to stay
   allocated in Rapier's memory for the session.
+- A 3D body handed back from an authored hold spins about the axis the hold turned it on. Its
+  spin was worked out in the body's own axes and given to Rapier as the world's, so a body turned
+  away from where it started spun about the wrong axis once let go.
 
 ## 0.7.4
 

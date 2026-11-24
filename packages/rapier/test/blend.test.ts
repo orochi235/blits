@@ -1,7 +1,8 @@
 import R2 from '@dimforge/rapier2d-compat';
+import R3 from '@dimforge/rapier3d-compat';
 import { kit, level, patch, type Signal, share } from '@msb235/blits';
 import { expect, it } from 'vitest';
-import { channels2, type Pose2, physics } from '../src/index.js';
+import { channels2, channels3, type Pose2, type Pose3, physics } from '../src/index.js';
 import { at } from './scenes.js';
 
 /** A body that falls freely, read at frame 30. */
@@ -91,4 +92,41 @@ it('carries the speed of an authored voice into the simulation it hands back to'
   const b = (sim.mix.probe(ball) as Pose2).position[0] as number;
   // The slide's 6 a second, kept for the ten frames after.
   expect((b - a) / (10 / 60)).toBeCloseTo(6, 1);
+});
+
+it('carries the spin of an authored voice into the simulation about the axis it turned on', () => {
+  /** `b` then `a`, as Rapier's `[x, y, z, w]`: `a · b`. */
+  const times = (a: number[], b: number[]): [number, number, number, number] => {
+    const [ax, ay, az, aw] = a as [number, number, number, number];
+    const [bx, by, bz, bw] = b as [number, number, number, number];
+    return [
+      aw * bx + ax * bw + ay * bz - az * by,
+      aw * by - ax * bz + ay * bw + az * bx,
+      aw * bz + ax * by - ay * bx + az * bw,
+      aw * bw - ax * bx - ay * by - az * bz,
+    ];
+  };
+  const k = level<object>(1);
+  const sim = physics<Pose3>(kit<Pose3>(channels3), {
+    rapier: R3,
+    gravity: [0, 0, 0],
+    weight: share(k, 0, 2),
+  });
+  const box = sim.body(R3.RigidBodyDesc.dynamic(), R3.ColliderDesc.cuboid(0.5, 0.5, 0.5));
+  // Turned a quarter about z, then spun about the world's x at 2 radians a second.
+  const s = Math.SQRT1_2;
+  const spin = patch<object, Pose3>(
+    10_000,
+    (u) => {
+      const a = u * 20;
+      return { rotation: times([Math.sin(a / 2), 0, 0, Math.cos(a / 2)], [0, 0, s, s]) };
+    },
+    { writes: ['rotation'] },
+  );
+  box.cue({ patch: spin, weight: share(k, 1, 2), role: sim.role });
+  for (let f = 0; f <= 30; f++) sim.sync(at(f));
+  k.set(0);
+  for (let f = 31; f <= 33; f++) sim.sync(at(f));
+  const w = (sim.world() as unknown as R3.World).getRigidBody(0).angvel();
+  expect([w.x, w.y, w.z].map((x) => Math.round(x * 100) / 100 + 0)).toEqual([2, 0, 0]);
 });
