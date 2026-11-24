@@ -2,6 +2,7 @@ import { foldTaken } from './axes.js';
 import { first } from './clone.js';
 import type { Share } from './everyone.js';
 import { merged, unband } from './fold.js';
+import { recordBands, roleKept } from './history.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { roleScratch } from './role.js';
@@ -74,7 +75,8 @@ export function foldRoles<I, O>(
       if (!mine) q = this.shared(voice, head.slot, held, q);
       const role = voice.spec.role;
       if (delta === null) {
-        if (role === undefined && !(held.weight > 0)) unband(held);
+        if (role === undefined && !(held.weight > 0) && unband(held))
+          recordBands(this, subject, held);
         continue;
       }
       let group = -1;
@@ -103,8 +105,11 @@ export function foldRoles<I, O>(
     let bands = head.roles;
     if (bands === null) {
       bands = new Map();
+      const live = this.rolesAhead?.(subject);
+      if (live) for (const [name, on] of live) bands.set(name, on.slice());
       head.roles = bands;
     }
+    const logs = this.opts.history !== undefined && !this.projecting;
 
     for (let n = 0; n < k.n; n++) {
       const group = k.groups[n] as number;
@@ -117,17 +122,22 @@ export function foldRoles<I, O>(
             k.helds[n] as Subject<unknown>,
             k.deltas[n] as Record<string, unknown>,
             weight,
+            subject,
           );
-        else unband(k.helds[n]);
+        else if (unband(k.helds[n])) recordBands(this, subject, k.helds[n] as Subject<unknown>);
         continue;
       }
       const weight = this.foldRole(k, group);
       const name = k.names[group] as string;
+      // The role's first member, which keeps the role's band state for a seek back to put back.
+      const lead = k.helds[n] as Subject<unknown>;
+      // Lost with the chain by a seek, and new on a read back's copy: as the first member kept it.
+      let on = bands.get(name) ?? seeded(bands, name, lead);
       if (!(weight > 0)) {
-        bands.get(name)?.fill(2);
+        on?.fill(2);
+        if (logs) keepRole(this, subject, lead, on ?? null);
         continue;
       }
-      let on = bands.get(name);
       if (on === undefined) {
         on = new Uint8Array(this.channels.length);
         bands.set(name, on);
@@ -160,6 +170,7 @@ export function foldRoles<I, O>(
         if (passes)
           pose[key] = pose[key] === undefined ? first(value) : merged(channel, pose[key], value);
       }
+      if (logs) keepRole(this, subject, lead, on);
     }
     return pose as O;
   } finally {
@@ -182,4 +193,34 @@ export function foldRoles<I, O>(
     k.touched.length = 0;
     this.roleDepth--;
   }
+}
+
+/** A role's band state as its first member last kept it, set on the chain; undefined for none. */
+function seeded(
+  bands: Map<string, Uint8Array>,
+  name: string,
+  lead: Subject<unknown>,
+): Uint8Array | undefined {
+  const kept = roleKept(lead);
+  if (!kept) return undefined;
+  const on = kept.slice();
+  bands.set(name, on);
+  return on;
+}
+
+/** Keeps a role's band state on its first member where it differs from what that member last kept. */
+function keepRole<I, O>(
+  mix: Mixer<I, O>,
+  subject: I,
+  lead: Subject<unknown>,
+  on: Uint8Array | null,
+): void {
+  const kept = roleKept(lead) ?? null;
+  if (kept === on) return;
+  if (kept !== null && on !== null && kept.length === on.length) {
+    let same = true;
+    for (let i = 0; i < on.length && same; i++) same = kept[i] === on[i];
+    if (same) return;
+  }
+  recordBands(mix, subject, lead, on);
 }

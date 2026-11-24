@@ -328,7 +328,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
       : raw;
   if (!(elapsed >= 0)) {
     data[o + Row.WEIGHT] = 0;
-    unband(lane.records[p]);
+    unbandAt(this, lane.records[p], slot);
     return false;
   }
   if (!lane.placed || !same(elapsed, lane.placedAt)) {
@@ -352,13 +352,13 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     arg[Arg.FADE] = lane.fade;
     if (!this.signalled(voice, slot, lane.records[p] as Subject<unknown>)) {
       data[o + Row.WEIGHT] = 0;
-      unband(lane.records[p]);
+      unbandAt(this, lane.records[p], slot);
       return false;
     }
     w = arg[Arg.WEIGHT] as number;
   } else w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
   data[o + Row.WEIGHT] = w;
-  if (!(w > 0)) unband(lane.records[p]);
+  if (!(w > 0)) unbandAt(this, lane.records[p], slot);
   this.folding = lane;
   this.rec = lane.records[p] ?? null;
   if (voice.built !== null) {
@@ -517,4 +517,13 @@ export function call<I, O>(
   if (reading.kept !== kept && !voice.keeping) host.kept(voice);
   if (w > 0) this.foldDelta(chans, slot, delta);
   return true;
+}
+
+/** `unband` for a lane's record of the subject at `slot`, kept under `history` where it changed. */
+export function unbandAt<I, O>(
+  lanes: Lanes<I, O>,
+  held: Subject<unknown> | undefined,
+  slot: number,
+): void {
+  if (unband(held)) lanes.host.banded(held as Subject<unknown>, slot);
 }

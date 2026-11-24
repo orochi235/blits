@@ -2,6 +2,7 @@ import { foldAxesApart } from './axes.js';
 import { foldNumber, numericOf } from './channels.js';
 import { copy as copyValue, first } from './clone.js';
 import type { Share } from './everyone.js';
+import { recordBands } from './history.js';
 import { Per } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
@@ -96,10 +97,18 @@ export type Values = Record<string, unknown>;
 
 /**
  * A record's band state once its voice is skipped at weight 0: off, as `passes` would have said, so
- * a weight that comes back inside the band does not find it still on.
+ * a weight that comes back inside the band does not find it still on. True where that changed it,
+ * for a caller under `history` to keep.
  */
-export function unband(held: Subject<unknown> | null | undefined): void {
-  if (held?.bands) held.bands.fill(2);
+export function unband(held: Subject<unknown> | null | undefined): boolean {
+  const bands = held?.bands;
+  if (!bands) return false;
+  for (let i = 0; i < bands.length; i++)
+    if (bands[i] !== 2) {
+      bands.fill(2);
+      return true;
+    }
+  return false;
 }
 
 /** Whether a rest-less channel's contribution is switched on, across a band rather than an edge. */
@@ -116,8 +125,10 @@ export function apply<I, O>(
   held: Subject<unknown>,
   delta: Record<string, unknown>,
   weight: number,
+  subject: I,
 ): void {
   const slots = voice.slots;
+  let banded = false;
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i] as number;
     const key = this.names[slot] as string;
@@ -144,9 +155,14 @@ export function apply<I, O>(
     const bands = held.bands ?? bandsFor(held, slots.length);
     const band = bands[i];
     const on = this.passes(band === 0 ? undefined : band === 1, weight);
-    bands[i] = on ? 1 : 2;
+    const next = on ? 1 : 2;
+    if (band !== next) {
+      bands[i] = next;
+      banded = true;
+    }
     if (on) pose[key] = pose[key] === undefined ? first(value) : merged(channel, pose[key], value);
   }
+  if (banded) recordBands(this, subject, held);
 }
 
 /** Clamps every bounded channel of a folded pose into its range, in place. */
@@ -293,9 +309,9 @@ export function foldWith<I, O>(
       if (voice.id === except || voice.state === 'done') continue;
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
-      if (!(held.weight > 0)) unband(held);
+      if (!(held.weight > 0) && unband(held)) recordBands(this, subject, held);
       if (delta === null || this.w <= 0) continue;
-      this.apply(pose, voice, held, delta, this.w);
+      this.apply(pose, voice, held, delta, this.w, subject);
     }
     return pose as O;
   }
@@ -333,9 +349,9 @@ export function foldDetour<I, O>(
     if (voice.id === except || voice.state === 'done') continue;
     const delta = this.read(voice, subject, now, dry, held);
     if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
-    if (!(held.weight > 0)) unband(held);
+    if (!(held.weight > 0) && unband(held)) recordBands(this, subject, held);
     if (delta === null || this.w <= 0) continue;
-    this.apply(pose, voice, held, delta, this.w);
+    this.apply(pose, voice, held, delta, this.w, subject);
   }
   if (q < sharers.length)
     this.foldSharers(pose, subject, head, q, Number.MAX_SAFE_INTEGER, laned, dry, except, owed);
@@ -373,7 +389,7 @@ export function foldSharers<I, O>(
     if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, rec.weight);
     q = this.shared(voice, head.slot, rec, q);
     if (delta === null || this.w <= 0) continue;
-    this.apply(pose, voice, rec, delta, this.w);
+    this.apply(pose, voice, rec, delta, this.w, subject);
   }
   return q;
 }

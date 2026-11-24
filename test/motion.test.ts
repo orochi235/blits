@@ -1,5 +1,6 @@
 import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, sum, vec } from '../src/channels.js';
 import { curve } from '../src/easing.js';
@@ -398,6 +399,55 @@ describe('the motion form', () => {
     h.seek(200);
     m.sync(1100);
     expect(m.probe(a).x).toBe(before);
+  });
+
+  it('replays a push made before its subject was first read where that read landed it, after a seek back before it', () => {
+    for (const first of [48, 64]) {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100, stiffness: 180, damping: 12 });
+      const m = mix<Part, Pose>(K, { history: { ms: 5000, tape }, stepMs: 4 });
+      m.cue({ patch: s });
+      const a = { id: 'a' };
+      m.sync(0);
+      m.sync(16);
+      m.sync(32);
+      s.push(a, 300);
+      for (const t of [48, 64]) {
+        m.sync(t);
+        if (t >= first) m.probe(a);
+      }
+      const played = m.probe(a).x;
+      m.seek(16);
+      expect(m.project(64).probe(a).x).toBe(played);
+      m.seek(64);
+      expect(m.probe(a).x).toBe(played);
+    }
+  });
+
+  it('lands a push made after a seek back to before its subject was first read at the next read', () => {
+    const run = (back: boolean) => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100, stiffness: 180, damping: 12 });
+      const m = mix<Part, Pose>(K, { history: { ms: 5000, tape }, stepMs: 4 });
+      m.cue({ patch: s });
+      const a = { id: 'a' };
+      m.sync(0);
+      m.sync(16);
+      // The host's clock reads on from where it was: past the seek, its 64 is the mix's 32.
+      let host = 0;
+      if (back) {
+        m.sync(32);
+        m.sync(48);
+        m.probe(a);
+        m.seek(16);
+        host = 32;
+      }
+      m.sync(host + 32);
+      s.push(a, 300);
+      m.sync(host + 48);
+      m.sync(host + 64);
+      expect(m.now).toBe(64);
+      return m.probe(a).x;
+    };
+    expect(run(true)).toBe(run(false));
   });
 
   it("lands an untimed change on a subject the host skipped at the patch's latest frame", () => {

@@ -32,6 +32,8 @@ export interface Change {
   seq?: number;
   /** Whether it was made before its frame was read, so a read of what that frame showed has it. */
   early?: boolean;
+  /** For one made untimed, the tape's copy, which the read stamping it stamps too, so a replay lands it there. */
+  taped?: Change;
 }
 
 /** A record of a motion patch's history leaving memory, at a mix time and frame. */

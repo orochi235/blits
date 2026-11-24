@@ -44,15 +44,6 @@ Owner tags:
   first send cannot tell its count and holds back what its steps stamp at or before the moment
   sought, as before 2026-11-24: one first sent after the moment, stamped before it, is lost. One
   route: page the log with the record's copies.
-- **[agent] A seek back does not put back a rest-less channel's band state** (2026-11-23,
-  reproduced): under a band of the host's own, `{ on: 0.6, off: 0.4 }`, a `last()` channel whose
-  weight goes 1, then 0.5 (still shown), then 0, then 0.5 again (not shown) still shows nothing
-  after a `seek` back into the first stretch at 0.5. A record keeps only its latest band state,
-  which `restore` (`src/seek.ts`) leaves as the live record has it, and a role keeps its own on the
-  chain head (`head.roles`), which a seek drops, so the role decides as if met afresh. Under the
-  stock band nothing holds between on and off, so no default mix shows it. One route: under
-  history, log each record's band changes by time as `inputs` are, a role's on its first member's
-  record, put back the state as of the time sought, and page the log with the record.
 - **[agent] A seek back within memory may miss an announced mark a later one displaced as an end**
   (2026-11-23, reasoned, not reproduced): with a store, memory keeps only the ends of the marks it
   has paged (`endMarks` in `src/paging.ts`) and lets go of one once another takes its place. A mark
@@ -65,16 +56,6 @@ Owner tags:
   180° just before a `from: 'current'` takeover reads a speed of about −360° per frame, and the
   voice swings the long way (rotation.test's takeover from 153° on such a channel). One route:
   read the speed through the channel's own lerp, which knows the short way.
-- **[agent] A seek back makes an untimed retarget or push replay at the wrong time** (2026-11-23,
-  reproduced, lanes on and off): a change made before any frame met its subject waits for the
-  subject's first read (`change` in `src/changes.ts`). A seek back to before that first read keeps
-  the voice's record for the subject, with `probed` NaN, and `frameOf` (`src/strays.ts`) reads
-  any record as met, so the tape's replay of the change, and a read ahead of it, stamp it at its
-  own frame instead. A spring cued at 0, `push(a, 300)` at 32 with `a` first probed at 64 (history
-  with a tape, `stepMs: 4`), then `seek(16)`: play shows 20.389 at 64, a read ahead 19.148 and the
-  replay 19.148. Met at or before the moment sought, all three agree. The replay and the read
-  ahead also differ from each other by about 1e-5 in that case. One route: a seek back drops, or
-  marks unmet, a record its voice first met after the moment sought.
 - **[agent] A motion voice sought back into a subject's stagger may go `inert` before the subject
   is read again** (2026-11-23, unconfirmed whether it is a bug): after a handle `seek` sends a
   record back before its start, `inert` reads true about 12 ms after the delay runs out, though no

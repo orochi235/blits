@@ -1,5 +1,5 @@
 import { carried } from './around.js';
-import { unband } from './fold.js';
+import { unbandAt } from './fill.js';
 import { keepProbed, type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
@@ -368,7 +368,7 @@ export function runBounded<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, b: Bound<
     keepProbed(data, o, per, slot * Per.SLOT, fills);
     if (data[o + Row.WEIGHT] !== 0) {
       data[o + Row.WEIGHT] = 0;
-      unband(lane.records[p]);
+      unbandAt(lanes, lane.records[p], slot);
     }
     if (data[o + Row.PROBED] !== 0) lit(b, slot, fills);
   }
@@ -403,6 +403,6 @@ export function leave<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, p: number, slo
   keepProbed(data, o, lanes.per, slot * Per.SLOT, lanes.fills);
   if (data[o + Row.WEIGHT] !== 0) {
     data[o + Row.WEIGHT] = 0;
-    unband(lane.records[p]);
+    unbandAt(lanes, lane.records[p], slot);
   }
 }

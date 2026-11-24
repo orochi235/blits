@@ -2,7 +2,7 @@ import { heldAt } from './chain.js';
 import { schedule } from './due.js';
 import { fadesThen } from './fade.js';
 import { origin } from './held.js';
-import { apart, controlsAt, copyHeld, copyHeldInto, restedBy, unread } from './history.js';
+import { apart, bandsAt, controlsAt, copyHeld, copyHeldInto, restedBy, unread } from './history.js';
 import { laneHost } from './hosts.js';
 import { leapBack } from './leaps.js';
 import { Leavings } from './leavings.js';
@@ -27,7 +27,8 @@ import type { Controls, Voice } from './voice.js';
 /**
  * A voice's record of one subject as it stood at mix time `t`, from the latest copy kept by then;
  * undefined for a stateful record first made after `t`, which is met afresh. A stateless record
- * holds nothing that moves with time, so it is copied whenever it was made. The weight its last
+ * holds nothing that moves with time, so it is copied whenever it was made, its `target` and
+ * `stagger` answers with it, but one first made after `t` reads as unmet. The weight its last
  * probe by `t` read is not kept, and a lane holds it apart from the record, so the record reads 0
  * until the next probe.
  */
@@ -42,6 +43,7 @@ function restore<I, O>(
   // Read here, not passed: a double passed to a call is boxed, once per record put back.
   const t = at.t;
   const inputs = live.inputs?.filter((e) => e.at <= t);
+  const bandLog = live.bandLog;
   const snaps = live.snaps;
   if (snaps === undefined) {
     // Nothing a step or `setting.keep` holds: what it keeps does not move with time. One record
@@ -51,6 +53,8 @@ function restore<I, O>(
     restedBy(h, live, t);
     h.weight = 0;
     h.inputs = inputs;
+    bandsAt(h, bandLog, at.seq);
+    if (h.metSeq > at.seq) h.metSeq = Number.POSITIVE_INFINITY;
     if (!(h.since <= t)) origin(mix, voice, h);
     putBack(mix, h, live, at.seq);
     return h;
@@ -83,6 +87,7 @@ function restore<I, O>(
   else for (let i = 0; i < kept; i++) (snaps[i] as Snap<unknown>).shared = true;
   h.snaps = mine ? snaps : snaps.slice(0, kept);
   h.inputs = inputs;
+  bandsAt(h, bandLog, at.seq);
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
   if (!(h.since <= snap.at)) origin(mix, voice, h);
   putBack(mix, h, live, at.seq);

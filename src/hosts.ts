@@ -8,13 +8,14 @@ import { beginRise, fadeVoice } from './fade.js';
 import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { begin, patchKeeps, reorigin, voiceKeeps } from './held.js';
-import { noted, remember } from './history.js';
+import { noted, recordBands, remember } from './history.js';
 import { Arg } from './lane.js';
 import type { LaneHost, Lanes } from './lanes.js';
 import { leap } from './leaps.js';
 import { hostOf, listed, markOf, readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
+import { absent } from './numbers.js';
 import { descendants, ownerReading, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
@@ -75,6 +76,11 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       for (const voice of goneIndex(mix).general) unreach(voice, slot, false);
     },
     passes: (was, w) => mix.passes(was, w),
+    banded: (held, slot) => {
+      if (mix.opts.history === undefined || mix.projecting) return;
+      const subject = (mix.lanes as Lanes<I, O>).subjectAt(slot);
+      if (subject !== absent) recordBands(mix, subject, held);
+    },
     naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
     slotOf: (subject) => slotOf(mix, subject),
     envelope: (voice, since) =>

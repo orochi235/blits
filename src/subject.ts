@@ -55,6 +55,17 @@ export interface Ahead<S> {
   left: S | undefined;
 }
 
+/**
+ * A record's band state as one frame left it, kept under `history` each time it changes: its own,
+ * and, on a role's first member, the role's, by channel slot.
+ */
+export interface BandMark {
+  at: number;
+  seq: number;
+  bands: Uint8Array | null;
+  role: Uint8Array | null;
+}
+
 /** A copy of a record kept under `history`, by the mix time and frame it was taken at. */
 export interface Snap<S> {
   at: number;
@@ -88,6 +99,11 @@ export interface Subject<S> {
    */
   bands: Uint8Array | null;
   state: S;
+  /**
+   * The frame a voice reaching the subject first met it in, -1 on a record standing for several;
+   * Infinity on one a seek back put back from after it, until the subject is read again.
+   */
+  metSeq: number;
   /** The `now` this subject last caught up to, for this voice. */
   stepped: number;
   /** Under `stepMs`, how many intervals have run since `since`; `stepped` is where that lands. */
@@ -119,6 +135,8 @@ export interface Subject<S> {
   /** In a projection: where this record started from, and whether nothing known could be. */
   from?: number;
   unknown?: boolean;
+  /** Under `history`, its band state each time it changed, which a seek or read back puts back. */
+  bandLog?: BandMark[];
   /** Under `history` with `inputs`, what an input weight signal read for this subject, when it changed. */
   inputs?: { at: number; seq: number; value: number }[];
   /** In a projection reading back: that record, to read in place of the signal. */

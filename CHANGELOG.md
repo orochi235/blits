@@ -49,6 +49,15 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A motion `set`, `to` or `push` shows while the mix's rate 0 holds its clock, from the next frame
   on, as a seek to that frame shows it, and in its own frame where nothing was read before it: a
   probe kept the value read at that time until the clock moved again.
+- A seek back, or a read back, puts a rest-less channel's band state back as it stood at the
+  moment sought, in a role and outside one: under a band of the host's own, a weight between
+  `off` and `on` showed whatever the channel had switched to since, and a role decided as if met
+  afresh. A read ahead in a role starts from the role's band state, where it started from none.
+  A history store is handed the band state as the `band` stream.
+- A retarget or push made before any frame read its subject lands, after a seek back to before
+  that first read, where play landed it, in the tape's replay and in a read ahead: both stamped it
+  at the frame it was made in. One made after such a seek waits for the subject's next read, as
+  one made before any read does, where the record the seek kept made it land at once.
 - A call the tape plays again after a seek back, in a frame where rate 0 held the mix clock,
   lands what the host's sync there landed: a span child played in its cue frame stayed on in that
   frame, where play had already let it go.

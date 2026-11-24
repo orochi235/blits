@@ -4,7 +4,7 @@ import { stepOf } from './clock.js';
 import { type Cut, within } from './cut.js';
 import { fadesAt } from './fade.js';
 import { freshOf, meet, origin, originate } from './held.js';
-import { controlsAt, copyHeld, lastWithin, restedBy } from './history.js';
+import { bandsAt, controlsAt, copyHeld, lastWithin, restedBy } from './history.js';
 import { Mixer } from './mixer.js';
 import { heldByInput } from './owner.js';
 import { reading } from './reading.js';
@@ -224,6 +224,7 @@ export function recall<I, O>(
   if (snap) {
     const h = copyHeld(voice, snap.held);
     restedBy(h, live, t);
+    bandsAt(h, live.bandLog, cut.seq);
     // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
     if (c !== undefined && copy !== undefined && !(h.since <= snap.at)) origin(c, copy, h);
     h.from = h.stepped;
@@ -235,6 +236,7 @@ export function recall<I, O>(
   const h = freshOf(voice, subject, live.reaches);
   h.delay = live.delay;
   restedBy(h, live, t);
+  bandsAt(h, live.bandLog, cut.seq);
   if (c === undefined || copy === undefined) {
     h.since = live.since;
     h.shown = live.shown;
