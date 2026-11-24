@@ -185,4 +185,23 @@ describe('set', () => {
     };
     expect(read(true)).toBe(read(false));
   });
+  it('reads a set made between two probes the same with lanes on and off in the next frame at that time', () => {
+    const b = { id: 'b' };
+    const read = (lanes: boolean) => {
+      const s = spring<typeof a, Pose>('x', { from: 0, to: 100 });
+      const m = mix<typeof a, Pose>(K, { lanes });
+      m.cue({ patch: s, subjects: [a] });
+      m.sync(0);
+      m.probe(a);
+      m.sync(250);
+      m.probe(a);
+      s.set(a, 40);
+      // A probe after the set fills the lanes again this frame, keeping what `a` read.
+      m.probe(b);
+      m.sync(250);
+      return m.probe(a).x;
+    };
+    expect(read(false)).toBe(40);
+    expect(read(true)).toBe(read(false));
+  });
 });

@@ -91,23 +91,30 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
  * that read now where nothing was read this frame, else at the next frame, so a probe this frame
  * keeps what it read and a clock held at that time still shows the change, as a seek there does.
  * The lanes, which keep a read in their rows rather than on the record, start a frame of their own
- * at the same moment, whether or not the record holds one.
+ * at the same moment, whether or not the record holds one. A laned read reaches the record only
+ * when a later fill this frame settles it there, so with lanes the record is held back either way.
  */
 function unshow<I, O>(m: Mixer<I, O>, id: number, subject: I): void {
   const early = m.syncing || !m.looked;
   if (early) m.lanes?.restart();
   else m.unshown ??= [];
   const held = cuedById(m, id)?.subjects.get(subject);
-  if (held === undefined || held.delta === null || held.probed !== m.now) return;
-  if (early) held.delta = null;
-  else m.unshown?.push(held);
+  if (held === undefined) return;
+  if (early) {
+    if (held.delta !== null && held.probed === m.now) held.delta = null;
+  } else if (m.lanes !== null || (held.delta !== null && held.probed === m.now))
+    m.unshown?.push(held);
 }
 
-/** At the start of a frame at mix time `at`: lets go of the reads `unshow` held back for it. */
+/**
+ * At the start of a frame at mix time `at`: lets go of the reads `unshow` held back for it, and
+ * has the lanes fill again, since a fill since the change may have kept those reads in its rows.
+ */
 export function letGo<I, O>(m: Mixer<I, O>, at: number): void {
   const list = m.unshown as Subject<unknown>[];
   m.unshown = null;
   m.lanes?.restart();
+  m.lanes?.refill();
   for (const held of list) if (held.probed === at) held.delta = null;
 }
 
