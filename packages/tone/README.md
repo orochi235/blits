@@ -189,6 +189,8 @@ timestamp as usual. The driver maps one onto the other by the offset `mix.book` 
   is a run of ramps, and `node-web-audio-api` 2.2.0 lets a native curve play on through the
   `cancelAndHoldAtTime` each `write` starts with. An eased stretch costs more points than a
   straight one: on the sweep above, about 1.5 times what reading it every 5 ms did.
+- **A mix running back (a rate below 0) is written as a paused one**, one point a `write`, so a
+  parameter steps at frame rate rather than ramping, and holds through a stalled frame.
 - **Only channels of one number.** A `vec` or `color` channel takes no target; read it with
   `mix.project` yourself.
 - **Wiring is not on the tape.** `wire`, `attach`, `detach` and a sound's `drop` are the host's,
