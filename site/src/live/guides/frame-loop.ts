@@ -158,7 +158,11 @@ export default function run(root: HTMLElement): () => void {
   const unwatch = watchHeld(root, hold);
 
   if (away || held) state = 'paused';
-  else m.cue({ patch: trip, subjects: [bar], name: 'trip' });
+  else {
+    // Synced once first, or the trip starts at 0 and the ticker's first sync finds it long over.
+    m.sync(Number(document.timeline.currentTime ?? performance.now()));
+    m.cue({ patch: trip, subjects: [bar], name: 'trip' });
+  }
   show();
 
   return () => {
