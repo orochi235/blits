@@ -338,6 +338,8 @@ export class Transport implements TransportApi {
       this.tick(now);
       const moved = now !== this.now;
       for (const m of this.members) if (moved || (lands && waits(m))) move(m, now);
+      // With no mix on it yet, its clock still moves, so one joining later starts from there.
+      this.now = now;
     }
     if (!Number.isNaN(before) && this.now > before)
       for (const m of this.members) {

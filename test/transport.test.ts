@@ -82,6 +82,18 @@ describe('transport', () => {
     expect(runs.probe('r').chars).toBe(5);
   });
 
+  it('moves its clock with no mix on it, so a voice cued in a mix joining later starts then', () => {
+    const t = transport();
+    t.sync(0);
+    t.sync(100);
+    expect(t.now).toBe(100);
+    const m = mix<string, Row>(ROWS, { transport: t, name: 'late' });
+    expect(m.now).toBe(100);
+    const h = m.cue({ patch: type(1000), loop: false });
+    t.sync(116);
+    expect(h.elapsed).toBe(16);
+  });
+
   it('answers time, when, and timestamp as every mix on it does', () => {
     const { t, orbs } = stage();
     expect(t.timestamp).toBeNaN();
