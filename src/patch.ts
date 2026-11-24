@@ -1,4 +1,4 @@
-import { type LerpInto, lerpInto, lerpNumber } from './channels.js';
+import { endsMove, type LerpInto, lerpInto, lerpNumber } from './channels.js';
 import { arrayCopy } from './clone.js';
 import { type Curve, curve, startSlope } from './easing.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
@@ -357,26 +357,13 @@ function read(
   // The segment's travel is the lerp's own, from its ends: an angle's short way round, or a
   // quaternion's b at the sign nearer a, not the stops as written.
   const by = track.lerp ?? lerp;
-  const own = into !== undefined || (by !== undefined && by !== (lerpNumber as Lerp));
-  let ends: [unknown, unknown] | undefined;
-  const endsOf = (): [unknown, unknown] => {
-    const at = (t: number): unknown =>
-      into !== undefined
-        ? into(undefined, aValue, bValue, t)
-        : by
-          ? by(aValue as never, bValue as never, t)
-          : interpolate(aValue, bValue, t);
-    ends = [at(0), at(1)];
-    return ends;
-  };
+  let ends = by !== undefined && endsMove(by) ? endsOf(into, by, aValue, bValue) : undefined;
   if (typeof value === 'number' && typeof slope === 'number') {
-    if (!own) return value + bend(slope, aValue as number, bValue as number);
-    const [a0, z1] = endsOf();
-    return value + bend(slope, a0 as number, z1 as number);
+    if (ends === undefined) return value + bend(slope, aValue as number, bValue as number);
+    return value + bend(slope, ends[0] as number, ends[1] as number);
   }
   if (Array.isArray(value) && Array.isArray(slope)) {
     const out = value === lastRead.wrote ? value : new Array<unknown>(value.length);
-    if (own) endsOf();
     for (let i = 0; i < value.length; i++) {
       const v = value[i];
       const s = slope[i];
@@ -388,15 +375,27 @@ function read(
       let a = ends === undefined ? (aValue as unknown[])[i] : undefined;
       let z = ends === undefined ? (bValue as unknown[])[i] : undefined;
       if (typeof a !== 'number' || typeof z !== 'number') {
-        const [a0, z1] = ends ?? endsOf();
-        a = (a0 as unknown[] | undefined)?.[i];
-        z = (z1 as unknown[] | undefined)?.[i];
+        ends ??= endsOf(into, by, aValue, bValue);
+        a = (ends[0] as unknown[] | undefined)?.[i];
+        z = (ends[1] as unknown[] | undefined)?.[i];
       }
       out[i] = typeof a === 'number' && typeof z === 'number' ? v + bend(s, a, z) : v;
     }
     return out;
   }
   return value;
+}
+
+/** A segment's ends as its lerp reads them, at 0 and 1. */
+function endsOf(
+  into: LerpInto | undefined,
+  by: Lerp | undefined,
+  a: unknown,
+  b: unknown,
+): [unknown, unknown] {
+  if (into !== undefined) return [into(undefined, a, b, 0), into(undefined, a, b, 1)];
+  if (by !== undefined) return [by(a as never, b as never, 0), by(a as never, b as never, 1)];
+  return [interpolate(a, b, 0), interpolate(a, b, 1)];
 }
 
 /** The array the last `read` interpolated into, which only its caller's record holds. */
