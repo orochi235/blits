@@ -327,12 +327,12 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   schedule(mix, voice);
 }
 
-/** The owner a handle names, refused where it is not one of this mix's or has left. */
 /** Refuses, before its voice is made, a patch's voice its owner's span could not fit, as `cue` would. */
 export function checkFitted<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   if (spec.owner !== undefined && ownerOf(mix, spec.owner).fitting) checkPatchChild(spec);
 }
 
+/** The owner a handle names, refused where it is not one of this mix's or has left. */
 function ownerOf<I, O>(mix: Mixer<I, O>, handle: Handle<I>): Voice<I, O> {
   const found = mix.owners?.find((v) => v.handle === handle);
   if (found === undefined)
