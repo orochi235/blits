@@ -47,9 +47,8 @@ export class Staggers<I> {
    * replay has to give; undefined where it is to ask.
    */
   take(subject: I): number | undefined {
-    const had = this.last.get(subject);
-    if (had !== undefined && had.state === GIVEN && had.seq <= this.sought && !isLeaving(had))
-      return had.delay;
+    const had = this.standing(subject);
+    if (had !== undefined) return had;
     const queue = this.ahead.get(subject);
     if (queue === undefined) return undefined;
     let found: number | undefined;
@@ -67,6 +66,10 @@ export class Staggers<I> {
    * meeting after it next leaves. Undefined where it has none.
    */
   next(subject: I, left = false): number | undefined {
+    if (!left) {
+      const had = this.standing(subject);
+      if (had !== undefined) return had;
+    }
     const queue = this.ahead.get(subject);
     if (queue === undefined) return undefined;
     let past = !left;
@@ -74,6 +77,14 @@ export class Staggers<I> {
       if (isLeaving(e)) past = true;
       else if (past) return e.delay;
     return undefined;
+  }
+
+  /** The answer a seek back left standing for a subject whose record it could not put back. */
+  private standing(subject: I): number | undefined {
+    const had = this.last.get(subject);
+    return had !== undefined && had.state === GIVEN && had.seq <= this.sought && !isLeaving(had)
+      ? had.delay
+      : undefined;
   }
 
   /** Keeps an answer given at mix time `at` in frame `seq`, letting go of those from before `reach`. */

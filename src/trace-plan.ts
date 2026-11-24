@@ -182,7 +182,9 @@ function shapeOf<I, O>(
     const { shape, cycles, start } = waved;
     const first = Math.max(0, Math.floor(e0 / duration));
     const last = Math.min(Math.ceil(voice.passes) - 1, Math.floor(own(to) / duration));
-    if ((last - first + 1) * (4 * cycles + 3) > MOST) return false;
+    if ((last - first + 1) * (4 * Math.abs(cycles) + 3) > MOST) return false;
+    const lo = Math.min(start, start + cycles);
+    const hi = Math.max(start, start + cycles);
     for (let pass = first; pass <= last; pass++) {
       const base = pass * duration;
       at(time(base));
@@ -193,7 +195,8 @@ function shapeOf<I, O>(
         continue;
       }
       // The other shapes run straight between quarters of a cycle, turning or jumping at them.
-      for (let k = Math.ceil(4 * start); k <= 4 * (cycles + start); k++)
+      if (cycles === 0) continue;
+      for (let k = Math.ceil(4 * lo); k <= 4 * hi; k++)
         at(time(base + (duration * (k / 4 - start)) / cycles));
     }
   }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import { wave } from '../src/wave.js';
-import { K, matches, type Part, type Pose, rng } from './trace-helpers.js';
+import { along, K, matches, type Part, type Pose, rng } from './trace-helpers.js';
 
 const rise = keys<Part, Pose>(400, [
   { at: 0, delta: { x: 0 } },
@@ -161,6 +161,25 @@ describe('trace of a wave', () => {
       const ramped = m.trace(60, 1000, { bends: true }).of(a, 'x');
       expect(ramped.exact).toBe(true);
       matches(m, ramped, a, 'x');
+    },
+  );
+
+  it.each(['triangle', 'saw', 'square'] as const)(
+    'is exact for a %s running its cycles backward',
+    (shape) => {
+      const a = { id: 'a' };
+      const m = mix<Part, Pose>(K);
+      m.sync(0);
+      m.cue({
+        patch: wave<Part, Pose>(300, { shape, cycles: -2, phase: 0.1, depth: { x: 5 } }),
+        loop: 2,
+      });
+      m.probe(a);
+      const run = m.trace(0, 600).of(a, 'x');
+      expect(run.exact).toBe(true);
+      // Run backward, a jump keeps its earlier value at its own instant, so only the lines are checked.
+      for (let t = 0.5; t < 600; t += 1)
+        expect(along(run, t)).toBeCloseTo(m.project(t).probe(a).x, 6);
     },
   );
 

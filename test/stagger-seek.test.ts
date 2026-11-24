@@ -1,9 +1,12 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
+import { delayAhead, delayOf } from '../src/delay.js';
 import { VoiceHandle } from '../src/handle.js';
+import type { Mixer } from '../src/mixer.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
+import { Staggers } from '../src/staggers.js';
 import type { Handle, Mix, MixOptions, Patch } from '../src/types.js';
 import type { Voice } from '../src/voice.js';
 
@@ -140,6 +143,22 @@ describe("a voice's `stagger` answers", () => {
     // An answer and a leaving a frame, for each of the 1000 ms history reaches.
     expect(v.staggers?.size).toBeGreaterThan(60);
     expect(v.staggers?.size).toBeLessThanOrEqual(2 * (1000 / 16 + 2));
+  });
+
+  it('give a read ahead the answer a meeting after a seek back takes', () => {
+    const { asks, stagger } = asking();
+    const m = mix<Part, Pose>(K, kept()) as unknown as Mixer<Part, Pose>;
+    m.sync(0);
+    const v = voiceOf(m.cue({ patch: saw, stagger }) as Handle<Part>);
+    const answers = new Staggers<Part>();
+    v.staggers = answers;
+    // The answer given live at frame 1, standing after a seek back to frame 5 with no record for it.
+    answers.give(a, 0, 1, 999, Number.NEGATIVE_INFINITY);
+    answers.back(5);
+    const ahead = delayAhead(m, v, a, true);
+    expect(delayOf(m, v, a)).toBe(999);
+    expect(ahead).toBe(999);
+    expect(asks).toEqual([]);
   });
 
   it('are not kept without history', () => {
