@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A read ahead past a subject faded out of a motion voice and brought back by a retarget or push
+  meets it afresh, as play does, where it read the subject as unreached from the stop it was faded
+  out at, and the voice contributed nothing.
 - A child still to start under an owner whose clock runs back leaves: with the owner's last child,
   or where the owner's clock reaches 0 if that is sooner. It waited for a start the clock was moving
   away from, so the owner and the mix stayed live for good; an owner cued backward with a child

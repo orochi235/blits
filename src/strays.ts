@@ -113,7 +113,11 @@ function changeAhead<I, O>(
     // As the patch asks its mix live: a subject faded out of the voice is back, and a change with
     // no time takes the voice's at this frame, or the subject's own where it is yet to be met.
     const parted = v.parted?.has(subject) === true;
-    if (parted) unpart(to, v, subject);
+    if (parted) {
+      unpart(to, v, subject);
+      // Met afresh, as live: not with the record the stop before kept while it was faded out.
+      v.subjects.delete(subject);
+    }
     if (at === undefined) {
       const frame = frameOf(to, v, subject);
       const back = parted ? timeIn(to, v, delayAhead(to, v, subject, false)) : frame;

@@ -319,4 +319,15 @@ describe('a read ahead restaging at a stop', () => {
     }
     expect(ahead.project(352).probe('a').x).toBe(shown);
   });
+
+  it('meets afresh a subject faded out on the way and brought back by a retarget', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    readsAhead((m, t, h) => {
+      if (t === 0) m.cue({ patch: drift() });
+      if (t === 32) h.s = m.cue({ patch: s });
+      if (t === 64) h.s?.fade({ subject: a, over: 0 });
+      if (t === 128) s.to(a, 20);
+      if (t === 192) s.push(a, 300);
+    }, 16);
+  });
 });
