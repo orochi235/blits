@@ -1,5 +1,5 @@
 import R2 from '@dimforge/rapier2d-compat';
-import { type HistoryStore, kit, transport } from '@msb235/blits';
+import { type HistoryStore, kit, type Paged, transport } from '@msb235/blits';
 import { createHistory as tape } from '@weasel-js/history';
 import { afterEach, expect, it, vi } from 'vitest';
 import { channels2, type Pose2, physics, physicsStore, type RapierModule } from '../src/index.js';
@@ -69,14 +69,14 @@ it('frees every world on close, once, however often it is closed', () => {
 });
 
 it("takes a closed world off its transport's store, which pages no frames back into it", async () => {
-  let data: { pushes: object } | undefined = { pushes: {}, holds: {}, goals: {} };
-  const frames = new WeakRef(data.pushes);
+  let data: Record<string, object> | undefined = { pushes: {}, holds: {}, goals: {} };
+  const frames = new WeakRef(data.pushes as object);
   const store = physicsStore({
     page() {},
     cut() {},
-    async load() {
-      const r = { mix: 'closed', stream: 'host', subject: 'blits-rapier frames', at: 1000, seq: 1 };
-      const records = data === undefined ? [] : [{ ...r, data }];
+    async load(): Promise<Paged[]> {
+      const r = { mix: 'closed', subject: 'blits-rapier frames', at: 1000, seq: 1 };
+      const records = data === undefined ? [] : [{ ...r, stream: 'host' as const, data }];
       data = undefined;
       return records;
     },
