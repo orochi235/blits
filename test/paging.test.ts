@@ -437,6 +437,40 @@ describe('history with a store', () => {
       expect(m.probe('a').x).toBe(at40);
     });
 
+  // Two sets in one frame leave two stretches in force by it, and under a voice clock at rate 0 a
+  // set releases its stretch at the very time the one before it was.
+  for (const lanes of [true, false])
+    for (const how of ['two sets in one frame', 'a set at rate 0'] as const)
+      it(`seeks back past memory to before a motion set, after ${how}${lanes ? '' : ', without lanes'}`, async () => {
+        const m = mix<string, P>(K, {
+          lanes,
+          history: { ms: 150, every: 50, tape, store: memoryStore() },
+          stepMs: 4,
+          keyOf: (s: string) => s,
+        });
+        let h: Handle<string> | undefined;
+        const seen: number[] = [];
+        const seqs: number[] = [];
+        for (let t = 0; t <= 480; t += 32) {
+          m.sync(t);
+          if (t === 0)
+            h = m.cue({
+              patch: spring<string, P>('x', { from: 1, to: 2 }),
+              subjects: ['a'],
+              ...(how === 'a set at rate 0' ? { rate: 0 } : {}),
+            });
+          if (t === 96) {
+            h?.set('a', 8);
+            if (how === 'two sets in one frame') h?.set('a', 5);
+          }
+          seen.push(m.probe('a').x);
+          seqs.push(m.seq);
+        }
+        await m.prepare(64);
+        m.seek({ frame: seqs[2] as number });
+        expect(m.probe('a').x).toBe(seen[2]);
+      });
+
   it('reads input signals and host fields back past memory as they were', async () => {
     const host = { pointer: { x: 0 } };
     const follow = patch<Part, Pose>(

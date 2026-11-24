@@ -17,12 +17,22 @@ const runOf = (r: Run): Run => ({
   pending: r.pending?.map((c) => ({ ...c })),
 });
 
-/** `segs`, in time order, ahead of `list`: those older than its first, one per time. */
+/** Whether two stretches are one, released at one time by the change made in one frame and moment. */
+const same = (a: Segment, b: Segment): boolean =>
+  a.at === b.at &&
+  Object.is(a.change?.seq, b.change?.seq) &&
+  Object.is(a.change?.made, b.change?.made);
+
+/**
+ * `segs`, in time order, ahead of `list`: those no later than its first and not in it already. One
+ * released at the same time as its first, as under a clock at rate 0, is still the one before it.
+ */
 function ahead(segs: readonly Segment[], list: Segment[]): Segment[] {
   const first = (list[0] as Segment).at;
   const out: Segment[] = [];
   for (const seg of [...segs].sort((x, y) => x.at - y.at))
-    if (seg.at < first && out[out.length - 1]?.at !== seg.at) out.push(seg);
+    if (seg.at <= first && !out.some((o) => same(o, seg)) && !list.some((o) => same(o, seg)))
+      out.push(seg);
   return out.length === 0 ? list : [...out, ...list];
 }
 
@@ -39,6 +49,7 @@ export function release<I>(
   early = false,
 ): void {
   this.firsts?.delete(subject);
+  this.paged?.delete(subject);
   const s = this.known(subject);
   if (s === undefined) return;
   if (at !== undefined) {
@@ -149,8 +160,11 @@ export function restretch<I>(this: Motions<I>, subject: I, back: readonly Paging
     .filter((e) => Object.is(e.subject, subject))
     .sort((x, y) => x.seq - y.seq);
   let from = Number.NEGATIVE_INFINITY;
+  // A record holds every stretch in force by its frame; one written before that, a single one.
   const within = (to: number) =>
-    back.filter((r) => r.seq > from && r.seq <= to).map((r) => r.data as Segment);
+    back
+      .filter((r) => r.seq > from && r.seq <= to)
+      .flatMap((r) => (Array.isArray(r.data) ? (r.data as Segment[]) : [r.data as Segment]));
   for (const e of lives) {
     e.stretches = ahead(within(e.seq), e.stretches);
     from = e.seq;
@@ -187,6 +201,16 @@ export function outlived<I>(motions: Motions<I>, at: number, change: Change | un
   return made === undefined || !(made > (motions.owner?.since() ?? Number.POSITIVE_INFINITY));
 }
 
+/** The mix time and frame older stretch `i` was in force by, which a store keys it under. */
+function byFrame<I>(
+  motions: Motions<I>,
+  s: number,
+  list: readonly Segment[],
+  i: number,
+): { at: number; seq: number } {
+  return motions.made((list[i + 1] as Segment | undefined)?.change ?? motions.causes?.[s]);
+}
+
 /** Lets go of stretches no read reaches, older than the one in force at `reading.horizon`. */
 export function prune<I>(this: Motions<I>, s: number): void {
   const list = this.older?.[s];
@@ -200,19 +224,35 @@ export function prune<I>(this: Motions<I>, s: number): void {
   )
     n++;
   if (n === 0) return;
-  const out = list.splice(0, n);
   const subject = this.numbers.subject(s);
   const owner = this.owner ?? this.pagedBy;
-  if (owner !== null && subject !== absent)
-    owner.page(
-      this.ownerId,
-      'stretch',
-      subject,
-      out.map((seg, i) => {
-        const next = out[i + 1] ?? list[0];
-        return { ...this.made(next === undefined ? this.causes?.[s] : next.change), data: seg };
-      }),
-    );
+  if (owner !== null && subject !== absent) {
+    // A store keeps one record per frame, so it holds every stretch in force by that frame.
+    const out: Paging[] = [];
+    for (let i = 0; i < n; i++) {
+      const by = byFrame(this, s, list, i);
+      const last = out[out.length - 1];
+      if (last?.seq === by.seq) (last.data as Segment[]).push(list[i] as Segment);
+      else out.push({ ...by, data: [list[i]] });
+    }
+    const first = out[0] as Paging;
+    const before = this.paged?.get(subject);
+    if (before !== undefined) {
+      this.paged?.delete(subject);
+      if (before.seq === first.seq)
+        first.data = [...(before.data as Segment[]), ...(first.data as Segment[])];
+    }
+    // One still kept, or the frame still playing, may yet leave a stretch in force by its frame.
+    const last = out[out.length - 1] as Paging;
+    const next =
+      n < list.length ? byFrame(this, s, list, n).seq : (this.owner?.seq() ?? Number.NaN);
+    if (last.seq === next) {
+      this.paged ??= new Map();
+      this.paged.set(subject, last);
+    }
+    owner.page(this.ownerId, 'stretch', subject, out);
+  }
+  list.splice(0, n);
   if (list.length === 0) {
     (this.older as (Segment[] | undefined)[])[s] = undefined;
     this.flag(s, OLDER, false);

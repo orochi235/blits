@@ -24,6 +24,7 @@ import {
   type Change,
   type MotionOwner,
   numbers,
+  type Paging,
   type Run,
   RunFlag,
   type Segment,
@@ -136,6 +137,11 @@ export class Motions<I> {
    * still paged under `ownerId`, where it would otherwise be lost.
    */
   pagedBy: MotionOwner | null = null;
+  /**
+   * By subject, the stretches last paged where a stretch still kept may be in force by the same
+   * frame, which a store keeps one record of: paged again with them. Null until one is.
+   */
+  paged: Map<I, Paging> | null = null;
   /** Whether the channel it was cued on holds a number; undefined until it is cued. */
   private holdsNumber: boolean | undefined = undefined;
   private channel = '';
