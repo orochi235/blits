@@ -230,6 +230,16 @@ export class Places<I> extends Grid {
     return view;
   }
 
+  /** A view in which `subject` has no index, for a read's copy that drops it: the copy shares its indices. */
+  without(subject: I): Places<I> {
+    const base = this.at;
+    const at = Object.create(base) as Store<I, number>;
+    at.get = (s: I) => (s === subject ? undefined : base.get(s));
+    const view = Object.create(this) as Places<I>;
+    view.at = at;
+    return view;
+  }
+
   /** Frees index `i`, its subject dropped or collected. */
   private release(i: number): void {
     this.tokens[i] = undefined;

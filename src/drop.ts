@@ -25,6 +25,8 @@ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
   // A read ahead's copy reads the live mix's poses, and so hides one where the mix deletes it.
   if (this.projecting && !(this.lastPoses instanceof Masked))
     this.lastPoses = new Masked(this.lastPoses);
+  // A read's copy shares its indices, so it hides the subject from its own view instead.
+  if (this.projecting && this.places !== null) this.places = this.places.without(subject);
   if (!this.projecting) {
     const places = this.places;
     if (places !== null) {

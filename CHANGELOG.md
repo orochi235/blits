@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A subject dropped while a read ahead or read back plays to it has no plot position from then on in
+  that read, as in play: `around` and `within` voices cued after the drop read it at the position it
+  had.
 - A read ahead past a subject faded out of a motion voice and brought back by a retarget or push
   meets it afresh, as play does, where it read the subject as unreached from the stop it was faded
   out at, and the voice contributed nothing.

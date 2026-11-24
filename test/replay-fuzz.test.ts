@@ -15,11 +15,7 @@ import {
 // and ahead agree with it. `BLITS_REPLAY_SEEDS=1-200` sweeps a wider range.
 
 /** Cases with a known cause, kept out until it is fixed: see `GenOpts`. */
-const KNOWN: Omit<GenOpts, 'transport'> = {
-  noBound: true,
-  noSpan: true,
-  noInstantSubjectFade: true,
-};
+const KNOWN: Omit<GenOpts, 'transport'> = {};
 
 function seeds(): number[] {
   const range = process.env.BLITS_REPLAY_SEEDS?.split('-').map(Number);
