@@ -27,6 +27,24 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - With a history store, a voice anchored on an announced mark that memory has already paged out
   finds it, as it would with every mark in memory: it waited pending for good. Memory keeps, of the
   marks it pages, the first, last, earliest and latest a query could pick.
+- A mix seek back to the frame of an owner's handle `seek` plays the part that seek took it to, as
+  that frame did: an arc sought into its `active` part showed the part's first frame instead.
+- A `set`, `to` or `push` on a motion voice waits for its time again after a handle `seek` back
+  past it under history, once it is older than `history.ms`: it played early from then on, and a
+  read back disagreed with play.
+- A staggered subject whose voice's clock will never reach it, by its controls then (at rate 0, or
+  running back after a handle `seek` sent it before its start), waits for the clock that does: it
+  fades in, and a stepping patch steps afresh, from where a later `seek`, `rate` or `ramp` brings
+  the clock to it. A placeholder start was taken instead, and a later write that moved the clock did
+  not move it, so play disagreed with a seek or read back to the same frame.
+- A stepping patch frozen before its start, run back past it and then turned by a `rate` or
+  `ramp` write before the next frame, steps to where it reached its start, as it does with no
+  write; it stopped where the frame before had left it, and a seek back to that frame disagreed.
+- A handle's `rate` or `ramp` write after a staggered subject of a stepping patch had started
+  steps it on from where it was, where it stepped it again over the time it had already stepped.
+- A `set`, `to` or `push` on a motion voice whose clock stood still, at rate 0, stays out of the
+  frames before it under history: a seek back to before it played it a frame early, and a read back
+  to one of those frames showed it.
 - A subject dropped while a read ahead or read back plays to it has no plot position from then on in
   that read, as in play: `around` and `within` voices cued after the drop read it at the position it
   had.

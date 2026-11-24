@@ -84,9 +84,12 @@ export function contribution<I, O>(
   if (outside && !recorded && voice.patch.step === undefined && voice.spec.from !== 'current')
     return null;
   if (voice.out?.rest && isRested(held)) return null;
-  if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
-  else if (held.seeks !== voice.seeks && sentBack(this, voice, held)) {
-    // A seek sent it back before its start, so it starts afresh there, whatever state it kept.
+  // A seek rebuilt it, or sent it back before its start: it starts afresh, whatever state it kept,
+  // and waits for its start where that is still ahead.
+  if (
+    held.rebuilt !== voice.rebuilds ||
+    (held.seeks !== voice.seeks && sentBack(this, voice, held))
+  ) {
     rebuild(this, voice, subject, now, held);
     waits(voice, subject, held, now);
   }

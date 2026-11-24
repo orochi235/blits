@@ -141,6 +141,53 @@ describe("a subject's origin does not depend on when the host first probes it", 
     expect(late.x).toBeCloseTo(probed.x, 9);
   });
 
+  for (const lanes of [true, false]) {
+    it(`a subject only a handle seek brings a voice at rate 0 to fades in from the seek, probed or not${lanes ? '' : ', without lanes'}`, () => {
+      const spec = () => ({
+        patch: fall,
+        rate: 0,
+        fade: { in: 100 },
+        stagger: (p: Part) => p.at ?? 0,
+      });
+      const b: Part = { id: 'b', at: 80 };
+      // Any handle write past where its clock would have read 80 at rate 1, then the seek.
+      const calls = {
+        120: (_m: Mix<Part, Pose>, h: Handle<Part>) => {
+          h.weight = 1;
+        },
+        150: (_m: Mix<Part, Pose>, h: Handle<Part>) => void h.seek(200),
+      };
+      const probed = at(spec, calls, dense(200), 200, b, { lanes });
+      const late = at(spec, calls, [], 200, b, { lanes });
+      // 120 ms into the fall is 0.68, faded in half way from the seek.
+      expect(probed.gain).toBeCloseTo(1 - 0.5 * (1 - 0.68), 9);
+      expect(late.gain).toBeCloseTo(probed.gain, 9);
+    });
+
+    it(`a stateful subject sent back before its start steps afresh from where a later clock reaches it${lanes ? '' : ', without lanes'}`, () => {
+      const spec = (): VoiceSpec<Part, Pose> => ({
+        patch: drift(),
+        stagger: (p: Part) => p.at ?? 0,
+        subjects: [b],
+        freeze: 'before',
+      });
+      const b: Part = { id: 'b', at: 30 };
+      const calls = {
+        80: (_m: Mix<Part, Pose>, h: Handle<Part>) => {
+          h.seek(1);
+          h.rate = -1;
+        },
+        112: (_m: Mix<Part, Pose>, h: Handle<Part>) => h.ramp(0.5, 0),
+      };
+      const opts = { stepMs: 4, lanes };
+      const probed = at(spec, calls, dense(250), 256, b, opts);
+      const late = at(spec, calls, [256], 256, b, opts);
+      // Its clock reads 30 again at 234: five steps since.
+      expect(probed.x).toBeCloseTo(50 * (1 - 0.98 ** 5), 9);
+      expect(late.x).toBeCloseTo(probed.x, 9);
+    });
+  }
+
   it('project ahead steps a stateful voice whose anchored start falls inside the window', () => {
     const run = () => {
       const m = mix<Part, Pose>(K, { stepMs: 4 });

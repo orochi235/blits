@@ -1,4 +1,4 @@
-import { type Clock, elapsedWith, timeWith } from './clock.js';
+import { backsWith, backWith, type Clock, elapsedWith, timeWith } from './clock.js';
 import type { Voice } from './voice.js';
 
 /** A clock a voice ran on before its current one, until its local time `until`. */
@@ -21,10 +21,17 @@ export const MOST = 256;
  */
 export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void {
   const past = voice.clocks;
-  // A voice with neither stagger nor children is only ever asked when its clock read 0.
+  // A voice with neither stagger nor children is only ever asked when its clock read 0, and where
+  // one running back last reached it.
   const reach =
     voice.holding !== null || voice.spec.stagger !== undefined ? Number.POSITIVE_INFINITY : 0;
-  if (past !== null && reached(past, 0) >= reach && reached(past, fresh(voice)) >= reach) return;
+  if (
+    past !== null &&
+    !backsWith(voice) &&
+    reached(past, 0) >= reach &&
+    reached(past, fresh(voice)) >= reach
+  )
+    return;
   const { anchorNow, anchorElapsed, rate, ramp, rebuilds } = voice;
   const n = leftCount(past);
   const left: Past = { anchorNow, anchorElapsed, rate, ramp, until: u, rebuilds, sought, n };
@@ -32,6 +39,23 @@ export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void
   // Down to the latest half, so the copy comes once every MOST / 2 clocks, not on each.
   else if (past.length >= MOST) voice.clocks = [...past.slice(past.length - MOST / 2), left];
   else past.push(left);
+}
+
+/**
+ * The mix time the latest clock a voice left since its last seek ran back to `elapsed` on, before
+ * it was left; NaN where none did.
+ */
+export function pastRunBack<I, O>(voice: Voice<I, O>, elapsed: number): number {
+  const past = voice.clocks;
+  if (past === null) return Number.NaN;
+  for (let i = past.length - 1; i >= 0; i--) {
+    const p = past[i] as Past;
+    if (p.sought) break;
+    if (!backsWith(p)) continue;
+    const t = backWith(p, elapsed);
+    if (t >= p.anchorNow && t <= p.until) return t;
+  }
+  return Number.NaN;
 }
 
 /** How many clocks a voice has left, those let go included. */
@@ -81,22 +105,11 @@ function backFrom<I, O>(voice: Voice<I, O>, past: readonly Past[], elapsed: numb
 }
 
 /**
- * Whether the last `originOf` found a clock on the way, standing still or running back, that its
- * controls now never take to the time asked, and answered as though it ran at 1 from its start.
- */
-export const fell = { short: false };
-
-/**
  * The mix time a voice's clock first read `elapsed`, or will by its controls now, through its owners'
  * clocks. A clock entered already past it, by a seek, answers where that clock would have read it.
  * `rebuilt` starts from the last seek that rebuilt state, as a stateful record does.
  */
 export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boolean): number {
-  fell.short = false;
-  return originThrough(voice, elapsed, rebuilt);
-}
-
-function originThrough<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boolean): number {
   const past = voice.clocks;
   // A voice with no first pass shows every subject from its start, whatever its stagger.
   let t = voice.beginless ? voice.start : Number.NaN;
@@ -111,14 +124,9 @@ function originThrough<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boole
       }
     }
   }
-  if (Number.isNaN(t)) {
-    t = timeWith(voice, elapsed);
-    if (t === Number.POSITIVE_INFINITY) {
-      t = voice.start + elapsed;
-      fell.short = true;
-    }
-  }
-  return voice.owner === null ? t : originThrough(voice.owner, t, rebuilt);
+  // Infinity where its clock will never read it: the subject waits for a clock that will.
+  if (Number.isNaN(t)) t = timeWith(voice, elapsed);
+  return voice.owner === null ? t : originOf(voice.owner, t, rebuilt);
 }
 
 /**

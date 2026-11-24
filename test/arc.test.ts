@@ -425,4 +425,34 @@ describe('an arc sought by its handle', () => {
       expect(shown.map((s) => s.k)).toEqual(shown.map(() => 2));
       for (const s of shown) expect(m.project({ frame: s.seq }).probe('a').k).toBe(s.k);
     });
+
+  for (const lanes of [true, false])
+    for (const state of ['keep', 'rebuild'] as const)
+      it(`plays the part its seek reached on a mix seek back to that frame (${state}${lanes ? '' : ', without lanes'})`, () => {
+        const KK = kit<{ x: number }>({ x: sum() });
+        const m = mix<string, { x: number }>(KK, {
+          lanes,
+          history: { ms: 1e6, every: 50, tape },
+        });
+        let h: ArcHandle<string> | undefined;
+        let seq = 0;
+        let shown = 0;
+        for (let i = 0; i < 6; i++) {
+          m.sync(i * 16);
+          if (i === 1)
+            h = m.arc({
+              enter: { patch: patch(300, () => ({ x: 1 }), { writes: ['x'] }) },
+              active: { patch: patch(400, (ph) => ({ x: 10 + ph }), { writes: ['x'] }) },
+              hold: 200,
+            });
+          if (i === 3) {
+            // Into the active, 73 ms on.
+            h?.seek(373, { state });
+            seq = m.seq;
+            shown = m.probe('a').x;
+          } else m.probe('a');
+        }
+        m.seek({ frame: seq });
+        expect(m.probe('a').x).toBeCloseTo(shown, 9);
+      });
 });

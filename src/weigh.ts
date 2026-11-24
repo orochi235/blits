@@ -1,14 +1,14 @@
-import { voiceEnvelope, weighed } from './clock.js';
+import { type Clock, elapsedWith, voiceEnvelope, weighed } from './clock.js';
 import { elapsedThen, recordInput } from './history.js';
 import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
 import { ownersWeight } from './owner.js';
 import { reading } from './reading.js';
 import type { VoiceSetting } from './setting.js';
-import { last } from './sorted.js';
+import { last, lastIndex } from './sorted.js';
 import type { Subject } from './subject.js';
 import type { Setting } from './types.js';
-import type { Voice } from './voice.js';
+import type { Controls, Voice } from './voice.js';
 
 /**
  * Where `prime` reads its numbers in `Mixer.primed`: as arguments, each would be boxed wherever V8
@@ -88,7 +88,38 @@ export function horizonFor<I, O>(
   const history = this.opts.history;
   return history === undefined
     ? Number.POSITIVE_INFINITY
-    : elapsedThen(this, voice, now - history.ms) - delay;
+    : leastSince(this, voice, now - history.ms, now) - delay;
+}
+
+/**
+ * The least a voice's clock read from mix time `t` to `now`, by the controls it had: where it read
+ * at `t`, unless a seek back or a clock running back took it lower since.
+ */
+function leastSince<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, now: number): number {
+  const log = voice.log;
+  if (log === null || voice.owner !== null) return elapsedThen(mix, voice, t);
+  let i = lastIndex(log, t, true);
+  let c: Clock | undefined = log[i];
+  let least = elapsedWith(c ?? voice, t);
+  for (i++; i < log.length; i++) {
+    const next = log[i] as Controls;
+    if (c !== undefined) least = lowestIn(c, t, next.at, least);
+    t = next.at;
+    c = next;
+  }
+  return lowestIn(c ?? voice, t, now, least);
+}
+
+/** The least of `least` and what clock `c` reads from mix time `from` to `to`. */
+function lowestIn(c: Clock, from: number, to: number, least: number): number {
+  let low = Math.min(least, elapsedWith(c, from), elapsedWith(c, to));
+  const r = c.ramp;
+  // A ramp turning a clock forward reads least where its rate crosses 0.
+  if (r !== null && r.from < 0 && r.to > 0) {
+    const turn = c.anchorNow + (r.over * -r.from) / (r.to - r.from);
+    if (turn > from && turn < to) low = Math.min(low, elapsedWith(c, turn));
+  }
+  return low;
 }
 
 /** The ramp a voice's own fade envelope applies this frame, 0..1. */

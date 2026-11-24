@@ -132,6 +132,34 @@ describe('freeze before', () => {
     expect(steps).toEqual([50, 50]);
     expect(elapsed.at(-1)).toBe(100);
   });
+
+  for (const lanes of [true, false])
+    for (const delay of [0, 30])
+      it(`steps a stateful patch run back past its start to where it reached it, after a rate change too (lanes ${lanes}, delay ${delay})`, () => {
+        const walked = patch<Part, Pose, { t: number }>(
+          1000,
+          (_phase, _s, setting: Setting<{ t: number }>) => ({ crawl: setting.state.t }),
+          {
+            writes: ['crawl'],
+            state: () => ({ t: 0 }),
+            step: (state, dt) => {
+              state.t += dt;
+            },
+          },
+        );
+        const m = mix<Part, Pose>(PART, { lanes });
+        const stagger = delay > 0 ? { stagger: () => delay } : {};
+        const h = m.cue({ patch: walked, ...stagger, freeze: 'before' });
+        for (const t of [0, 50, 80]) {
+          m.sync(t);
+          m.probe(part);
+        }
+        h.rate = -1;
+        // Back past its start at 160 - delay, between frames; the frame after turns it forward.
+        m.sync(200);
+        h.rate = 0.5;
+        expect(m.probe(part).crawl).toBe(160 - 2 * delay);
+      });
 });
 
 describe('freeze after', () => {

@@ -176,7 +176,18 @@ export function made<I>(this: Motions<I>, c: Change | undefined): { at: number; 
   return { at: made, seq: c?.seq ?? Number.NaN };
 }
 
-/** Lets go of stretches older than the one in force at `reading.horizon`. */
+/**
+ * Whether no read reaches the stretch before one starting at `at`, released by `change`: that one
+ * is in force by `reading.horizon`, and was made before the earliest frame a read asks for. A
+ * voice whose clock stood still has many frames at one voice time, the earlier ones read before it.
+ */
+export function outlived<I>(motions: Motions<I>, at: number, change: Change | undefined): boolean {
+  if (!(at <= reading.horizon)) return false;
+  const made = change?.made;
+  return made === undefined || !(made > (motions.owner?.since() ?? Number.POSITIVE_INFINITY));
+}
+
+/** Lets go of stretches no read reaches, older than the one in force at `reading.horizon`. */
 export function prune<I>(this: Motions<I>, s: number): void {
   const list = this.older?.[s];
   if (list === undefined) return;
@@ -184,8 +195,8 @@ export function prune<I>(this: Motions<I>, s: number): void {
   while (
     n < list.length &&
     (n + 1 < list.length
-      ? (list[n + 1] as Segment).at
-      : (this.runs[this.base(s) + RunField.AT] as number)) <= reading.horizon
+      ? outlived(this, (list[n + 1] as Segment).at, (list[n + 1] as Segment).change)
+      : outlived(this, this.runs[this.base(s) + RunField.AT] as number, this.causes?.[s]))
   )
     n++;
   if (n === 0) return;

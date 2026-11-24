@@ -526,3 +526,25 @@ describe('a mix paused at rate 0 under history', () => {
     expect(m.seq).toBeGreaterThan(0);
   });
 });
+
+describe('a handle rate write', () => {
+  for (const lanes of [true, false])
+    it(`leaves the steps a staggered subject took before it alone (lanes ${lanes})`, () => {
+      const dts: number[] = [];
+      const counted = patch<Part, Pose, { n: number }>(0, () => ({ x: 0 }), {
+        writes: ['x'],
+        state: () => ({ n: 0 }),
+        step: (_s, dt) => void dts.push(dt),
+      });
+      const m = mix<Part, Pose>(K, { lanes });
+      const h = m.cue({ patch: counted, stagger: () => 30 });
+      for (const t of [0, 50, 80]) {
+        m.sync(t);
+        m.probe(a);
+      }
+      h.rate = 2;
+      m.sync(100);
+      m.probe(a);
+      expect(dts).toEqual([20, 30, 20]);
+    });
+});
