@@ -16,6 +16,12 @@ Owner tags:
 
 ## Engine
 
+- **[agent] A retarget's departure speed across the wrap on an angle channel blits did not make**
+  (2026-11-23): `slopeFor` takes the short way only on a channel vouched with a `turn`. A
+  `{ ...angle(), lerp }` copy wraps its pose through the copied `scale`, so a subject crossing
+  180° just before a `from: 'current'` takeover reads a speed of about −360° per frame, and the
+  voice swings the long way (rotation.test's takeover from 153° on such a channel). One route:
+  read the speed through the channel's own lerp, which knows the short way.
 - **[maintainer] Public renames the 2026-11-09 audit asked about:** `timestamp` on mix-clock
   fields (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a
   Promise); glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the

@@ -87,18 +87,20 @@ export function reusesHeld(channel: Channel<unknown>): boolean {
   return inPlace.has(channel) || intoFolds.has(channel);
 }
 
-const bent = shared<object, true>('lerp-moves-ends@1');
+const kept = shared<object, true>('lerp-keeps-ends@1');
 
 /**
- * Marks a stock lerp whose ends are not the stops as written: an angle's far stop the short way
- * round, a quaternion's at the sign nearer the first.
+ * Marks a stock lerp that gives back the stops as written at 0 and 1. Any other lerp's ends are
+ * read from it, as an angle's far stop lies the short way round.
  */
-export function movesEnds(lerp: object): void {
-  bent.set(lerp, true);
+export function keepsEnds(lerp: object): void {
+  kept.set(lerp, true);
 }
 
-/** Whether a lerp's ends can differ from the stops it is given; see `movesEnds`. */
-export const endsMove = (lerp: object): boolean => bent.has(lerp);
+/** Whether a lerp's ends are the stops it is given; see `keepsEnds`. */
+export const endsKept = (lerp: object): boolean => kept.has(lerp);
+
+keepsEnds(lerpNumber);
 
 /** Vouches for a stock channel made outside this module, as `color` makes its own. */
 export function vouch(channel: Channel<unknown>, numeric: Numeric): void {
@@ -255,12 +257,10 @@ export interface LastOptions<V> {
  * @category channel
  */
 export function last<V>(opts?: LastOptions<V>): Channel<V> {
-  return {
-    // A lerp of its own is arithmetic the name cannot vouch for.
-    kind: opts?.lerp ? undefined : 'last',
-    merge: (_a, b) => b,
-    lerp: opts?.lerp ?? ((a, b, u) => (u < 0.5 ? a : b)),
-  };
+  if (opts?.lerp !== undefined) return { kind: undefined, merge: (_a, b) => b, lerp: opts.lerp };
+  const lerp = (a: V, b: V, u: number) => (u < 0.5 ? a : b);
+  keepsEnds(lerp);
+  return { kind: 'last', merge: (_a, b) => b, lerp };
 }
 
 const inners = shared<object, Channel<number>>('vec-of@1');
@@ -343,6 +343,7 @@ export function vec<N extends number>(n: N, of: Channel<number>): Channel<Vec<N>
     lerp: (a, b, u) => lerpTo(undefined, a, b, u),
   };
   inPlace.set(channel, lerpTo as LerpInto);
+  if (endsKept(of.lerp)) keepsEnds(channel.lerp);
   inners.set(channel, of);
   const inner = numerics.get(of);
   if (inner !== undefined && inner.axes === 1 && inner.turn === undefined)

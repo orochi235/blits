@@ -11,6 +11,14 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A transport running back (a rate below 0) wakes its `onWake` listeners after each sync, as one
   playing forward does: after the first wake they went silent until the run back ended, so a host
   that slept on `inert` while held at the start never woke for a cue or a rate change.
+- A `from: 'current'` voice on a channel whose own `lerp`, or a patch's `lerpBy`, goes the short
+  way round bends its first segment along that lerp's travel, as it does on `angle()` and `quat()`,
+  where it bent against the stops as written and swung the wrong way round first.
+- A looping `from: 'current'` voice leaves at the subject's speed on its first pass only. Every
+  later pass started at that speed again, jumping back toward where the subject had been.
+- A `from: 'current'` voice leaves at the subject's speed whatever its `rate`, where it left at that
+  speed times its rate, and a channel its `delayBy` holds leaves at it once the delay is out, where
+  it left at the speed scaled by the duration over what the delay left of it.
 - A ticker's `stop` called during a frame, from a mix's sync or an `after` callback, stops the
   loop. It was ignored, the frame asking for the next as it ended.
 - A debugger's `watch` callback that throws no longer makes the host's `sync` throw and skip the

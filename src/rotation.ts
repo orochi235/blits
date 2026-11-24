@@ -1,4 +1,4 @@
-import { doubles, type LerpInto, lerpsInPlace, movesEnds, type Vec, vouch } from './channels.js';
+import { doubles, type LerpInto, lerpsInPlace, type Vec, vouch } from './channels.js';
 import { shortWay } from './turns.js';
 import type { Channel } from './types.js';
 
@@ -34,7 +34,6 @@ export function angle(opts?: AngleOptions): Channel<number> {
     lerp: (a, b, u) => a + shortWay(b - a, turn) * u,
   };
   vouch(channel as Channel<unknown>, { op: 'sum', axes: 1, turn });
-  movesEnds(channel.lerp as object);
   return channel;
 }
 
@@ -108,7 +107,6 @@ export function quat(): Channel<Vec<4>> {
     lerp: (a, b, u) => slerp(doubles(4, 0), a, b, u) as Q,
   };
   vouch(channel as Channel<unknown>, { op: 'own', axes: 4, signless: true });
-  movesEnds(channel.lerp as object);
   lerpsInPlace(
     channel as Channel<unknown>,
     ((out: number[] | undefined, a: Q, b: Q, u: number) =>

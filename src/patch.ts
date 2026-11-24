@@ -1,4 +1,4 @@
-import { endsMove, type LerpInto, lerpInto, lerpNumber } from './channels.js';
+import { endsKept, type LerpInto, lerpInto, lerpNumber } from './channels.js';
 import { arrayCopy } from './clone.js';
 import { type Curve, curve, startSlope } from './easing.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
@@ -315,11 +315,15 @@ function read(
   phase: number,
   base: unknown,
   lerp: Lerp | undefined,
-  /** Units per ms, for a retarget's first segment. */
+  /** Units per ms of the voice's clock, for a retarget's first segment. */
   slope: unknown,
-  duration: number,
+  /** The ms of the voice's clock the track's phase takes from 0 to 1, once its delay is out. */
+  span: number,
   into: LerpInto | undefined,
   reuse: unknown[] | undefined,
+  /** Each track's first-segment ends, by index, once read: they hold while the base does. */
+  ends: Ends | undefined,
+  index: number,
 ): unknown {
   const numbers = track.numbers;
   if (
@@ -353,14 +357,15 @@ function read(
   const e0 = ease ? startSlope(ease) : 1;
   if (!Number.isFinite(e0)) return value;
   const bend = (s: number, a: number, z: number) =>
-    (s * duration * len - (z - a) * e0) * u * (1 - u) * (1 - u);
+    (s * span * len - (z - a) * e0) * u * (1 - u) * (1 - u);
   // The segment's travel is the lerp's own, from its ends: an angle's short way round, or a
   // quaternion's b at the sign nearer a, not the stops as written.
   const by = track.lerp ?? lerp;
-  let ends = by !== undefined && endsMove(by) ? endsOf(into, by, aValue, bValue) : undefined;
+  const kept = by === undefined ? into === undefined : endsKept(by);
+  let own = kept ? undefined : endsAt(ends, index, into, by, aValue, bValue);
   if (typeof value === 'number' && typeof slope === 'number') {
-    if (ends === undefined) return value + bend(slope, aValue as number, bValue as number);
-    return value + bend(slope, ends[0] as number, ends[1] as number);
+    if (own === undefined) return value + bend(slope, aValue as number, bValue as number);
+    return value + bend(slope, own[0] as number, own[1] as number);
   }
   if (Array.isArray(value) && Array.isArray(slope)) {
     const out = value === lastRead.wrote ? value : new Array<unknown>(value.length);
@@ -372,18 +377,37 @@ function read(
         continue;
       }
       // A stop shorter than the channel reads its missing axes as the lerp does, at each end.
-      let a = ends === undefined ? (aValue as unknown[])[i] : undefined;
-      let z = ends === undefined ? (bValue as unknown[])[i] : undefined;
+      let a = own === undefined ? (aValue as unknown[])[i] : undefined;
+      let z = own === undefined ? (bValue as unknown[])[i] : undefined;
       if (typeof a !== 'number' || typeof z !== 'number') {
-        ends ??= endsOf(into, by, aValue, bValue);
-        a = (ends[0] as unknown[] | undefined)?.[i];
-        z = (ends[1] as unknown[] | undefined)?.[i];
+        own ??= endsAt(ends, index, into, by, aValue, bValue);
+        a = (own[0] as unknown[] | undefined)?.[i];
+        z = (own[1] as unknown[] | undefined)?.[i];
       }
       out[i] = typeof a === 'number' && typeof z === 'number' ? v + bend(s, a, z) : v;
     }
     return out;
   }
   return value;
+}
+
+/** Per track, the ends of a retarget's first segment as its lerp reads them, once read. */
+export type Ends = ([unknown, unknown] | undefined)[];
+
+/** Track `index`'s first-segment ends, from `ends` where read before, and kept there. */
+function endsAt(
+  ends: Ends | undefined,
+  index: number,
+  into: LerpInto | undefined,
+  by: Lerp | undefined,
+  a: unknown,
+  b: unknown,
+): [unknown, unknown] {
+  const had = ends?.[index];
+  if (had !== undefined) return had;
+  const made = endsOf(into, by, a, b);
+  if (ends !== undefined) ends[index] = made;
+  return made;
 }
 
 /** A segment's ends as its lerp reads them, at 0 and 1. */
@@ -432,10 +456,12 @@ export function readKeys(
   out: Record<string, unknown>,
   base?: Record<string, unknown>,
   lerps?: readonly (Lerp | undefined)[],
-  /** Per channel, how fast a retargeted subject was moving, units per ms. */
+  /** Per channel, how fast a retargeted subject was moving, units per ms of the voice's clock. */
   slopes?: Record<string, unknown>,
   intos?: readonly (LerpInto | undefined)[],
   scratch?: Scratch,
+  /** Where the bend keeps each track's first-segment ends, for as long as `base` holds. */
+  ends?: Ends,
 ): Record<string, unknown> {
   const duration = built.duration;
   for (let i = 0; i < built.tracks.length; i++) {
@@ -449,9 +475,11 @@ export function readKeys(
       base?.[track.channel],
       lerps?.[i],
       duration === 0 ? undefined : perMs,
-      duration,
+      duration - track.delay,
       into,
       into === undefined ? undefined : (scratch as Scratch)[i],
+      ends,
+      i,
     );
     if (into !== undefined && value === lastRead.wrote)
       (scratch as Scratch)[i] = value as unknown[];
