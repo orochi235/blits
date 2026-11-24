@@ -59,6 +59,7 @@ import { Store } from './store.js';
 import type { MotionOwner } from './stretch.js';
 import type { Subject } from './subject.js';
 import { record } from './tape.js';
+import { throwLater } from './ticker.js';
 import { touch } from './touch.js';
 import { traceMix } from './trace.js';
 import type { Probes, Trail } from './trail.js';
@@ -235,8 +236,23 @@ export class Mixer<I, O> implements Mix<I, O> {
     if (this.stirred) return;
     this.stirred = true;
     if (this.syncing) return;
+    if (this.transport.hushed > 0) this.unwoken = true;
+    else this.wake();
+  }
+
+  /** Stirred during a host call, whose `onWake` listeners wait for it to finish. */
+  unwoken = false;
+
+  /** Tells the `onWake` listeners, and the transport's, that the mix was changed. */
+  wake(): void {
     const fns = this.stirFns;
-    if (fns !== null) for (const fn of [...fns]) fn();
+    if (fns !== null)
+      for (const fn of [...fns])
+        try {
+          fn();
+        } catch (err) {
+          throwLater(err);
+        }
     this.transport.woke();
   }
 

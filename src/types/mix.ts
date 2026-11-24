@@ -409,8 +409,10 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Calls `fn` when a host call makes the mix need frames again after a sync. Such a call is a cue,
    * a fade, a handle's or the mix's rate, a seek, a `drop`, or a motion retargeted. It fires once
-   * until the next sync clears the change, and never during `sync`. Returns a function that
-   * unsubscribes `fn`. A frame loop sleeping on `inert` subscribes here to wake.
+   * until the next sync clears the change, and never during `sync`; after a cue, a rate or a seek,
+   * once the call is done, a seek's before its `onSeek` listeners. A listener that throws stops
+   * neither the call nor the other listeners: its error is thrown again on a microtask. Returns a
+   * function that unsubscribes `fn`. A frame loop sleeping on `inert` subscribes here to wake.
    */
   onWake(fn: () => void): () => void;
   /**

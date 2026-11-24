@@ -91,11 +91,17 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
     mix.waking = true;
   }
   confine(mix, voice);
-  enter(mix, voice);
-  const h = handle(mix, voice) as VoiceHandle<I, O>;
-  voice.handle = h;
-  if (taping(mix)) recordCue(mix, h);
-  return h;
+  const transport = mix.transport;
+  transport.hushed++;
+  try {
+    enter(mix, voice);
+    const h = handle(mix, voice) as VoiceHandle<I, O>;
+    voice.handle = h;
+    if (taping(mix)) recordCue(mix, h);
+    return h;
+  } finally {
+    transport.unhush();
+  }
 }
 
 const noFade: FadeSpec = Object.freeze({});

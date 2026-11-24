@@ -8,6 +8,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- An `onWake` listener that throws no longer leaves a cue, a rate or a seek half made. The cue
+  played but was never taped, so the next seek back threw, and the rate was not taped, so a replay
+  played at the old one; later listeners, a ticker's among them, never heard, and the mix never woke
+  again. Its error is thrown again on a microtask, and listeners now hear of a cue, a rate or a
+  seek once it is whole, a seek's with every mix on the transport put back.
 - `trace` refuses a window and `grid` giving more than a million points with a `RangeError`, where
   it tried to read them all and ran out of memory.
 - Under a debugger's hold, a host `seek` to a time history cannot reach, or a `ramp` over a time

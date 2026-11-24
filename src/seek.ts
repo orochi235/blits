@@ -20,6 +20,7 @@ import { Store } from './store.js';
 import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, replay } from './tape.js';
 import type { Frame, Transport } from './transport.js';
+import type { Sought } from './types/mix.js';
 import { cover, coverFrame, cut } from './unpage.js';
 import type { Controls, Voice } from './voice.js';
 
@@ -203,6 +204,17 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
  * the end of the frame numbered `to.frame`.
  */
 export function seek(transport: Transport, to: number | { readonly frame: number }): void {
+  transport.hushed++;
+  let sought: Sought;
+  try {
+    sought = seekTo(transport, to);
+  } finally {
+    transport.unhush();
+  }
+  told(transport, sought);
+}
+
+function seekTo(transport: Transport, to: number | { readonly frame: number }): Sought {
   if (transport.projecting) throw new Error('blits: a projection does not seek');
   const history = transport.history;
   if (!history) throw new Error('blits: seeking needs a mix made with history');
@@ -285,7 +297,7 @@ export function seek(transport: Transport, to: number | { readonly frame: number
     if (bookers !== null) for (const b of bookers) b.sought();
   }
   transport.sought(t);
-  told(transport, { at: t, frame: frame?.seq ?? transport.seq, back: frame !== undefined });
+  return { at: t, frame: frame?.seq ?? transport.seq, back: frame !== undefined };
 }
 
 /**

@@ -3,6 +3,7 @@ import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys } from '../src/patch.js';
 import { type Ticked, ticker } from '../src/ticker.js';
+import { messages, thrownLater } from './later.js';
 
 interface Pose {
   crawl: number;
@@ -216,6 +217,21 @@ describe('ticker', () => {
     }
     expect(b.synced).toEqual([16, 32]);
     expect(errors.map((e) => (e as Error).message)).toEqual(['a', 'after', 'a', 'after']);
+  });
+
+  it('wakes on a mix whose onWake listener before its own throws', () => {
+    const { t, step, waiting } = harness();
+    const m = mix<typeof part, Pose>(PART);
+    m.onWake(() => {
+      throw new Error('host');
+    });
+    t.add(m);
+    step(16);
+    expect(waiting()).toBe(0);
+    const errors = thrownLater(() => m.cue({ patch: ramp(), subjects: [part] }));
+    expect(messages(errors)).toEqual(['host']);
+    expect(m.voices().length).toBe(1);
+    expect(waiting()).toBe(1);
   });
 
   it('stop cancels the waiting frame until something wakes it', () => {
