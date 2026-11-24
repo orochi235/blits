@@ -54,7 +54,10 @@ export interface Ticker {
   after(fn: (timestamp: number) => void): () => void;
   /** Keeps frames coming whatever the mixes say, until the returned release is called. */
   hold(): () => void;
-  /** Cancels the waiting frame; `wake`, a mix waking, `hold` or `add` starts the loop again. */
+  /**
+   * Cancels the waiting frame, or, called during a frame, the one it would ask for; `wake`, a mix
+   * waking, `hold` or `add` starts the loop again.
+   */
   stop(): void;
   /**
    * Asks for a frame, after which the loop runs or sleeps as the mixes say. A mix changed before
@@ -128,6 +131,12 @@ export function ticker(opts: TickerOptions = {}): Ticker {
   const schedule = () => {
     if (pending === null) pending = request(frame);
   };
+  // Set by `stop`, so a stop made inside a frame keeps that frame from asking for the next.
+  let stopped = false;
+  const wake = () => {
+    stopped = false;
+    schedule();
+  };
 
   function frame(stamp: number) {
     pending = null;
@@ -154,16 +163,16 @@ export function ticker(opts: TickerOptions = {}): Ticker {
       } catch (err) {
         throwLater(err);
       }
-    if (holds > 0 || mixes.some((mix) => !mix.inert)) schedule();
+    if (!stopped && (holds > 0 || mixes.some((mix) => !mix.inert))) schedule();
   }
 
   return {
     add(mix) {
       if (!unwakes.has(mix)) {
         mixes.push(mix);
-        unwakes.set(mix, mix.onWake(schedule));
+        unwakes.set(mix, mix.onWake(wake));
       }
-      schedule();
+      wake();
       return () => {
         const unwake = unwakes.get(mix);
         if (unwake === undefined) return;
@@ -181,7 +190,7 @@ export function ticker(opts: TickerOptions = {}): Ticker {
     },
     hold() {
       holds++;
-      schedule();
+      wake();
       let released = false;
       return () => {
         if (released) return;
@@ -192,8 +201,9 @@ export function ticker(opts: TickerOptions = {}): Ticker {
     stop() {
       if (pending !== null) cancel(pending as number);
       pending = null;
+      stopped = true;
     },
-    wake: schedule,
+    wake,
     now,
   };
 }

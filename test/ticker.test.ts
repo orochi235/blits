@@ -245,6 +245,34 @@ describe('ticker', () => {
     expect(a.synced).toEqual([16]);
   });
 
+  it('stops from inside a frame, from a mix or an after callback, until something wakes it', () => {
+    for (const from of ['mix', 'after'] as const) {
+      const { t, step, waiting } = harness();
+      const a = fake(false);
+      let frames = 0;
+      if (from === 'mix') {
+        a.sync = (at) => {
+          a.synced.push(at);
+          t.stop();
+        };
+        t.after(() => frames++);
+      } else
+        t.after(() => {
+          frames++;
+          t.stop();
+        });
+      t.add(a);
+      step(16);
+      expect(waiting()).toBe(0);
+      step(32);
+      expect(frames).toBe(1);
+      a.stir();
+      expect(waiting()).toBe(1);
+      step(48);
+      expect(a.synced).toEqual([16, 48]);
+    }
+  });
+
   it('wake starts a stopped loop over a mix changed before the stop', () => {
     const { t, step, waiting } = harness();
     const m = mix<typeof part, Pose>(PART);

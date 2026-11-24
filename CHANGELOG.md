@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A ticker's `stop` called during a frame, from a mix's sync or an `after` callback, stops the
+  loop. It was ignored, the frame asking for the next as it ended.
 - A debugger's `watch` callback that throws no longer makes the host's `sync` throw and skip the
   frame, nor stops the other watchers: its error is thrown again on a microtask.
 - A `call` whose `fn` throws is taped all the same, so what it did before it threw is made again
