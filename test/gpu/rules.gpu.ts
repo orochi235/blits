@@ -104,3 +104,28 @@ for (const [name, ch] of RULES) {
   test(`${name}: a voice past its end`, (d) =>
     agree(d, ch, [{ k: 1, loop: false }, { k: 0.5 }], [1300]));
 }
+
+test('a channel named with a hyphen leaves the kernel folding the others', async (device) => {
+  type Q = { v: number; 'bg-tint': number };
+  const make = (engine: typeof mixer) => {
+    const m = mix<C, Q>(kit<Q>({ v: sum(), 'bg-tint': sum() }), { engine });
+    m.sync(0);
+    m.cue({ patch: wave.with({ k: 1 }) as never, subjects: cells, loop: true });
+    return m;
+  };
+  const g = make(gpu({ device }));
+  const c = make(mixer);
+  const side = gpuOf(g);
+  side.subjects(cells, (s) => ({ x: s.x }));
+  g.sync(1);
+  side.channel('v');
+  await side.ready;
+  g.sync(130);
+  c.sync(130);
+  const ch = side.channel('v');
+  if (ch === null) throw new Error('v is not on the GPU');
+  const got = await readBack(device, ch.buffer, ch.offset, N * 4);
+  cells.forEach((s, i) => {
+    close(got[i] as number, c.probe(s).v, `subject ${i}`);
+  });
+});

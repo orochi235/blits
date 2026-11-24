@@ -24,7 +24,7 @@ export interface GpuBindGroup {
 export interface GpuComputePass {
   setPipeline(pipeline: GpuComputePipeline): void;
   setBindGroup(index: number, group: GpuBindGroup): void;
-  dispatchWorkgroups(x: number): void;
+  dispatchWorkgroups(x: number, y?: number): void;
   end(): void;
 }
 
@@ -58,7 +58,10 @@ export interface GpuDevice {
     onSubmittedWorkDone(): Promise<void>;
   };
   readonly lost: Promise<unknown>;
-  readonly limits?: { readonly maxStorageBufferBindingSize?: number };
+  readonly limits?: {
+    readonly maxStorageBufferBindingSize?: number;
+    readonly maxComputeWorkgroupsPerDimension?: number;
+  };
   createBuffer(desc: {
     size: number;
     usage: number;

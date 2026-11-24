@@ -278,6 +278,13 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   each subject's time worked out on the CPU, and `at` sees no `lag`.
 - **[agent] Lifting "it is parting from subjects"** needs the kernel told which subjects a voice
   faded out of, apart from `Answer.reach`.
+- **[maintainer] Every subject count compiles a kernel of its own, and none is let go**
+  (2026-11-23, read, not measured): `Kernels.choose` keys a kernel by the count, since each
+  output's offset in the kernel is its axes times the count, and a stand-in must have the same
+  count, so a host whose list grows a little each frame gets null channels until each new kernel
+  compiles, while `built` and `compiledOnes` keep every one until `close()`. Taking offsets from
+  `frame.y`, which already holds the count, would drop it from the key; or decide that a changing
+  count is not a case the engine serves, and evict kernels of other counts.
 
 ## Playground
 

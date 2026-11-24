@@ -1,7 +1,7 @@
 import type { Buffers } from './buffers.js';
 import { layoutOf } from './compile.js';
 import type { Hosted } from './hosted.js';
-import { GROUP, type Kernel } from './kernel.js';
+import { groupsFor, type Kernel } from './kernel.js';
 import { type Mirrors, writeRanges } from './mirrors.js';
 import type { Reads } from './reads.js';
 import type { Placement, Regions } from './region.js';
@@ -63,7 +63,7 @@ export function submit<I>(s: Submission<I>, outputs: Map<string, GpuChannel>): G
   const pass = enc.beginComputePass();
   pass.setPipeline(s.pipeline);
   pass.setBindGroup(0, group);
-  pass.dispatchWorkgroups(Math.ceil(n / GROUP));
+  pass.dispatchWorkgroups(...groupsFor(n, dev.limits?.maxComputeWorkgroupsPerDimension));
   pass.end();
   dev.queue.submit([enc.finish()]);
   for (const o of k.outputs)

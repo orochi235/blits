@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Answers } from '../src/gpu/answers.js';
-import { eligibility, within } from '../src/gpu/eligible.js';
+import { codesOf, eligibility, within } from '../src/gpu/eligible.js';
 import { mixerOf } from '../src/gpu/engine.js';
 import { Timings } from '../src/gpu/timings.js';
 import { perSubject } from '../src/gpu/weight.js';
@@ -282,5 +282,19 @@ describe('gpu eligibility', () => {
     expect(e.reasons[0]?.why).toBe(
       'it writes y, whose rule takes 1e+39, past the largest number an f32 holds',
     );
+  });
+
+  it("keeps a channel whose name is no WGSL identifier on the CPU, and out of the others' kernel", () => {
+    type Q = { y: number; 'bg-tint': number };
+    const m = mix<C, Q>(kit<Q>({ y: sum(), 'bg-tint': sum() }));
+    m.cue({ patch: wave as never, subjects: cells, loop: true });
+    m.cue({ patch: patch<C, Q>(1000, () => ({ 'bg-tint': 1 }), { writes: ['bg-tint'] }) });
+    m.sync(0);
+    const mixer = mixerOf(m);
+    expect([...codesOf(mixer).keys()]).toEqual(['y']);
+    const e = elig(m);
+    expect(e.channels.has('y')).toBe(true);
+    expect(e.channels.has('bg-tint')).toBe(false);
+    expect(e.reasons[0]?.why).toBe('it writes bg-tint, whose name is not a WGSL identifier');
   });
 });

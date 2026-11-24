@@ -45,3 +45,27 @@ test("staggered voices over 40,000 subjects, one starting later and one ending f
     });
   }
 });
+
+test('a fold over more subjects than one row of workgroups reaches the last of them', async (device) => {
+  type Q = { v: number };
+  // One past the 65,535 workgroups of 64 a dispatch takes in one dimension by default.
+  const many: C[] = Array.from({ length: 65_536 * 64 }, (_, i) => ({ i }));
+  const ramp = keys<C, Q>(1000, [
+    { at: 0, delta: { v: 0 } },
+    { at: 1, delta: { v: 10 } },
+  ]);
+  const g = mix<C, Q>(kit<Q>({ v: sum() }), { engine: gpu({ device }) });
+  g.sync(0);
+  g.cue({ patch: ramp, loop: true });
+  const side = gpuOf(g);
+  side.subjects(many, () => ({}));
+  g.sync(1);
+  side.channel('v');
+  await side.ready;
+  g.sync(250);
+  const ch = side.channel('v');
+  if (ch === null) throw new Error('v is not on the GPU');
+  const got = await readBack(device, ch.buffer, ch.offset, many.length * 4);
+  for (const i of [0, 65_535 * 64 - 1, 65_535 * 64, many.length - 1])
+    close(got[i] as number, 2.5, `subject ${i}`);
+});

@@ -4,6 +4,7 @@ import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
 import { overRoom } from './bounds.js';
+import { IDENT } from './kernel.js';
 import { type ChannelLookup, packOf } from './runner.js';
 import { weightWhy } from './weight.js';
 import { type ChannelCode, codeFor } from './wgsl/channels.js';
@@ -31,7 +32,9 @@ export function codesOf<I, O>(mix: Mixer<I, O>): ChannelLookup {
     mix.names.forEach((name, i) => {
       const code = codeFor(mix.channels[i] as never);
       if (code === undefined) return;
-      if ('why' in code) why.set(name, code.why);
+      // Every kernel's host runner writes every channel here, so one bad name would sink them all.
+      if (!IDENT.test(name)) why.set(name, 'whose name is not a WGSL identifier');
+      else if ('why' in code) why.set(name, code.why);
       else made.set(name, code);
     });
     codes = made;
