@@ -1,0 +1,225 @@
+# msb-uai, 2026-11-23, quiet, --max-cores 1: AB_EACH=1 AB_BENCH=bench/frame.mjs bench/ab.sh 2be95679 61a76cb1 6 <rows>
+# 2be95679 is main before the second review batch; 61a76cb1 carries its lanes fixes (signal-weighted delta kept, around balls compared in current()).
+# Medians: geometric mean 1.005 over 8 rows; signal +4.7% (U 8), role -7.3% (U 8), the rest within 2.5%. Neither extreme is significant at 6x6.
+  waiting for room
+msb-uai  chosen: 11.8 cores free, 23.1G available (bash -c AB_EACH=1 AB_BENCH=bench/frame.…: no past runs)
+  studio   scored 0.51 against msb-uai's 0.55
+  teitou   scored 0.40 against msb-uai's 0.55
+  keiei    scored 0.06 against msb-uai's 0.55
+  orochi   refuses rotation
+  fleet    41.1 cores spare: 43.1 free on 5 nodes, 2 held back for quick jobs
+  cost     no past runs to size it against the fleet's 41.1 cores spare
+  base   61a76cb1
+  commits sent directly, 125.2 KiB (not on origin)
+  updated blits-wt1 on msb-uai at 61a76cb1
+  loaded 3.7s: sync blits commits 1.6s, sync blits apply 0.9s, sync blits check 0.7s, start 0.1s, sync blits diff 0.1s, sync blits upload 0.0s, gate 0.0s
+  job    35db6192 on msb-uai
+
+onto: blits is already set up
+onto: playwright-browsers-790bd7c0596f is already set up
+built 2be95679 (2be95679bbcd76ba57f29d2e4e8d6c60f6b78980)
+built 61a76cb1f17c258b48d087bc413ffb31a28ae15f (61a76cb1f17c258b48d087bc413ffb31a28ae15f)
+== round 1/6 2be95679
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  signal     N= 10000 V=3     3.818 ms/frame    127 ns/subject·voice  p50    3.760  p99    4.600  worst    5.014  first    22.9 ms  gc   24    8.2 ms    2430.2 kB/frame
+== round 1/6 2be95679
+ 1/1  glowbn     N= 10000 V=2     1.555 ms/frame     78 ns/subject·voice  p50    1.500  p99    2.371  worst    5.480  first    20.7 ms  gc   13    3.6 ms    1243.1 kB/frame
+== round 1/6 2be95679
+ 1/1  glow       N= 10000 V=2     2.053 ms/frame    103 ns/subject·voice  p50    2.010  p99    2.433  worst    5.873  first    20.4 ms  gc   26    4.1 ms    1699.7 kB/frame
+== round 1/6 2be95679
+ 1/1  tweensig   N= 10000 V=1     1.362 ms/frame    136 ns/subject·voice  p50    1.352  p99    1.445  worst    1.667  first    19.0 ms  gc    3    0.4 ms     166.7 kB/frame
+== round 1/6 2be95679
+ 1/1  springs    N= 10000 V=1     1.206 ms/frame    121 ns/subject·voice  p50    1.182  p99    1.752  worst    3.149  first    47.9 ms  gc    2    3.1 ms     174.9 kB/frame
+== round 1/6 2be95679
+ 1/1  tweens     N= 10000 V=1     0.828 ms/frame     83 ns/subject·voice  p50    0.818  p99    0.929  worst    1.330  first    50.5 ms  gc    0    0.0 ms       9.7 kB/frame
+== round 1/6 2be95679
+ 1/1  keys       N= 10000 V=3     1.146 ms/frame     38 ns/subject·voice  p50    1.137  p99    1.267  worst    1.345  first    20.3 ms  gc    6    0.3 ms     176.3 kB/frame
+== round 1/6 2be95679
+ 1/1  role       N= 10000 V=3     3.569 ms/frame    119 ns/subject·voice  p50    3.383  p99    5.477  worst    6.349  first    27.2 ms  gc   10    5.5 ms    2432.6 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  signal     N= 10000 V=3     4.023 ms/frame    134 ns/subject·voice  p50    3.913  p99    5.677  worst    6.732  first    23.5 ms  gc   12    6.2 ms    2431.5 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glowbn     N= 10000 V=2     1.457 ms/frame     73 ns/subject·voice  p50    1.395  p99    2.370  worst    5.349  first    19.6 ms  gc   13    3.5 ms    1247.1 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glow       N= 10000 V=2     2.158 ms/frame    108 ns/subject·voice  p50    2.088  p99    2.616  worst    5.944  first    18.9 ms  gc   20    4.3 ms    1703.3 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweensig   N= 10000 V=1     1.355 ms/frame    135 ns/subject·voice  p50    1.341  p99    1.495  worst    2.221  first    19.5 ms  gc    3    0.3 ms     164.9 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  springs    N= 10000 V=1     1.158 ms/frame    116 ns/subject·voice  p50    1.154  p99    1.245  worst    2.646  first    43.2 ms  gc    2    1.5 ms     177.5 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweens     N= 10000 V=1     0.829 ms/frame     83 ns/subject·voice  p50    0.824  p99    0.907  worst    0.922  first    44.3 ms  gc    0    0.0 ms       6.4 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  keys       N= 10000 V=3     1.171 ms/frame     39 ns/subject·voice  p50    1.150  p99    1.344  worst    1.350  first    19.9 ms  gc    6    0.4 ms     184.0 kB/frame
+== round 1/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  role       N= 10000 V=3     3.525 ms/frame    117 ns/subject·voice  p50    3.451  p99    4.136  worst    4.418  first    26.6 ms  gc   24    6.8 ms    2432.8 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  signal     N= 10000 V=3     3.688 ms/frame    123 ns/subject·voice  p50    3.626  p99    4.492  worst    5.045  first    22.9 ms  gc   24    7.6 ms    2431.6 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glowbn     N= 10000 V=2     1.506 ms/frame     75 ns/subject·voice  p50    1.449  p99    2.507  worst    5.281  first    19.8 ms  gc   18    7.5 ms    1245.5 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glow       N= 10000 V=2     2.123 ms/frame    106 ns/subject·voice  p50    2.062  p99    2.736  worst    5.773  first    19.7 ms  gc   20    3.9 ms    1707.8 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweensig   N= 10000 V=1     1.377 ms/frame    138 ns/subject·voice  p50    1.368  p99    1.513  worst    1.604  first    19.1 ms  gc    3    0.2 ms     165.2 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  springs    N= 10000 V=1     1.170 ms/frame    117 ns/subject·voice  p50    1.163  p99    1.261  worst    2.896  first    45.2 ms  gc    2    1.7 ms     177.8 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweens     N= 10000 V=1     0.834 ms/frame     83 ns/subject·voice  p50    0.826  p99    0.922  worst    0.937  first    43.6 ms  gc    0    0.0 ms       6.2 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  keys       N= 10000 V=3     1.169 ms/frame     39 ns/subject·voice  p50    1.155  p99    1.298  worst    1.324  first    19.8 ms  gc    6    0.4 ms     171.8 kB/frame
+== round 2/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  role       N= 10000 V=3     3.641 ms/frame    121 ns/subject·voice  p50    3.513  p99    4.970  worst    5.530  first    28.4 ms  gc   12    6.8 ms    2432.9 kB/frame
+== round 2/6 2be95679
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  signal     N= 10000 V=3     3.827 ms/frame    128 ns/subject·voice  p50    3.713  p99    4.439  worst    5.053  first    24.3 ms  gc   24    6.7 ms    2430.2 kB/frame
+== round 2/6 2be95679
+ 1/1  glowbn     N= 10000 V=2     1.465 ms/frame     73 ns/subject·voice  p50    1.401  p99    2.292  worst    5.568  first    19.6 ms  gc   13    3.4 ms    1247.0 kB/frame
+== round 2/6 2be95679
+ 1/1  glow       N= 10000 V=2     2.195 ms/frame    110 ns/subject·voice  p50    2.129  p99    2.756  worst    5.662  first    20.3 ms  gc   20    4.6 ms    1706.3 kB/frame
+== round 2/6 2be95679
+ 1/1  tweensig   N= 10000 V=1     1.365 ms/frame    136 ns/subject·voice  p50    1.350  p99    1.559  worst    1.645  first    21.2 ms  gc    3    0.4 ms     166.7 kB/frame
+== round 2/6 2be95679
+ 1/1  springs    N= 10000 V=1     1.160 ms/frame    116 ns/subject·voice  p50    1.156  p99    1.249  worst    2.572  first    47.3 ms  gc    2    1.4 ms     176.7 kB/frame
+== round 2/6 2be95679
+ 1/1  tweens     N= 10000 V=1     0.827 ms/frame     83 ns/subject·voice  p50    0.818  p99    0.918  worst    0.934  first    49.8 ms  gc    0    0.0 ms      10.8 kB/frame
+== round 2/6 2be95679
+ 1/1  keys       N= 10000 V=3     1.185 ms/frame     39 ns/subject·voice  p50    1.171  p99    1.304  worst    1.326  first    19.5 ms  gc    6    0.3 ms     189.0 kB/frame
+== round 2/6 2be95679
+ 1/1  role       N= 10000 V=3     3.958 ms/frame    132 ns/subject·voice  p50    3.730  p99    5.718  worst    6.367  first    28.2 ms  gc   24    9.6 ms    2431.3 kB/frame
+== round 3/6 2be95679
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  signal     N= 10000 V=3     3.616 ms/frame    121 ns/subject·voice  p50    3.466  p99    4.311  worst    4.613  first    23.2 ms  gc   24    7.2 ms    2434.4 kB/frame
+== round 3/6 2be95679
+ 1/1  glowbn     N= 10000 V=2     1.446 ms/frame     72 ns/subject·voice  p50    1.389  p99    2.432  worst    5.390  first    19.8 ms  gc   13    3.8 ms    1255.4 kB/frame
+== round 3/6 2be95679
+ 1/1  glow       N= 10000 V=2     2.076 ms/frame    104 ns/subject·voice  p50    1.999  p99    2.645  worst    6.087  first    19.7 ms  gc   20    4.1 ms    1696.4 kB/frame
+== round 3/6 2be95679
+ 1/1  tweensig   N= 10000 V=1     1.354 ms/frame    135 ns/subject·voice  p50    1.337  p99    1.486  worst    1.679  first    19.0 ms  gc    3    0.4 ms     163.8 kB/frame
+== round 3/6 2be95679
+ 1/1  springs    N= 10000 V=1     1.166 ms/frame    117 ns/subject·voice  p50    1.151  p99    1.595  worst    3.028  first    45.8 ms  gc    2    2.8 ms     178.6 kB/frame
+== round 3/6 2be95679
+ 1/1  tweens     N= 10000 V=1     0.814 ms/frame     81 ns/subject·voice  p50    0.808  p99    0.887  worst    0.954  first    45.0 ms  gc    0    0.0 ms       9.0 kB/frame
+== round 3/6 2be95679
+ 1/1  keys       N= 10000 V=3     1.179 ms/frame     39 ns/subject·voice  p50    1.164  p99    1.303  worst    1.365  first    17.6 ms  gc    3    0.3 ms     172.4 kB/frame
+== round 3/6 2be95679
+ 1/1  role       N= 10000 V=3     3.808 ms/frame    127 ns/subject·voice  p50    3.601  p99    5.319  worst    7.619  first    27.1 ms  gc   10    5.1 ms    2432.0 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  signal     N= 10000 V=3     3.695 ms/frame    123 ns/subject·voice  p50    3.501  p99    5.331  worst    7.026  first    24.2 ms  gc   12    6.4 ms    2432.9 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glowbn     N= 10000 V=2     1.490 ms/frame     75 ns/subject·voice  p50    1.431  p99    2.452  worst    5.339  first    19.6 ms  gc   13    4.3 ms    1248.2 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glow       N= 10000 V=2     2.128 ms/frame    106 ns/subject·voice  p50    2.073  p99    2.959  worst    5.471  first    19.6 ms  gc   20    4.3 ms    1698.1 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweensig   N= 10000 V=1     1.467 ms/frame    147 ns/subject·voice  p50    1.411  p99    1.929  worst    2.400  first    19.2 ms  gc    3    0.3 ms     169.4 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  springs    N= 10000 V=1     1.180 ms/frame    118 ns/subject·voice  p50    1.164  p99    1.389  worst    2.776  first    47.5 ms  gc    2    1.6 ms     179.3 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweens     N= 10000 V=1     0.807 ms/frame     81 ns/subject·voice  p50    0.800  p99    0.871  worst    0.921  first    43.9 ms  gc    0    0.0 ms      10.1 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  keys       N= 10000 V=3     1.162 ms/frame     39 ns/subject·voice  p50    1.150  p99    1.267  worst    1.313  first    19.5 ms  gc    6    0.3 ms     181.0 kB/frame
+== round 3/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  role       N= 10000 V=3     3.503 ms/frame    117 ns/subject·voice  p50    3.381  p99    4.101  worst    4.382  first    28.5 ms  gc   24    7.2 ms    2432.3 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  signal     N= 10000 V=3     3.934 ms/frame    131 ns/subject·voice  p50    3.898  p99    4.660  worst    4.899  first    23.0 ms  gc   24    7.8 ms    2439.1 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glowbn     N= 10000 V=2     1.504 ms/frame     75 ns/subject·voice  p50    1.453  p99    2.386  worst    5.489  first    20.1 ms  gc   13    3.8 ms    1250.6 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glow       N= 10000 V=2     2.243 ms/frame    112 ns/subject·voice  p50    2.196  p99    2.772  worst    5.618  first    19.8 ms  gc   20    3.8 ms    1721.9 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweensig   N= 10000 V=1     1.374 ms/frame    137 ns/subject·voice  p50    1.369  p99    1.484  worst    2.009  first    19.0 ms  gc    3    0.3 ms     166.4 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  springs    N= 10000 V=1     1.203 ms/frame    120 ns/subject·voice  p50    1.184  p99    1.358  worst    3.177  first    44.1 ms  gc    2    1.8 ms     175.3 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweens     N= 10000 V=1     0.818 ms/frame     82 ns/subject·voice  p50    0.810  p99    0.891  worst    0.900  first    45.3 ms  gc    0    0.0 ms      10.0 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  keys       N= 10000 V=3     1.220 ms/frame     41 ns/subject·voice  p50    1.190  p99    1.466  worst    1.960  first    17.6 ms  gc    3    0.4 ms     185.5 kB/frame
+== round 4/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  role       N= 10000 V=3     3.582 ms/frame    119 ns/subject·voice  p50    3.490  p99    4.495  worst    5.198  first    26.8 ms  gc   24    7.5 ms    2438.7 kB/frame
+== round 4/6 2be95679
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  signal     N= 10000 V=3     3.700 ms/frame    123 ns/subject·voice  p50    3.615  p99    4.300  worst    4.912  first    23.2 ms  gc   24    6.6 ms    2431.5 kB/frame
+== round 4/6 2be95679
+ 1/1  glowbn     N= 10000 V=2     1.502 ms/frame     75 ns/subject·voice  p50    1.446  p99    2.413  worst    6.293  first    21.5 ms  gc   13    4.0 ms    1251.9 kB/frame
+== round 4/6 2be95679
+ 1/1  glow       N= 10000 V=2     2.105 ms/frame    105 ns/subject·voice  p50    2.059  p99    2.580  worst    5.887  first    18.9 ms  gc   21    3.9 ms    1709.7 kB/frame
+== round 4/6 2be95679
+ 1/1  tweensig   N= 10000 V=1     1.338 ms/frame    134 ns/subject·voice  p50    1.332  p99    1.405  worst    1.639  first    19.0 ms  gc    3    0.4 ms     163.9 kB/frame
+== round 4/6 2be95679
+ 1/1  springs    N= 10000 V=1     1.198 ms/frame    120 ns/subject·voice  p50    1.178  p99    1.344  worst    2.644  first    44.6 ms  gc    2    1.5 ms     176.3 kB/frame
+== round 4/6 2be95679
+ 1/1  tweens     N= 10000 V=1     0.804 ms/frame     80 ns/subject·voice  p50    0.800  p99    0.856  worst    0.875  first    44.9 ms  gc    0    0.0 ms       7.2 kB/frame
+== round 4/6 2be95679
+ 1/1  keys       N= 10000 V=3     1.183 ms/frame     39 ns/subject·voice  p50    1.170  p99    1.269  worst    1.399  first    17.8 ms  gc    3    0.3 ms     175.5 kB/frame
+== round 4/6 2be95679
+ 1/1  role       N= 10000 V=3     3.804 ms/frame    127 ns/subject·voice  p50    3.754  p99    4.711  worst    5.056  first    27.2 ms  gc   24    9.0 ms    2439.0 kB/frame
+== round 5/6 2be95679
+ 1/1  signal     N= 10000 V=3     3.645 ms/frame    121 ns/subject·voice  p50    3.596  p99    4.018  worst    4.243  first    22.9 ms  gc   24    6.6 ms    2432.6 kB/frame
+== round 5/6 2be95679
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn     N= 10000 V=2     1.537 ms/frame     77 ns/subject·voice  p50    1.472  p99    2.439  worst    5.931  first    21.5 ms  gc   13    4.0 ms    1247.6 kB/frame
+== round 5/6 2be95679
+ 1/1  glow       N= 10000 V=2     2.178 ms/frame    109 ns/subject·voice  p50    2.083  p99    3.171  worst    5.974  first    18.8 ms  gc   20    4.5 ms    1709.9 kB/frame
+== round 5/6 2be95679
+ 1/1  tweensig   N= 10000 V=1     1.367 ms/frame    137 ns/subject·voice  p50    1.347  p99    1.526  worst    1.932  first    21.1 ms  gc    3    0.6 ms     165.4 kB/frame
+== round 5/6 2be95679
+ 1/1  springs    N= 10000 V=1     1.156 ms/frame    116 ns/subject·voice  p50    1.143  p99    1.669  worst    3.028  first    46.9 ms  gc    9   10.4 ms     174.3 kB/frame
+== round 5/6 2be95679
+ 1/1  tweens     N= 10000 V=1     0.807 ms/frame     81 ns/subject·voice  p50    0.802  p99    0.857  worst    0.902  first    44.1 ms  gc    0    0.0 ms      10.8 kB/frame
+== round 5/6 2be95679
+ 1/1  keys       N= 10000 V=3     1.160 ms/frame     39 ns/subject·voice  p50    1.144  p99    1.312  worst    1.652  first    19.6 ms  gc    6    0.4 ms     185.4 kB/frame
+== round 5/6 2be95679
+ 1/1  role       N= 10000 V=3     3.931 ms/frame    131 ns/subject·voice  p50    3.865  p99    5.731  worst    6.912  first    29.0 ms  gc   10    5.8 ms    2431.7 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  signal     N= 10000 V=3     3.875 ms/frame    129 ns/subject·voice  p50    3.753  p99    5.230  worst    7.161  first    23.3 ms  gc   12    6.0 ms    2431.7 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glowbn     N= 10000 V=2     1.492 ms/frame     75 ns/subject·voice  p50    1.423  p99    2.374  worst    5.641  first    20.7 ms  gc   13    4.0 ms    1247.0 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glow       N= 10000 V=2     2.140 ms/frame    107 ns/subject·voice  p50    2.041  p99    3.252  worst    5.442  first    19.2 ms  gc   20    4.1 ms    1707.6 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweensig   N= 10000 V=1     1.435 ms/frame    143 ns/subject·voice  p50    1.380  p99    2.180  worst    2.346  first    20.8 ms  gc    3    0.3 ms     164.5 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  springs    N= 10000 V=1     1.203 ms/frame    120 ns/subject·voice  p50    1.185  p99    1.498  worst    2.930  first    52.3 ms  gc    2    1.6 ms     180.2 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweens     N= 10000 V=1     0.809 ms/frame     81 ns/subject·voice  p50    0.797  p99    0.901  worst    0.991  first    44.6 ms  gc    0    0.0 ms       9.1 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  keys       N= 10000 V=3     1.146 ms/frame     38 ns/subject·voice  p50    1.142  p99    1.194  worst    1.236  first    19.8 ms  gc    6    0.3 ms     184.7 kB/frame
+== round 5/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  role       N= 10000 V=3     3.963 ms/frame    132 ns/subject·voice  p50    3.873  p99    5.774  worst    7.355  first    28.8 ms  gc   10    5.8 ms    2430.3 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  signal     N= 10000 V=3     3.940 ms/frame    131 ns/subject·voice  p50    3.765  p99    5.457  worst    6.847  first    24.5 ms  gc   12    6.1 ms    2433.4 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn     N= 10000 V=2     1.522 ms/frame     76 ns/subject·voice  p50    1.452  p99    2.557  worst    5.563  first    19.8 ms  gc   13    3.7 ms    1249.5 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  glow       N= 10000 V=2     2.112 ms/frame    106 ns/subject·voice  p50    2.081  p99    2.583  worst    5.823  first    21.3 ms  gc   25    4.4 ms    1704.6 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweensig   N= 10000 V=1     1.388 ms/frame    139 ns/subject·voice  p50    1.374  p99    1.523  worst    1.696  first    20.7 ms  gc    3    0.5 ms     166.2 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  springs    N= 10000 V=1     1.183 ms/frame    118 ns/subject·voice  p50    1.162  p99    1.320  worst    2.661  first    44.1 ms  gc    2    1.5 ms     178.3 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  tweens     N= 10000 V=1     0.793 ms/frame     79 ns/subject·voice  p50    0.790  p99    0.842  worst    0.916  first    43.7 ms  gc    0    0.0 ms       8.5 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  keys       N= 10000 V=3     1.162 ms/frame     39 ns/subject·voice  p50    1.155  p99    1.274  worst    1.322  first    18.8 ms  gc    6    0.3 ms     182.5 kB/frame
+== round 6/6 61a76cb1f17c258b48d087bc413ffb31a28ae15f
+ 1/1  role       N= 10000 V=3     3.420 ms/frame    114 ns/subject·voice  p50    3.403  p99    3.884  worst    4.181  first    26.9 ms  gc   24    7.1 ms    2435.0 kB/frame
+== round 6/6 2be95679
+ 1/1  signal     N= 10000 V=3     3.730 ms/frame    124 ns/subject·voice  p50    3.638  p99    4.515  worst    4.580  first    23.2 ms  gc   35   12.1 ms    2434.9 kB/frame
+== round 6/6 2be95679
+blits: plot's cell is an option now: plot(subjects, xy, { cell })
+ 1/1  glowbn     N= 10000 V=2     1.464 ms/frame     73 ns/subject·voice  p50    1.397  p99    2.663  worst    5.554  first    19.8 ms  gc   13    3.7 ms    1240.0 kB/frame
+== round 6/6 2be95679
+ 1/1  glow       N= 10000 V=2     2.062 ms/frame    103 ns/subject·voice  p50    2.018  p99    2.313  worst    5.503  first    19.0 ms  gc   20    3.5 ms    1707.9 kB/frame
+== round 6/6 2be95679
+ 1/1  tweensig   N= 10000 V=1     1.399 ms/frame    140 ns/subject·voice  p50    1.376  p99    1.581  worst    1.905  first    19.1 ms  gc    3    0.6 ms     166.5 kB/frame
+== round 6/6 2be95679
+ 1/1  springs    N= 10000 V=1     1.182 ms/frame    118 ns/subject·voice  p50    1.151  p99    1.638  worst    3.759  first    49.6 ms  gc    2    3.2 ms     173.0 kB/frame
+== round 6/6 2be95679
+ 1/1  tweens     N= 10000 V=1     0.810 ms/frame     81 ns/subject·voice  p50    0.807  p99    0.868  worst    0.881  first    43.7 ms  gc    0    0.0 ms       7.9 kB/frame
+== round 6/6 2be95679
+ 1/1  keys       N= 10000 V=3     1.143 ms/frame     38 ns/subject·voice  p50    1.140  p99    1.195  worst    1.238  first    19.5 ms  gc    6    0.3 ms     190.6 kB/frame
+== round 6/6 2be95679
+ 1/1  role       N= 10000 V=3     3.723 ms/frame    124 ns/subject·voice  p50    3.686  p99    5.062  worst    5.904  first    27.3 ms  gc   10    5.3 ms    2430.8 kB/frame
