@@ -35,7 +35,8 @@ const NOTICE_MS = 3000;
 const PANEL_WIDTH = 440;
 
 export function App() {
-  const { comp, set, drafting, undo, redo, share, refusedLink } = useComposition(DEFAULT);
+  const { comp, set, drafting, undo, redo, canUndo, canRedo, share, refusedLink } =
+    useComposition(DEFAULT);
   const compRef = useRef(comp);
   compRef.current = comp;
   const subjects = useMemo(() => subjectsOf(comp.stage), [comp.stage]);
@@ -159,7 +160,17 @@ export function App() {
     set(preset.comp);
     setSelected(null);
   };
-  const header = <Header comp={comp} onComp={set} onPreset={loadPreset} />;
+  const header = (
+    <Header
+      comp={comp}
+      onComp={set}
+      onPreset={loadPreset}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      onUndo={undo}
+      onRedo={redo}
+    />
+  );
   const panels = (
     <PanelTabs
       tab={tab}
