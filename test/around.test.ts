@@ -320,3 +320,30 @@ describe('a ball read through a combinator', () => {
       expect(read(true)).toEqual(read(false));
     });
 });
+
+describe('a patch inside a bounded fill probing another subject', () => {
+  // The fill reads its own subject's place without a lookup; another subject's must not get it.
+  for (const lanes of [true, false])
+    it(`reads that subject's around weights at its own place (lanes ${lanes ? 'on' : 'off'})`, () => {
+      type S = { id: number };
+      type P = { g: number; h: number };
+      const m = plain<S, P>(kit({ g: sum(), h: sum() }), { lanes });
+      const ss = Array.from({ length: 10 }, (_, id) => ({ id }));
+      const xy = new Float64Array(20);
+      for (let i = 0; i < 10; i++) xy[2 * i] = i;
+      m.plot(ss, xy);
+      const leader = ss[9] as S;
+      m.cue({
+        patch: patch<S, P>(0, () => ({ g: 1 }), { writes: ['g'] }),
+        weight: m.around({ x: 9, r: 1.5 }),
+      });
+      m.cue({
+        patch: patch<S, P>(0, () => ({ h: m.probe(leader).g }), { writes: ['h'] }),
+        weight: m.around({ x: 0, r: 3 }),
+      });
+      for (const t of [0, 16, 32]) {
+        m.sync(t);
+        expect(ss.slice(0, 4).map((s) => +m.probe(s).h.toFixed(3))).toEqual([1, 0.667, 0.333, 0]);
+      }
+    });
+});

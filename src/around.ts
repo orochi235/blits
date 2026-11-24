@@ -69,7 +69,10 @@ export function around<I, O>(
   const read = (subject: I): number => {
     const places = this.places;
     if (places === null) return 0;
-    const i = places.cur >= 0 ? places.cur : (places.at.get(subject) ?? -1);
+    const i =
+      places.cur >= 0 && subject === places.curSubject
+        ? places.cur
+        : (places.at.get(subject) ?? -1);
     if (i < 0 || !places.has(i)) return 0;
     const r = ball.r;
     let d2: number;
