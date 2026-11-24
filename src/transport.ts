@@ -237,6 +237,8 @@ export class Transport implements TransportApi {
 
   /** Who `onSeek` tells. */
   seekFns: ((s: Sought) => void)[] = [];
+  /** How many seeks it has made, so telling one stops where a listener makes another. */
+  seeks = 0;
   onSeek(fn: (s: Sought) => void): () => void {
     return listen(this.seekFns, fn);
   }

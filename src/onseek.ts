@@ -24,23 +24,23 @@ export function onSeek<I, O>(this: Mixer<I, O>, fn: (s: Sought) => void): () => 
  * transport on to another frame, by a seek or a sync, whose own news is the latest.
  */
 export function told(transport: Transport, s: Sought): void {
-  const seq = transport.seq;
-  if (!tell(transport.seekFns, s, transport, seq)) return;
+  const n = transport.seeks;
+  if (!tell(transport.seekFns, s, transport, n)) return;
   for (const m of [...transport.members]) {
     const fns = m.seekFns;
-    if (fns !== null && !tell(fns, s, transport, seq)) return;
+    if (fns !== null && !tell(fns, s, transport, n)) return;
   }
 }
 
-/** Calls each of `fns` with `s` while the transport stays on frame `seq`, and answers whether it did. */
-function tell(fns: ((s: Sought) => void)[], s: Sought, transport: Transport, seq: number): boolean {
+/** Calls each of `fns` with `s` until a listener seeks again, and answers whether it did. */
+function tell(fns: ((s: Sought) => void)[], s: Sought, transport: Transport, n: number): boolean {
   for (const fn of [...fns]) {
     try {
       fn(s);
     } catch (err) {
       throwLater(err);
     }
-    if (transport.seq !== seq) return false;
+    if (transport.seeks !== n) return false;
   }
   return true;
 }

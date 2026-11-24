@@ -355,9 +355,9 @@ describe.each([true, false])('an onWake listener, lanes %s', (lanes) => {
 
   for (const [name, move, heard] of [
     ['seeks', (m: { seek(t: number): void }) => m.seek(200), [200]],
-    ['syncs', (m: { sync(t: number): void }) => m.sync(900), []],
+    ['syncs', (m: { sync(t: number): void }) => m.sync(900), [400]],
   ] as const)
-    it(`that ${name} ends the telling of the seek that woke it`, () => {
+    it(`that ${name} leaves the seek that woke it told only if it sought again`, () => {
       const m = mix<object, { x: number }>(K, { history, name: 'm', lanes });
       m.cue({ patch: ramp, subjects: [{}] });
       for (let t = 0; t <= 800; t += 100) m.sync(t);

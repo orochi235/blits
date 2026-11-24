@@ -422,8 +422,8 @@ export interface Mix<I, O, H = unknown> {
    * Calls `fn` each time the mix is sought, by its own `seek` or its transport's, once the seek has
    * landed: the mix can be read at the time sought, before any sync, as a paused host scrubbing
    * reads it. A driver holding state of its own learns here what to take back. A listener that
-   * seeks or syncs ends the telling of this seek, so the last seek heard is where the mix stands;
-   * one that throws stops no other, its error thrown again on a microtask. Returns a function that
+   * seeks again ends the telling of this seek, so the last seek heard is the one the mix stands
+   * at; one that throws stops no other, its error thrown again on a microtask. Returns a function that
    * unsubscribes `fn`.
    */
   onSeek(fn: (sought: Sought) => void): () => void;
