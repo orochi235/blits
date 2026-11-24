@@ -78,6 +78,7 @@ export function playAhead(
 export function standIn<I, O>(mix: Mixer<I, O>, copy: Mixer<I, O>): void {
   copy.slot = mix.slot;
   copy.projecting = true;
+  copy.holdsQuiet = mix.holdsQuiet;
   copy.share = mix.share;
   copy.places = mix.places;
 }

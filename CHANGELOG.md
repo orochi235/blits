@@ -439,6 +439,16 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `fling` places the subject at the release point and counts it in the launch velocity, and lets
   go at rest when it loses the pointer capture, where the drag stayed stuck and refused the next
   press.
+- A read ahead past a subject whose `fade({ subject, over })` ramp had run out, brought back by a
+  `set`, `to` or `push`, meets it afresh, as play does: a read's copies never take a subject out
+  where its ramp ends, so the change found it still on its way out and it showed nothing.
+- A child an owner keeps quiet past its passes, brought back into them by a handle `seek`, climbs
+  back from where the fade it went quiet with ends, or from the seek where that came later, at any
+  frame rate: it climbed from the first frame after both. A read ahead past its cue keeps it quiet
+  with its owner, as play does under history, where it let the child leave and showed nothing.
+- A seek to the frame a span child was cued in, at its start, while the span's clock ran back,
+  finds it waiting, as play does: it put back a child the fit had skipped as already at its end,
+  showing its last frame under `freeze: 'after'`.
 
 ## 1.4.0
 

@@ -186,3 +186,25 @@ export function rewire<I, O>(copies: readonly Voice<I, O>[], seq?: number): void
     (o.holding as Holding<Voice<I, O>>).children.push(v);
   }
 }
+
+/**
+ * Whether a pending voice starts with its owner's clock at `t`: at its very start only on a clock
+ * not running back, where it would leave as it starts, as one passed between frames never starts.
+ */
+export function starts<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
+  return (
+    t > voice.start ||
+    (t === voice.start && (voice.owner === null || heading(voice.owner, now) >= 0))
+  );
+}
+
+/**
+ * Which way a voice's clock is running at mix time `now`, through every owner above it: above 0
+ * forward, below 0 back, 0 standing still.
+ */
+export function heading<I, O>(voice: Voice<I, O>, now: number): number {
+  let way = 1;
+  for (let v: Voice<I, O> | null = voice; v !== null; v = v.owner)
+    way *= Math.sign(v.rateAt(v.owner === null ? now : ownerReading(v.owner, now)));
+  return way;
+}

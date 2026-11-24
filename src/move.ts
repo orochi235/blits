@@ -8,7 +8,7 @@ import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { leave as leaveClock, startedAt } from './origin.js';
-import { descendants, type Holding, ownerReading, plays } from './owner.js';
+import { descendants, type Holding, heading, ownerReading, plays, starts } from './owner.js';
 import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
@@ -258,7 +258,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
             {
               back,
               opening: !back && owned < 0,
-              stays: voice.owner !== null && mix.opts.history !== undefined,
+              stays: voice.owner !== null && mix.holdsQuiet,
             },
             Math.max(startOf(voice), Math.min(now, voice.endsAt())),
           );
@@ -283,8 +283,11 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
       if (out) retire(mix, voice, at + (deadline as number));
       else if (settled) retire(mix, voice);
     } else if (spent >= over) {
-      if (voice.out.stays) stay(mix, voice, at + over);
-      else retire(mix, voice, at + over);
+      if (voice.out.stays) {
+        stay(mix, voice, at + over);
+        // A seek during the fade put its clock back in its passes: it comes back from the fade's end.
+        if (!voice.quietAt(now)) rouse(mix, voice, now);
+      } else retire(mix, voice, at + over);
     }
   }
   // An owner run back past a fading child's start has it wait, which keeps it off lanes (`unfit`).
@@ -294,17 +297,6 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
   }
   if (!mix.projecting) schedule(mix, voice);
   return false;
-}
-
-/**
- * Whether a pending voice starts with its owner's clock at `t`: at its very start only on a clock
- * not running back, where it would leave as it starts, as one passed between frames never starts.
- */
-export function starts<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
-  return (
-    t > voice.start ||
-    (t === voice.start && (voice.owner === null || heading(voice.owner, now) >= 0))
-  );
 }
 
 /**
@@ -431,17 +423,6 @@ function wake<I, O>(mix: Mixer<I, O>, now: number): void {
     }
     if (!mix.projecting) schedule(mix, voice);
   }
-}
-
-/**
- * Which way a voice's clock is running at mix time `now`, through every owner above it: above 0
- * forward, below 0 back, 0 standing still.
- */
-function heading<I, O>(voice: Voice<I, O>, now: number): number {
-  let way = 1;
-  for (let v: Voice<I, O> | null = voice; v !== null; v = v.owner)
-    way *= Math.sign(v.rateAt(v.owner === null ? now : ownerReading(v.owner, now)));
-  return way;
 }
 
 /**

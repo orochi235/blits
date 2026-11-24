@@ -5,9 +5,9 @@ import { type Claim, defaultFit, type Fit, layout, type SpanClaim, settle } from
 import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
-import { nextFrame, starts } from './move.js';
+import { nextFrame } from './move.js';
 import { leave, MOST } from './origin.js';
-import { type Holding, ownerReading, plays } from './owner.js';
+import { type Holding, ownerReading, plays, starts } from './owner.js';
 import { resolve } from './place.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
 import type { Earlier, Voice } from './voice.js';
