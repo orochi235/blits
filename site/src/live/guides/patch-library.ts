@@ -1,4 +1,4 @@
-import { color, type Handle, kit, mix, mul, patch, toHex } from '@msb235/blits';
+import { color, kit, mix, mul, patch, toHex } from '@msb235/blits';
 import { checkPatch } from '@msb235/blits/testing';
 import {
   type GlowHost,
@@ -125,7 +125,6 @@ export default demo((d) => {
   });
 
   const faults = new Set<Fault>();
-  let flickering: Handle<Bulb> | undefined;
   const recue = () => {
     const p = flicker(faults);
     const problems = checkPatch(p, { subject: { x: 0, y: 0 }, kit: glowChannels });
@@ -135,8 +134,9 @@ export default demo((d) => {
     ];
     for (let i = lines.length; i < LINES; i++) lines.push(' ');
     checked.textContent = lines.join('\n');
-    flickering?.fade({ over: 300 });
-    flickering = m.cue({ patch: p, subjects: bulbs, fade: { in: 300 }, name: 'flicker' });
+    // Read from the mix, which a seek back puts as it was, so no flicker it brings back stays on.
+    for (const v of m.voices('flicker')) if (v.state !== 'fading') v.fade({ over: 300 });
+    m.cue({ patch: p, subjects: bulbs, fade: { in: 300 }, name: 'flicker', tags: ['flicker'] });
   };
   for (const [fault, b] of toggles)
     d.on(b, 'click', () => {

@@ -1,6 +1,6 @@
 import { keys, kit, mix, mul, patch, sum } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
-import { loop } from './loop';
+import { frameTime, loop } from './loop';
 import { type Dot, row } from './start/row';
 
 // The two numbers an effect can move on a dot.
@@ -43,6 +43,8 @@ export default function run(root: HTMLElement): () => void {
     name: 'get started',
     history: { ms: 10_000, tape: createHistory },
   });
+  // Told the time once first, so the hop's fade in plays from the first frame rather than before it.
+  m.sync(frameTime());
   m.cue({ patch: breathe, loop: true });
   m.cue({ patch: hop, loop: true, stagger: (dot) => dot.index * 80, fade: { in: 600 } });
 

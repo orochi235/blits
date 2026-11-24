@@ -461,7 +461,7 @@ In depth: [Patch](../patch/), [Time](../time/).
 
 A pose is what one [subject](#subject) looks like at one frame, with every voice [folded](#fold) in. A [delta](#delta) holds only what one patch writes; a pose holds every channel of the [kit](#kit), at [rest](#rest) where nothing moved it. The one exception is a channel with no rest, such as a `last` channel nothing has set, which is left out. The pose is what the [host](#host) puts on screen.
 
-With `bob` a quarter of the way through its pass and `dim` at full weight, a dot's pose is `{ y: 1, glow: 0.5 }`.
+With `bob` a quarter of the way through its pass and `dim` at full weight, a dot's pose has `y` 1 and `glow` 0.5, with `color` at its rest, since nothing writes it.
 
 In depth: [Mix](../mix/).
 
