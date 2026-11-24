@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A staggered subject waiting on an owner whose clock stands still starts where that clock reaches
+  its delay once it moves again, however many times the rate was written meanwhile: a second
+  `rate = 0` while stopped let it start from a stand-in time instead, earlier than the owner's
+  clock put it, and a seek back replayed it later than play had.
 - With a history store, a voice anchored on an announced mark that memory has already paged out
   finds it, as it would with every mark in memory: it waited pending for good. Memory keeps, of the
   marks it pages, the first, last, earliest and latest a query could pick.

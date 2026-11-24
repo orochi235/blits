@@ -1,6 +1,7 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { mix } from '../src/mixer.js';
+import { patch } from '../src/patch.js';
 import type { Handle, MixOptions } from '../src/types.js';
 import { a, b, clock, drift, K, type Part, type Pose, ramp, ten, x } from './owner-fixtures.js';
 
@@ -333,6 +334,39 @@ describe('mix.owns', () => {
     n.sync(200);
     expect(ahead).toEqual(n.probe(a));
   });
+
+  for (const lanes of [true, false])
+    it(`starts a staggered child where its owner’s clock reaches it after standing still, rate 0 written twice${lanes ? '' : ', without lanes'}`, () => {
+      // x counts the ms a subject has been stepped, so it shows where its record began.
+      const steps = patch<Part, Pose, { x: number }>(0, (_p, _s, st) => ({ x: st.state.x }), {
+        writes: ['x'],
+        state: () => ({ x: 0 }),
+        step: (s, dt) => {
+          s.x += dt;
+        },
+      });
+      const run = (again: boolean) => {
+        const m = mix<Part, Pose>(K, { lanes });
+        m.sync(0);
+        const o = m.owns({ rate: 2 });
+        m.cue({ patch: steps, owner: o, stagger: (p) => (p === b ? 160 : 0), subjects: [a, b] });
+        const out: number[] = [];
+        for (let t = 0; t <= 320; t += 16) {
+          m.sync(t);
+          if (t === 64) o.rate = 0;
+          if (t === 208) {
+            if (again) o.rate = 0;
+            o.rate = 2;
+          }
+          out.push(m.probe(b).x);
+        }
+        return out;
+      };
+      const once = run(false);
+      // The owner reads 128 from 64 to 208, so 160 at 224, where b starts.
+      expect(once.at(-1)).toBe(320 - 224);
+      expect(run(true)).toEqual(once);
+    });
 
   it('gives lanes the same poses as the general path', () => {
     const scene = (opts: MixOptions) => {
