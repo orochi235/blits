@@ -176,11 +176,16 @@ function unpageMix(mix: Member, records: readonly Paged[]): void {
   const keys = mix.keys as Keys;
   for (const [id, list] of byVoice) {
     const voice = voices.get(id);
-    if (voice !== undefined) unpageVoice(voice, list, keys);
+    if (voice !== undefined) unpageVoice(mix, voice, list, keys);
   }
 }
 
-function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], keys: Keys): void {
+function unpageVoice(
+  mix: Member,
+  voice: Voice<unknown, unknown>,
+  records: readonly Paged[],
+  keys: Keys,
+): void {
   const of = (stream: Paged['stream']) => records.filter((r) => r.stream === stream);
   if (voice.log !== null)
     voice.log = before(
@@ -233,6 +238,10 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
         held.inputs ?? [],
       );
   }
+  for (const [key, list] of bySubject(of('sent'))) {
+    const subject = keys.subject(key);
+    for (const [held, sent] of lives(voice, subject, list)) unlog(mix, held, sent);
+  }
   const met = of('met');
   if (met.length > 0) {
     const read = voice.metRead ?? [];
@@ -247,6 +256,25 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
   for (const r of of('released'))
     motion.reclaim(keys.subject(r.subject), r.at, r.seq, r.data as Run);
   for (const [key, list] of bySubject(of('stretch'))) motion.restretch(keys.subject(key), list);
+}
+
+/**
+ * A record's step counts by frame a store gave back, into `mix.sends` ahead of the frames memory
+ * kept and after its mark of the first frame it sent in: one entry per frame, the last given.
+ */
+function unlog(mix: Member, held: Subject<unknown>, records: readonly Paged[]): void {
+  const log = mix.sends?.get(held) ?? [];
+  const head = log[0] === -1 ? 3 : 0;
+  const first = (log[head] as number | undefined) ?? Number.POSITIVE_INFINITY;
+  const back: number[] = [];
+  for (const r of records) {
+    if (!(r.seq < first)) continue;
+    if (back[back.length - 3] === r.seq) back.length -= 3;
+    back.push(r.seq, r.at, r.data as number);
+  }
+  if (back.length === 0) return;
+  mix.sends ??= new WeakMap();
+  mix.sends.set(held, [...log.slice(0, head), ...back, ...log.slice(head)]);
 }
 
 function bySubject(records: readonly Paged[]): Map<string | number | undefined, Paged[]> {

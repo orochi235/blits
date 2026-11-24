@@ -32,12 +32,6 @@ Owner tags:
   stamp hold dropped 888's in the seek frame, so it never went out, and 754 failed sooner, at
   frame 6, on an event that fix now sends. One route: compare what
   `restedBy` and `sentBack` decide for these records at the moment sought with play's records then.
-- **[agent] With a store, a seek past memory holds back a put-back record's steps by stamp**
-  (2026-11-24, reasoned): `mix.sends` keeps the step count each record had sent from for the
-  frames memory reaches, and a mark for the rest, so a seek to an earlier frame after the record's
-  first send cannot tell its count and holds back what its steps stamp at or before the moment
-  sought, as before 2026-11-24: one first sent after the moment, stamped before it, is lost. One
-  route: page the log with the record's copies.
 - **[agent] A seek back does not put back a rest-less channel's band state** (2026-11-23,
   reproduced): under a band of the host's own, `{ on: 0.6, off: 0.4 }`, a `last()` channel whose
   weight goes 1, then 0.5 (still shown), then 0, then 0.5 again (not shown) still shows nothing

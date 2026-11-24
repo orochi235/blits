@@ -11,6 +11,7 @@ import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
 import { nearly } from './nearly.js';
 import { ownerReading } from './origin.js';
+import { pageOut } from './paging.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { isRested } from './record.js';
@@ -48,7 +49,7 @@ function rebuild<I, O>(
   held.stepped = held.since < now ? held.since : now;
   held.probed = Number.NaN;
   // Its steps count from 0 again, so a seek back to here holds back none of them.
-  if (mix.sends?.has(held)) logSend(mix, held, 0);
+  if (mix.sends?.has(held)) logSend(mix, voice, subject, held, 0);
 }
 
 /** Whether a seek since its last read moved a stateful record's origin, as one back before it does. */
@@ -365,7 +366,7 @@ export function tick<I, O>(
       const before = this.sent.length;
       step(held.state as never, tick, subject, setting as never);
       held.ticks = n;
-      if (logs && this.sent.length !== before) logSend(this, held, n);
+      if (logs && this.sent.length !== before) logSend(this, voice, subject, held, n);
     }
     if (counted && held.ticks > sent) this.resent?.delete(held);
   } finally {
@@ -376,8 +377,17 @@ export function tick<I, O>(
   }
 }
 
-/** Notes that a record's step `n` sent in this frame, letting go of frames history no longer reaches. */
-function logSend<I, O>(mix: Mixer<I, O>, held: Subject<unknown>, n: number): void {
+/**
+ * Notes that a record's step `n` sent in this frame, letting go of frames memory no longer reaches,
+ * which a history store is given.
+ */
+function logSend<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+  n: number,
+): void {
   mix.sends ??= new WeakMap();
   let log = mix.sends.get(held);
   if (log === undefined) {
@@ -392,13 +402,20 @@ function logSend<I, O>(mix: Mixer<I, O>, held: Subject<unknown>, n: number): voi
   log.push(seq, mix.now, n);
   // The latest frame before memory's reach stays, for a seek to a frame between it and the next;
   // those before it give way to a mark, frame -1 and then the first frame it sent in, before which
-  // it had sent nothing, and between which and the frames kept its count is not known.
+  // it had sent nothing, and between which and the frames kept its count is not known but to a
+  // store, which `prepare` loads back.
   const reach = mix.transport.memoryFrom();
   const head = log[0] === -1 ? 3 : 0;
   let cut = head;
   while (log.length - cut > 3 && (log[cut + 4] as number) < reach) cut += 3;
-  if (cut > head)
-    log.splice(0, cut, -1, head === 3 ? (log[1] as number) : (log[0] as number), Number.NaN);
+  if (cut === head) return;
+  if (mix.transport.pager !== null) {
+    const out: { seq: number; at: number; n: number }[] = [];
+    for (let i = head; i < cut; i += 3)
+      out.push({ seq: log[i] as number, at: log[i + 1] as number, n: log[i + 2] as number });
+    pageOut(mix, 'sent', voice.id, mix.keys?.key(subject), out, (e) => e.n, reach);
+  }
+  log.splice(0, cut, -1, head === 3 ? (log[1] as number) : (log[0] as number), Number.NaN);
 }
 
 /**

@@ -471,6 +471,49 @@ describe('history with a store', () => {
         expect(m.probe('a').x).toBe(seen[2]);
       });
 
+  for (const lanes of [true, false])
+    it(`sends again, after a seek past memory, what a record steps after the moment stamped before it${lanes ? '' : ', without lanes'}`, async () => {
+      // Sends at each 50 ms of steps. Run back past its start and turned forward at half speed, its
+      // steps stamp behind the mix clock, so some stamped before the moment are sent after it.
+      const sender = patch<string, P, { n: number }>(400, () => ({}), {
+        writes: [],
+        state: () => ({ n: 0 }),
+        step: (st, dt, _s, setting) => {
+          const before = Math.floor(st.n / 50);
+          st.n += dt;
+          if (Math.floor(st.n / 50) !== before) setting.send(Math.floor(st.n / 50));
+        },
+        pack: (st) => st,
+        unpack: (st) => st as { n: number },
+      });
+      const m = mix<string, P>(K, {
+        lanes,
+        history: { ms: 150, every: 50, tape, store: memoryStore() },
+        stepMs: 8,
+        keyOf: (s: string) => s,
+      });
+      let h: Handle<string> | undefined;
+      const frame = (host: number, t: number) => {
+        m.sync(host);
+        if (host === t && t === 0)
+          h = m.cue({ patch: sender, subjects: ['a'], seek: 130, rate: -1, stagger: () => 80 });
+        if (host === t && t === 48) h?.ramp(0.5, 100);
+        if (host === t && t === 320 && h) h.rate = -1;
+        if (host === t && t === 400 && h) h.rate = 1;
+        m.probe('a');
+        return m.drain().map((e) => `${e.timestamp}:${e.event}`);
+      };
+      const ts = Array.from({ length: 60 }, (_, i) => i * 16);
+      const sent = ts.map((t) => frame(t, t));
+      const k = 26;
+      await m.prepare(ts[k] as number);
+      m.seek(ts[k] as number);
+      m.probe('a');
+      m.drain();
+      const again = ts.slice(k + 1).map((t, i) => frame(960 + 16 * i, t));
+      expect(again).toEqual(sent.slice(k + 1));
+    });
+
   it('reads input signals and host fields back past memory as they were', async () => {
     const host = { pointer: { x: 0 } };
     const follow = patch<Part, Pose>(
