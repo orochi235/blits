@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A child still to start under an owner whose clock runs back leaves: with the owner's last child,
+  or where the owner's clock reaches 0 if that is sooner. It waited for a start the clock was moving
+  away from, so the owner and the mix stayed live for good; an owner cued backward with a child
+  placed after 0 never left, though `marks` listed both as ended.
 - A motion voice whose subjects were all dropped while they waited out their stagger goes `inert`
   once past it. It kept their records listed as waiting, unread for good, so `inert` never held:
   100 subjects probed and dropped inside a 500 ms stagger left a spring awake to the end.
