@@ -52,15 +52,6 @@ Owner tags:
   the rate to 2. After `prepare` and a seek back to frame 2, replaying to frame 8 shows nothing
   of it where play showed it; without a store, or without either rate call, it matches. One
   route: diff the pace and frames `unpage` puts back against what the run held at frame 2.
-- **[agent] A seek back does not put back a rest-less channel's band state** (2026-11-23,
-  reproduced): under a band of the host's own, `{ on: 0.6, off: 0.4 }`, a `last()` channel whose
-  weight goes 1, then 0.5 (still shown), then 0, then 0.5 again (not shown) still shows nothing
-  after a `seek` back into the first stretch at 0.5. A record keeps only its latest band state,
-  which `restore` (`src/seek.ts`) leaves as the live record has it, and a role keeps its own on the
-  chain head (`head.roles`), which a seek drops, so the role decides as if met afresh. Under the
-  stock band nothing holds between on and off, so no default mix shows it. One route: under
-  history, log each record's band changes by time as `inputs` are, a role's on its first member's
-  record, put back the state as of the time sought, and page the log with the record.
 - **[agent] A seek back within memory may miss an announced mark a later one displaced as an end**
   (2026-11-23, reasoned, not reproduced): with a store, memory keeps only the ends of the marks it
   has paged (`endMarks` in `src/paging.ts`) and lets go of one once another takes its place. A mark

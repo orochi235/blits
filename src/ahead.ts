@@ -198,6 +198,7 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
     true,
   );
   c.waking = mix.waking;
+  c.rolesAhead = (subject) => mix.chains.get(subject)?.roles;
   recount(c);
 }
 

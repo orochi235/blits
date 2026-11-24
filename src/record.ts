@@ -46,6 +46,7 @@ export function wholeRecord(
     kept: null,
     unkept: undefined,
     snaps: undefined,
+    bandLog: undefined,
     from: undefined,
     unknown: undefined,
     inputs: undefined,

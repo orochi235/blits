@@ -24,6 +24,8 @@ export interface LaneHost<I, O> {
   naming(subject: I): readonly Voice<I, O>[] | undefined;
   /** The subject's number, -1 where it has none yet. */
   slotOf(subject: I): number;
+  /** Keeps a record's band state under `history`, which a fill at `slot` just changed. */
+  banded(held: Subject<unknown>, slot: number): void;
   /** The voice's own fade for a subject whose delay ran out at `since`. */
   envelope(voice: Voice<I, O>, since: number): number;
   /** What a subject's own ramp out of the voice leaves of its weight, 0..1. */

@@ -233,6 +233,22 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
         held.inputs ?? [],
       );
   }
+  for (const [key, list] of bySubject(of('band'))) {
+    const subject = keys.subject(key);
+    for (const [held, marks] of lives(voice, subject, list))
+      held.bandLog = before(
+        marks.map((r) => {
+          const [bands, role] = r.data as [number[] | null, number[] | null];
+          return {
+            at: r.at,
+            seq: r.seq,
+            bands: bands === null ? null : Uint8Array.from(bands),
+            role: role === null ? null : Uint8Array.from(role),
+          };
+        }),
+        held.bandLog ?? [],
+      );
+  }
   const met = of('met');
   if (met.length > 0) {
     const read = voice.metRead ?? [];

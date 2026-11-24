@@ -10,7 +10,7 @@ import { pageOut } from './paging.js';
 import type { WholeRecord } from './record.js';
 import { scoreTouched } from './scored.js';
 import { last } from './sorted.js';
-import type { Snap, Subject } from './subject.js';
+import type { BandMark, Snap, Subject } from './subject.js';
 import { type Controls, none, type Voice } from './voice.js';
 
 /**
@@ -144,6 +144,7 @@ export function copyHeld<I, O>(
     kept,
     unkept: h.unkept?.map(clone),
     snaps: h.snaps,
+    bandLog: h.bandLog,
     from: h.from,
     unknown: h.unknown,
     inputs: h.inputs,
@@ -198,6 +199,7 @@ export function copyHeldInto<I, O>(
   into.ends = undefined;
   into.kept = keptOf(h);
   into.unkept = h.unkept?.map(clone);
+  into.bandLog = h.bandLog;
   into.from = h.from;
   into.unknown = h.unknown;
   into.replay = h.replay;
@@ -271,6 +273,63 @@ export function recordInput<I, O>(
   const out = older(inputs, reach);
   if (out.length > 0)
     pageOut(mix, 'input', voice.id, mix.keys?.key(subject), out, (e) => e.value, reach);
+}
+
+/**
+ * Under `history`, keeps a record's band state as this frame leaves it, once it has changed: its
+ * own, and with `role`, its role's, for a role's first member; without, the role's as last kept.
+ */
+export function recordBands<I, O>(
+  mix: Mixer<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+  role?: Uint8Array | null,
+): void {
+  const history = mix.opts.history;
+  if (history === undefined || mix.projecting) return;
+  const log = held.bandLog ?? [];
+  held.bandLog = log;
+  const prev = log[log.length - 1];
+  const bands = held.bands === null ? null : held.bands.slice();
+  const kept = role === undefined ? (prev?.role ?? null) : role === null ? null : role.slice();
+  const seq = mix.transport.seq;
+  if (prev !== undefined && prev.seq === seq) {
+    prev.bands = bands;
+    prev.role = kept;
+    return;
+  }
+  log.push({ at: mix.now, seq, bands, role: kept });
+  const reach = mix.now - history.ms;
+  const out = older(log, reach);
+  if (out.length > 0)
+    pageOut(
+      mix,
+      'band',
+      (held.voice as Voice<I, O>).id,
+      mix.keys?.key(subject),
+      out,
+      (e) => [e.bands && Array.from(e.bands), e.role && Array.from(e.role)],
+      reach,
+    );
+}
+
+/** The role band state a role's first member last kept, under `history`; undefined for none. */
+export function roleKept(held: Subject<unknown>): Uint8Array | null | undefined {
+  const log = held.bandLog;
+  return log === undefined ? undefined : log[log.length - 1]?.role;
+}
+
+/**
+ * Puts a record's band state back as its log had it at the end of frame `seq`, with the log cut
+ * there; a record with no log keeps what it has.
+ */
+export function bandsAt(h: Subject<unknown>, log: Subject<unknown>['bandLog'], seq: number): void {
+  if (log === undefined) return;
+  let n = log.length;
+  while (n > 0 && (log[n - 1] as BandMark).seq > seq) n--;
+  const mark = log[n - 1];
+  h.bands = mark?.bands ? mark.bands.slice() : null;
+  h.bandLog = n === 0 ? undefined : log.slice(0, n);
 }
 
 /** How far apart, in mix ms, a record's copies are kept. */

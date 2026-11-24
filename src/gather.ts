@@ -381,7 +381,7 @@ export function foldInto<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value
  * general path's `apply` decides it from the same band state on the same record, so a subject
  * moving between the paths carries it.
  */
-export function gate<I, O>(this: Lanes<I, O>, ch: Laned): boolean {
+export function gate<I, O>(this: Lanes<I, O>, ch: Laned, slot: number): boolean {
   const w = this.arg[Arg.WEIGHT] as number;
   const lane = this.folding as Lane<I, O>;
   const rec = this.rec as Subject<unknown>;
@@ -390,7 +390,11 @@ export function gate<I, O>(this: Lanes<I, O>, ch: Laned): boolean {
   rec.bands = bands;
   const band = bands[i];
   const on = this.host.passes(band === 0 ? undefined : band === 1, w);
-  bands[i] = on ? 1 : 2;
+  const next = on ? 1 : 2;
+  if (band !== next) {
+    bands[i] = next;
+    this.host.banded(rec, slot);
+  }
   return on;
 }
 
@@ -399,7 +403,7 @@ export function gate<I, O>(this: Lanes<I, O>, ch: Laned): boolean {
  * true is a pass, which `foldInto` then folds; a rotation is folded here, so false.
  */
 export function unplain<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value: unknown): boolean {
-  if (ch.op === 'last') return this.gate(ch);
+  if (ch.op === 'last') return this.gate(ch, slot);
   const w = this.arg[Arg.WEIGHT] as number;
   const values = ch.values;
   // An angle here and not through `turnInto`, where its weight would cross a call as a boxed double.

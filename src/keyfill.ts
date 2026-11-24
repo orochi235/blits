@@ -1,6 +1,6 @@
 import { foldAxes } from './channels.js';
 import { clampWeight, frozenTime, phaseAt, same, weighed } from './clock.js';
-import { unband } from './fold.js';
+import { unbandAt } from './fill.js';
 import { Arg, keepProbed, type Lane, type Laned, Per, Row, WIDENED } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { shortWay } from './turns.js';
@@ -47,7 +47,7 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
     const elapsed = raw > span && hides ? Number.NaN : frozenTime(raw, before, after, span);
     if (!(elapsed >= 0)) {
       data[o + Row.WEIGHT] = 0;
-      unband(records[p]);
+      unbandAt(lanes, records[p], slot);
       continue;
     }
     if (!flat) {
@@ -68,7 +68,7 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
       flatten(chans, read, nums, kinds);
     }
     if (!(w > 0)) {
-      unband(records[p]);
+      unbandAt(lanes, records[p], slot);
       continue;
     }
     let k = 0;

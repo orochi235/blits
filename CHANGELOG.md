@@ -8,6 +8,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A seek back, or a read back, puts a rest-less channel's band state back as it stood at the
+  moment sought, in a role and outside one: under a band of the host's own, a weight between
+  `off` and `on` showed whatever the channel had switched to since, and a role decided as if met
+  afresh. A read ahead in a role starts from the role's band state, where it started from none.
+  A history store is handed the band state as the `band` stream.
 - A retarget or push made before any frame read its subject lands, after a seek back to before
   that first read, where play landed it, in the tape's replay and in a read ahead: both stamped it
   at the frame it was made in. One made after such a seek waits for the subject's next read, as
