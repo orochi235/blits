@@ -9,6 +9,7 @@ import {
   pulse,
 } from '../../snippets/guides/patch-library/glow';
 import { demo } from '../demo';
+import { frameTime } from '../loop';
 
 interface Bulb extends Lamp {
   el: HTMLElement;
@@ -99,6 +100,8 @@ export default demo((d) => {
     }),
   );
   d.closes(m);
+  // Synced once before the first cues, or the flicker's fade in is over by the first frame.
+  m.sync(frameTime());
   m.cue({ patch: pulse, subjects: bulbs, loop: true, weight: 0.5, name: 'pulse' });
   m.cue({ patch: near, subjects: bulbs, name: 'near' });
 
