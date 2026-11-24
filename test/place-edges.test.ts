@@ -239,6 +239,29 @@ test('a child cued into a span running back plays when the span is sought into i
   expect(run(true)).toEqual(run(false));
 });
 
+test('a child a fit skips, cued at its start into a span running back, waits there after a seek to that frame', () => {
+  const e = { id: 'e' };
+  const m = mix<Part, Pose>(K, { history: { ms: 100_000, tape } });
+  m.sync(0);
+  const s = m.span({ duration: 600 });
+  m.sync(200);
+  s.rate = -1;
+  m.sync(264);
+  // At span 136, with 464 ms left for 500: skipped to its end.
+  const h = m.cue({
+    owner: s,
+    patch: ramp(500, 0, 100),
+    subjects: [e],
+    loop: false,
+    freeze: 'after',
+  });
+  const live = [h.state, m.probe(e).x, s.result.skipped];
+  expect(live).toEqual(['pending', 0, 1]);
+  m.sync(300);
+  m.seek(264);
+  expect([h.state, m.probe(e).x, s.result.skipped]).toEqual(live);
+});
+
 test('a child anchored to a sibling plays when its owner, at rate 0, is sought past both', () => {
   const [c, d] = [{ id: 'c' }, { id: 'd' }];
   const clip = { loop: false, freeze: 'after' } as const;

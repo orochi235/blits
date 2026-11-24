@@ -428,6 +428,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   back from where the fade it went quiet with ends, or from the seek where that came later, at any
   frame rate: it climbed from the first frame after both. A read ahead past its cue keeps it quiet
   with its owner, as play does under history, where it let the child leave and showed nothing.
+- A seek to the frame a span child was cued in, at its start, while the span's clock ran back,
+  finds it waiting, as play does: it put back a child the fit had skipped as already at its end,
+  showing its last frame under `freeze: 'after'`.
 
 ## 1.4.0
 

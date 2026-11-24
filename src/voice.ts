@@ -31,6 +31,7 @@ import {
   ownerPatch,
   ownerReading,
   plays,
+  starts,
   turnedBack,
 } from './owner.js';
 import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
@@ -692,7 +693,7 @@ export class Voice<I, O> {
     const out = this.out;
     if (out !== null) return out.stays && t >= out.at + out.over ? 'live' : 'fading';
     if (
-      (this.owner === null ? t : ownerReading(this.owner, t)) < this.start &&
+      !starts(this, this.owner === null ? t : ownerReading(this.owner, t), t) &&
       !(cut !== undefined && within(cut, this.begunSeq, true))
     )
       return 'pending';

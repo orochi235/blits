@@ -8,7 +8,7 @@ import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { leave as leaveClock, startedAt } from './origin.js';
-import { descendants, type Holding, ownerReading, plays } from './owner.js';
+import { descendants, type Holding, heading, ownerReading, plays, starts } from './owner.js';
 import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
@@ -300,17 +300,6 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
 }
 
 /**
- * Whether a pending voice starts with its owner's clock at `t`: at its very start only on a clock
- * not running back, where it would leave as it starts, as one passed between frames never starts.
- */
-export function starts<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
-  return (
-    t > voice.start ||
-    (t === voice.start && (voice.owner === null || heading(voice.owner, now) >= 0))
-  );
-}
-
-/**
  * Whether a span's child starts, comes back, or reaches the end of its passes by `now`: a fit from
  * an end earlier in the frame can move any of these, so they wait for the ends before them. One
  * kept quiet at its start comes back as its clock passes it. Past its end, or its start, on a clock
@@ -434,17 +423,6 @@ function wake<I, O>(mix: Mixer<I, O>, now: number): void {
     }
     if (!mix.projecting) schedule(mix, voice);
   }
-}
-
-/**
- * Which way a voice's clock is running at mix time `now`, through every owner above it: above 0
- * forward, below 0 back, 0 standing still.
- */
-function heading<I, O>(voice: Voice<I, O>, now: number): number {
-  let way = 1;
-  for (let v: Voice<I, O> | null = voice; v !== null; v = v.owner)
-    way *= Math.sign(v.rateAt(v.owner === null ? now : ownerReading(v.owner, now)));
-  return way;
 }
 
 /**
