@@ -388,7 +388,6 @@ export class Mixer<I, O> implements Mix<I, O> {
     /** The lanes an entry was built with; null in one that leaves them out. */
     readonly lanesOf: typeof Lanes | null,
   ) {
-    this.keepsInputs = opts.history?.inputs === true;
     this.retargets = opts.retargets === true;
     this.names = Object.keys(kit as object) as Key<O>[];
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
@@ -417,6 +416,7 @@ export class Mixer<I, O> implements Mix<I, O> {
       this.opts = { ...opts, history: shared.history };
       this.transport = shared;
     } else this.transport = new Transport(opts.history, false);
+    this.keepsInputs = this.opts.history?.inputs === true;
     if (this.transport.pager !== null) {
       this.keys = new Keys(opts.keyOf);
       this.outs = new Outs();

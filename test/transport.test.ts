@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { kit, last, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
+import { level, slew } from '../src/signals.js';
 import { transport } from '../src/transport.js';
 import type { Marked, TransportOptions } from '../src/types.js';
 import { memoryStore } from './store.js';
@@ -724,5 +725,38 @@ describe('transport', () => {
     t.sync(660);
     const end = t.marks(0, 10_000).find((m) => m.name === 'f' && m.mark === 'end');
     expect(starts(runs, 'w')).toEqual([end?.timestamp]);
+  });
+});
+
+describe('a mix on a transport whose history keeps inputs', () => {
+  it('reads back what an input signal read, as a mix keeping its own does', () => {
+    const wave = patch<string, Row>(400, (phase) => ({ chars: Math.sin(phase * 2 * Math.PI) }), {
+      writes: ['chars'],
+    });
+    const history = { ms: 5000, inputs: true };
+    const run = (shared: boolean) => {
+      const knob = level<string>(0.2);
+      const t = shared ? transport({ history }) : null;
+      const m =
+        t === null
+          ? mix<string, Row>(ROWS, { history })
+          : mix<string, Row>(ROWS, { transport: t, name: 'm' });
+      m.cue({ patch: wave, weight: slew(knob, { riseMs: 100, fallMs: 100 }) });
+      const seen = new Map<number, number>();
+      for (let at = 0; at <= 1000; at += 20) {
+        (t ?? m).sync(at);
+        if (at === 200) knob.set(0.9);
+        if (at === 600) knob.set(0.4);
+        seen.set(at, m.probe('a').chars);
+      }
+      return { m, seen };
+    };
+    for (const shared of [false, true]) {
+      const { m, seen } = run(shared);
+      for (const at of [220, 260, 640]) {
+        expect(m.project(at).probe('a').chars).toBe(seen.get(at));
+        expect(m.project(at).assess('a').chars).toBe('exact');
+      }
+    }
   });
 });
