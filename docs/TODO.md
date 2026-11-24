@@ -49,14 +49,6 @@ Owner tags:
   idempotent `dispose()` that cancels the frame and drops every subscription, or a scoped owner
   that collects removers, and a call on whether a second `add` counts. Either is a public addition,
   so it ships in a minor.
-- **[agent] A motion voice whose subjects were dropped inside their stagger never goes inert**
-  (found 2026-11-23). `held()` lists each such record in `voice.early`; a drop takes the subject
-  out of `met` but leaves its record in `early`, unread for good, so `still` (`src/rests.ts`)
-  answers false forever and `waits` keeps the record at every prune. Seen: a spring with
-  `stagger: (s) => 500 + s.id`, 100 subjects probed at 16 and dropped at 32, synced to 2000, reads
-  `inert` false with 100 records in `early`, lanes on and off, with history or without. `met`
-  covers `early` except where `contribution` sends a record back before its start (`waits` there,
-  no `met.add`), so dropping the `early` loop from `still` needs that path to add to `met` too.
 
 ## Speed
 

@@ -86,7 +86,7 @@ export function contribution<I, O>(
   else if (held.seeks !== voice.seeks && sentBack(this, voice, held)) {
     // A seek sent it back before its start, so it starts afresh there, whatever state it kept.
     rebuild(this, voice, subject, now, held);
-    waits(voice, held, now);
+    waits(voice, subject, held, now);
   }
 
   const raw = voice.rawAt(now, held.delay);

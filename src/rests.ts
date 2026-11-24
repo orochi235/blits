@@ -1,5 +1,5 @@
 import { restsAt } from './fold.js';
-import { isUnread, metLeft } from './held.js';
+import { isUnread, metLeft, unearly } from './held.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { Store } from './store.js';
@@ -60,10 +60,9 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
   if (voice.state === 'frozen' || voice.holding !== null) return true;
   const motion = voice.motion;
   if (motion === undefined || !(voice.elapsedAt(now) >= voice.latest)) return false;
-  // A subject met inside its stagger and not read since has no run yet, and moves once it is.
-  const early = voice.early;
-  if (early !== null) for (const h of early) if (h.since <= now && isUnread(h)) return false;
-  // A seek back drops `early` and forgets reads, so these are asked after by subject.
+  // A subject met inside its stagger and not read since has no run yet, and moves once it is. A
+  // drop takes it out of `met`, and its record, listed in `early`, goes once its origin passes.
+  unearly(voice, now);
   const met = voice.met;
   if (met !== null) {
     const history = this.opts.history !== undefined;

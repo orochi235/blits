@@ -107,6 +107,24 @@ describe.each([{ lanes: false }, { lanes: true }])(
       expect(metOf(m).met).toHaveLength(0);
     });
 
+    for (const history of [undefined, { ms: 100 }]) {
+      const under = history ? ', under history' : '';
+      it(`goes inert once past the stagger of every subject dropped while it waited${under}`, () => {
+        const m = mix<Part, Pose>(K, { lanes, history });
+        m.sync(0);
+        m.cue({ patch: spring<Part, Pose>('x', { to: 1 }), stagger: (s) => 500 + s.id });
+        m.sync(16);
+        const all = Array.from({ length: 100 }, (_, id) => ({ id }));
+        for (const s of all) m.probe(s);
+        m.sync(32);
+        for (const s of all) m.drop(s);
+        for (let t = 48; t <= 2000; t += 16) m.sync(t);
+        expect(m.inert).toBe(true);
+        const early = (m as unknown as { cued: { early: unknown[] | null }[] }).cued[0]?.early;
+        expect(early?.length ?? 0).toBe(0);
+      });
+    }
+
     it('under history, keeps those it met and found read no longer than memory', () => {
       const m = mix<Part, Pose>(K, { lanes, history: { ms: 100 } });
       m.sync(0);

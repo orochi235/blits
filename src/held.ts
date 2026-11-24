@@ -114,11 +114,7 @@ export function held<I, O>(
     held.unknown = (this.backward && voice.spec.from === 'current') || fresh;
   }
   voice.subjects.set(subject, held);
-  waits(voice, held, now);
-  if (voice.motion !== undefined && !(held.since <= now)) {
-    voice.met ??= new Set();
-    voice.met.add(subject);
-  }
+  waits(voice, subject, held, now);
   voice.made++;
   // A subject a voice saw while it shared one record was counted then.
   if (voice.sighted !== null && this.share?.sighted(voice, slot))
@@ -262,26 +258,39 @@ export function shownFrom<I, O>(
 /** Whether a subject's record has gone unread since its origin. */
 export const isUnread = (held: Subject<unknown>): boolean => !(held.probed >= held.since);
 
-/**
- * Whether a listed record stays listed at `now`: its origin is ahead, or it is a motion voice's,
- * unread since its origin, which `still` asks after since the motion has no run for it yet.
- */
-function stillEarly<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): boolean {
-  return !(held.since <= now) || (voice.motion !== undefined && isUnread(held));
-}
+/** Whether a listed record stays listed at `now`: its origin is still ahead. */
+const stillEarly = (held: Subject<unknown>, now: number): boolean => !(held.since <= now);
 
-/** Lists a record whose origin is still ahead of `now`, for a later change to the clock to move. */
-export function waits<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): void {
+/**
+ * Lists a record whose origin is still ahead of `now`, for a later change to the clock to move,
+ * and for a motion voice, its subject in `met`, which `still` asks after until it is read.
+ */
+export function waits<I, O>(
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+  now: number,
+): void {
   if (held.since <= now) return;
+  if (voice.motion !== undefined) {
+    voice.met ??= new Set();
+    voice.met.add(subject);
+  }
   voice.early ??= [];
   const early = voice.early;
   // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
-  if (early.length >= 64 && (early.length & (early.length - 1)) === 0) {
-    let kept = 0;
-    for (const h of early) if (stillEarly(voice, h, now)) early[kept++] = h;
-    early.length = kept;
-  }
+  if (early.length >= 64 && (early.length & (early.length - 1)) === 0) unearly(voice, now);
   early.push(held);
+}
+
+/** Lets go of the listed records whose origin has passed by `now`. */
+export function unearly<I, O>(voice: Voice<I, O>, now: number): void {
+  const early = voice.early;
+  if (early === null) return;
+  let kept = 0;
+  for (const h of early) if (stillEarly(h, now)) early[kept++] = h;
+  early.length = kept;
+  if (kept === 0) voice.early = null;
 }
 
 /**
@@ -323,7 +332,7 @@ export function reorigin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number
   let kept = 0;
   for (const held of early) {
     origin(mix, voice, held);
-    if (stillEarly(voice, held, now)) early[kept++] = held;
+    if (stillEarly(held, now)) early[kept++] = held;
   }
   early.length = kept;
   if (kept === 0) voice.early = null;
