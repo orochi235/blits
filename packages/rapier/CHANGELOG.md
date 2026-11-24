@@ -20,6 +20,9 @@ section here.
 - A seek into an authored hold keeps the hold and its speed from the frame sought, where the
   first frame after it placed nothing and the next set the body at rest, so a body let go soon
   after was released standing still.
+- The README says that a held body is handed back where it was shown, voices outside the
+  simulation's role included, so those voices count twice from then on; it used to say only that
+  they add on top.
 
 ## 0.7.4
 

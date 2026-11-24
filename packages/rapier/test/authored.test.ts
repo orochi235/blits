@@ -92,3 +92,28 @@ it('carries the speed of a hold sought back into through every frame of the repl
   expect(want[90]?.vx).toBeGreaterThan(0);
   expect(carried(28)).toEqual(want.slice(29));
 });
+
+it('hands a body back where it was shown, a voice outside the role included, as the README says', () => {
+  const sim = physics<Pose2>(kit<Pose2>(channels2), {
+    rapier: R2,
+    gravity: [0, 0],
+    history: { ms: 10_000, every: 250, tape },
+  });
+  const ball = sim.body(R2.RigidBodyDesc.dynamic(), R2.ColliderDesc.ball(0.5));
+  sim.sync(at(0));
+  ball.simulated.weight = 0;
+  const hold = ball.cue({
+    patch: patch<object, Pose2>(0, () => ({ position: [4, 0] }), { writes: ['position'] }),
+    role: sim.role,
+  });
+  ball.cue({
+    patch: patch<object, Pose2>(0, () => ({ position: [0, 1] }), { writes: ['position'] }),
+  });
+  for (let f = 1; f <= 10; f++) sim.sync(at(f));
+  const shown = () => [...(sim.mix.probe(ball) as unknown as Pose2).position];
+  expect(shown()).toEqual([4, 1]);
+  ball.simulated.weight = 1;
+  hold.weight = 0;
+  for (let f = 11; f <= 30; f++) sim.sync(at(f));
+  expect(shown()).toEqual([4, 2]);
+});

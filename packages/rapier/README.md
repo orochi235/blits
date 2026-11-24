@@ -53,7 +53,10 @@ const { position, rotation } = sim.mix.probe(box);
   `share(k, 0, 2)` and `share(k, 1, 2)` of one `level`. While a body's simulated voice is at weight 0
   and a voice in the role holds it, the world puts the body where it is shown, moving as fast as
   the shown pose moves, so handing it back starts the simulation from there. A voice outside the
-  role adds on top of wherever physics has it.
+  role adds on top of wherever physics has it. While a body is held, that includes the place it is
+  held at, since the world puts it where it is shown, outside voices and all: a body held at
+  `[4, 0]` under a voice adding `[0, 1]` is handed back at `[4, 1]` and shown from then on at
+  `[4, 2]`. Fade such a voice out before the hand-back to leave it out.
 - **`body.impulse(v)`** applies an impulse once, on the step after the mix's current time.
   **`body.drop()`** takes the body out of the world then. They and `sim.body` are calls on the
   mix's tape (`mix.call`), so a seek back before one undoes it, and the mix makes it again as it
