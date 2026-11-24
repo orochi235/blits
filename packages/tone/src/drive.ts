@@ -4,6 +4,12 @@ import { hold as holdAt, ramp, set } from './held.js';
 import { lines } from './lines.js';
 import { type Host, type Sound, wire } from './sound.js';
 
+/**
+ * How far off a straight line, in audio ms, the mix clock may bend across a write and still be
+ * written as lines: a hundredth of a ms, under half a sample at 48 kHz.
+ */
+const STEADY_MS = 0.01;
+
 /** What the driver schedules on: a Tone `Param` or `Signal`, or a native `AudioParam`. */
 export interface Target {
   cancelAndHoldAtTime(time: number): unknown;
@@ -185,7 +191,7 @@ export function drive<I, O, E = unknown>(
       const audio = (t: number): number => (moves ? Math.min(to, Math.max(from, raw(t))) : from);
       // Under a ramp of the rate a line in mix time is a curve on the audio clock.
       const steady =
-        !moves || Math.abs(raw((start + end) / 2) - (raw(start) + raw(end)) / 2) < 1e-6;
+        !moves || Math.abs(raw((start + end) / 2) - (raw(start) + raw(end)) / 2) < STEADY_MS;
       for (const [subject, b] of bound)
         for (const [channel, target, move] of b.targets) {
           const run = trace.of(subject, channel as NumberChannel<O>);
