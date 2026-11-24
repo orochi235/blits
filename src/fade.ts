@@ -1,6 +1,7 @@
 import { changed, headOf, slotOf, unlink } from './chain.js';
 import { clampWeight, envelope, fadeInAt, fadeMsFor, rampTime, stalled } from './clock.js';
 import { schedule } from './due.js';
+import { begin } from './held.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -321,6 +322,8 @@ export function beginRise<I, O>(
     voice.stalls = stalled(voice.stalls, out.at, at, fadeIn, by);
   }
   if (waiting) changed(mix, voice);
+  // One faded before its start and raised after it begins now, as it would have unfaded.
+  else if (voice.begunSeq === Number.POSITIVE_INFINITY) begin(mix, voice, mix.now);
   noted(mix, voice);
   if (waiting) mix.lanes?.invalidate();
   else mix.lanes?.refill();

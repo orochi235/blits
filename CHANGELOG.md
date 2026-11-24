@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A voice faded before its start and raised after it begins as one never faded does. It went live
+  without beginning, so where its owner was sought back before its start, a seek of the mix back
+  read it as still to start, though it had played.
 - A voice faded and raised over and over keeps only the stalls its fade in still climbs through,
   and none with no fade in. It kept two numbers per rise for good, copied the list at each, and
   walked all of them at every weight read: with a 100 ms fade in, a thousand frames of alternating
