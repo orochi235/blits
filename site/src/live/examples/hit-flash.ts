@@ -214,10 +214,9 @@ export default demo((d) => {
       if (auto.ariaPressed !== on) auto.ariaPressed = on;
     };
     d.on(auto, 'click', () => {
-      if (autoOn())
-        for (const v of m?.voices('auto') ?? [])
-          if (v.state !== 'fading') v.fade({ over: FLASH });
-          else autoHits();
+      if (autoOn()) {
+        for (const v of m?.voices('auto') ?? []) if (v.state !== 'fading') v.fade({ over: FLASH });
+      } else autoHits();
       showAuto();
     });
     d.on(el, 'click', (e) => {
