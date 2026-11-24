@@ -186,19 +186,18 @@ export class Places<I> extends Grid {
 
   /** A seek back to the end of frame `seq`: a subject dropped after it has its index again. */
   back(seq: number): void {
-    if (this.parked.length === 0) return;
-    const kept: Parked<I>[] = [];
-    for (const p of this.parked) {
-      if (p.seq <= seq) {
-        kept.push(p);
-        continue;
-      }
+    const parked = this.parked;
+    if (parked.length === 0) return;
+    // Latest first, so a subject dropped twice since ends at the index it had before the first.
+    for (let n = parked.length - 1; n >= 0; n--) {
+      const p = parked[n] as Parked<I>;
+      if (p.seq <= seq) continue;
       const had = this.at.get(p.subject);
       if (had !== undefined) this.drop(p.subject);
       this.at.set(p.subject, p.i);
       this.hold(p.subject, p.i);
     }
-    this.parked = kept;
+    this.parked = parked.filter((p) => p.seq <= seq);
     this.viewed = null;
   }
 

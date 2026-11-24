@@ -80,3 +80,24 @@ it('a dropped subject’s index is handed out again once history no longer reach
   m.sync(200);
   expect(m.place({ id: 2 })).toBe(0);
 });
+
+it('a seek back before two drops of one subject gives it the index it had before the first', () => {
+  const m = mix<Dot, { gain: number }>(K, { history: { ms: 100_000, every: 50, tape } });
+  const a = { id: 0 };
+  m.plot([a, { id: 1 }], new Float64Array([0, 0, 9, 0]));
+  const ramp = patch<Dot, { gain: number }>(1000, (ph) => ({ gain: 1 + ph }), { writes: ['gain'] });
+  m.sync(0);
+  m.cue({ patch: ramp, loop: true, weight: m.around({ x: 0, y: 0, r: 2 }) });
+  m.sync(16);
+  const live = m.probe(a).gain;
+  m.sync(32);
+  m.drop(a);
+  m.sync(48);
+  expect(m.place(a)).toBe(2);
+  m.sync(64);
+  m.drop(a);
+  m.sync(80);
+  m.seek(16);
+  expect(m.place(a)).toBe(0);
+  expect(m.probe(a).gain).toBe(live);
+});
