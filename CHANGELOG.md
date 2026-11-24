@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A handle's `rate` or `ramp` write after a staggered subject of a stepping patch had started
+  steps it on from where it was, where it stepped it again over the time it had already stepped.
 - A `set`, `to` or `push` on a motion voice whose clock stood still, at rate 0, stays out of the
   frames before it under history: a seek back to before it played it a frame early, and a read back
   to one of those frames showed it.

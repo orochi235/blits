@@ -314,11 +314,11 @@ export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
 export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
   const was = held.since;
   originate(mix, voice, held);
+  const stepped = held.ticks > 0 || held.stepped > was;
   // Sent back before a start it had passed: its next read starts it afresh.
-  if (held.since !== was && (held.ticks > 0 || held.stepped > was)) held.rebuilt = -1;
+  if (held.since !== was && stepped) held.rebuilt = -1;
   // One that has not stepped since its `since` counts from where that moved to.
-  if (held.ticks === 0 && (held.stepped > held.since || held.stepped === was))
-    held.stepped = held.since;
+  if (!stepped && (held.stepped > held.since || held.stepped === was)) held.stepped = held.since;
 }
 
 /**
