@@ -82,7 +82,7 @@ describe.each([{ lanes: false }, { lanes: true }])('handle.rise, lanes $lanes', 
     at(m, 0);
     const h = m.cue({ patch: crawl, start: 500, seek: 100 });
     at(m, 100);
-    h.fade({ over: 80, at: 60 });
+    h.fade({ over: 1000, at: 60 });
     at(m, 200);
     h.rise({ over: 0 });
     expect(h.state).toBe('pending');
@@ -102,7 +102,7 @@ describe.each([{ lanes: false }, { lanes: true }])('handle.rise, lanes $lanes', 
       anchor: { start: { of: 'first', mark: 'start', by: 400 } },
     });
     at(m, 150);
-    h.fade({ over: 80, at: 110 });
+    h.fade({ over: 1000, at: 110 });
     at(m, 200);
     h.rise({ over: 0 });
     expect(h.state).toBe('pending');
