@@ -5,6 +5,7 @@ import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { pageOut } from './paging.js';
 import type { Change, MotionOwner } from './stretch.js';
+import type { Subject } from './subject.js';
 import { record, taping, unplayable } from './tape.js';
 import type { Voice } from './voice.js';
 
@@ -59,7 +60,9 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     },
     changed(id, motion, subject, change) {
       const m = mix.deref();
-      if (m !== undefined && taping(m)) recordChange(m, id, motion, subject, change);
+      if (m === undefined) return;
+      if (taping(m)) recordChange(m, id, motion, subject, change);
+      unshow(m, id, subject as unknown as I);
     },
     page(id, stream, subject, out) {
       const m = mix.deref();
@@ -81,6 +84,34 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
       return timeIn(m, v, delayAhead(m, v, subject as I, true));
     },
   };
+}
+
+/**
+ * A motion change to a subject its voice's record read at the time the clock stands at: let go of
+ * that read now where nothing was read this frame, else at the next frame, so a probe this frame
+ * keeps what it read and a clock held at that time still shows the change, as a seek there does.
+ */
+function unshow<I, O>(m: Mixer<I, O>, id: number, subject: I): void {
+  const held = cuedById(m, id)?.subjects.get(subject);
+  if (held === undefined || held.delta === null || held.probed !== m.now) return;
+  if (m.syncing || !m.looked) {
+    held.delta = null;
+    m.lanes?.restart();
+    return;
+  }
+  m.unshown ??= [];
+  m.unshown.push(held);
+}
+
+/** At the start of a frame at mix time `at`: lets go of the reads `unshow` held back for it. */
+export function letGo<I, O>(m: Mixer<I, O>, at: number): void {
+  const list = m.unshown as Subject<unknown>[];
+  m.unshown = null;
+  for (const held of list)
+    if (held.probed === at) {
+      held.delta = null;
+      m.lanes?.restart();
+    }
 }
 
 // Apart from `changed`, whose body would otherwise make this closure's context on every change.

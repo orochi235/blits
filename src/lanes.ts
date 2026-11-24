@@ -264,6 +264,14 @@ export class Lanes<I, O> implements Watcher {
   }
 
   /**
+   * A frame begun at the time the last one stood at, which a read let go of needs: what a probe
+   * read before it is no longer this frame's.
+   */
+  restart(): void {
+    this.frameAt = Number.NaN;
+  }
+
+  /**
    * A voice joined, started playing or left: the next probe takes it on or off its crowd where it
    * can, and qualifies again where it cannot.
    */

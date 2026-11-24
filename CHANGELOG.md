@@ -42,6 +42,13 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A read ahead past a call the tape holds that refits a span fits it as play did: the read's
   copies numbered their frames from 0, so a child cued in the mix's first frame read as cued in
   the frame the call played in, was laid out again from there, and a staggered child read off.
+- After a seek back, a record put back sends what its `stepMs` steps send past where play had sent
+  from by the moment sought, whatever they stamp: a voice run back past a subject's start and
+  turned forward, or a ramp or start moved since, steps later with stamps before the moment, which
+  play sent and the seek's replay held back for good.
+- A motion `set`, `to` or `push` shows while the mix's rate 0 holds its clock, from the next frame
+  on, as a seek to that frame shows it, and in its own frame where nothing was read before it: a
+  probe kept the value read at that time until the clock moved again.
 - A call the tape plays again after a seek back, in a frame where rate 0 held the mix clock,
   lands what the host's sync there landed: a span child played in its cue frame stayed on in that
   frame, where play had already let it go.

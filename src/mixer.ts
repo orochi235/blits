@@ -233,6 +233,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   stirs = 0;
 
   syncing = false;
+  /**
+   * Records a motion change reached after a probe read them this frame at the time the clock stands
+   * at, whose delta the next frame lets go of, though a held clock leaves it at that time.
+   */
+  unshown: Subject<unknown>[] | null = null;
   stirFns: (() => void)[] | null = null;
 
   /** Records a change to the mix's voices or controls. */
@@ -338,8 +343,18 @@ export class Mixer<I, O> implements Mix<I, O> {
   };
   /** The moment a seek went back to: what a record it put back steps again up to it was sent. */
   sentTo = Number.NEGATIVE_INFINITY;
-  /** The records a seek put back, whose steps up to `sentTo` were sent the first time. */
-  resent: WeakSet<Subject<unknown>> | null = null;
+  /**
+   * The records a seek put back, each with the count of its `stepMs` steps play had taken by the
+   * last frame it sent in by the moment sought, NaN where history no longer knows it: those steps,
+   * and else its steps up to `sentTo`, were sent the first time.
+   */
+  resent: WeakMap<Subject<unknown>, number> | null = null;
+  /**
+   * Under history, by record, each frame its `stepMs` steps sent in, as that frame's number, its
+   * mix time and the count of steps taken by its end, oldest first: what a seek reads `resent`'s
+   * counts from.
+   */
+  sends: WeakMap<Subject<unknown>, number[]> | null = null;
   /** Stamps at or before this send nothing: `sentTo`, or while a record steps, its own horizon. */
   heldTo = Number.NEGATIVE_INFINITY;
   /** The weight `contribution` found besides the delta, read by the caller at once. */

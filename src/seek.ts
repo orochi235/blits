@@ -52,7 +52,7 @@ function restore<I, O>(
     h.weight = 0;
     h.inputs = inputs;
     if (!(h.since <= t)) origin(mix, voice, h);
-    putBack(mix, h);
+    putBack(mix, h, live, at.seq);
     return h;
   }
   // A seek back to just before now finds its copy among the newest, looked at before searching.
@@ -85,7 +85,7 @@ function restore<I, O>(
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
   if (!(h.since <= snap.at)) origin(mix, voice, h);
-  putBack(mix, h);
+  putBack(mix, h, live, at.seq);
   // The record a seek replaces, stepped on from this copy with nothing since rebuilding or moving
   // its start, holds the copy's state at its own `ticks`, which a probe there need not step to.
   const was = mine && ticks > h.ticks && since === h.since && rebuilt === h.rebuilt;
@@ -117,10 +117,30 @@ function restore<I, O>(
   return h;
 }
 
-/** Notes a record as put back, so its steps up to the moment sought send nothing again. */
-function putBack<I, O>(mix: Mixer<I, O>, h: Subject<unknown>): void {
-  if (mix.resent === null) mix.resent = new WeakSet();
-  mix.resent.add(h);
+/**
+ * Notes a record as put back from `live` at the end of frame `seq` with the count of steps play
+ * had sent from by then, which send nothing again, NaN where `live`'s log of them has let go of
+ * that frame, and keeps of the log what came by then.
+ */
+function putBack<I, O>(
+  mix: Mixer<I, O>,
+  h: Subject<unknown>,
+  live: Subject<unknown>,
+  seq: number,
+): void {
+  let sent = 0;
+  const log = mix.sends?.get(live);
+  if (log !== undefined) {
+    let end = log.length;
+    while (end > 0 && (log[end - 3] as number) > seq) end -= 3;
+    if (end > 0)
+      sent = log[0] === -1 && end === 3 && seq < (log[1] as number) ? 0 : (log[end - 1] as number);
+    const kept = h === live ? log : log.slice(0, end);
+    kept.length = end;
+    (mix.sends as WeakMap<Subject<unknown>, number[]>).set(h, kept);
+  }
+  if (mix.resent === null) mix.resent = new WeakMap();
+  mix.resent.set(h, sent);
 }
 
 /** Cuts a record's list of copies to its first `kept`, keeping those no other list holds as spares. */

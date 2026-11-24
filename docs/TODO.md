@@ -23,24 +23,27 @@ Owner tags:
   the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
   ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
   whether this stays a stated limit of the fuzz.
-- **[agent] A motion `set` never shows while rate 0 holds the clock, though a seek there shows
-  it** (2026-11-23, replay fuzz programs 364, 470, 639, 783, 809, 824 and 918): a
-  probe keeps the delta it read at the mix's time (`held.probed === now` in `contribution`, and a
-  lane's `settle`), which `signals.test`'s "set between two probes of one frame" pins within a
-  frame. Under rate 0 every later frame stands at that time too, so a spring `set` while held
-  shows its old place until the clock moves, and `project(now)` and a seek to a later frame there
-  show the new one. One route: let go of the record's delta for the changed subject at the next
-  frame, a sync rate 0 holds included, not at once; a set made before anything read that frame
-  shows in it. Making it show at once (tried and backed out, 2026-11-23) breaks the within-frame
-  rule.
-- **[agent] A seek holds back events a put-back record sends after the moment sought, stamped at
-  or before it** (2026-11-23, replay fuzz programs 553, 737, 754, 888 and 986): a
-  record a seek put back stays in `mix.resent` for good, and `heldTo` drops every event its steps
-  stamp at or before `sentTo`, taking them for ones sent the first time. A voice turned to run
-  back (handle `rate = -1`), a handle `ramp`, or a `rise` after a fade at rest makes a later step
-  stamp a time before the moment sought, which play sent and the seek's replay drops. One route:
-  hold back only up to where the record had stepped by the moment sought, and take it out of
-  `resent` once it steps past there.
+- **[agent] With a store, a seek back shows a motion `set` made in a later frame** (2026-11-24,
+  replay fuzz programs 470 and 809, store only, reproduced): a spring (470, a `vspring` cued at
+  frame 0 and set twice at frame 3) shows at frame 2 after `prepare` and a seek there the values
+  the frame-3 sets put it at; without a store it matches. Filed under the rate-0 `set` entry until
+  that fix of the same day showed it is a separate cause. One route: check which motion changes
+  `unpage` and `rewind` keep for a seek to a frame before them.
+- **[agent] A seek back near a fade at rest steps a record where play's stood still** (2026-11-24,
+  replay fuzz programs 754 and 888, reproduced): under `fade({ at: 'rest' })` (888 rises it again
+  later), the read in the seek frame steps a put-back record through stamps play's record only
+  stepped past at the rise, so they go out in the seek frame instead of later (888, subject 0's
+  first event, 1060); in 754, after a handle `seek` and `rate = -1`, two records send their whole
+  history again at frame 11, as records stepped afresh. Until the put-back fix of the same day the
+  stamp hold dropped 888's in the seek frame, so it never went out, and 754 failed sooner, at
+  frame 6, on an event that fix now sends. One route: compare what
+  `restedBy` and `sentBack` decide for these records at the moment sought with play's records then.
+- **[agent] With a store, a seek past memory holds back a put-back record's steps by stamp**
+  (2026-11-24, reasoned): `mix.sends` keeps the step count each record had sent from for the
+  frames memory reaches, and a mark for the rest, so a seek to an earlier frame after the record's
+  first send cannot tell its count and holds back what its steps stamp at or before the moment
+  sought, as before 2026-11-24: one first sent after the moment, stamped before it, is lost. One
+  route: page the log with the record's copies.
 - **[agent] A seek back does not put back a rest-less channel's band state** (2026-11-23,
   reproduced): under a band of the host's own, `{ on: 0.6, off: 0.4 }`, a `last()` channel whose
   weight goes 1, then 0.5 (still shown), then 0, then 0.5 again (not shown) still shows nothing
