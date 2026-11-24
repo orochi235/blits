@@ -1,7 +1,6 @@
 import {
   bind,
   type Handle,
-  type HistoryStore,
   type Kit,
   type Mix,
   type MixOptions,
@@ -9,12 +8,13 @@ import {
   type Paged,
   patch,
   type Signal,
-  type Tape,
   type VoiceSpec,
   watched,
 } from '@msb235/blits';
 import type { Pose2, Pose3 } from './channels.js';
 import { dimsOf, type Goal, type Placed, type RapierModule, type RapierWorld } from './rapier.js';
+import { FRAMES, type Pages, paging, physicsStore } from './store.js';
+import { madeSince, standOf } from './tape.js';
 import {
   applyLog,
   copy,
@@ -105,84 +105,6 @@ const ROLE = 'physics';
 
 const copyOf = (r: number | readonly number[]): number | number[] =>
   typeof r === 'number' ? r : [...r];
-
-/** Where a tape stands: how deep, the host time of its last call made, and those of the calls ahead. */
-interface Taped {
-  depth: number;
-  last: number | undefined;
-  ahead: number[];
-}
-
-const standOf = (tape: Tape | undefined): Taped | undefined => {
-  if (tape === undefined) return undefined;
-  const depth = tape.undoDepth();
-  const ahead: number[] = [];
-  for (let i = depth; ; i++) {
-    const t = tape.timestampAt(i);
-    if (t === undefined) break;
-    ahead.push(t);
-  }
-  return { depth, last: tape.timestampAt(depth - 1), ahead };
-};
-
-/**
- * Who made the calls a tape took since `was`: the tape playing calls it held ahead, the host making
- * a new one, or nobody. A host call with calls ahead starts a new branch, stamped before them all,
- * so it never passes for one of them; letting go of old calls only makes the tape shallower.
- */
-function madeSince(was: Taped, now: Taped): 'tape' | 'host' | 'none' {
-  const played = was.ahead.length - now.ahead.length;
-  if (played > 0 && now.last === was.ahead[played - 1]) return 'tape';
-  if (played !== 0 || now.depth > was.depth || (now.last !== undefined && now.last !== was.last))
-    return 'host';
-  return 'none';
-}
-
-/** The subject key the world's frame records go under in a history store, on the `host` stream. */
-const FRAMES = 'blits-rapier frames';
-
-/** A world paging its frames through a store: whose they are, and how to take them back. */
-interface Pages {
-  ours(r: Paged): boolean;
-  restore(records: readonly Paged[], from: number): void;
-  name: string;
-}
-
-const paging = new WeakMap<HistoryStore, Set<Pages>>();
-
-/**
- * Wraps a history store so the worlds of physics mixes on a transport page their log of each
- * frame's pushes through it, and get it back on `prepare`. Make the transport with
- * `history: { ..., store: physicsStore(store) }`; a mix made alone wraps its own store.
- */
-export function physicsStore(store: HistoryStore): HistoryStore {
-  const worlds = new Set<Pages>();
-  const wrapped: HistoryStore = {
-    page: (out) => store.page(out),
-    cut: (seq) => store.cut(seq),
-    async load(t) {
-      const all = await store.load(t);
-      for (const w of worlds) {
-        // A replay to t starts from the world's latest copy at or before it, which needs the frames from there.
-        let from = Number.NEGATIVE_INFINITY;
-        for (const r of all)
-          if (
-            r.mix === w.name &&
-            r.stream === 'snap' &&
-            r.subject === 'world' &&
-            r.at <= t &&
-            r.at > from
-          )
-            from = r.at;
-        if (from === Number.NEGATIVE_INFINITY) from = t;
-        w.restore(from < t ? await store.load(from) : all, from);
-      }
-      return all.filter((r) => !(r.stream === 'host' && r.subject === FRAMES));
-    },
-  };
-  paging.set(wrapped, worlds);
-  return wrapped;
-}
 
 /** Makes a mix that holds a Rapier world, stepped on its `stepMs` clock and replayed by its history. */
 export function physics<O extends Pose2 | Pose3, H extends object = Record<string, never>>(
