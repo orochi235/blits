@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- With a history store, a voice anchored on an announced mark that memory has already paged out
+  finds it, as it would with every mark in memory: it waited pending for good. Memory keeps, of the
+  marks it pages, the first, last, earliest and latest a query could pick.
 - A subject dropped while a read ahead or read back plays to it has no plot position from then on in
   that read, as in play: `around` and `within` voices cued after the drop read it at the position it
   had.

@@ -16,6 +16,12 @@ Owner tags:
 
 ## Engine
 
+- **[agent] A seek back within memory may miss an announced mark a later one displaced as an end**
+  (2026-11-23, reasoned, not reproduced): with a store, memory keeps only the ends of the marks it
+  has paged (`endMarks` in `src/paging.ts`) and lets go of one once another takes its place. A mark
+  announced already behind memory displaces one at the next sync, so a seek back within memory to
+  before it was announced finds neither, and an anchor cued after that seek picks wrongly. One
+  route: raise the transport's `floor` to the displacing mark's frame, so such a seek loads.
 - **[agent] A retarget's departure speed across the wrap on an angle channel blits did not make**
   (2026-11-23): `slopeFor` takes the short way only on a channel vouched with a `turn`. A
   `{ ...angle(), lerp }` copy wraps its pose through the copied `scale`, so a subject crossing
