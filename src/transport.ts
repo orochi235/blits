@@ -365,6 +365,7 @@ export class Transport implements TransportApi {
     if (!this.rebasing && !Number.isNaN(this.last)) drive.wall += timestamp - this.last;
     this.rebasing = false;
     this.last = timestamp;
+    this.woken = false;
     const clock = drive.clock;
     let t = elapsedWith(clock, drive.wall);
     const first = this.pager === null ? (this.frames.first?.at ?? this.born) : this.born;

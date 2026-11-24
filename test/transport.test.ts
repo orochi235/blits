@@ -499,6 +499,24 @@ describe('transport', () => {
     expect(() => h.set('r', 5)).toThrow(/dropped/);
   });
 
+  it('wakes its listeners when a host call follows a sleep while running back', () => {
+    const t = transport({ history: { ms: 10_000, tape } });
+    const runs = mix<string, Row>(ROWS, { transport: t, name: 'runs' });
+    let wakes = 0;
+    t.onWake(() => wakes++);
+    t.sync(0);
+    for (let k = 1; k <= 10; k++) t.sync(k * 16);
+    runs.cue({ patch: type(100), subjects: ['r'], loop: false });
+    for (let k = 11; k <= 30; k++) t.sync(k * 16);
+    t.rate = -2;
+    let k = 31;
+    for (; k < 200 && !t.inert; k++) t.sync(k * 16);
+    expect(t.inert).toBe(true);
+    const before = wakes;
+    t.rate = 1;
+    expect(wakes).toBe(before + 1);
+  });
+
   it('lets a dropped mix go for good without history', () => {
     const { t, runs } = stage();
     t.sync(0);

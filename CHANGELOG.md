@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A transport running back (a rate below 0) wakes its `onWake` listeners after each sync, as one
+  playing forward does: after the first wake they went silent until the run back ended, so a host
+  that slept on `inert` while held at the start never woke for a cue or a rate change.
 - A ticker's `stop` called during a frame, from a mix's sync or an `after` callback, stops the
   loop. It was ignored, the frame asking for the next as it ended.
 - A debugger's `watch` callback that throws no longer makes the host's `sync` throw and skip the
