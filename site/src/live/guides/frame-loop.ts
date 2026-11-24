@@ -1,6 +1,6 @@
 import { kit, mix, patch, sum, ticker } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
-import { isHeld, watchHeld } from '../loop';
+import { frameTime, isHeld, watchHeld } from '../loop';
 
 interface Bar {
   el: HTMLElement;
@@ -160,7 +160,7 @@ export default function run(root: HTMLElement): () => void {
   if (away || held) state = 'paused';
   else {
     // Synced once first, or the trip starts at 0 and the ticker's first sync finds it long over.
-    m.sync(Number(document.timeline.currentTime ?? performance.now()));
+    m.sync(frameTime());
     m.cue({ patch: trip, subjects: [bar], name: 'trip' });
   }
   show();

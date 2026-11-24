@@ -22,6 +22,13 @@ export function watchHeld(root: Element, fn: (held: boolean) => void): () => voi
   return () => root.removeEventListener(HOLD, hold);
 }
 
+/**
+ * The current frame's time, for a sync before the first frame: no animation frame's timestamp is
+ * earlier. A voice cued before a mix's first sync starts at 0, so its fade or one pass is long over
+ * by the first frame; syncing at this first gives it its start.
+ */
+export const frameTime = (): number => Number(document.timeline.currentTime ?? performance.now());
+
 /** A mix the loop can settle: its voices, and its clock. */
 interface Settles {
   voices(): Handle<never>[];
