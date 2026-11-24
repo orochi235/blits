@@ -88,7 +88,7 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
     if (kept === 0) voice.met = null;
     if (waiting) return false;
   }
-  return motion.landed();
+  return motion.landed(voice.seeks);
 }
 
 /** Whether the lanes' values alone say if the subject at `slot` rests: see `Lanes.alone`. */

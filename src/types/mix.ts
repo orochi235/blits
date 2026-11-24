@@ -491,7 +491,9 @@ export interface Mix<I, O, H = unknown> {
    * (0) to the center (1), linear by default. The host moves or resizes the ball by writing to
    * it. A voice it weighs is bounded to the ball as if cued {@link VoiceSpec.within | `within`} it, with no check, since the
    * ball is the signal's own edge, from the first `place` or `plot` for one cued before it. A
-   * subject with no position reads 0.
+   * subject with no position reads 0. The signal reads the ball at every read, but the bound
+   * takes it once a frame: a ball moved between two probes of one frame changes the weight of
+   * subjects inside the ball as the frame found it, and reaches others the next frame.
    */
   around(ball: Ball, opts?: { ease?: Easing }): Signal<I, H>;
   /**

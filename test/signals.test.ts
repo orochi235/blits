@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { kit, last, mul, sum } from '../src/channels.js';
 import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
+import { spring, tween } from '../src/motion.js';
 import { patch } from '../src/patch.js';
 import { gate, heard, input, lag, level, peak, slew } from '../src/signals.js';
 import type { Setting } from '../src/types.js';
@@ -281,5 +282,53 @@ describe.each([
     const w = m.probe(part).crawl;
     expect(w).toBeGreaterThan(0);
     expect(w).toBeLessThanOrEqual(0.05 + 1e-9);
+  });
+});
+
+describe('a motion under a signal weight, set between two probes of one frame', () => {
+  // A probe this frame already read keeps the value it read: the set shows on the next frame.
+  for (const named of [false, true])
+    for (const met of [false, true])
+      it(`reads the same before and after the set, lanes on or off (named ${named}, met ${met})`, () => {
+        const read = (lanes: boolean) => {
+          const m = mix<Part, { x: number }>(kit({ x: sum() }), { lanes });
+          const p = tween<Part, { x: number }>('x', { from: 0, to: 1, ms: 300 });
+          m.sync(1000);
+          m.cue({ patch: p, weight: level<Part>(0.5), ...(named ? { subjects: [part] } : {}) });
+          m.sync(1400);
+          if (met) m.probe(part);
+          m.sync(1465);
+          const before = m.probe(part).x;
+          p.set(part, 0.8);
+          const after = m.probe(part).x;
+          p.set(part, 0.2);
+          return [before, after, m.probe(part).x];
+        };
+        expect(read(false)).toEqual([0.5, 0.5, 0.5]);
+        expect(read(true)).toEqual([0.5, 0.5, 0.5]);
+      });
+
+  // A sync again at the same time reuses what a probe at that time read, as within one frame.
+  it('reads the same lanes on or off after a sync again at the same time', () => {
+    const read = (lanes: boolean) => {
+      const m = mix<{ id: number }, { x: number }>(kit({ x: sum() }), { lanes });
+      const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
+      const p = spring<{ id: number }, { x: number }>('x', {
+        from: (s) => 0.375 + s.id * 0.01,
+        to: 1.58,
+      });
+      m.sync(1000);
+      m.cue({ patch: p, weight: level<{ id: number }>(0.3), loop: 2 });
+      const out: number[] = [];
+      m.sync(1432);
+      out.push(m.probe(parts[2] as { id: number }).x);
+      m.sync(1682);
+      out.push(m.probe(parts[2] as { id: number }).x, m.probe(parts[5] as { id: number }).x);
+      p.set(parts[5] as { id: number }, 1.586);
+      m.sync(1682);
+      out.push(m.probe(parts[5] as { id: number }).x);
+      return out;
+    };
+    expect(read(true)).toEqual(read(false));
   });
 });

@@ -52,6 +52,18 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   subject's speed as though the curve left at a finite slope, overshooting the dip.
 - A `track()` of arrays reads a zero on every axis once cleared, `[0, 0]` for a pointer's x and y;
   it read `[0]`.
+- A `pull` after a `drop` reads a dropped subject that joins the list again as itself; with lanes
+  on, it could read the values of the subject the pull renumbered into the dropped one's number.
+- With lanes on, a motion voice (tween, spring, glide) no longer starts for a subject that was
+  only probed at weight 0, as at a fade's first frame, on a later frame that probes other
+  subjects; it called `from`, made a `read`, and kept `inert` false where lanes off did none.
+- With lanes on, a motion voice weighted by a signal keeps the value a probe already read at this
+  time when the motion is `set`, `push`ed or sent `to` before the next probe, in the same frame or
+  after a sync again at the same time, as lanes off does; the change showed at once.
+- `inert` reads false after a handle's `seek` takes a motion voice (tween, spring, glide) that had
+  landed back into its stretch; it stayed true while the motion moved again.
+- With lanes on, an `around` ball moved between two probes of one frame changes the weights the
+  next probe reads, as it does with lanes off; the lanes kept the weights of their last fill.
 - A hold's `step(ms)` plays a mix running back (a rate below 0) `ms` further on, as it does any
   other mix; it stepped the mix back instead, and the debug panel's step button with it.
 - A motion patch (tween, spring, glide) on `ink()` under a blend mode, `ink(multiply())` and the

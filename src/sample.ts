@@ -92,10 +92,13 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
         data[o + Row.WEIGHT] = 0;
         continue;
       }
-      // As a keys lane's: this read is where the next one's dt counts from, and a probe reads again.
-      rec.probed = lanes.now;
-      rec.seeks = seeks;
-      rec.delta = null;
+      // As a keys lane's: this read is where the next one's dt counts from, and a probe reads again,
+      // unless one at this time already read it, whose value `move` keeps as the general path does.
+      if (rec.delta === null || rec.probed !== lanes.now || rec.seeks !== seeks) {
+        rec.probed = lanes.now;
+        rec.seeks = seeks;
+        rec.delta = null;
+      }
       w = arg[Arg.WEIGHT] as number;
     } else if (parts) w = weighed(voice.weight, lane.fade, lanes.parting(voice, slot));
     else if (flat) w = whole;
@@ -253,6 +256,15 @@ export function move<I, O>(
     if (ms < 0) {
       const subject = lanes.subjectAt(slot);
       if (subject === absent) return;
+      // A probe at weight 0 met the subject without starting the motion: only a read starts it.
+      if (
+        run.known(subject) === undefined &&
+        !lanes.probedThisFrame(slot) &&
+        !(lanes.pulling !== 0 && lanes.readBy[slot] === lanes.pulling)
+      ) {
+        lanes.late.push(slot);
+        return;
+      }
       ms = run.slot(subject);
       data[o + Row.MSLOT] = ms;
       lane.numbered(p, ms);
@@ -319,7 +331,8 @@ export function settle<I, O>(
   lane.fix(p);
   const o = p * Row.STRIDE;
   if (
-    (held.probed === lanes.now && held.seeks === lane.data[o + Row.SEEKS]) ||
+    // A signal's fill stamps `probed` with no delta: that read is not settled.
+    (held.probed === lanes.now && held.seeks === lane.data[o + Row.SEEKS] && held.delta !== null) ||
     !((lanes.per[slot * Per.SLOT + Per.LANE_PROBE] as number) > lanes.frameProbes) ||
     lane.data[o + Row.SAMPLED] !== lanes.per[slot * Per.SLOT + Per.LANE_FILL]
   )

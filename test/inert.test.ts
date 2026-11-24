@@ -4,6 +4,7 @@ import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys } from '../src/patch.js';
+import { level } from '../src/signals.js';
 
 interface Pose {
   gain: number;
@@ -222,4 +223,73 @@ describe('a cue into a sleeping mix', () => {
     m.sync(5050 + (5050 - 16));
     expect(m.probe(part).crawl).toBe(later);
   });
+});
+
+describe('a motion no probe has sampled', () => {
+  // A probe at weight 0 (a fade's first frame, a level at 0) reads the voice without sampling the
+  // motion, so a later frame that probes only other subjects starts nothing for it.
+  for (const how of ['fade', 'fade-named', 'level', 'level-named', 'weight', 'weight-named'])
+    it(`stays unstarted for a subject only probed at weight 0: ${how}`, () => {
+      const read = (lanes: boolean) => {
+        const m = mix<{ id: number }, { x: number }>(kit({ x: sum() }), { lanes });
+        const a = { id: 12 };
+        const b = { id: 5 };
+        let from = 0;
+        const p = spring<{ id: number }, { x: number }>('x', {
+          from: () => {
+            from++;
+            return 0.5;
+          },
+          to: 1,
+        });
+        const l = level<{ id: number }>(0);
+        const h = m.cue({
+          patch: p,
+          ...(how.endsWith('named') ? { subjects: [a] } : {}),
+          ...(how.startsWith('fade')
+            ? { fade: { in: 100 } }
+            : how.startsWith('level')
+              ? { weight: l }
+              : { weight: 0 }),
+        });
+        m.sync(0);
+        m.probe(a);
+        m.probe(b);
+        l.set(1);
+        if (how.startsWith('weight')) h.weight = 1;
+        m.sync(500);
+        m.probe(b);
+        return { inert: m.inert, read: p.read(a), from };
+      };
+      expect(read(false).read).toBeUndefined();
+      expect(read(true)).toEqual(read(false));
+    });
+});
+
+describe('a handle seek back into a motion still moving', () => {
+  for (const lanes of [false, true])
+    for (const kind of ['tween', 'spring'] as const)
+      it(`leaves the mix not inert: ${kind} (lanes ${lanes})`, () => {
+        const m = mix<{ id: number }, { x: number }>(kit({ x: sum() }), { lanes });
+        const a = { id: 0 };
+        m.sync(0);
+        const h = m.cue({
+          patch:
+            kind === 'tween'
+              ? tween<{ id: number }, { x: number }>('x', { from: 0, to: 1, ms: 400 })
+              : spring<{ id: number }, { x: number }>('x', { from: 0, to: 1 }),
+        });
+        m.sync(16);
+        m.probe(a);
+        m.sync(3000);
+        m.probe(a);
+        expect(m.inert).toBe(true);
+        h.seek(100);
+        m.sync(3016);
+        const x1 = m.probe(a).x;
+        const inert = m.inert;
+        m.sync(3032);
+        expect(m.probe(a).x).not.toBe(x1);
+        expect(inert).toBe(false);
+      });
 });

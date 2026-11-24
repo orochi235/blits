@@ -402,13 +402,24 @@ export class Motions<I> {
     return true;
   }
 
+  /** The voice's `seeks` when `landed` last flagged a run landed. */
+  private landedSeeks = 0;
+
   /**
    * Whether every subject has landed on its target at its voice time at the latest frame, as a
-   * sample there would find; one with a change waiting has not. Commits nothing.
+   * sample there would find; one with a change waiting has not. Commits nothing. `seeks` is the
+   * voice's: a seek since the last ask may have taken a landed subject back into its stretch.
    */
-  landed(): boolean {
+  landed(seeks: number): boolean {
     const runs = this.runs;
     const n = this.n;
+    if (seeks !== this.landedSeeks) {
+      this.landedSeeks = seeks;
+      for (let s = 0; s < this.numbers.size; s++) {
+        const b = this.base(s);
+        runs[b + RunField.FLAGS] = (runs[b + RunField.FLAGS] as number) & ~LANDED;
+      }
+    }
     for (let s = 0; s < this.numbers.size; s++) {
       const b = this.base(s);
       const flags = runs[b + RunField.FLAGS] as number;

@@ -1,3 +1,4 @@
+import { snapBalls } from './around.js';
 import { runBounded } from './bound.js';
 import { foldNumber, lerpNumber } from './channels.js';
 import { passAt, phaseAt, same, silent, weighed } from './clock.js';
@@ -113,6 +114,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
     }
     lanes.moved = reading.moved;
     lanes.inputs = reading.inputs;
+    if (lanes.balls.length > 0) snapBalls(lanes);
     lanes.holds = lanes.lookups !== lookups;
   } finally {
     lanes.filling = false;

@@ -241,8 +241,13 @@ function readAll<I, O>(
         const shifted = d > 0 && n + 1 < list.length && list[n + 1] === was[n + 1 + d];
         if (runs && slot >= 0 && slot !== to && to >= 0 && !shifted) {
           if ((lanes as Lanes<I, O>).pulls.renumber(mix, subject, head, to)) {
-            for (let j = was.indexOf(subject); j >= 0; j = was.indexOf(subject, j + 1))
-              slots[j] = to;
+            // A position remembered at `to` held a dropped subject, whose number this hands on.
+            for (let j = 0; j < was.length; j++)
+              if (was[j] === subject) slots[j] = to;
+              else if (slots[j] === to) {
+                was[j] = UNREAD as I;
+                slots[j] = -1;
+              }
             slot = to;
           }
         }
