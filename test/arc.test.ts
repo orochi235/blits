@@ -1,9 +1,9 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
-import { kit, sum } from '../src/channels.js';
+import { kit, last, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
-import { patch } from '../src/patch.js';
-import type { Mix, MixOptions } from '../src/types.js';
+import { keys, patch } from '../src/patch.js';
+import type { ArcHandle, Mix, MixOptions } from '../src/types.js';
 
 interface Pose {
   a: number;
@@ -382,4 +382,47 @@ describe('arcs', () => {
     });
     expect(ahead).toEqual([650, 750, 900].map((t) => at(m, t)));
   });
+});
+
+describe('an arc sought by its handle', () => {
+  for (const lanes of [true, false])
+    it(`shows the part its seek reached in that frame, as a read back of it does${lanes ? '' : ', without lanes'}`, () => {
+      const KK = kit<{ x: number; k: number }>({ x: sum(), k: last() });
+      const m = mix<string, { x: number; k: number }>(KK, {
+        lanes,
+        history: { ms: 1e6, every: 50, tape },
+        stepMs: 4,
+      });
+      let h: ArcHandle<string> | undefined;
+      const shown: { seq: number; k: number }[] = [];
+      for (let i = 0; i < 8; i++) {
+        m.sync(i * 16);
+        if (i === 3)
+          h = m.arc({
+            enter: {
+              patch: keys(300, [
+                { at: 0, delta: { x: 1 } },
+                { at: 1, delta: { x: 2 } },
+              ]),
+            },
+            active: { patch: patch(400, (ph) => ({ x: 10 + ph }), { writes: ['x'] }), loop: true },
+            exit: {
+              patch: keys(240, [
+                { at: 0, delta: { k: 1 } },
+                { at: 0.5, delta: { k: 2 } },
+                { at: 1, delta: { k: 3 } },
+              ]),
+            },
+            hold: 200,
+          });
+        if (i === 4) {
+          // Into the exit, 97 ms on; the mix then stands still, so nothing moves the exit after.
+          h?.seek(597);
+          m.rate = 0;
+        }
+        if (i >= 4) shown.push({ seq: m.seq, k: m.probe('a').k });
+      }
+      expect(shown.map((s) => s.k)).toEqual(shown.map(() => 2));
+      for (const s of shown) expect(m.project({ frame: s.seq }).probe('a').k).toBe(s.k);
+    });
 });

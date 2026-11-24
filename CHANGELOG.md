@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A handle `seek` that takes an owner, such as an arc, past a waiting child's start starts that child
+  in the same frame, as a voice cued at its start does. It waited for the next frame that moved the
+  clock, so the frame of the seek showed the child's first frame where a read back of it showed
+  where the seek put it, and with the mix's `rate` at 0 it waited for good.
 - With a history store, a motion patch whose voice has ended still pages a dropped subject's run and
   its older stretches as they leave memory. It let them go unpaged, so a seek or read back past
   memory lost a `set` made on a subject later dropped once any other subject was dropped after the
