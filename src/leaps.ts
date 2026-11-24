@@ -4,8 +4,8 @@ import type { Voice } from './voice.js';
 
 /**
  * Under history, keeps an owner's first seek forward since the last frame, with the voices under it
- * yet to start: the next frame starts them in order, and a seek back to this frame must leave them
- * waiting for it, not started from the owner's clock as sought.
+ * yet to start: the next frame starts those the seek crossed in order, and a seek back to this frame
+ * must leave them waiting for it, not started from the owner's clock as sought.
  */
 export function leap<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>): void {
   const pending: Voice<I, O>[] = [];
@@ -37,6 +37,8 @@ export function leapBack<I, O>(mix: Mixer<I, O>, kept: readonly Voice<I, O>[], s
     if (l === undefined || l.seq !== seq) continue;
     mix.leapt ??= new Set();
     mix.leapt.add(owner);
-    for (const v of l.pending) if (v.out === null && kept.includes(v)) v.state = 'pending';
+    // A part the seek took its owner to started in that frame, and stays started.
+    for (const v of l.pending)
+      if (v.out === null && v.begunSeq > seq && kept.includes(v)) v.state = 'pending';
   }
 }

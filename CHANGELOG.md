@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A mix seek back to the frame of an owner's handle `seek` plays the part that seek took it to, as
+  that frame did: an arc sought into its `active` part showed the part's first frame instead.
 - A `set`, `to` or `push` on a motion voice waits for its time again after a handle `seek` back
   past it under history, once it is older than `history.ms`: it played early from then on, and a
   read back disagreed with play.
