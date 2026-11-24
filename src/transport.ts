@@ -18,6 +18,7 @@ import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { type ScoreHolders, scoredDrop, scoredJoin } from './scored.js';
 import { seek } from './seek.js';
+import { letGo } from './strays.js';
 import { hostAt, record, replay, tapeOf } from './tape.js';
 import { throwLater } from './ticker.js';
 import { gave, historyFor } from './watch.js';
@@ -479,7 +480,10 @@ export class Transport implements TransportApi {
     const seq = ++this.seq;
     const history = this.history;
     if (history !== undefined) this.frames.push({ seq, at, u: this.u }, history.ms);
-    for (const m of this.members) m.looked = false;
+    for (const m of this.members) {
+      m.looked = false;
+      if (m.unshown !== null) letGo(m, at);
+    }
   }
 
   /** The number for the next voice or announced mark. */

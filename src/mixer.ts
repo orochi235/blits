@@ -233,6 +233,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   stirs = 0;
 
   syncing = false;
+  /**
+   * Records a motion change reached after a probe read them this frame at the time the clock stands
+   * at, whose delta the next frame lets go of, though a held clock leaves it at that time.
+   */
+  unshown: Subject<unknown>[] | null = null;
   stirFns: (() => void)[] | null = null;
 
   /** Records a change to the mix's voices or controls. */

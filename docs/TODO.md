@@ -23,16 +23,6 @@ Owner tags:
   the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
   ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
   whether this stays a stated limit of the fuzz.
-- **[agent] A motion `set` never shows while rate 0 holds the clock, though a seek there shows
-  it** (2026-11-23, replay fuzz programs 364, 470, 639, 783, 809, 824 and 918): a
-  probe keeps the delta it read at the mix's time (`held.probed === now` in `contribution`, and a
-  lane's `settle`), which `signals.test`'s "set between two probes of one frame" pins within a
-  frame. Under rate 0 every later frame stands at that time too, so a spring `set` while held
-  shows its old place until the clock moves, and `project(now)` and a seek to a later frame there
-  show the new one. One route: let go of the record's delta for the changed subject at the next
-  frame, a sync rate 0 holds included, not at once; a set made before anything read that frame
-  shows in it. Making it show at once (tried and backed out, 2026-11-23) breaks the within-frame
-  rule.
 - **[agent] A seek holds back events a put-back record sends after the moment sought, stamped at
   or before it** (2026-11-23, replay fuzz programs 553, 737, 754, 888 and 986): a
   record a seek put back stays in `mix.resent` for good, and `heldTo` drops every event its steps

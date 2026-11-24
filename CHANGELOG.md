@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A motion `set`, `to` or `push` shows while the mix's rate 0 holds its clock, from the next frame
+  on, as a seek to that frame shows it, and in its own frame where nothing was read before it: a
+  probe kept the value read at that time until the clock moved again.
 - A call the tape plays again after a seek back, in a frame where rate 0 held the mix clock,
   lands what the host's sync there landed: a span child played in its cue frame stayed on in that
   frame, where play had already let it go.

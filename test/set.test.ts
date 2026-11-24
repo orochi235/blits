@@ -138,4 +138,29 @@ describe('set', () => {
       // Sought back to 6 at 208, the voice is short of the set's 144 through 320.
       expect(run(true).slice(13)).toEqual(run(false).slice(13));
     });
+  for (const lanes of [false, true])
+    it(`shows a set while the mix's rate 0 holds its clock from the next frame on, as a seek there does, lanes ${lanes}`, () => {
+      const s = spring<typeof a, Pose>('x', { from: 0, to: 100 });
+      const m = mix<typeof a, Pose>(K, { lanes, history: { ms: 1e6, tape } });
+      m.cue({ patch: s });
+      m.sync(0);
+      m.probe(a);
+      m.sync(50);
+      m.rate = 0;
+      const held = m.probe(a).x;
+      m.sync(66);
+      expect(m.probe(a).x).toBe(held);
+      s.set(a, 40);
+      // A probe this frame already read keeps the value it read.
+      expect(m.probe(a).x).toBe(held);
+      const set = m.seq;
+      m.sync(82);
+      expect(m.probe(a).x).toBe(40);
+      m.sync(98);
+      // Nothing read this frame before it, so it shows in this one.
+      s.set(a, 60);
+      expect(m.probe(a).x).toBe(60);
+      m.seek({ frame: set });
+      expect(m.probe(a).x).toBe(40);
+    });
 });
