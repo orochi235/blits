@@ -1,6 +1,7 @@
 import type { Easing } from '@msb235/blits';
 import { toBlits, toWeasel } from '@pg/blits/easing';
 import { EasingPicker, PropertyControl, PropertyRow } from '@weasel-js/ui';
+import { useBurst } from './drafting';
 import m from './PatchLive.module.css';
 
 type Steps = { steps: number; jump?: 'start' | 'end' };
@@ -35,6 +36,7 @@ export interface EaseFieldProps {
 
 /** Any blits ease as data, on one property row: a curve through weasel's picker, or a count of steps. */
 export function EaseField({ label, value, onChange, inherit, description }: EaseFieldProps) {
+  const burst = useBurst();
   const steps = isSteps(value) ? value : undefined;
   const inherited = inherit !== undefined && value === undefined;
   return (
@@ -68,9 +70,9 @@ export function EaseField({ label, value, onChange, inherit, description }: Ease
                 min={1}
                 step={1}
                 value={steps.steps}
-                onChange={(n) => {
+                onChange={burst((n: number) => {
                   if (Number.isInteger(n) && n > 0) onChange({ ...steps, steps: n });
-                }}
+                })}
               />
               <PropertyControl
                 kind="enum"

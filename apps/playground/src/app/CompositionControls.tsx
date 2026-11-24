@@ -19,10 +19,10 @@ import {
   type LeafRenderer,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
-import { ActionLeaf, PropertyField, PropertyRow } from '@weasel-js/ui';
+import { ActionLeaf, type LeafContext, PropertyField, PropertyRow } from '@weasel-js/ui';
 import { useMemo, useRef } from 'react';
 import s from './App.module.css';
-import { useDraft } from './drafting';
+import { useBurst, useDraft } from './drafting';
 import r from './Rows.module.css';
 
 export interface FieldExtras {
@@ -34,35 +34,38 @@ export interface FieldExtras {
 
 /** A typed schema leaf drawn as a property field, with the row props a leaf has no word for. */
 export function fieldRow(extra: FieldExtras): LeafRenderer {
-  return (ctx) => {
-    const leaf = ctx.pref as unknown as Record<string, unknown>;
-    const row = {
-      label: ctx.pref.name,
-      description: ctx.pref.description || undefined,
-      disabled: ctx.disabled,
-      placeholder: leaf.placeholder as string | undefined,
-      ...extra,
-    };
-    return ctx.pref.kind === 'number' ? (
-      <PropertyField
-        {...row}
-        kind="number"
-        value={ctx.value as number}
-        unit={leaf.suffix as string | undefined}
-        step={leaf.step as number | undefined}
-        onChange={ctx.setValue}
-      />
-    ) : (
-      <PropertyField
-        {...row}
-        kind="string"
-        controlClassName={extra.span ? r.fill : undefined}
-        value={String(ctx.value)}
-        maxLength={leaf.maxLength as number | undefined}
-        onChange={ctx.setValue}
-      />
-    );
+  return (ctx) => <FieldRow ctx={ctx} extra={extra} />;
+}
+
+function FieldRow({ ctx, extra }: { ctx: LeafContext; extra: FieldExtras }) {
+  const burst = useBurst();
+  const leaf = ctx.pref as unknown as Record<string, unknown>;
+  const row = {
+    label: ctx.pref.name,
+    description: ctx.pref.description || undefined,
+    disabled: ctx.disabled,
+    placeholder: leaf.placeholder as string | undefined,
+    ...extra,
   };
+  return ctx.pref.kind === 'number' ? (
+    <PropertyField
+      {...row}
+      kind="number"
+      value={ctx.value as number}
+      unit={leaf.suffix as string | undefined}
+      step={leaf.step as number | undefined}
+      onChange={burst(ctx.setValue)}
+    />
+  ) : (
+    <PropertyField
+      {...row}
+      kind="string"
+      controlClassName={extra.span ? r.fill : undefined}
+      value={String(ctx.value)}
+      maxLength={leaf.maxLength as number | undefined}
+      onChange={ctx.setValue}
+    />
+  );
 }
 
 /** An action's button on a row of its own, unlabeled: labkit's action row repeats the button's text as its label. */
@@ -92,6 +95,7 @@ export interface CompProps {
 // A ControlPanel's `as('bar')` group draws a field that commits on Enter as a whole stacked row, so the
 // header's and the stage's few fields are drawn as the same property rows, side by side.
 export function StageControls({ comp, onChange }: CompProps) {
+  const burst = useBurst();
   const { stage } = comp;
   const set = (next: Composition['stage']) => onChange(withStage(comp, next));
   return (
@@ -118,14 +122,14 @@ export function StageControls({ comp, onChange }: CompProps) {
             name="columns"
             kind="number"
             value={stage.cols}
-            onChange={(n: number) => set(sizeDots(stage, n, stage.rows))}
+            onChange={burst((n: number) => set(sizeDots(stage, n, stage.rows)))}
           />
           <PropertyField
             layout="inline"
             label="rows"
             kind="number"
             value={stage.rows}
-            onChange={(n: number) => set(sizeDots(stage, stage.cols, n))}
+            onChange={burst((n: number) => set(sizeDots(stage, stage.cols, n)))}
           />
         </>
       ) : (
@@ -145,6 +149,7 @@ export function StageControls({ comp, onChange }: CompProps) {
 
 /** Title and length, for the header. */
 export function CompFields({ comp, onChange }: CompProps) {
+  const burst = useBurst();
   return (
     <div className={r.bar}>
       <PropertyField
@@ -162,7 +167,7 @@ export function CompFields({ comp, onChange }: CompProps) {
         unit="ms"
         step={100}
         value={comp.length}
-        onChange={(n: number) => onChange(withLength(comp, n))}
+        onChange={burst((n: number) => onChange(withLength(comp, n)))}
       />
     </div>
   );

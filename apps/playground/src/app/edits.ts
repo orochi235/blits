@@ -53,6 +53,10 @@ export function createEdits<T>(start: T, emit: (x: T) => void, depth = DEPTH) {
         routed = false;
       }
     },
+    /** Records the drafts on screen as one step, as a `set` of the value they reached would. */
+    settle() {
+      if (held) set(now);
+    },
     undo() {
       if (!drop()) history.undo();
     },

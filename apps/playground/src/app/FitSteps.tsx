@@ -10,6 +10,7 @@ import {
   MenuButton,
   PropertyControl,
 } from '@weasel-js/ui';
+import { useBurst } from './drafting';
 import g from './Group.module.css';
 import { errorOf, FaultLine, Row, useSpec } from './SpecFields';
 
@@ -41,6 +42,7 @@ export const fitRow: LeafRenderer = (row) => <FitRow row={row} />;
 
 function FitRow({ row }: { row: LeafContext }) {
   const spec = useSpec();
+  const burst = useBurst();
   const steps = row.value as FitStep[] | undefined;
   const onChange = (next: FitStep[] | undefined) => row.setValue(next);
   // Adding to an unset fit starts from the default it was playing.
@@ -96,9 +98,9 @@ function FitRow({ row }: { row: LeafContext }) {
                         step={0.1}
                         placeholder="none"
                         value={step.cap}
-                        onChange={(n) =>
-                          put(i, n > 0 ? { kind: 'overrun', cap: n } : { kind: 'overrun' })
-                        }
+                        onChange={burst((n: number) =>
+                          put(i, n > 0 ? { kind: 'overrun', cap: n } : { kind: 'overrun' }),
+                        )}
                         onClear={() => put(i, { kind: 'overrun' })}
                       />
                     </span>

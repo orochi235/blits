@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import s from './App.module.css';
 import { actionRow, useLatest } from './CompositionControls';
 import { docOf } from './docs';
+import { useBurst } from './drafting';
 import r from './Rows.module.css';
 
 const ignore = () => {};
@@ -46,6 +47,7 @@ export function AnnouncedFields({
   comp: Composition;
   onChange(c: Composition): void;
 }) {
+  const burst = useBurst();
   const list = comp.announced ?? [];
   const set = (next: Announced[]) =>
     onChange(withKey(comp, 'announced', next.length > 0 ? next : undefined));
@@ -84,7 +86,7 @@ export function AnnouncedFields({
               step={10}
               unit="ms"
               onInput={ignore}
-              onChange={(at: number) => tune(i, { at })}
+              onChange={burst((at: number) => tune(i, { at }))}
             />
             <Button
               {...CLOSE_BUTTON_PROPS}

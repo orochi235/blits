@@ -1,6 +1,7 @@
 import type { Composition } from '@pg/blits/composition';
 import { fromHash, load, toHash } from '@pg/blits/load';
 import { useCallback, useEffect, useState } from 'react';
+import type { Draftable } from './drafting';
 import { createEdits } from './edits';
 
 const KEY = 'blits-playground:composition';
@@ -56,8 +57,8 @@ export function useComposition(initial: Composition) {
   return {
     comp,
     set,
-    /** Runs `edit` with every `set` it makes shown but not recorded, until a plain `set` settles it. */
-    drafting: edits.drafting,
+    /** Edits shown but not yet recorded, for the controls that pass through values on the way to one. */
+    drafts: edits satisfies Draftable,
     undo: edits.undo,
     redo: edits.redo,
     share,

@@ -1,6 +1,7 @@
 import { hexOf } from '@pg/blits/color';
 import type { ChannelName } from '@pg/blits/kit';
 import { EasingPicker, type KeyEditorCtx, PropertyControl, PropertyRow } from '@weasel-js/ui';
+import { useBurst } from './drafting';
 import m from './PatchLive.module.css';
 
 /** The selected key's value as inputs shaped to its channel, and the curve into it. */
@@ -8,15 +9,7 @@ export function KeyEditor({ key: k, track, commit, setEasing }: KeyEditorCtx) {
   const ch = track.label as ChannelName;
   const set = (value: unknown) => commit({ ...k, value });
   const num = (value: number, on: (n: number) => void, name: string) => (
-    <PropertyControl
-      key={name}
-      kind="number"
-      name={name}
-      value={value}
-      onChange={(n) => {
-        if (Number.isFinite(n)) on(n);
-      }}
-    />
+    <KeyNumber key={name} value={value} on={on} name={name} />
   );
   return (
     <div className={m.key}>
@@ -48,5 +41,20 @@ export function KeyEditor({ key: k, track, commit, setEasing }: KeyEditorCtx) {
         </span>
       </PropertyRow>
     </div>
+  );
+}
+
+// Weasel calls `KeyEditor` as a function, behind an early return, so the hook lives a component down.
+function KeyNumber({ value, on, name }: { value: number; on: (n: number) => void; name: string }) {
+  const burst = useBurst();
+  return (
+    <PropertyControl
+      kind="number"
+      name={name}
+      value={value}
+      onChange={burst((n: number) => {
+        if (Number.isFinite(n)) on(n);
+      })}
+    />
   );
 }
