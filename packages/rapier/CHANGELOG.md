@@ -10,6 +10,8 @@ section here.
 
 - `Physics.close()` closes the mix, frees every Rapier world it holds, and takes the physics off
   its transport's `physicsStore`. Call it in place of `mix.close()`.
+- A debugger lists the mix's subjects as `world`, `body 0` and `controls 0`, where it listed them
+  as `Object #1` and on. A `labelOf` passed to `physics` still names them instead.
 
 ### Changed
 
