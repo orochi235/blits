@@ -9,6 +9,7 @@ import {
   type Paged,
   patch,
   type Signal,
+  type Tape,
   type VoiceSpec,
   watched,
 } from '@msb235/blits';
@@ -90,6 +91,38 @@ const ROLE = 'physics';
 const copyOf = (r: number | readonly number[]): number | number[] =>
   typeof r === 'number' ? r : [...r];
 
+/** Where a tape stands: how deep, the host time of its last call made, and those of the calls ahead. */
+interface Taped {
+  depth: number;
+  last: number | undefined;
+  ahead: number[];
+}
+
+const standOf = (tape: Tape | undefined): Taped | undefined => {
+  if (tape === undefined) return undefined;
+  const depth = tape.undoDepth();
+  const ahead: number[] = [];
+  for (let i = depth; ; i++) {
+    const t = tape.timestampAt(i);
+    if (t === undefined) break;
+    ahead.push(t);
+  }
+  return { depth, last: tape.timestampAt(depth - 1), ahead };
+};
+
+/**
+ * Who made the calls a tape took since `was`: the tape playing calls it held ahead, the host making
+ * a new one, or nobody. A host call with calls ahead starts a new branch, stamped before them all,
+ * so it never passes for one of them; letting go of old calls only makes the tape shallower.
+ */
+function madeSince(was: Taped, now: Taped): 'tape' | 'host' | 'none' {
+  const played = was.ahead.length - now.ahead.length;
+  if (played > 0 && now.last === was.ahead[played - 1]) return 'tape';
+  if (played !== 0 || now.depth > was.depth || (now.last !== undefined && now.last !== was.last))
+    return 'host';
+  return 'none';
+}
+
 /** The subject key the world's frame records go under in a history store, on the `host` stream. */
 const FRAMES = 'blits-rapier frames';
 
@@ -145,6 +178,8 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   const dims = dimsOf(rapier);
   const g = gravity ?? (dims.n === 2 ? [0, -9.81] : [0, -9.81, 0]);
   const stepMs = rest.stepMs ?? 1000 / 60;
+  // Two frames' mix times this close are one frame played again, rounded apart.
+  const EPS = stepMs / 1000;
   const name = rest.name ?? 'physics';
   const transport = rest.transport;
   // A mix naming no history keeps the one a debugger gives mixes made from now on.
@@ -287,10 +322,21 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   // Each body's voices in the simulation's role besides its own, and its pose the last frame they held it.
   const authored = new Map<Body<O, H>, Handle<object>[]>();
   const held = new Map<Body<O, H>, { pose: Placed; at: number }>();
+  const bodies = new Map<number, Body<O, H>>();
   const out = m.pose();
   const shown = m.pose();
   // Read at the end of each frame, for the next frame's steps to apply.
   let holding: Holds = {};
+  /** Takes up the holds a logged frame applies, read at the end of the frame at `at`. */
+  const adopt = (holds: Holds, at: number) => {
+    holding = holds;
+    held.clear();
+    for (const k in holds) {
+      const body = bodies.get(+k);
+      const h = holds[k];
+      if (body !== undefined && h !== undefined) held.set(body, { pose: h.now, at });
+    }
+  };
   // When each finished authored voice was first seen done. A seek back can make it play again, so
   // it is let go only once history can no longer reach its end.
   const doneAt = new Map<Handle<object>, number>();
@@ -343,7 +389,11 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   let from = Number.NEGATIVE_INFINITY;
   // Sought since the world was last read, so the next read steps it to the time sought.
   let stale = false;
+  // The tape as the last frame or seek left it. A call it makes again lands in the sync of the
+  // frame it was made after, before that frame's probe, where the host made it after the probe.
+  let taped = standOf(m.tape);
   m.onSeek((s) => {
+    taped = standOf(m.tape);
     // What was logged after the frame kept is from a future the tape makes again.
     if (s.back)
       for (let i = log.length - 1; i >= 0; i--)
@@ -375,8 +425,21 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       started = true;
       m.cue({ patch: world, subjects: [WORLD] });
     }
-    const pushes: Pushes = {};
-    const goals: Goals = {};
+    const at = m.now;
+    const seq = m.seq;
+    const was = taped;
+    taped = standOf(m.tape);
+    const made = was === undefined || taped === undefined ? 'none' : madeSince(was, taped);
+    // A host call since the last frame starts a future the frames logged ahead are not from.
+    if (made === 'host') {
+      let n = pushLog.length;
+      while (n > 0 && (pushLog[n - 1] as Frame).at > from) n--;
+      pushLog.length = n;
+    }
+    // On a frame where the tape made calls again, the world takes what the frame read first.
+    const again = made === 'tape' ? pushLog.findIndex((f) => Math.abs(f.at - at) < EPS) : -1;
+    let pushes: Pushes = {};
+    let goals: Goals = {};
     for (const body of driven) {
       const p = m.probe(body.controls, out) as unknown as {
         force: number[];
@@ -394,20 +457,22 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         goals[body.key] = g;
       }
     }
-    const at = m.now;
-    const seq = m.seq;
     if (Number.isNaN(startAt)) startAt = at;
-    // This frame stands for the frames logged after where the mix stood before it, up to its own
-    // time. Those ahead stay for a seek forward, which replays them as the mix's tape does its calls.
-    let end = pushLog.length;
-    while (end > 0 && (pushLog[end - 1] as Frame).at > at) end--;
-    let start = end;
-    while (
-      start > 0 &&
-      ((pushLog[start - 1] as Frame).at > from || (pushLog[start - 1] as Frame).at === at)
-    )
-      start--;
-    pushLog.splice(start, end - start, { at, seq, pushes, holds: holding, goals });
+    const first = pushLog[again];
+    if (first !== undefined) ({ pushes, goals } = first);
+    else {
+      // This frame stands for the frames logged after where the mix stood before it, up to its own
+      // time. Those ahead stay for a seek forward, which replays them as the mix's tape does its calls.
+      let end = pushLog.length;
+      while (end > 0 && (pushLog[end - 1] as Frame).at > at) end--;
+      let start = end;
+      while (
+        start > 0 &&
+        ((pushLog[start - 1] as Frame).at > from || (pushLog[start - 1] as Frame).at === at)
+      )
+        start--;
+      pushLog.splice(start, end - start, { at, seq, pushes, holds: holding, goals });
+    }
     from = at;
     // Stepped before older frames are paged, since a world behind after a seek steps through them.
     read();
@@ -434,6 +499,9 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       if (n > 0) log.splice(0, n);
     }
     holding = holdsAt(at);
+    // The frame after logged the holds as they stood before the calls the tape has made again.
+    const after = first === undefined ? undefined : pushLog[pushLog.indexOf(first) + 1];
+    if (after !== undefined) adopt(after.holds, at);
   };
 
   return {
@@ -463,6 +531,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         },
         drop: () => call('drop body', (at, seq) => ({ at, seq, key, kind: 'drop' })),
       };
+      bodies.set(key, body);
       const self = bind(m, body as object);
       const steer = bind(m, controls);
       keys.set(body, `body ${key}`);

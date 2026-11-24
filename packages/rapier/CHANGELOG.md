@@ -14,6 +14,9 @@ section here.
 
 - A seek back into an authored hold whose voices had already finished holds the body again on
   the replay, where the world used to simulate it freely.
+- After a seek back, a call the host made between frames, such as a `drive`, a `cue` or a write to
+  the simulated voice's weight, reaches the world on the frame after it, as it first did, where the
+  replay used to apply it a frame early.
 
 ## 0.7.4
 
