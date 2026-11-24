@@ -161,6 +161,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
     stepMs,
     name,
     keyOf: (subject: object) => keys.get(subject) as string,
+    labelOf: rest.labelOf ?? ((subject: object) => keys.get(subject)),
   });
   const log: Entry[] = [];
   const frameAt = (t: number): Frame | undefined => {

@@ -57,3 +57,24 @@ it('keeps the history a debugger gives mixes that name none, and replays its see
   }
   expect(got).toEqual(want.slice(21));
 });
+
+it("labels the world, each body and each body's controls, so a debugger's list reads", () => {
+  const { sim } = swung();
+  sim.sync(0);
+  const entry = watched()
+    .entries()
+    .find((e) => e.mix === sim.mix);
+  expect(entry?.subjects().map((s) => entry.label(s))).toEqual(
+    expect.arrayContaining(['world', 'body 0', 'body 1', 'controls 1']),
+  );
+  const own = physics<Pose2>(kit<Pose2>(channels2), { rapier: R2, labelOf: () => 'mine' });
+  const box = own.body(R2.RigidBodyDesc.dynamic());
+  expect(
+    watched()
+      .entries()
+      .find((e) => e.mix === own.mix)
+      ?.label(box),
+  ).toBe('mine');
+  sim.close();
+  own.close();
+});

@@ -14,6 +14,8 @@ section here.
   the time before the seek and could seek back there. In the DevTools extension, whose replies
   come late, a scrub mostly went nowhere.
 - A hold whose release throws no longer leaves the panel's hold controls stuck on it.
+- Two panels taken off in the order they were mounted, the second naming its own `history`, leave
+  no history default behind; the first one's 10 s came back and stayed on every mix made after.
 - A mounted panel forgets number and string subjects once no mix lists them, where it used to
   keep every one it had seen.
 - The `weightOf` plot draws a line for each voice when two share a name, where it used to draw

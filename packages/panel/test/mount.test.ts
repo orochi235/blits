@@ -71,6 +71,24 @@ describe('mount', () => {
     expect(watched().history).toBeUndefined();
   });
 
+  it("leaves no panel's history behind once both are off, taken off in the order they went on", async () => {
+    let one = () => {};
+    let two = () => {};
+    await act(async () => {
+      one = mount();
+      two = mount({ history: 5000 });
+    });
+    expect(watched().history?.ms).toBe(5000);
+    await act(async () => {
+      one();
+    });
+    expect(watched().history?.ms).toBe(5000);
+    await act(async () => {
+      two();
+    });
+    expect(watched().history).toBeUndefined();
+  });
+
   it('adds no history when told not to', async () => {
     let unmount = () => {};
     await act(async () => {

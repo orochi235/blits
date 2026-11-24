@@ -139,10 +139,10 @@ function spin(now: readonly number[], before: readonly number[] | undefined, dt:
   if (before === undefined || dt <= 0) return [0, 0, 0];
   const [ax, ay, az, aw] = now as [number, number, number, number];
   const [bx, by, bz, bw] = before as [number, number, number, number];
-  // now · conj(before), taken the short way round.
-  let x = bw * ax - bx * aw - by * az + bz * ay;
-  let y = bw * ay - by * aw - bz * ax + bx * az;
-  let z = bw * az - bz * aw - bx * ay + by * ax;
+  // now · conj(before), taken the short way round: the turn in world axes, as Rapier's angvel is.
+  let x = bw * ax - bx * aw + by * az - bz * ay;
+  let y = bw * ay - by * aw + bz * ax - bx * az;
+  let z = bw * az - bz * aw + bx * ay - by * ax;
   let w = bw * aw + bx * ax + by * ay + bz * az;
   if (w < 0) [x, y, z, w] = [-x, -y, -z, -w];
   const s = Math.hypot(x, y, z);

@@ -15,6 +15,11 @@ export interface MountOptions extends Omit<AgentOptions, 'ignore'> {
   history?: number | false;
 }
 
+type History = ReturnType<typeof watched>['history'];
+/** The default each panel's history replaced, and the panels taken off since. */
+const under = new WeakMap<object, History>();
+const off = new WeakSet<object>();
+
 /**
  * Puts the panel on the page: a pill in a corner that opens into a window over every blits mix
  * on it. Call it before the app makes its mixes, so they keep the history scrubbing back needs.
@@ -26,7 +31,10 @@ export function mount(opts: MountOptions = {}): () => void {
   // A default the app or another panel already set stands, unless this one names its own.
   const ms = opts.history ?? (before === undefined ? 10_000 : false);
   const ours = ms === false ? undefined : { ms, tape: createHistory };
-  if (ours !== undefined) registry.history = ours;
+  if (ours !== undefined) {
+    registry.history = ours;
+    under.set(ours, before);
+  }
 
   const host = document.createElement('div');
   host.setAttribute('data-blits-panel', '');
@@ -63,6 +71,11 @@ export function mount(opts: MountOptions = {}): () => void {
     root.unmount();
     page.dispose();
     host.remove();
-    if (ours !== undefined && registry.history === ours) registry.history = before;
+    if (ours === undefined) return;
+    off.add(ours);
+    if (registry.history !== ours) return;
+    let back = before;
+    while (back !== undefined && off.has(back)) back = under.get(back);
+    registry.history = back;
   };
 }

@@ -124,7 +124,7 @@ to the copy a replay at the edge of memory would start from.
 
 `history.store` works: the world pages out as plain data, its snapshot in base64. Give the mix a
 `name`, as every mix on a transport with a store needs; `physics` keys its own subjects, so it takes
-no `keyOf`. The log of each frame's pushes pages out with it, one `host` record a frame under the
+no `keyOf`. A debugger lists them as `world`, `body 0` and `controls 0`, unless you pass a `labelOf`. The log of each frame's pushes pages out with it, one `host` record a frame under the
 subject `'blits-rapier frames'`, and `prepare` loads it back for a seek past memory.
 
 On a shared `transport`, the world plays on the transport's clock and history beside its other
