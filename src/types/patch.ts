@@ -57,7 +57,7 @@ export interface Setting<S = void, H = unknown> {
   readonly elapsed: number;
   /** Which pass this is, 0 first; below 0 where `elapsed` is. */
   readonly pass: number;
-  /** This voice's weight for this subject this frame, after fades, signals and any role. */
+  /** This voice's weight for this subject this frame, after fades and signals, before a role folds it. */
   readonly weight: number;
   /** This subject's state, when the patch declares one. */
   readonly state: S;
