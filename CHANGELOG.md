@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A read ahead (`project`) on a transport past the drop of a mix the tape holds reads that mix as it
+  stood at the drop, as play shows it, where a mix with a spring or another stepped voice on it went
+  on moving past the drop.
 - A subject dropped while a read ahead or read back plays to it has no plot position from then on in
   that read, as in play: `around` and `within` voices cued after the drop read it at the position it
   had.

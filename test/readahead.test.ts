@@ -320,6 +320,25 @@ describe('a read ahead restaging at a stop', () => {
     expect(ahead.project(352).probe('a').x).toBe(shown);
   });
 
+  for (const lanes of [true, false])
+    it(`holds a mix the tape drops on the way where it was dropped (lanes ${lanes})`, () => {
+      const t = transport({ history: { ms: 100_000, tape } });
+      const one = mix<Part, Pose>(K, { transport: t, lanes, stepMs: 4, name: 'one' });
+      const two = mix<Part, Pose>(K, { transport: t, lanes, stepMs: 4, name: 'two' });
+      let shown = -1;
+      for (const at of [0, 16, 32, 48, 64, 96]) {
+        t.sync(at);
+        if (at === 0) {
+          one.cue({ patch: drift() });
+          two.cue({ patch: drift() });
+        }
+        if (at === 48) t.drop(two);
+        shown = two.probe(a).x;
+      }
+      t.seek(16);
+      expect(t.project(96).of(two).probe(a).x).toBe(shown);
+    });
+
   it('meets afresh a subject faded out on the way and brought back by a retarget', () => {
     const s = spring<Part, Pose>('x', { from: 0, to: 100 });
     readsAhead((m, t, h) => {

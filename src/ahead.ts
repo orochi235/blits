@@ -50,6 +50,8 @@ export function playAhead(
       for (const m of c.members) if (m.anchored > 0) place(m);
       const next = restage(c);
       for (const [mix, copy] of copies) {
+        // A copy the tape dropped on the way stands where it was dropped; a stage would join it.
+        if (copy.dropped) continue;
         const on = new Mixer<unknown, unknown>(copy.kit, { ...copy.opts, transport: next }, null);
         standIn(copy, on);
         copyAhead(copy, on);
