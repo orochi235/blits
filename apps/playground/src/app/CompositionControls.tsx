@@ -22,6 +22,7 @@ import {
 import { ActionLeaf, PropertyField, PropertyRow } from '@weasel-js/ui';
 import { useMemo, useRef } from 'react';
 import s from './App.module.css';
+import { useDraft } from './drafting';
 import r from './Rows.module.css';
 
 export interface FieldExtras {
@@ -226,9 +227,17 @@ export function LevelsPanel({ comp, onChange }: CompProps) {
     else if (field === 'value' || field === 'min' || field === 'max')
       set(tuneLevel(levels, i, { [field]: value as number }));
   };
+  const draft = useDraft(write);
   return (
     <section className={s.panel} aria-label="levels">
-      <ControlPanel title="levels" collapsible schema={schema} config={config} setConfig={write} />
+      <ControlPanel
+        title="levels"
+        collapsible
+        schema={schema}
+        config={config}
+        setConfig={write}
+        draftConfig={draft}
+      />
     </section>
   );
 }

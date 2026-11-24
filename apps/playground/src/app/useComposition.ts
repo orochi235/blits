@@ -1,9 +1,8 @@
 import type { Composition } from '@pg/blits/composition';
 import { fromHash, load, toHash } from '@pg/blits/load';
-import { createHistory, createSwapOp } from '@weasel-js/history';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { createEdits } from './edits';
 
-const DEPTH = 200;
 const KEY = 'blits-playground:composition';
 
 /** The composition last kept here, else `initial`. */
@@ -34,27 +33,8 @@ export function openLink(
 export function useComposition(initial: Composition) {
   const [comp, setComp] = useState<Composition>(() => kept(initial));
   const [refusedLink, setRefusedLink] = useState(false);
-  const [edits] = useState(() => createHistory(null, { historyLimit: DEPTH }));
-  const now = useRef(comp);
-  const emit = useCallback((c: Composition) => {
-    now.current = c;
-    setComp(c);
-  }, []);
-  const set = useCallback(
-    (next: Composition) => {
-      if (next === now.current) return;
-      edits.apply(
-        createSwapOp({
-          name: 'composition',
-          label: 'edit',
-          before: now.current,
-          after: next,
-          emit,
-        }),
-      );
-    },
-    [edits, emit],
-  );
+  const [edits] = useState(() => createEdits(comp, setComp));
+  const set = edits.set;
   // A shared link opens as an edit, so undo brings back the work it replaced, and leaves the
   // address bar, where it would overrule every edit on reload. One that fails stays to retry.
   useEffect(() => {
@@ -73,13 +53,13 @@ export function useComposition(initial: Composition) {
     } catch {}
   }, [comp]);
   const share = useCallback(() => `${location.origin}${location.pathname}#${toHash(comp)}`, [comp]);
-  const undo = useCallback(() => edits.undo(), [edits]);
-  const redo = useCallback(() => edits.redo(), [edits]);
   return {
     comp,
     set,
-    undo,
-    redo,
+    /** Runs `edit` with every `set` it makes shown but not recorded, until a plain `set` settles it. */
+    drafting: edits.drafting,
+    undo: edits.undo,
+    redo: edits.redo,
     share,
     /** The address holds a shared link `load` refused. */
     refusedLink,

@@ -9,6 +9,7 @@ import { AnnouncedFields } from './AnnouncedFields';
 import s from './App.module.css';
 import { fieldRow } from './CompositionControls';
 import { docOf } from './docs';
+import { useDraft } from './drafting';
 import e from './Events.module.css';
 import { ms } from './ms';
 
@@ -133,6 +134,7 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
     // blits' default is kept as no value, so a composition goes on following it.
     if (path === 'ahead') onComp(withAhead(comp, value === AHEAD ? undefined : (value as number)));
   };
+  const draft = useDraft(write);
   return (
     <div className={s.voiceColumn}>
       <AnnouncedFields comp={comp} onChange={onComp} />
@@ -144,6 +146,7 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
           schema={BOOKER}
           config={{ tag: events.tag ?? '', ahead: comp.book?.ahead ?? AHEAD, name, live }}
           setConfig={write}
+          draftConfig={draft}
           renderers={{
             now: () => (
               <PropertyRow group layout="inline" label="">

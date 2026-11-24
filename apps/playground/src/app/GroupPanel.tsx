@@ -8,6 +8,7 @@ import { type LeafContext, PropertyControl } from '@weasel-js/ui';
 import { anchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { docOf } from './docs';
+import { useDraft } from './drafting';
 import { hintsConfig, hintsGroup, writtenHints } from './HintsFields';
 import { marksConfig, marksNodes, writtenMarks } from './MarksFields';
 import { ownerRow } from './OwnerField';
@@ -179,6 +180,7 @@ export function GroupPanel(p: GroupPanelProps) {
     if (path === 'owner') p.onJoin((value as string) || null);
     else p.onChange(written(g, path, value));
   };
+  const draft = useDraft(write);
   return (
     <section className={s.panel} aria-label={`group ${g.name}`}>
       <SpecProvider
@@ -197,6 +199,7 @@ export function GroupPanel(p: GroupPanelProps) {
           schema={SCHEMAS[g.kind]}
           config={configOf(g, spanned)}
           setConfig={write}
+          draftConfig={draft}
           errors={rowErrors(p.errors, g.id, ROWED)}
         />
       </SpecProvider>
