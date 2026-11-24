@@ -130,6 +130,18 @@ Owner tags:
   that collects removers, and a call on whether a second `add` counts. Either is a public addition,
   so it ships in a minor.
 
+- **[agent] Unconfirmed suspicions from the 2026-11-24 review pass**, each read from the code, not
+  reproduced; confirm with a failing test before fixing, and drop the line if it does not fail.
+  - `wave` takes `cycles` of `NaN` or `±Infinity`, or a `depth` key set to `undefined`, and writes
+    NaN rather than refusing at cue; `glide` takes bounds with min above max.
+  - A pending voice cued backward and then given `rate = 1` keeps `anchorElapsed` at its end and
+    `beginless` as fixed at cue, so it may end at once; the docs do not say which is meant.
+  - `unpackHeld` (`src/pack.ts`) puts a packed record's `kept` array and `state` into the live
+    record uncopied, and `setting.keep` empties `unkept` with `shift()`, so two revives from one
+    descriptor object may share the first's changes.
+  - The `Along` store (`src/store.ts`) may lose a delete once a later copy sets that key again, so
+    an earlier copy asked afterwards rebuilds the record from the live mix.
+
 ## Speed
 
 Measure every change on the fleet before the next starts; `bench/README.md` has the method.
@@ -285,6 +297,13 @@ Measure every change on the fleet before the next starts; `bench/README.md` has 
   compiles, while `built` and `compiledOnes` keep every one until `close()`. Taking offsets from
   `frame.y`, which already holds the count, would drop it from the key; or decide that a changing
   count is not a case the engine serves, and evict kernels of other counts.
+
+- **[agent] Unconfirmed gpu suspicions from the 2026-11-24 review pass** (read, not reproduced):
+  a subject listed twice in `subjects()` is indexed by its first place in `Answers` and its last in
+  `numbering.ts`, so the earlier copy's motion row may go stale; a kernel that fails to compile
+  gets no stand-in even where an older kernel could fold the frame; offsets and level codes are
+  stored as raw bits in f32 buffers, so small ones are subnormal and a GPU that flushes subnormals
+  on load would read 0 (teitou does not).
 
 ## Playground
 
