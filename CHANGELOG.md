@@ -11,6 +11,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A patch that probes another subject while lanes fill a voice weighed by `around` reads that
   subject's `around` weights at its own place. It read them at the place of the subject being
   filled, so on lanes a probe of a voice's leader could read 0 where the general path read 1.
+- A transport's `project` read back to before a `drop` reads the dropped mix, as a seek there puts
+  it back. It threw that the mix is not on the transport.
 - A ticker's `stop` called during a frame, from a mix's sync or an `after` callback, stops the
   loop. It was ignored, the frame asking for the next as it ended.
 - A debugger's `watch` callback that throws no longer makes the host's `sync` throw and skip the

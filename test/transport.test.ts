@@ -575,6 +575,37 @@ describe('transport', () => {
     expect(starts(runs, 'w')).toEqual([end?.timestamp]);
   });
 
+  it('reads back a mix dropped after the time read, as a seek there puts it back', () => {
+    const { t, orbs, runs } = stage({ ms: 10_000, tape });
+    t.sync(0);
+    orbs.cue({ patch: fly(300), name: 'f', score: 's', subjects: ['f'], loop: false });
+    runs.cue({
+      patch: type(100),
+      subjects: ['r'],
+      loop: false,
+      anchor: { start: { after: { score: 's', name: 'f' } } },
+    });
+    t.sync(150);
+    t.sync(350);
+    t.drop(orbs);
+    t.sync(500);
+    const read = (at: number) => {
+      const p = t.project(at);
+      return [p.of(orbs).probe('f').u, p.of(runs).probe('r').chars];
+    };
+    const back = [read(150), read(350), read(200)];
+    t.seek(350);
+    const sought = [[orbs.probe('f').u, runs.probe('r').chars]];
+    t.seek(150);
+    sought.unshift([orbs.probe('f').u, runs.probe('r').chars]);
+    expect(back).toEqual([
+      [0.5, 0],
+      [undefined, 5],
+      [2 / 3, 0],
+    ]);
+    expect(back.slice(0, 2)).toEqual(sought);
+  });
+
   it('finds the voices on a score of a mix a seek pages back in', async () => {
     const f = () => ({ patch: fly(100), name: 'f', score: 's', subjects: ['f'], loop: false });
     const t = transport({ history: { ms: 100, every: 50, tape, store: memoryStore(), revive: f } });
