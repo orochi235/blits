@@ -342,7 +342,9 @@ export function fadeAt<I, O>(
   if (voice.state === 'done' || voice.state === 'fading') return;
   const now = nowFor(mix, voice);
   if (at <= now) {
-    beginFade(mix, voice, { over }, Math.max(startedAt(voice), at));
+    // Not before it started; one yet to start fades from `at`, as from now.
+    const from = voice.state === 'pending' ? at : Math.max(startedAt(voice), at);
+    beginFade(mix, voice, { over }, from);
     mix.stir();
     return;
   }

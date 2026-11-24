@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- `fade({ at })` at or behind now, on a voice yet to start, fades from `at` as `fade()` does from
+  now. It began the fade at the voice's start instead, so `fade({ at: now, over: 50 })` of a voice
+  starting 100 ms later played it at partial weight, where `fade({ over: 50 })` showed nothing.
 - A voice faded before its start and raised after it begins as one never faded does. It went live
   without beginning, so where its owner was sought back before its start, a seek of the mix back
   read it as still to start, though it had played.

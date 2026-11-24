@@ -50,6 +50,24 @@ describe('fade at', () => {
     expect(m.probe('a').x).toBeCloseTo(0.5, 9);
   });
 
+  it('at now, on a voice yet to start, fades as a fade with no time does', () => {
+    const run = (at?: number) => {
+      const m = mix<string, Pose>(K);
+      m.sync(0);
+      const h = m.cue({
+        patch: patch<string, Pose>(1000, () => ({ x: 5 }), { writes: ['x'] }),
+        start: 100,
+      });
+      m.probe('a');
+      h.fade({ at, over: 50 });
+      return [40, 110, 130, 160].map((t) => {
+        m.sync(t);
+        return m.probe('a').x;
+      });
+    };
+    expect(run(0)).toEqual(run());
+  });
+
   it('is taken back by rise before it begins, with nothing changed', () => {
     const m = mix<string, Pose>(K);
     m.sync(0);
