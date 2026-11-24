@@ -84,6 +84,8 @@ export interface MotionOwner {
   revive(id: number, subject: unknown): number;
   /** The mix clock at its latest frame; NaN before the first. */
   now(): number;
+  /** The earliest mix time a read may still ask for: Infinity where the mix keeps no history. */
+  since(): number;
   /** The number of the frame the mix is playing. */
   seq(): number;
   /** Whether a change made now comes before anything read the frame. */

@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `set`, `to` or `push` on a motion voice whose clock stood still, at rate 0, stays out of the
+  frames before it under history: a seek back to before it played it a frame early, and a read back
+  to one of those frames showed it.
 - A subject dropped while a read ahead or read back plays to it has no plot position from then on in
   that read, as in play: `around` and `within` voices cued after the drop read it at the position it
   had.

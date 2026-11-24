@@ -4,6 +4,7 @@ import type { Curve } from './easing.js';
 import { closedLch } from './lch.js';
 import {
   made,
+  outlived,
   pack,
   prune,
   type Released,
@@ -460,8 +461,13 @@ export class Motions<I> {
     }
     if (flags & OLDER) {
       const list = (this.older as Segment[][])[s] as Segment[];
-      const next = list.length > 1 ? (list[1] as Segment).at : (runs[b + RunField.AT] as number);
-      if (next <= reading.horizon) return false;
+      const next = list.length > 1 ? (list[1] as Segment) : undefined;
+      if (
+        next === undefined
+          ? outlived(this, runs[b + RunField.AT] as number, this.causes?.[s])
+          : outlived(this, next.at, next.change)
+      )
+        return false;
     }
     return true;
   }
@@ -706,6 +712,7 @@ const methods = {
   runThen,
   restretch,
   made,
+  outlived,
   prune,
   change,
   queue,

@@ -45,6 +45,11 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     now() {
       return mix.deref()?.now ?? Number.NaN;
     },
+    since() {
+      const m = mix.deref();
+      const ms = m?.opts.history?.ms;
+      return m === undefined || ms === undefined ? Number.POSITIVE_INFINITY : m.now - ms;
+    },
     seq() {
       return mix.deref()?.transport.seq ?? Number.NaN;
     },
