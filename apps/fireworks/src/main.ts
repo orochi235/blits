@@ -5,7 +5,18 @@ import { drive as driveSound } from '@msb235/blits-tone';
 import * as Tone from 'tone';
 import { createFrame } from './frame';
 import { createLauncher } from './launch';
-import { BURSTS, createShow, KIT, type Pose, type Shell, type Sound, shell } from './show';
+import {
+  AUTO,
+  BURSTS,
+  createShow,
+  KIT,
+  keepLaunching,
+  launching,
+  type Pose,
+  type Shell,
+  type Sound,
+  shell,
+} from './show';
 import { createSky } from './sky';
 import { createSounds } from './sound';
 
@@ -88,16 +99,30 @@ start.addEventListener('click', async () => {
     if (settled && rate.valueAsNumber !== m.rate) rate.valueAsNumber = m.rate;
   };
 
-  const step = createFrame(m, { launch: () => launch(shell()), auto: () => auto.checked });
+  // The box shows whether the voice that keeps launching plays, which a seek back also sets.
+  const showAuto = () => {
+    const on = launching(m);
+    if (auto.checked !== on) auto.checked = on;
+  };
+  auto.addEventListener('change', () => {
+    if (auto.checked) keepLaunching(m);
+    else for (const h of m.voices(AUTO)) if (h.state !== 'fading') h.fade({ over: 1 });
+  });
+
+  const step = createFrame(m);
   const frame = (now: number) => {
     requestAnimationFrame(frame);
     const seconds = step(now);
     launcher.tend();
+    showAuto();
     showRate();
     sparks.write();
     sound.write();
     sky.render(seconds);
   };
   start.hidden = true;
+  // Synced at this frame's time first, so the pacer starts its first pass here rather than at 0.
+  m.sync(Number(document.timeline.currentTime ?? performance.now()));
+  if (auto.checked) keepLaunching(m);
   requestAnimationFrame(frame);
 });

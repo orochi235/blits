@@ -74,11 +74,53 @@ export const sizeOf = (shell: Shell): number => shell.stars / 160;
 /** How far back the show's history reaches, so the panel or the DevTools extension can seek it. */
 export const HISTORY_MS = 30_000;
 
+/** The subject the show's own launches are paced on. It is never launched, and draws nothing. */
+export const PACER: Shell = { x: 0, apex: 0, color: [0, 0, 0], stars: 0 };
+
+/** The tag of the voice that keeps launching, whose events are the launches. */
+export const AUTO = 'auto';
+
+/** Mean ms between the shells the show launches on its own. */
+const PACE_MS = 800;
+
+/** Where in pass `pass` the pacer launches, 0 to 1: fixed per pass, so a replay of it agrees. */
+const beat = (pass: number): number => {
+  const x = Math.sin(pass * 12.9898 + 4.1414) * 43758.5453;
+  return 0.15 + 0.7 * (x - Math.floor(x));
+};
+
+/** Sends its pass number once a pass, at that pass's beat: one launch each. */
+const pace = patch<Shell, Pose, { sent: number }>(PACE_MS, () => ({}), {
+  writes: [],
+  state: () => ({ sent: Number.NaN }),
+  step: (state, _dt, _shell, setting) => {
+    const { pass } = setting;
+    if (state.sent === pass || setting.elapsed - pass * PACE_MS < beat(pass) * PACE_MS) return;
+    state.sent = pass;
+    setting.send(pass);
+  },
+});
+
+/** Cues the voice that keeps launching shells, looping on the pacer until it is faded. */
+export function keepLaunching(m: Mix<Shell, Pose>): Handle<Shell> {
+  return m.cue({
+    patch: pace,
+    subjects: [PACER],
+    loop: true,
+    name: 'keep launching',
+    tags: [AUTO],
+  });
+}
+
+/** Whether the show keeps launching shells, read from the mix, which a seek back puts as it was. */
+export const launching = (m: Mix<Shell, Pose>): boolean =>
+  m.voices(AUTO).some((h) => h.state !== 'fading');
+
 /** The show's mix, named and with history whether or not a panel is mounted. */
 export function createShow(): Mix<Shell, Pose> {
   return mix<Shell, Pose>(KIT, {
     name: 'show',
-    labelOf: (s: Shell) => `shell at x ${s.x.toFixed(1)}`,
+    labelOf: (s: Shell) => (s === PACER ? 'pacer' : `shell at x ${s.x.toFixed(1)}`),
     history: { ms: HISTORY_MS, tape: createHistory },
   });
 }
