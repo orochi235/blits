@@ -34,8 +34,13 @@ A shell launched while all six whistles are in the air rises silently and still 
 sparks attached for the show's 30 s of history, so a seek back into it bursts again and borrows a
 whistle again for a replayed rise.
 
-Each frame, `src/frame.ts` syncs the mix and launches on its clock, then `src/main.ts` writes both
-drivers. The quarks driver emits for the mix time since its last write, and the sparks age by the
+"keep launching" is one more voice, `keepLaunching` in `src/show.ts`: it loops on a pacer subject
+that draws nothing and sends an event once a pass, and the launcher sends a shell up for each one.
+A beat a seek back plays again finds the shell the mix cues again from its tape, so it launches
+nothing twice; one whose cue a later call cut off launches anew. The box shows whether that voice
+plays, so a seek back sets it too.
+
+Each frame, `src/frame.ts` syncs the mix, then `src/main.ts` writes both drivers. The quarks driver emits for the mix time since its last write, and the sparks age by the
 mix time the frame played, so the debug panel's pause and seek stop and move them both; the Tone
 driver takes the timestamp the mix was synced to.
 

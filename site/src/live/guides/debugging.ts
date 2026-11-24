@@ -1,5 +1,6 @@
 import { kit, mix, patch, sum, watched } from '@msb235/blits';
 import { demo } from '../demo';
+import { frameTime } from '../loop';
 
 interface Pose {
   y: number;
@@ -65,6 +66,8 @@ export default demo((d) => {
     }),
   );
   d.closes(m);
+  // Synced once before the first cues, or idle's fade in is over by the first frame.
+  m.sync(frameTime());
 
   // `watched()` is what the panel reads, and it knows each voice's name and tags.
   const entry = watched()
