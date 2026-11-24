@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A seek back and play on through a `rebase` whose sync holds a host call moves every mix waiting
+  on something to land, as play did: a mix cued into in the frame before still showed that
+  frame, such as a child its span's fit skipped holding its last frame a frame too long.
 - A staggered subject waiting on an owner whose clock stands still starts where that clock reaches
   its delay once it moves again, however many times the rate was written meanwhile: a second
   `rate = 0` while stopped let it start from a stand-in time instead, earlier than the owner's

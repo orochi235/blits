@@ -1,5 +1,5 @@
 import type { Mixer } from './mixer.js';
-import { move } from './move.js';
+import { move, waits } from './move.js';
 import type { Pace } from './pace.js';
 import type { Transport } from './transport.js';
 import type { Tape, TapeOp } from './types.js';
@@ -102,13 +102,15 @@ export function hostAhead(
  * Makes the recorded calls `due` by the host time each was made at again, each host time's in a
  * frame of its own with every mix on the transport moved to where it stood then, as the host made
  * them. Answers the host time of the last frame it played, NaN for none. Given `onto` and the
- * stage of its copies, it makes them on those, and the caller puts the tape back.
+ * stage of its copies, it makes them on those, and the caller puts the tape back. `lands` is a
+ * sync's own frame landing what waits with the mix clock standing still, as a rebase's does.
  */
 export function replay(
   transport: Transport,
   due: (u: number) => boolean,
   onto: Transport = transport,
   on: Stage = live,
+  lands = false,
 ): number {
   const tape = transport.tape;
   if (tape === undefined) return Number.NaN;
@@ -127,6 +129,7 @@ export function replay(
         const later = now > onto.now;
         onto.tick(later ? now : onto.now);
         if (later) for (const m of onto.members) move(m, now);
+        else if (lands && at === u) for (const m of onto.members) if (waits(m)) move(m, now);
       }
       transport.replaying = true;
       stage = on;

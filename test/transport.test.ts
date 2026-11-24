@@ -444,6 +444,44 @@ describe('transport', () => {
     expect(runs.probe('r').chars).toBe(5);
   });
 
+  for (const lanes of [true, false])
+    it(`lands a stirred mix on a rebase's sync whose host time holds a call, on replay too${lanes ? '' : ', without lanes'}`, () => {
+      const K = kit<{ x: number }>({ x: sum() });
+      const wave = patch<string, { x: number }>(400, (ph) => ({ x: Math.sin(ph * 6.28 + 1) }), {
+        writes: ['x'],
+      });
+      const t = transport({ history: { ms: 10_000, tape } });
+      const a = mix<string, { x: number }>(K, { transport: t, lanes });
+      const b = mix<string, { x: number }>(K, { transport: t, lanes });
+      t.sync(0);
+      const span = b.span({ rate: 0.5, duration: 300, order: 'together' });
+      const shown: number[] = [];
+      const seqs: number[] = [];
+      // Host times; the last frame is a rebase's, where the mix clock stands still.
+      const hosts = [16, 104, 404];
+      const frame = (host: number, f: number, play: boolean) => {
+        if (f === 2) t.rebase();
+        t.sync(host);
+        if (play && f === 1) b.blend([{ patch: wave }], () => 1, { owner: span, loop: 2 });
+        if (play && f === 2) a.cue({ patch: wave });
+        seqs.push(t.seq);
+        return b.probe('s').x;
+      };
+      hosts.forEach((h, f) => shown.push(frame(h, f, true)));
+      // A child the span's fit skips shows its last frame in the frame it is cued in, and no more.
+      expect(shown[1]).not.toBe(0);
+      expect(shown[2]).toBe(0);
+      t.seek({ frame: seqs[0] as number });
+      const again = [b.probe('s').x];
+      // The host's clock reads on from the seek.
+      let host = 404;
+      for (let f = 1; f < hosts.length; f++) {
+        host += (hosts[f] as number) - (hosts[f - 1] as number);
+        again.push(frame(host, f, false));
+      }
+      expect(again).toEqual(shown);
+    });
+
   it('branches the whole tape on a call after a seek back', () => {
     const { t, orbs, runs } = stage({ ms: 10_000, tape });
     t.sync(0);
