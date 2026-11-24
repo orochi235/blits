@@ -104,6 +104,12 @@ Owner tags:
   next read; and a record first read after a seek, then sought back to a frame after that read,
   still counts as unmet. The last needs the host's reads to differ from the recorded run. One
   route: carry `metSeq` in the packed record and set it in the lane's read as `remember` does.
+- **[agent] A record `mix.redone` marks may keep its sent count into a later rebuild where it should
+  not** (2026-11-24, reasoned, not reproduced): a seek back past a handle `seek` marks the put-back
+  record so its next rebuild keeps the count play sent from. A record so marked that is not read
+  before a new handle seek (one at rest until a rise, say) carries the mark into that seek's
+  rebuild, so steps play would send again are held back. One route: clear the mark at the next
+  handle seek on the voice, read or not.
 - **[agent] Unconfirmed suspicions from the 2026-11-24 review pass**, each read from the code, not
   reproduced; confirm with a failing test before fixing, and drop the line if it does not fail.
   - `wave` takes `cycles` of `NaN` or `±Infinity`, or a `depth` key set to `undefined`, and writes
