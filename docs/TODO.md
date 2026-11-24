@@ -22,7 +22,12 @@ Owner tags:
   exactly there. A read ahead past that frame reads at known events and the time read, never at
   the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
   ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
-  whether this stays a stated limit of the fuzz.
+  whether this stays a stated limit of the fuzz. Also programs 344, 351, 500, 596 and 619
+  (2026-11-24, reproduced; each passes with its fade at rest taken out). 596 is 98's case, a wave
+  at its half pass. In the rest the resting frame is the one the fade was called in, which the
+  read ahead stands at as a known event, never as a frame: a wave or keys patch cued at its pass
+  start in that frame (344, 500, 619), or a `rate: 0` voice resting from then until a handle
+  `seek` moves it (351).
 - **[agent] With a store, a seek back shows a motion `set` made in a later frame** (2026-11-24,
   replay fuzz programs 470 and 809, store only, reproduced): a spring (470, a `vspring` cued at
   frame 0 and set twice at frame 3) shows at frame 2 after `prepare` and a seek there the values
