@@ -30,6 +30,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A seek back to after a subject came to rest under `fade({ at: 'rest' })`, from a copy kept
   before, puts its record back at rest; the record put back lost the rest it was copied over, so
   it stepped in the seek's frame and sent there what play sent at the rise.
+- A seek back to after a handle `seek` that rebuilt a stateful record, from a copy kept before it,
+  holds back what the record's steps sent in play by the moment sought; the record put back was
+  rebuilt again at its first read and sent all of it a second time.
 - `mix.trace` of a `wave` with negative `cycles` finds its corners and jumps; a triangle, saw or
   square running backward traced as straight lines and still read `exact`.
 - A read ahead gives a staggered subject the delay a seek back left standing, where it asked

@@ -353,6 +353,36 @@ describe('seek', () => {
     });
 
   for (const lanes of [true, false])
+    it(`holds back what a record put back from before a handle seek steps up to play's count (lanes ${lanes})`, () => {
+      const sender = patch<Part, Pose, { n: number }>(0, () => ({}), {
+        writes: [],
+        state: () => ({ n: 0 }),
+        step: (st, _dt, _s, setting) => {
+          st.n++;
+          if (st.n % 4 === 0) setting.send(st.n);
+        },
+      });
+      // No copy kept between the handle seek and the moment sought.
+      const m = mix<Part, Pose>(K, { history: { ms: 1e6, every: 1000, tape }, stepMs: 8, lanes });
+      let h: Handle<Part> | undefined;
+      const frame = (host: number, t: number) => {
+        m.sync(host);
+        if (host === t && t === 0) h = m.cue({ patch: sender, subjects: [a] });
+        // Ahead, its steps count from 0 again and catch up in this frame.
+        if (host === t && t === 64) h?.seek(200);
+        m.probe(a);
+        return m.drain().map((e) => `${e.timestamp}:${e.event}`);
+      };
+      const ts = Array.from({ length: 24 }, (_, i) => i * 16);
+      const sent = ts.map((t) => frame(t, t));
+      m.seek({ frame: 6 });
+      m.probe(a);
+      expect(m.drain()).toEqual([]);
+      const again = ts.slice(6).map((t, i) => frame(384 + 16 * i, t));
+      expect(again).toEqual(sent.slice(6));
+    });
+
+  for (const lanes of [true, false])
     it(`puts back a record faded at rest still at rest, so it steps where play's rose (lanes ${lanes})`, () => {
       // At rest on `a` only, so the voice lives on through `b`.
       const sender = patch<Part, Pose, { n: number }>(0, (_p, s) => ({ gain: s === a ? 1 : 0.5 }), {

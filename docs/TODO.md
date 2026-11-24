@@ -29,12 +29,6 @@ Owner tags:
   the frame-3 sets put it at; without a store it matches. Filed under the rate-0 `set` entry until
   that fix of the same day showed it is a separate cause. One route: check which motion changes
   `unpage` and `rewind` keep for a seek to a frame before them.
-- **[agent] A seek back to after a handle seek sends again what the rebuilt record sent** (2026-11-24,
-  replay fuzz program 754, reproduced): put back from a copy kept before a handle `seek` that
-  rebuilt it by the moment sought, a record is rebuilt again at its first read, and `rebuild`
-  (`src/contribution.ts`) lets go of its `resent` count as for a record stepped afresh, so its steps
-  play sent in the handle seek's frame go out again. One route: log each rebuild in `mix.sends`, so
-  a seek can tell that play's rebuild came after the copy and keep the count through the replay's.
 - **[agent] With a store, a seek past memory holds back a put-back record's steps by stamp**
   (2026-11-24, reasoned): `mix.sends` keeps the step count each record had sent from for the
   frames memory reaches, and a mark for the rest, so a seek to an earlier frame after the record's

@@ -36,8 +36,11 @@ function rebuild<I, O>(
   held: Subject<unknown>,
 ): void {
   held.rebuilt = voice.rebuilds;
-  // Stepped afresh, it sends what it sends again: nothing of it was sent the first time.
-  mix.resent?.delete(held);
+  // Stepped afresh, it sends what it sends again: nothing of it was sent the first time. Put back
+  // from a copy kept before play's own rebuild by the moment sought, its steps up to play's count
+  // by then were.
+  const again = mix.redone?.delete(held) === true;
+  if (!again) mix.resent?.delete(held);
   const patch = voice.patch;
   if (!patchKeeps(patch) && held.kept === null) return;
   held.state = patch.state ? (patch.state(subject) as unknown) : undefined;
@@ -47,8 +50,12 @@ function rebuild<I, O>(
   held.ticks = 0;
   held.stepped = held.since < now ? held.since : now;
   held.probed = Number.NaN;
-  // Its steps count from 0 again, so a seek back to here holds back none of them.
-  if (mix.sends?.has(held)) logSend(mix, held, 0);
+  // Its steps count from 0 again, so a seek back to here holds back none of them, or those it holds.
+  if (mix.opts.history !== undefined && !mix.projecting) {
+    logSend(mix, held, 0);
+    const sent = again ? (mix.resent?.get(held) ?? 0) : 0;
+    if (sent > 0) logSend(mix, held, sent);
+  }
 }
 
 /** Whether a seek since its last read moved a stateful record's origin, as one back before it does. */
@@ -385,7 +392,8 @@ function logSend<I, O>(mix: Mixer<I, O>, held: Subject<unknown>, n: number): voi
     mix.sends.set(held, log);
   }
   const seq = mix.transport.seq;
-  if (log.length > 0 && log[log.length - 3] === seq) {
+  // A rebuild stands as its own entry, a count of 0, which a seek reads.
+  if (log.length > 0 && log[log.length - 3] === seq && n !== 0 && log[log.length - 1] !== 0) {
     log[log.length - 1] = n;
     return;
   }

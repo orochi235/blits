@@ -350,9 +350,14 @@ export class Mixer<I, O> implements Mix<I, O> {
    */
   resent: WeakMap<Subject<unknown>, number> | null = null;
   /**
+   * The records a seek put back from a copy kept before play rebuilt them by the moment sought: the
+   * rebuild their first read makes is play's again, so `resent`'s count stands through it.
+   */
+  redone: WeakSet<Subject<unknown>> | null = null;
+  /**
    * Under history, by record, each frame its `stepMs` steps sent in, as that frame's number, its
-   * mix time and the count of steps taken by its end, oldest first: what a seek reads `resent`'s
-   * counts from.
+   * mix time and the count of steps taken by its end, oldest first, and each rebuild, as a count of
+   * 0: what a seek reads `resent`'s counts and `redone` from.
    */
   sends: WeakMap<Subject<unknown>, number[]> | null = null;
   /** Stamps at or before this send nothing: `sentTo`, or while a record steps, its own horizon. */
