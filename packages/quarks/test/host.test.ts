@@ -139,6 +139,28 @@ describe('capture', () => {
     m.sync(0);
     expect(() => q.write()).toThrow(/share one generator/);
   });
+
+  it("at 'write', owes no time for the writes a capture refused", () => {
+    const m = mix<Spot, Emission>(K);
+    const s = system();
+    m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
+    const q = drive(m, { kit: K, capture: 'write' });
+    q.attach(a, s, { at: [0, 0, 0] });
+    m.sync(0);
+    q.write();
+    const life = s.startLife;
+    const speed = s.startSpeed;
+    s.startSpeed = s.startLife;
+    for (let t = 100; t <= 5000; t += 100) {
+      m.sync(t);
+      expect(() => q.write()).toThrow(/share one generator/);
+    }
+    s.startSpeed = speed;
+    s.startLife = life;
+    m.sync(5100);
+    q.write();
+    expect(born(s).length).toBeLessThanOrEqual(1);
+  });
 });
 
 describe('frame', () => {

@@ -233,10 +233,11 @@ export function drive<I, O extends Partial<Emission>>(
 
     write() {
       emitted.clear();
-      if (live) for (const held of systems.values()) held.authored.capture();
+      // Moved before the capture, which can throw: a write that fails still owes no time after.
       const gone = mix.played - played;
       const dt = gone > 0 ? gone : 0;
       played = mix.played;
+      if (live) for (const held of systems.values()) held.authored.capture();
       // A subject that throws loses this frame's particles; the rest still emit, the authored
       // values always go back, and the first error is rethrown once they have.
       let failed = false;

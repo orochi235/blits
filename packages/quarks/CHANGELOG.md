@@ -15,6 +15,9 @@ section here.
 - A subject whose probe or `rate` throws in a `write` loses only its own particles that frame. The
   subjects before it lost theirs too, those after it lost the frame's time, and the authored values
   were not put back.
+- Under `capture: 'write'`, a write whose capture throws still counts its time as played, so the
+  first write after the host fixes the system no longer emits every second the failing writes
+  covered at once.
 
 ## 0.17.4
 
