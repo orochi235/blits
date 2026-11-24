@@ -558,6 +558,14 @@ describe('retarget on interruption', () => {
         expect(speed(160 + 500 / rate)).toBeCloseTo(1, 2);
       }
     });
+
+    it(`leaves at the subject's speed on its first pass only${without}`, () => {
+      const speed = takeOver(lanes, { loop: 3 });
+      expect(speed(160)).toBeCloseTo(1, 2);
+      // Its one segment runs from where the subject was back to there, standing still.
+      expect(speed(1160)).toBeCloseTo(0, 6);
+      expect(speed(2160)).toBeCloseTo(0, 6);
+    });
   }
 });
 

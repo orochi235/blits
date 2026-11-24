@@ -8,6 +8,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A looping `from: 'current'` voice leaves at the subject's speed on its first pass only. Every
+  later pass started at that speed again, jumping back toward where the subject had been.
 - A `from: 'current'` voice leaves at the subject's speed whatever its `rate`, where it left at that
   speed times its rate, and a channel its `delayBy` holds leaves at it once the delay is out, where
   it left at the speed scaled by the duration over what the delay left of it.

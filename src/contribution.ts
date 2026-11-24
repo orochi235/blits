@@ -225,7 +225,8 @@ export function keyed<I, O>(
     held.delta ?? {},
     base,
     voice.lerps as never,
-    held.slope,
+    // Only its first pass leaves the subject; a loop's later ones start on their own curve.
+    voice.setting.pass === 0 ? held.slope : undefined,
     voice.intos,
     voice.scratch,
   );
