@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A call the tape plays again after a seek back, in a frame where rate 0 held the mix clock,
+  lands what the host's sync there landed: a span child played in its cue frame stayed on in that
+  frame, where play had already let it go.
 - A read ahead (`project`) on a transport past the drop of a mix the tape holds reads that mix as it
   stood at the drop, as play shows it, where a mix with a spring or another stepped voice on it went
   on moving past the drop.

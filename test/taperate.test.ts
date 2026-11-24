@@ -82,3 +82,28 @@ for (const rate of [0.75, 1.5, 1 / 3])
     };
     expect(run(true)).toEqual(run(false));
   });
+
+// The child a queue span plays in its cue frame is done by the next while rate 0 holds the clock,
+// and a call played again in that next frame must not keep it on.
+for (const lanes of [true, false])
+  it(`lands what waits at a call played again while rate 0 holds the clock (lanes ${lanes})`, () => {
+    const m = mix<{ id: string }, Pose>(K, { lanes, history: { ms: 2000, every: 50, tape } });
+    const climb = patch<{ id: string }, Pose>(400, (ph) => ({ x: 1 + ph }), { writes: ['x'] });
+    const shown: number[] = [];
+    let s: ReturnType<typeof m.span> | undefined;
+    for (let t = 0; t <= 80; t += 16) {
+      m.sync(t);
+      if (t === 16) m.rate = 0;
+      if (t === 32) s = m.span({ name: 's', rate: 0.5, duration: 300, order: 'queue' });
+      if (t === 48 && s) m.cue({ patch: climb, owner: s });
+      if (t === 64) m.cue({ patch: climb, weight: 0 });
+      shown.push(m.probe(a).x);
+    }
+    m.seek({ frame: m.seq - 4 });
+    const got: number[] = [];
+    for (let h = 96; h <= 144; h += 16) {
+      m.sync(h);
+      got.push(m.probe(a).x);
+    }
+    expect(got).toEqual(shown.slice(2));
+  });

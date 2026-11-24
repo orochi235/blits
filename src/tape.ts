@@ -1,5 +1,5 @@
 import type { Mixer } from './mixer.js';
-import { move } from './move.js';
+import { move, waits } from './move.js';
 import type { Pace } from './pace.js';
 import type { Transport } from './transport.js';
 import type { Tape, TapeOp } from './types.js';
@@ -126,7 +126,10 @@ export function replay(
         // there leaves in this frame, not the one before.
         const later = now > onto.now;
         onto.tick(later ? now : onto.now);
-        if (later) for (const m of onto.members) move(m, now);
+        // Host time moved to `at` while the rate held the mix clock, which lands what waits, as a
+        // sync there does.
+        const held = now === onto.now && onto.pace !== null;
+        for (const m of onto.members) if (later || (held && waits(m))) move(m, now);
       }
       transport.replaying = true;
       stage = on;
