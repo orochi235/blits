@@ -36,6 +36,8 @@ function rebuild<I, O>(
   held: Subject<unknown>,
 ): void {
   held.rebuilt = voice.rebuilds;
+  // Stepped afresh, it sends what it sends again: nothing of it was sent the first time.
+  mix.resent?.delete(held);
   const patch = voice.patch;
   if (!patchKeeps(patch) && held.kept === null) return;
   held.state = patch.state ? (patch.state(subject) as unknown) : undefined;
@@ -156,7 +158,12 @@ export function contribution<I, O>(
       if (tick !== undefined) this.tick(voice, subject, held, tick, to);
       else if (still === 0 ? now !== held.stepped : to > held.stepped) {
         if (still !== 0) setting.dt = this.capped(to - held.stepped);
-        voice.patch.step(held.state as never, setting.dt, subject, setting as never);
+        this.heldTo = heldToFor(this, held);
+        try {
+          voice.patch.step(held.state as never, setting.dt, subject, setting as never);
+        } finally {
+          this.heldTo = this.sentTo;
+        }
         held.stepped = to;
       }
     } else if (sought) own(voice, held);
@@ -335,6 +342,7 @@ export function tick<I, O>(
   }
   const step = voice.patch.step as NonNullable<Patch<I, O, unknown>['step']>;
   setting.dt = tick;
+  this.heldTo = heldToFor(this, held);
   // Counted step by step, so a step that throws leaves those before it taken.
   try {
     for (n++; n <= due; n++) {
@@ -346,7 +354,16 @@ export function tick<I, O>(
     held.stepped = held.since + held.ticks * tick;
     setting.timestamp = now;
     setting.dt = frameDt;
+    this.heldTo = this.sentTo;
   }
+}
+
+/**
+ * Up to when what a record's steps send was sent the first time: the moment sought for one a seek
+ * put back, and never for one made since, whose steps before that moment were first made after it.
+ */
+function heldToFor<I, O>(mix: Mixer<I, O>, held: Subject<unknown>): number {
+  return mix.resent?.has(held) === true ? mix.sentTo : Number.NEGATIVE_INFINITY;
 }
 
 /**

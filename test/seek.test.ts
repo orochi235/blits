@@ -250,6 +250,45 @@ describe('seek', () => {
     expect(m.drain().map((e) => e.event)).toEqual([40]);
   });
 
+  for (const lanes of [true, false])
+    for (const how of ['seek', 'start', 'handle'] as const)
+      it(`sends again an event stamped before the moment but first sent after it (${how}, lanes ${lanes})`, () => {
+        // Sends once, 50 ms into a subject: a voice that reaches that before the moment sought, but
+        // only in a frame after it, sends with a stamp from before it.
+        const sender = patch<Part, Pose, { n: number }>(0, () => ({}), {
+          writes: [],
+          state: () => ({ n: 0 }),
+          step: (st, dt, _s, setting) => {
+            st.n += dt;
+            if (st.n >= 50 && st.n - dt < 50) setting.send('half');
+          },
+        });
+        const m = mix<Part, Pose>(K, { history: { ms: 1e6, every: 50, tape }, stepMs: 4, lanes });
+        let h: Handle<Part> | undefined;
+        // Played again, the tape makes the calls.
+        const frame = (host: number, t: number) => {
+          m.sync(host);
+          if (host !== t) {
+            m.probe(a);
+            return m.drain().map((e) => e.timestamp);
+          }
+          if (t === 0 && how === 'handle') h = m.cue({ patch: sender, subjects: [a] });
+          if (t === 48) {
+            if (how === 'seek') m.cue({ patch: sender, seek: 100, subjects: [a] });
+            if (how === 'start') m.cue({ patch: sender, start: -60, subjects: [a] });
+            if (how === 'handle') h?.seek(100);
+          }
+          m.probe(a);
+          return m.drain().map((e) => e.timestamp);
+        };
+        const sent = [0, 16, 32, 48, 64].map((t) => frame(t, t));
+        expect(sent[3]).toHaveLength(1);
+        expect(sent[3]?.[0]).toBeLessThan(32);
+        m.seek(32);
+        m.drain();
+        expect([frame(80, 48), frame(96, 64)]).toEqual(sent.slice(3));
+      });
+
   it('brings back a subject faded out of a voice after the moment as it stood, until the fade plays again', () => {
     const m = mix<Part, Pose>(K, { history: { ms: 5000, tape }, stepMs: 5 });
     m.sync(0);

@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A seek back holds back only the events a subject sends again while it steps back up to the
+  moment sought. It held back every event stamped at or before that moment, so one first sent
+  after it was lost on the way forward again: a voice cued later with `seek` or a `start` in the
+  past, or rebuilt by a handle's `seek`, sent nothing for its steps before the moment.
 - Fading or muting a child its owner keeps quiet past its passes under history leaves it quiet. It
   started a fade from full weight, so its last frame came back for the length of the fade, where
   without history the child had left and read 0.

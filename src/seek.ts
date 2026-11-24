@@ -52,6 +52,7 @@ function restore<I, O>(
     h.weight = 0;
     h.inputs = inputs;
     if (!(h.since <= t)) origin(mix, voice, h);
+    putBack(mix, h);
     return h;
   }
   // A seek back to just before now finds its copy among the newest, looked at before searching.
@@ -84,6 +85,7 @@ function restore<I, O>(
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
   if (!(h.since <= snap.at)) origin(mix, voice, h);
+  putBack(mix, h);
   // The record a seek replaces, stepped on from this copy with nothing since rebuilding or moving
   // its start, holds the copy's state at its own `ticks`, which a probe there need not step to.
   const was = mine && ticks > h.ticks && since === h.since && rebuilt === h.rebuilt;
@@ -113,6 +115,12 @@ function restore<I, O>(
     }
   }
   return h;
+}
+
+/** Notes a record as put back, so its steps up to the moment sought send nothing again. */
+function putBack<I, O>(mix: Mixer<I, O>, h: Subject<unknown>): void {
+  if (mix.resent === null) mix.resent = new WeakSet();
+  mix.resent.add(h);
 }
 
 /**
@@ -415,6 +423,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
   mix.hostLog = mix.hostLog.filter((e) => e.seq <= seq);
   mix.sent = mix.sent.filter((e) => e.timestamp <= t);
   mix.sentTo = t;
+  mix.heldTo = t;
   mix.pins = null;
   for (const voice of kept)
     if (voice.state === 'pending' && !Number.isNaN(voice.pinned)) {
