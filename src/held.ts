@@ -5,8 +5,10 @@ import { schedule } from './due.js';
 import type { Share } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf, startedAt } from './origin.js';
+import { page } from './paging.js';
 import { wholeRecord } from './record.js';
 import type { Subject } from './subject.js';
+import type { Paged } from './types.js';
 import { unreach, unreached } from './unreached.js';
 import type { Voice } from './voice.js';
 
@@ -144,17 +146,36 @@ function leaving<I, O>(voice: Voice<I, O>, now: number): boolean {
 
 /**
  * Notes, under history, that a subject left a motion voice's `met` in this frame, for a seek back
- * before it to put back. Only frames memory still holds are kept, where no store reaches past it.
+ * before it to put back. Only frames memory still holds are kept; a store pages the rest.
  */
 export function metLeft<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   voice.metRead ??= [];
   const read = voice.metRead;
   const n = read.length;
-  const oldest = mix.transport.frames.first?.seq;
-  if (n >= 64 && (n & (n - 1)) === 0 && mix.transport.pager === null && oldest !== undefined) {
+  const first = mix.transport.frames.first;
+  if (n >= 64 && (n & (n - 1)) === 0 && first !== undefined) {
+    const out: Paged[] = [];
+    const keys = mix.transport.pager === null ? null : mix.keys;
     let kept = 0;
-    for (const e of read) if (e.seq > oldest) read[kept++] = e;
+    for (const e of read)
+      if (e.seq > first.seq) read[kept++] = e;
+      else if (keys !== null) {
+        // Filed at the oldest frame memory holds, no earlier than it left: a store asked for a
+        // time before that hands it back, and a seek takes only those after the frame it reaches.
+        const r: Paged = {
+          mix: mix.name ?? '',
+          stream: 'met',
+          voice: voice.id,
+          at: first.at,
+          seq: e.seq,
+          data: null,
+        };
+        const key = keys.key(e.subject);
+        if (key !== undefined) r.subject = key;
+        out.push(r);
+      }
     read.length = kept;
+    if (out.length > 0) page(mix.transport, out, first.at);
   }
   read.push({ subject, seq: mix.transport.seq });
 }
