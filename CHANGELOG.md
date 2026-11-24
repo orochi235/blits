@@ -14,6 +14,19 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - A read ahead (`project`) on a transport past the drop of a mix the tape holds reads that mix as it
   stood at the drop, as play shows it, where a mix with a spring or another stepped voice on it went
   on moving past the drop.
+- A read ahead takes a subject out of a voice faded `at: 'rest'` only where the time read finds it
+  resting, as play does at a frame: one resting at a known event on the way, such as the voice's
+  own start, which no frame landed on, read as gone though play still showed it.
+- A seek back and play on through a `rebase` whose sync holds a host call moves every mix waiting
+  on something to land, as play did: a mix cued into in the frame before still showed that
+  frame, such as a child its span's fit skipped holding its last frame a frame too long.
+- A staggered subject waiting on an owner whose clock stands still starts where that clock reaches
+  its delay once it moves again, however many times the rate was written meanwhile: a second
+  `rate = 0` while stopped let it start from a stand-in time instead, earlier than the owner's
+  clock put it, and a seek back replayed it later than play had.
+- With a history store, a voice anchored on an announced mark that memory has already paged out
+  finds it, as it would with every mark in memory: it waited pending for good. Memory keeps, of the
+  marks it pages, the first, last, earliest and latest a query could pick.
 - A subject dropped while a read ahead or read back plays to it has no plot position from then on in
   that read, as in play: `around` and `within` voices cued after the drop read it at the position it
   had.

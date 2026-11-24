@@ -4,7 +4,7 @@ import { delayOf } from './delay.js';
 import { schedule } from './due.js';
 import type { Share } from './everyone.js';
 import type { Mixer } from './mixer.js';
-import { originOf, startedAt } from './origin.js';
+import { fell, originOf, startedAt } from './origin.js';
 import { page } from './paging.js';
 import { wholeRecord } from './record.js';
 import type { Subject } from './subject.js';
@@ -59,13 +59,19 @@ export function startFrom<I, O>(
   held.shown = mix.shownOf(voice, since);
 }
 
-/** Counts a record from where the voice's clock now first reads its delay. */
+/**
+ * Counts a record from where the voice's clock now first reads its delay; true where a clock on the
+ * way stands still or runs back short of it, so that time is only a stand-in until it moves.
+ */
 export function originate<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
   held: Subject<unknown>,
-): void {
-  startFrom(mix, voice, held, mix.sinceOf(voice, held.delay));
+): boolean {
+  const since = mix.sinceOf(voice, held.delay);
+  const short = fell.short;
+  startFrom(mix, voice, held, since);
+  return short;
 }
 
 /**
@@ -107,14 +113,14 @@ export function held<I, O>(
   const delay = delayOf(this, voice, subject);
   held = freshOf(voice, subject, true);
   held.delay = delay;
-  originate(this, voice, held);
+  const short = originate(this, voice, held);
   const fresh = meet(this, voice, held, now);
   if (this.projecting) {
     held.from = held.stepped;
     held.unknown = (this.backward && voice.spec.from === 'current') || fresh;
   }
   voice.subjects.set(subject, held);
-  waits(voice, subject, held, now);
+  waits(voice, subject, held, now, short);
   voice.made++;
   // A subject a voice saw while it shared one record was counted then.
   if (voice.sighted !== null && this.share?.sighted(voice, slot))
@@ -262,16 +268,18 @@ export const isUnread = (held: Subject<unknown>): boolean => !(held.probed >= he
 const stillEarly = (held: Subject<unknown>, now: number): boolean => !(held.since <= now);
 
 /**
- * Lists a record whose origin is still ahead of `now`, for a later change to the clock to move,
- * and for a motion voice, its subject in `met`, which `still` asks after until it is read.
+ * Lists a record whose origin is still ahead of `now`, or `short` of a clock standing still, for a
+ * later change to the clock to move, and for a motion voice, its subject in `met`, which `still`
+ * asks after until it is read.
  */
 export function waits<I, O>(
   voice: Voice<I, O>,
   subject: I,
   held: Subject<unknown>,
   now: number,
+  short = false,
 ): void {
-  if (held.since <= now) return;
+  if (held.since <= now && !short) return;
   if (voice.motion !== undefined) {
     voice.met ??= new Set();
     voice.met.add(subject);
@@ -280,7 +288,8 @@ export function waits<I, O>(
   // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
   if (early !== null && early.length >= 64 && (early.length & (early.length - 1)) === 0)
     unearly(voice, now);
-  (voice.early ??= []).push(held);
+  if (voice.early === null) voice.early = [held];
+  else voice.early.push(held);
 }
 
 /** Lets go of the listed records whose origin has passed by `now`. */
@@ -310,15 +319,23 @@ export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
   changed(mix, voice);
 }
 
-/** Counts a record whose `since` was still ahead from where its voice's clock now puts it. */
-export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
+/**
+ * Counts a record whose `since` was still ahead from where its voice's clock now puts it; true as
+ * `originate` is.
+ */
+export function origin<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+): boolean {
   const was = held.since;
-  originate(mix, voice, held);
+  const short = originate(mix, voice, held);
   // Sent back before a start it had passed: its next read starts it afresh.
   if (held.since !== was && (held.ticks > 0 || held.stepped > was)) held.rebuilt = -1;
   // One that has not stepped since its `since` counts from where that moved to.
   if (held.ticks === 0 && (held.stepped > held.since || held.stepped === was))
     held.stepped = held.since;
+  return short;
 }
 
 /**
@@ -331,8 +348,8 @@ export function reorigin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number
   if (early === null) return;
   let kept = 0;
   for (const held of early) {
-    origin(mix, voice, held);
-    if (stillEarly(held, now)) early[kept++] = held;
+    // One a clock standing still holds short stays listed: its origin moves once that clock does.
+    if (origin(mix, voice, held) || stillEarly(held, now)) early[kept++] = held;
   }
   early.length = kept;
   if (kept === 0) voice.early = null;

@@ -32,6 +32,8 @@ export class Pager {
   loaded: { t: number; now: number; records: Paged[] } | null = null;
   /** The latest record paged, which a miss names. */
   last: { mix: string; stream: PagedStream } | null = null;
+  /** Announced marks paged but kept in memory, each the end of what some query could pick. */
+  readonly marks = new WeakSet<Announced>();
 
   constructor(readonly store: HistoryStore) {}
 }
@@ -125,7 +127,8 @@ export function page(transport: Transport, records: Paged[], reach: number): voi
  */
 export function pageTransport(transport: Transport): void {
   const history = transport.history;
-  if (history === undefined || transport.pager === null) return;
+  const pager = transport.pager;
+  if (history === undefined || pager === null) return;
   const reach = transport.now - history.ms;
   const records: Paged[] = [];
   transport.frames.shed(reach, (f) =>
@@ -133,10 +136,16 @@ export function pageTransport(transport: Transport): void {
   );
   const pace = transport.pace;
   const timeOf = (u: number) => (pace === null ? u : pace.reading(u));
-  if (transport.announced.some((a) => timeOf(a.at) < reach)) {
+  if (transport.announced.some((a) => !pager.marks.has(a) && timeOf(a.at) < reach)) {
+    // An anchor cued later still picks among marks behind memory, and only an end can answer it.
+    const ends = endMarks(transport.announced, timeOf);
     const kept: Announced[] = [];
-    for (const a of transport.announced)
-      if (timeOf(a.at) < reach)
+    for (const a of transport.announced) {
+      if (!(timeOf(a.at) < reach)) {
+        kept.push(a);
+        continue;
+      }
+      if (!pager.marks.has(a))
         records.push({
           mix: '',
           stream: 'mark',
@@ -145,13 +154,46 @@ export function pageTransport(transport: Transport): void {
           seq: a.seq,
           data: a,
         });
-      else kept.push(a);
+      if (ends.has(a)) {
+        pager.marks.add(a);
+        kept.push(a);
+      }
+    }
     transport.announced = kept;
   }
   if (pace !== null)
     for (const c of pace.shed(reach))
       records.push({ mix: '', stream: 'pace', at: c.anchorElapsed, seq: c.seq, data: c });
   if (records.length > 0) page(transport, records, reach);
+}
+
+/**
+ * The marks some query could pick: for every name and tag, and for none, within one score (or one
+ * mix's unnamed score), the first and last announced and the earliest and latest in time.
+ */
+function endMarks(marks: readonly Announced[], timeOf: (u: number) => number): Set<Announced> {
+  const ends = new Map<string, Announced[]>();
+  const take = (key: string, a: Announced) => {
+    const e = ends.get(key);
+    if (e === undefined) {
+      ends.set(key, [a, a, a, a]);
+      return;
+    }
+    const t = timeOf(a.at);
+    if (a.order < (e[0] as Announced).order) e[0] = a;
+    if (a.order > (e[1] as Announced).order) e[1] = a;
+    if (t < timeOf((e[2] as Announced).at)) e[2] = a;
+    if (t > timeOf((e[3] as Announced).at)) e[3] = a;
+  };
+  for (const a of marks) {
+    const scope = a.score === undefined ? `#${a.slot}` : `:${a.score}`;
+    take(scope, a);
+    take(`${scope}\0n${a.name}`, a);
+    for (const tag of a.tags) take(`${scope}\0t${tag}`, a);
+  }
+  const out = new Set<Announced>();
+  for (const e of ends.values()) for (const a of e) out.add(a);
+  return out;
 }
 
 /** Loads what a seek or read to `t` needs where it reaches past memory. */

@@ -326,17 +326,17 @@ export class Transport implements TransportApi {
     // rate, which moves where this sync lands.
     // A call played again at this sync's own host time began its frame, moved there before it.
     let begun = false;
+    // Host time moving while the mix clock stands still lands what waits on host time or the host,
+    // and so does the sync a rebase resumes on, which leaves both where they were.
+    const lands = (later && pace !== null) || rebased;
     if (this.tape !== undefined && later) {
-      begun = replay(this, (at) => at <= u) === u;
+      begun = replay(this, (at) => at <= u, this, undefined, lands) === u;
       pace = this.pace;
       now = pace === null ? u : pace.reading(u);
     }
     if (!begun) {
       this.tick(now);
-      // Host time moving while the mix clock stands still lands what waits on host time or the host,
-      // and so does the sync a rebase resumes on, which leaves both where they were.
       const moved = now !== this.now;
-      const lands = (later && pace !== null) || rebased;
       for (const m of this.members) if (moved || (lands && waits(m))) move(m, now);
     }
     if (!Number.isNaN(before) && this.now > before)

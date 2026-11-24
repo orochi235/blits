@@ -81,11 +81,22 @@ function backFrom<I, O>(voice: Voice<I, O>, past: readonly Past[], elapsed: numb
 }
 
 /**
+ * Whether the last `originOf` found a clock on the way, standing still or running back, that its
+ * controls now never take to the time asked, and answered as though it ran at 1 from its start.
+ */
+export const fell = { short: false };
+
+/**
  * The mix time a voice's clock first read `elapsed`, or will by its controls now, through its owners'
  * clocks. A clock entered already past it, by a seek, answers where that clock would have read it.
  * `rebuilt` starts from the last seek that rebuilt state, as a stateful record does.
  */
 export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boolean): number {
+  fell.short = false;
+  return originThrough(voice, elapsed, rebuilt);
+}
+
+function originThrough<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boolean): number {
   const past = voice.clocks;
   // A voice with no first pass shows every subject from its start, whatever its stagger.
   let t = voice.beginless ? voice.start : Number.NaN;
@@ -102,9 +113,12 @@ export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boo
   }
   if (Number.isNaN(t)) {
     t = timeWith(voice, elapsed);
-    if (t === Number.POSITIVE_INFINITY) t = voice.start + elapsed;
+    if (t === Number.POSITIVE_INFINITY) {
+      t = voice.start + elapsed;
+      fell.short = true;
+    }
   }
-  return voice.owner === null ? t : originOf(voice.owner, t, rebuilt);
+  return voice.owner === null ? t : originThrough(voice.owner, t, rebuilt);
 }
 
 /**

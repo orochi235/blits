@@ -212,6 +212,26 @@ describe('a read ahead past many known events', () => {
       if (t === 400) m.cue({ patch: ramp, start: 480, weight: slew(() => 1, { riseMs: 100 }) });
     }, 16));
 
+  // The wave rests at its start, 200, which no frame lands on: only a frame takes it out at rest.
+  for (const lanes of [true, false])
+    it(`takes a subject out at rest only where a frame finds it resting, not at a stop${lanes ? '' : ', without lanes'}`, () => {
+      const run = (withWave: boolean) => {
+        const m = mix<Part, Pose>(K, { ...kept(), lanes });
+        m.sync(0);
+        m.cue({ patch: drift() });
+        if (withWave) m.cue({ patch: wave, start: 200 }).fade({ at: 'rest', deadline: 1000 });
+        m.sync(16);
+        m.probe(a);
+        const ahead = m.project(208).probe(a).x;
+        m.sync(208);
+        return { ahead, played: m.probe(a).x };
+      };
+      const { ahead, played } = run(true);
+      expect(ahead).toBe(played);
+      // Play's first frame of the wave, 8 ms in, shows it.
+      expect(played - run(false).played).toBeCloseTo(10 * Math.sin((8 / 400) * 2 * Math.PI), 9);
+    });
+
   // The drop asks the saw's copy at its stop for b, so `carry` walks back to that copy, past the
   // copies at later stops (the ramp's cue makes one) that held nothing while the saw waited.
   it('meets a voice from the stop a drop asked it at, past stops that never read it', () =>

@@ -212,7 +212,8 @@ describe('history with a store', () => {
     ).toEqual(['frame', 'mark', 'pace']);
     const t = run.m as unknown as { transport: { frames: unknown[]; announced: unknown[] } };
     expect(t.transport.frames.length).toBeLessThan(16);
-    expect(t.transport.announced).toEqual([]);
+    // Paged, and kept too while it is the only mark a later anchor could pick.
+    expect(t.transport.announced).toHaveLength(1);
     for (const f of [192, 288, 320, 352]) {
       const again = play(scene, frames, paged());
       const mixT = new Map<number, number>();
@@ -235,6 +236,34 @@ describe('history with a store', () => {
       }
     }
   });
+
+  for (const lanes of [true, false])
+    it(`starts a cue anchored on a mark paged out as it would with every mark in memory${lanes ? '' : ', without lanes'}`, () => {
+      const run = (store: boolean) => {
+        const m = mix<string, P>(K, {
+          lanes,
+          history: store ? { ms: 150, every: 50, tape, store: memoryStore() } : { ms: 1e9, tape },
+        });
+        let h: Handle<string> | undefined;
+        const xs: number[] = [];
+        for (let t = 0; t <= 800; t += 16) {
+          m.sync(t);
+          if (t % 96 === 0 && t <= 384) m.announce(t === 96 ? 'first' : 'beat', { at: t + 10 });
+          if (t === 464)
+            h = m.cue({ patch: ramp(600), anchor: { start: { with: 'beat', by: 40 } } });
+          if (t === 480) m.cue({ patch: ramp(600), anchor: { start: { with: 'first' } } });
+          xs.push(m.probe('a').x);
+        }
+        const held = (m as unknown as { transport: { announced: unknown[] } }).transport.announced;
+        return { xs, state: h?.state, held: held.length };
+      };
+      const all = run(false);
+      const paged = run(true);
+      expect(all.state).toBe('live');
+      expect(paged.xs).toEqual(all.xs);
+      // Of the five beats behind memory, the first and last stay, and the one named `first`.
+      expect(paged.held).toBe(3);
+    });
 
   it('throws HistoryMiss before anything moves when nothing was prepared', () => {
     const frames = every(0, 1200, 16);
