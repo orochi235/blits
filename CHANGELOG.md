@@ -8,6 +8,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- Under a history store, a staggered voice keeps the `stagger` answers it gave for `history.ms`, as
+  without one, where it kept every one for good: 9,999 after 5,000 frames of a subject met and one
+  dropped each frame. A seek past memory asks `stagger` again for a subject the replay meets
+  afresh, so a stagger that answers one subject differently from call to call replays differently
+  there.
 - Under a history store, a voice lets go of a subject's key when the subject is dropped or faded
   out of it, and takes it back where a seek back brings the subject back. It kept one per subject
   it ever met, and walked them all each time it paged out.

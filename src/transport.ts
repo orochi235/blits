@@ -459,9 +459,13 @@ export class Transport implements TransportApi {
    * announced marks among them: with a store, all of it, since the host bounds the tape.
    */
   keepsFrom(): number {
+    return this.pager === null ? this.memoryFrom() : Number.NEGATIVE_INFINITY;
+  }
+
+  /** The earliest mix time memory holds, `ms` before now, whether or not a store pages the rest. */
+  memoryFrom(): number {
     const history = this.history;
-    if (history === undefined) return Number.POSITIVE_INFINITY;
-    return this.pager === null ? this.now - history.ms : Number.NEGATIVE_INFINITY;
+    return history === undefined ? Number.POSITIVE_INFINITY : this.now - history.ms;
   }
 
   get timestamp(): number {

@@ -28,7 +28,7 @@ export function staggerMet<I, O>(
   const kept = staggersOf(mix, voice);
   if (kept === null) return had ?? ask(voice, subject);
   const delay = kept.take(subject) ?? had ?? ask(voice, subject);
-  kept.give(subject, mix.now, mix.transport.seq, delay, mix.transport.keepsFrom());
+  kept.give(subject, mix.now, mix.transport.seq, delay, mix.transport.memoryFrom());
   return delay;
 }
 
@@ -49,7 +49,7 @@ export function delayAhead<I, O>(
   if (next !== undefined) return next;
   const delay = asked(voice, subject);
   const into = hold ? staggersOf(mix, voice) : null;
-  into?.hold(subject, mix.now, mix.transport.seq, delay, mix.transport.keepsFrom());
+  into?.hold(subject, mix.now, mix.transport.seq, delay, mix.transport.memoryFrom());
   return delay;
 }
 
