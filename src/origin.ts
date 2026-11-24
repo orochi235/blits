@@ -124,10 +124,8 @@ export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boo
       }
     }
   }
-  if (Number.isNaN(t)) {
-    t = timeWith(voice, elapsed);
-    if (t === Number.POSITIVE_INFINITY) t = voice.start + elapsed;
-  }
+  // Infinity where its clock will never read it: the subject waits for a clock that will.
+  if (Number.isNaN(t)) t = timeWith(voice, elapsed);
   return voice.owner === null ? t : originOf(voice.owner, t, rebuilt);
 }
 

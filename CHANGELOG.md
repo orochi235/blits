@@ -8,6 +8,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A staggered subject whose voice's clock will never reach it, by its controls then (at rate 0, or
+  running back after a handle `seek` sent it before its start), waits for the clock that does: it
+  fades in, and a stepping patch steps afresh, from where a later `seek`, `rate` or `ramp` brings
+  the clock to it. A placeholder start was taken instead, and a later write that moved the clock did
+  not move it, so play disagreed with a seek or read back to the same frame.
 - A stepping patch frozen before its start, run back past it and then turned by a `rate` or
   `ramp` write before the next frame, steps to where it reached its start, as it does with no
   write; it stopped where the frame before had left it, and a seek back to that frame disagreed.
