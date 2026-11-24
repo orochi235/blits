@@ -425,6 +425,19 @@ describe('holding', () => {
     expect(m.probe(a).x).toBe(400);
   });
 
+  it('never reaches past now, on a mix rebased before every sync', () => {
+    const m = mix<Part, Pose>(K, taped);
+    m.cue({ patch: clock });
+    m.sync(842.1);
+    for (let k = 1; k <= 5; k++) {
+      m.rebase();
+      m.sync(842.1 + k * 333.3);
+    }
+    const h = entryOf(m).hold();
+    expect(h.reach).toBeLessThanOrEqual(h.now);
+    h.free();
+  });
+
   it('hands a watcher the frames a hold plays', () => {
     const { m, e } = setup();
     const seen: number[] = [];
