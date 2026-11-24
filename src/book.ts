@@ -1,3 +1,4 @@
+import { throwLater } from './ticker.js';
 import type { BookedHit, Booker, BookOptions, Hit, Marked, Taken } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -120,12 +121,18 @@ export class Book<I, O> implements Booker {
     due.sort((a, b) => a.time - b.time);
     const late = this.opts.late;
     for (const d of due) {
+      // A take may cancel the booker, which clears the maps a booking would go into.
+      if (this.canceled) break;
       const lateBy = d.time < now ? now - d.time : 0;
       if (lateBy > late) continue;
       const at = this.est + (d.time - now);
       const booking: Booking = { time: d.time, at, taken: undefined };
       d.into.set(d.key, booking);
-      booking.taken = this.opts.take(d.item, lateBy > 0 ? c : Math.max(at, c), lateBy);
+      try {
+        booking.taken = this.opts.take(d.item, lateBy > 0 ? c : Math.max(at, c), lateBy);
+      } catch (err) {
+        throwLater(err);
+      }
     }
     due.length = 0;
     for (const t of this.tracks.values())

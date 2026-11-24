@@ -3,6 +3,7 @@ import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import type { BookedHit, BookOptions, Marked, Mix } from '../src/types.js';
+import { messages, thrownLater } from './later.js';
 
 interface Pose {
   x: number;
@@ -276,6 +277,64 @@ describe('book', () => {
     run(128, 2000);
     expect(hits()).toHaveLength(2);
   });
+
+  for (const lanes of [true, false]) {
+    it(`goes on past a take that throws, and takes each item once${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<Part, Pose>(K, { lanes });
+      let clock = 0;
+      const taken: string[] = [];
+      let threw = false;
+      m.book({
+        clock: () => clock,
+        ahead: 100,
+        late: 1000,
+        take(item) {
+          if (!threw) {
+            threw = true;
+            throw new Error('take');
+          }
+          taken.push((item as Marked).name);
+          return undefined;
+        },
+      });
+      m.sync(0);
+      m.announce('a', { at: 50 });
+      m.announce('b', { at: 60 });
+      const errors = thrownLater(() => {
+        for (const t of [10, 20, 30]) {
+          clock = t;
+          m.sync(t);
+        }
+      });
+      expect(messages(errors)).toEqual(['take']);
+      expect(taken).toEqual(['b']);
+    });
+
+    it(`takes nothing more once a take cancels its booker${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const taken: string[] = [];
+      const booker = m.book({
+        clock: () => 0,
+        ahead: 100,
+        late: 1000,
+        take(item) {
+          taken.push((item as Marked).name);
+          booker.cancel();
+          return undefined;
+        },
+      });
+      m.sync(0);
+      for (const [name, at] of [
+        ['a', 50],
+        ['b', 60],
+        ['c', 70],
+      ] as const)
+        m.announce(name, { at });
+      m.sync(10);
+      m.sync(20);
+      expect(taken).toEqual(['a']);
+    });
+  }
 
   it('books nothing from a projection, and splits by tag', () => {
     const { m, sync, took } = booked({ tag: 'sound' });

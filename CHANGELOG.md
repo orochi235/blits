@@ -8,6 +8,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A booker's `take` that throws no longer books the items after it twice, nor stops the sync: its
+  error is thrown again on a microtask and the rest are taken. A `take` that cancels its booker
+  stops the takes after it, where they went on into bookings the cancel had just cleared.
 - An `onWake` listener that throws no longer leaves a cue, a rate or a seek half made. The cue
   played but was never taped, so the next seek back threw, and the rate was not taped, so a replay
   played at the old one; later listeners, a ticker's among them, never heard, and the mix never woke
