@@ -2,7 +2,7 @@ import { heldAt } from './chain.js';
 import { schedule } from './due.js';
 import { fadesThen } from './fade.js';
 import { origin } from './held.js';
-import { apart, controlsAt, copyHeld, copyHeldInto, unread } from './history.js';
+import { apart, controlsAt, copyHeld, copyHeldInto, restedBy, unread } from './history.js';
 import { laneHost } from './hosts.js';
 import { leapBack } from './leaps.js';
 import { Leavings } from './leavings.js';
@@ -121,14 +121,6 @@ function restore<I, O>(
 function putBack<I, O>(mix: Mixer<I, O>, h: Subject<unknown>): void {
   if (mix.resent === null) mix.resent = new WeakSet();
   mix.resent.add(h);
-}
-
-/**
- * Whether a record put back for mix time `t` had rested by then, from when the live one did: a
- * subject may have rested and moved on since, so a probe at `t` would not find it at rest again.
- */
-function restedBy(h: Subject<unknown>, live: Subject<unknown>, t: number): void {
-  h.restedAt = live.restedAt <= t ? live.restedAt : Number.NaN;
 }
 
 /** Cuts a record's list of copies to its first `kept`, keeping those no other list holds as spares. */

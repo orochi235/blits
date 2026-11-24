@@ -370,6 +370,34 @@ describe('project back', () => {
   });
 });
 
+describe('a read back after a subject came to rest', () => {
+  // `a` starts at rest, where `fade({ at: 'rest' })` takes it out at once; `b` keeps the voice on.
+  const offset = patch<Part, Pose>(
+    400,
+    (phase, s) => ({ x: Math.sin(phase * 2 * Math.PI + (s.id === 'a' ? 0 : 1)) * 10 }),
+    { writes: ['x'] },
+  );
+  for (const stateful of [false, true])
+    it(`shows it out of a voice faded at rest, as play did${stateful ? ', under a signal' : ''}`, () => {
+      const a = { id: 'a' };
+      const b = { id: 'b' };
+      const m = mix<Part, Pose>(K, { history: { ms: 5000, every: 50 }, stepMs: 4 });
+      const shown = new Map<number, number>();
+      for (const t of every(0, 400, 16)) {
+        m.sync(t);
+        if (t === 96)
+          m.cue({
+            patch: offset,
+            weight: stateful ? slew(() => 1, { riseMs: 100 }) : 1,
+          }).fade({ at: 'rest', deadline: 1000 });
+        m.probe(b);
+        shown.set(t, m.probe(a).x);
+      }
+      for (const [t, x] of shown)
+        if (t < 400) expect(m.project(t).probe(a).x, `project(${t})`).toBe(x);
+    });
+});
+
 describe('a projection retiring a motion voice', () => {
   it('leaves the live patch asking the live voice for its time', () => {
     const run = (project: boolean) => {
