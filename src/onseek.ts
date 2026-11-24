@@ -20,8 +20,8 @@ export function onSeek<I, O>(this: Mixer<I, O>, fn: (s: Sought) => void): () => 
 }
 
 /**
- * Tells the transport's listeners where a seek landed, then each mix's on it, until one moves the
- * transport on to another frame, by a seek or a sync, whose own news is the latest.
+ * Tells the transport's listeners where a seek landed, then each mix's on it, until one seeks
+ * again, whose own news is the latest.
  */
 export function told(transport: Transport, s: Sought): void {
   const n = transport.seeks;
