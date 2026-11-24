@@ -46,6 +46,14 @@ Owner tags:
   takes it back (`packages/rapier/README.md` says so, and a test pins it). Placing it at the role's
   blend needs a public read of one role, such as `probe(subject, out, { role })`; a public
   addition, so it ships in a minor.
+- **[maintainer] A child still to start under an owner whose clock runs back: wait, or leave?**
+  (2026-11-23) Today it waits, so an owner sought forward later still plays it
+  (`test/place-edges.test.ts`, "a child cued into a span running back plays when the span is sought
+  into it"), but the owner and mix then stay live for good and `inert` never reads true, though
+  `marks` lists both as ended and `docs/schema.html` says the owner "leaves with its last child".
+  Leaving fixes the sleep and loses the later seek. Reverted try: `b67c2209` (left where the
+  owner's clock reached 0, once the owner had started). A middle way: leave, and let an owner
+  seek or rate write that brings its clock back past the child's start revive it.
 - **[maintainer] Public renames the 2026-11-09 audit asked about:** `timestamp` on mix-clock
   fields (`Setting`, `Sent`, `Projection`); `Mix.played` (a number) beside `Handle.played` (a
   Promise); glide's `ms` (a time constant) beside tween's (a duration); `lag`'s `floor` beside the

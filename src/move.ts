@@ -8,7 +8,7 @@ import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { leave as leaveClock, startedAt } from './origin.js';
-import { descendants, type Holding, heading, mixTime, ownerReading, plays } from './owner.js';
+import { descendants, type Holding, ownerReading, plays } from './owner.js';
 import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
@@ -211,14 +211,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
   if (voice.earlier !== null || voice.later !== null) unfit(mix, voice, now);
   const t = voice.owner === null ? now : ownerReading(voice.owner, now);
   if (wait && meetsAt(voice, t, now)) return true;
-  if (voice.state === 'pending') {
-    if (starts(voice, t, now)) begin(mix, voice, now);
-    // Its owner's clock run back to 0 starts nothing ahead of it again: it leaves there.
-    else if (t <= 0 && voice.owner !== null && heading(voice.owner, now) < 0) {
-      const at = mixTime(voice.owner, 0);
-      retire(mix, voice, at < now ? at : now);
-    }
-  }
+  if (voice.state === 'pending' && starts(voice, t, now)) begin(mix, voice, now);
   // After it starts, so a fade due by now on a voice that started since the last frame begins.
   // Not one set for after its passes run out, where a move across both would begin it first.
   if (
@@ -438,6 +431,17 @@ function wake<I, O>(mix: Mixer<I, O>, now: number): void {
     }
     if (!mix.projecting) schedule(mix, voice);
   }
+}
+
+/**
+ * Which way a voice's clock is running at mix time `now`, through every owner above it: above 0
+ * forward, below 0 back, 0 standing still.
+ */
+function heading<I, O>(voice: Voice<I, O>, now: number): number {
+  let way = 1;
+  for (let v: Voice<I, O> | null = voice; v !== null; v = v.owner)
+    way *= Math.sign(v.rateAt(v.owner === null ? now : ownerReading(v.owner, now)));
+  return way;
 }
 
 /**

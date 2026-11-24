@@ -90,30 +90,11 @@ export function orphan<I, O>(child: Voice<I, O>, now: number): Voice<I, O> | nul
   return !plays(owner, now) && owner.state !== 'done' ? owner : null;
 }
 
-/**
- * Whether an owner holds a child at mix time `now` that is not kept quiet past its passes, nor
- * waits for a start its owner's clock, running back from at or before it, never reaches.
- */
+/** Whether an owner holds a child at mix time `now` that is not kept quiet past its passes. */
 export function plays<I, O>(owner: Voice<I, O>, now: number): boolean {
-  let back = Number.NaN;
-  for (const child of (owner.holding as Holding<Voice<I, O>>).children) {
-    if (child.state === 'pending') {
-      if (Number.isNaN(back)) back = heading(owner, now) < 0 ? ownerReading(owner, now) : Infinity;
-      if (!(back <= child.start)) return true;
-    } else if (!child.quietAt(now)) return true;
-  }
+  for (const child of (owner.holding as Holding<Voice<I, O>>).children)
+    if (!child.quietAt(now)) return true;
   return false;
-}
-
-/**
- * Which way a voice's clock is running at mix time `now`, through every owner above it: above 0
- * forward, below 0 back, 0 standing still.
- */
-export function heading<I, O>(voice: Voice<I, O>, now: number): number {
-  let way = 1;
-  for (let v: Voice<I, O> | null = voice; v !== null; v = v.owner)
-    way *= Math.sign(v.rateAt(v.owner === null ? now : ownerReading(v.owner, now)));
-  return way;
 }
 
 /**
