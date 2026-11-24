@@ -352,6 +352,8 @@ function carry<I, O>(
 ): Subject<unknown> | undefined {
   const mix = link.mix as unknown as Mixer<I, O>;
   const voice = link.voice as unknown as Voice<I, O>;
+  // Faded out on the way, before the copy first asked for it: the record left with it.
+  if (copy.parted?.has(subject)) return undefined;
   let live: Subject<unknown> | undefined;
   if (known && !voice.sharing) live = standing(mix, voice, subject, before);
   else {

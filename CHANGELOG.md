@@ -10,6 +10,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 - A read ahead (`project`) past a call the tape holds reads an `around` or `within` voice by its
   plot, where it read 0 for every subject once the call was behind it.
+- A read ahead to the moment of an instant `fade({ subject, over: 0 })` reads nothing of that
+  subject on a voice cued on the way, as play does, where it still read the subject from the stop
+  before the fade.
 - A motion voice whose subjects were all dropped while they waited out their stagger goes `inert`
   once past it. It kept their records listed as waiting, unread for good, so `inert` never held:
   100 subjects probed and dropped inside a 500 ms stagger left a spring awake to the end.

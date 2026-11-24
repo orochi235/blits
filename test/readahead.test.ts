@@ -283,4 +283,18 @@ describe('a read ahead restaging at a stop', () => {
     m.seek(16);
     expect(m.project(64).probe(s).x).toBe(shown);
   });
+
+  it('reads nothing of a subject at the moment of its instant fade on a voice cued on the way', () => {
+    const m = mix<Part, Pose>(K, kept());
+    let h: Handle<Part> | undefined;
+    let shown = -1;
+    for (const t of [0, 16, 32, 48, 64]) {
+      m.sync(t);
+      if (t === 32) h = m.cue({ patch: drift() });
+      if (t === 64) h?.fade({ subject: a, over: 0 });
+      shown = m.probe(a).x;
+    }
+    m.seek(16);
+    expect(m.project(64).probe(a).x).toBe(shown);
+  });
 });
