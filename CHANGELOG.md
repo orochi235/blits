@@ -49,8 +49,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   out of it, and takes it back where a seek back brings the subject back. It kept one per subject
   it ever met, and walked them all each time it paged out.
 - `blend` checks every member before it cues any, so a member the mix refuses, by its kit, its
-  `hits` or its engine, leaves none behind. The members before it stayed cued, and one alone played
-  at full weight.
+  `hits`, its engine or a span owner that cannot fit it, leaves none behind. The members before it
+  stayed cued, and one alone played at full weight. An `onWake` listener hears of a blend once
+  it is whole, where it woke after the first member, which it read playing alone.
 - `fade({ at })` at or behind now, on a voice yet to start, fades from `at` as `fade()` does from
   now. It began the fade at the voice's start instead, so `fade({ at: now, over: 50 })` of a voice
   starting 100 ms later played it at partial weight, where `fade({ over: 50 })` showed nothing.

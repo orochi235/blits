@@ -12,6 +12,10 @@ export function passesOf(loop: boolean | number | undefined): number {
   return l === true ? Number.POSITIVE_INFINITY : l === false ? 1 : l;
 }
 
+/** How long a patch of `duration` ms plays over `passes` passes: endless with no duration or end. */
+export const spanOf = (duration: number, passes: number): number =>
+  duration > 0 && Number.isFinite(passes) ? duration * passes : Number.POSITIVE_INFINITY;
+
 /** Whether `elapsed` voice ms is past the last of `passes` passes of a patch of `duration` ms. */
 const over = (elapsed: number, duration: number, passes: number): boolean =>
   Number.isFinite(passes) && elapsed >= duration * passes;

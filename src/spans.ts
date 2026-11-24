@@ -1,5 +1,5 @@
 import { arcEnd } from './arcs.js';
-import { elapsedWith, retime } from './clock.js';
+import { elapsedWith, passesOf, retime, spanOf } from './clock.js';
 import { release } from './fade.js';
 import { type Claim, defaultFit, type Fit, layout, type SpanClaim, settle } from './fit.js';
 import { reorigin } from './held.js';
@@ -43,17 +43,28 @@ export class Fitting {
 
 /** Refuses a voice a span cannot fit: one it would not own the timing of, or one with no end. */
 export function checkChild<I, O>(spec: VoiceSpec<I, O>, child: Voice<I, O>): void {
-  if (spec.start !== undefined || spec.anchor?.start !== undefined || spec.anchor?.in !== undefined)
-    throw new Error('blits: a span places the voices it holds, so one takes no start of its own');
+  unplaced(spec);
   if (child.arc !== null) {
     if (!Number.isFinite(arcEnd(child)))
       throw new Error('blits: a span cannot fit an arc held open, which never ends');
   } else if (child.holding !== null) {
     if (child.fitting === null)
       throw new Error('blits: a span holds voices, spans and arcs, not owners');
-  } else if (!Number.isFinite(child.span))
-    throw new Error('blits: a span cannot fit a voice that never ends');
+  } else if (!Number.isFinite(child.span)) throw endless();
 }
+
+/** As `checkChild`, for a patch's voice not yet made, so `blend` can refuse a member before any is cued. */
+export function checkPatchChild<I, O>(spec: VoiceSpec<I, O>): void {
+  unplaced(spec);
+  if (!Number.isFinite(spanOf(spec.patch.duration, passesOf(spec.loop)))) throw endless();
+}
+
+function unplaced<I, O>(spec: VoiceSpec<I, O>): void {
+  if (spec.start !== undefined || spec.anchor?.start !== undefined || spec.anchor?.in !== undefined)
+    throw new Error('blits: a span places the voices it holds, so one takes no start of its own');
+}
+
+const endless = (): Error => new Error('blits: a span cannot fit a voice that never ends');
 
 /**
  * Whether a span's clock went back over a child at span ms `local`: it holds one kept quiet that

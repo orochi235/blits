@@ -11,6 +11,7 @@ import {
   passesOf,
   rateWith,
   rebaseWith,
+  spanOf,
   timeWith,
 } from './clock.js';
 import { type Cut, within } from './cut.js';
@@ -613,10 +614,7 @@ export class Voice<I, O> {
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
     this.passes = passesOf(spec.loop);
     this.duration = patch.duration;
-    this.span =
-      this.duration > 0 && Number.isFinite(this.passes)
-        ? this.duration * this.passes
-        : Number.POSITIVE_INFINITY;
+    this.span = spanOf(this.duration, this.passes);
     this.motion = motionOf<I>(patch);
     const freezes = this.motion === undefined ? spec.freeze : undefined;
     // A voice with no freeze of its own takes its owner's.

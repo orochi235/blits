@@ -7,7 +7,7 @@ import type { Book } from './book.js';
 import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto, reusesHeld, STOCK_BAND, scalarOp } from './channels.js';
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
-import { checkPatch, cue, roleOf, roleTags } from './cue.js';
+import { checkFitted, checkPatch, cue, roleOf, roleTags } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import { describe } from './describe.js';
 import { drop, dropIn, recordDrop, releaseIn } from './drop.js';
@@ -517,15 +517,23 @@ export class Mixer<I, O> implements Mix<I, O> {
     for (const own of owns) {
       this.checkEngine(own.patch);
       checkPatch(this, roleOf(this, own));
+      checkFitted(this, own);
     }
     const of = blendOf<I, O>(by, members.length - 1);
-    return owns.map((own, i) => {
-      const handle = this.cue(own);
-      const voice = this.cued[this.cued.length - 1] as Voice<I, O>;
-      voice.blend = { of, i };
-      of.members.push(voice);
-      return handle;
-    });
+    // Hushed whole, so an onWake listener reads the blend made, not its first members.
+    const transport = this.transport;
+    transport.hushed++;
+    try {
+      return owns.map((own, i) => {
+        const handle = this.cue(own);
+        const voice = this.cued[this.cued.length - 1] as Voice<I, O>;
+        voice.blend = { of, i };
+        of.members.push(voice);
+        return handle;
+      });
+    } finally {
+      transport.unhush();
+    }
   }
 
   owns(spec: OwnerSpec<I>): Handle<I> {
