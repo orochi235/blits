@@ -8,6 +8,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A retarget or push made before any frame read its subject lands, after a seek back to before
+  that first read, where play landed it, in the tape's replay and in a read ahead: both stamped it
+  at the frame it was made in. One made after such a seek waits for the subject's next read, as
+  one made before any read does, where the record the seek kept made it land at once.
 - A call the tape plays again after a seek back, in a frame where rate 0 held the mix clock,
   lands what the host's sync there landed: a span child played in its cue frame stayed on in that
   frame, where play had already let it go.

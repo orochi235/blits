@@ -88,6 +88,11 @@ export interface Subject<S> {
    */
   bands: Uint8Array | null;
   state: S;
+  /**
+   * The frame a voice reaching the subject first met it in, -1 on a record standing for several;
+   * Infinity on one a seek back put back from after it, until the subject is read again.
+   */
+  metSeq: number;
   /** The `now` this subject last caught up to, for this voice. */
   stepped: number;
   /** Under `stepMs`, how many intervals have run since `since`; `stepped` is where that lands. */

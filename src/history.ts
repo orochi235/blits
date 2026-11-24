@@ -129,6 +129,7 @@ export function copyHeld<I, O>(
     restedAt: h.restedAt,
     bands: h.bands === null ? null : h.bands.slice(),
     state: h.state === undefined || shared ? h.state : copyState(voice, h.state),
+    metSeq: h.metSeq,
     stepped: h.stepped,
     ticks: h.ticks,
     probed: h.probed,
@@ -187,6 +188,7 @@ export function copyHeldInto<I, O>(
   into.restedAt = h.restedAt;
   into.bands = h.bands === null ? null : h.bands.slice();
   into.state = h.state === undefined || shared ? h.state : copyState(voice, h.state);
+  into.metSeq = h.metSeq;
   into.stepped = h.stepped;
   into.ticks = h.ticks;
   into.rebuilt = h.rebuilt;
@@ -304,6 +306,7 @@ export function remember<I, O>(
 ): void {
   const history = mix.opts.history;
   if (!history || mix.projecting) return;
+  if (held.metSeq === Number.POSITIVE_INFINITY) held.metSeq = mix.transport.seq;
   if (
     voice.patch.step === undefined &&
     (held.kept === null || held.kept.size === 0) &&

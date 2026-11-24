@@ -73,16 +73,6 @@ Owner tags:
   180° just before a `from: 'current'` takeover reads a speed of about −360° per frame, and the
   voice swings the long way (rotation.test's takeover from 153° on such a channel). One route:
   read the speed through the channel's own lerp, which knows the short way.
-- **[agent] A seek back makes an untimed retarget or push replay at the wrong time** (2026-11-23,
-  reproduced, lanes on and off): a change made before any frame met its subject waits for the
-  subject's first read (`change` in `src/changes.ts`). A seek back to before that first read keeps
-  the voice's record for the subject, with `probed` NaN, and `frameOf` (`src/strays.ts`) reads
-  any record as met, so the tape's replay of the change, and a read ahead of it, stamp it at its
-  own frame instead. A spring cued at 0, `push(a, 300)` at 32 with `a` first probed at 64 (history
-  with a tape, `stepMs: 4`), then `seek(16)`: play shows 20.389 at 64, a read ahead 19.148 and the
-  replay 19.148. Met at or before the moment sought, all three agree. The replay and the read
-  ahead also differ from each other by about 1e-5 in that case. One route: a seek back drops, or
-  marks unmet, a record its voice first met after the moment sought.
 - **[agent] A motion voice sought back into a subject's stagger may go `inert` before the subject
   is read again** (2026-11-23, unconfirmed whether it is a bug): after a handle `seek` sends a
   record back before its start, `inert` reads true about 12 ms after the delay runs out, though no

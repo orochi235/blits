@@ -5,6 +5,7 @@ import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { pageOut } from './paging.js';
 import type { Change, MotionOwner } from './stretch.js';
+import type { Subject } from './subject.js';
 import { record, taping, unplayable } from './tape.js';
 import type { Voice } from './voice.js';
 
@@ -96,7 +97,8 @@ function recordChange<I, O, S>(
     if (to === undefined) return;
     if (to !== m) return changeAhead(to, id, motion, subject, change);
     const v = cuedById(m, id) ?? m.gone.find((g) => g.id === id);
-    ((v?.motion as typeof motion | undefined) ?? motion).change(subject, { ...change });
+    const again: Change = change.at === undefined ? { ...change, taped: change } : { ...change };
+    ((v?.motion as typeof motion | undefined) ?? motion).change(subject, again);
   });
 }
 
@@ -170,7 +172,7 @@ export function frameOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I):
     const delay = mix.unheld?.(voice, subject);
     return delay === undefined ? Number.NaN : timeIn(mix, voice, delay);
   }
-  if (!held.reaches) return Number.NaN;
+  if (!held.reaches || unmet(held)) return Number.NaN;
   return timeIn(mix, voice, held.delay);
 }
 
@@ -180,3 +182,7 @@ function timeIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, delay: number): numb
   const t = voice.elapsedAt(mix.now) - delay;
   return t < 0 ? Number.NaN : t;
 }
+
+/** Whether a seek back put a record back from after its subject was first met, with no read since. */
+const unmet = (held: Subject<unknown>): boolean =>
+  held.metSeq === Number.POSITIVE_INFINITY && Number.isNaN(held.probed);

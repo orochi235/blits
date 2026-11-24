@@ -27,7 +27,8 @@ import type { Controls, Voice } from './voice.js';
 /**
  * A voice's record of one subject as it stood at mix time `t`, from the latest copy kept by then;
  * undefined for a stateful record first made after `t`, which is met afresh. A stateless record
- * holds nothing that moves with time, so it is copied whenever it was made. The weight its last
+ * holds nothing that moves with time, so it is copied whenever it was made, its `target` and
+ * `stagger` answers with it, but one first made after `t` reads as unmet. The weight its last
  * probe by `t` read is not kept, and a lane holds it apart from the record, so the record reads 0
  * until the next probe.
  */
@@ -51,6 +52,7 @@ function restore<I, O>(
     restedBy(h, live, t);
     h.weight = 0;
     h.inputs = inputs;
+    if (h.metSeq > at.seq) h.metSeq = Number.POSITIVE_INFINITY;
     if (!(h.since <= t)) origin(mix, voice, h);
     putBack(mix, h);
     return h;

@@ -30,6 +30,7 @@ export function wholeRecord(
     restedAt: Number.NaN,
     bands: null,
     state,
+    metSeq: -1,
     // -0, not 0: a field first given a small integer is boxed on every later write of a double.
     stepped: -0,
     ticks: 0,

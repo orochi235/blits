@@ -109,6 +109,7 @@ export function held<I, O>(
   }
   const delay = delayOf(this, voice, subject);
   held = freshOf(voice, subject, true);
+  held.metSeq = this.transport.seq;
   held.delay = delay;
   originate(this, voice, held);
   const fresh = meet(this, voice, held, now);

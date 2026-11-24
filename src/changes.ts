@@ -37,6 +37,7 @@ export function change<I>(this: Motions<I>, subject: I, c: Change): void {
   this.listener?.(s);
   reading.moved++;
   const made: Change = { at: c.at, to: c.to, x: c.x, v: c.v };
+  if (c.at === undefined) c.taped ??= made;
   this.owner?.changed(this.ownerId, this, subject, made);
 }
 
@@ -200,6 +201,7 @@ export function commit<I>(this: Motions<I>, s: number, t: number): void {
     while (i > 0 && (list[i - 1] as Change).at === undefined) i--;
     for (const c of list.splice(i)) {
       c.at = t;
+      if (c.taped !== undefined) c.taped.at = t;
       this.queue(list, c, t);
     }
   }
