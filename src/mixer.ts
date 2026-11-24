@@ -487,9 +487,7 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   cue(spec: VoiceSpec<I, O>): Handle<I> {
     this.attached();
-    const engine = this.opts.engine;
-    if (engine !== undefined && !engine.runs.has(spec.patch.form))
-      throw new Error(`blits: engine ${engine.name} does not run ${spec.patch.form} patches`);
+    this.checkEngine(spec.patch);
     return cue(this, spec);
   }
 
@@ -516,10 +514,8 @@ export class Mixer<I, O> implements Mix<I, O> {
       return own;
     });
     // Every member is checked before any is cued, so a refused one leaves none playing.
-    const engine = this.opts.engine;
     for (const own of owns) {
-      if (engine !== undefined && !engine.runs.has(own.patch.form))
-        throw new Error(`blits: engine ${engine.name} does not run ${own.patch.form} patches`);
+      this.checkEngine(own.patch);
       checkPatch(this, roleOf(this, own));
     }
     const of = blendOf<I, O>(by, members.length - 1);
@@ -620,6 +616,13 @@ export class Mixer<I, O> implements Mix<I, O> {
   ): void {
     this.attached();
     announce(this.transport, name, opts, this.slot, this.name);
+  }
+
+  /** Throws for a patch the mix's engine does not run. */
+  checkEngine(patch: Patch<I, O, unknown>): void {
+    const engine = this.opts.engine;
+    if (engine !== undefined && !engine.runs.has(patch.form))
+      throw new Error(`blits: engine ${engine.name} does not run ${patch.form} patches`);
   }
 
   /** Throws for a mix taken off its transport. */
