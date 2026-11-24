@@ -127,8 +127,9 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** Set on a projection reading back: a subject it has nothing on starts from its voice's start. */
   backward = false;
   /**
-   * Set on a read ahead's copy at a known event on the way, which is not a frame: a subject resting
-   * there has not met a resting frame, so no `fade({ at: 'rest' })` takes it out there.
+   * Set on a read ahead's copy at a known event on the way that was not a frame, as a mark, or a
+   * call made after its frame's read: a subject resting there has not met a resting frame, so no
+   * `fade({ at: 'rest' })` takes it out there.
    */
   stop = false;
   /** True during a sync, so a control change it makes is recorded as showing in that frame. */

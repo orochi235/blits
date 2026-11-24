@@ -12,7 +12,7 @@ import { pin, place } from './place.js';
 import { recount } from './roster.js';
 import { Along, type Stand, Store } from './store.js';
 import type { Subject } from './subject.js';
-import { hostAhead, replay } from './tape.js';
+import { hostAhead, replay, takeFramed } from './tape.js';
 import { Transport } from './transport.js';
 import type { Tape } from './types.js';
 import { unreached } from './unreached.js';
@@ -40,12 +40,15 @@ export function playAhead(
 ): Transport {
   const tape = transport.tape;
   const depth = tape?.undoDepth() ?? 0;
+  takeFramed();
   try {
     for (;;) {
       const e = nextEvent(tape, c, t);
       if (!(e < t)) break;
       playTo(transport, c, copies, e);
-      if (!carries(c)) continue;
+      // Where a call there came before its frame's read, `e` was a frame of its mix.
+      const frame = takeFramed();
+      if (!carries(c) && !(frame.size > 0 && resting(c))) continue;
       // Placed now, as the next move would place them, while a target that has just left is here.
       for (const m of c.members) if (m.anchored > 0) place(m);
       const next = restage(c);
@@ -55,7 +58,7 @@ export function playAhead(
         const on = new Mixer<unknown, unknown>(copy.kit, { ...copy.opts, transport: next }, null);
         standIn(copy, on);
         copyAhead(copy, on);
-        copy.stop = true;
+        copy.stop = !frame.has(mix);
         const stages = earlier.get(mix);
         if (stages === undefined) earlier.set(mix, { at: [copy], met: new Set() });
         else stages.at.push(copy);
@@ -89,6 +92,12 @@ function carries(c: Transport): boolean {
     for (const v of m.cued)
       if (v.state !== 'done' && (v.patch.step !== undefined || typeof v.spec.weight === 'function'))
         return true;
+  return false;
+}
+
+/** Whether a voice on a read ahead's copies takes a subject out at its first resting frame. */
+function resting(c: Transport): boolean {
+  for (const m of c.members) for (const v of m.cued) if (v.out?.rest === true) return true;
   return false;
 }
 

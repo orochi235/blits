@@ -232,6 +232,25 @@ describe('a read ahead past many known events', () => {
       expect(played - run(false).played).toBeCloseTo(10 * Math.sin((8 / 400) * 2 * Math.PI), 9);
     });
 
+  // The ramp rests at its start, the time of the call that cued it. A frame reading after the call
+  // finds it resting there; one read before it leaves the ramp to the next frame, which does not.
+  for (const lanes of [true, false])
+    for (const before of [true, false])
+      it(`takes a subject out at rest at a call's own time only where its frame read after the call${before ? '' : ', the frame read first'}${lanes ? '' : ', without lanes'}`, () => {
+        const m = mix<Part, Pose>(K, { ...kept(), lanes });
+        m.sync(0);
+        m.probe(a);
+        m.sync(16);
+        if (!before) m.probe(a);
+        m.cue({ patch: ramp }).fade({ at: 'rest', deadline: 1000 });
+        if (before) m.probe(a);
+        m.sync(48);
+        const played = m.probe(a).gain;
+        m.seek(0);
+        expect(m.project(48).probe(a).gain).toBe(played);
+        expect(played).toBe(before ? 1 : 1 - (0.8 * 32) / 300);
+      });
+
   // The drop asks the saw's copy at its stop for b, so `carry` walks back to that copy, past the
   // copies at later stops (the ramp's cue makes one) that held nothing while the saw waited.
   it('meets a voice from the stop a drop asked it at, past stops that never read it', () =>
