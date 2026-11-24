@@ -14,6 +14,9 @@ type Ball = Body<Pose2, Record<string, never>>;
 
 const push = patch<object, Pose2>(1000, () => ({ force: [1, 0] }), { writes: ['force'] });
 const still = patch<object, Pose2>(0, () => ({ position: [3, 1] }), { writes: ['position'] });
+const slide = patch<object, Pose2>(400, (u) => ({ position: [u * 2, 0] }), {
+  writes: ['position'],
+});
 
 /**
  * A ball in a world with no gravity, `setup` before the first frame and `call` after frame 30's
@@ -72,6 +75,16 @@ const cases: [string, (sim: Sim, ball: Ball) => void, (sim: Sim, ball: Ball) => 
     (sim, ball) => {
       ball.simulated.weight = 0;
       ball.cue({ patch: still, role: sim.role });
+    },
+  ],
+  [
+    'a hand-back from a moving hold, the simulated weight written',
+    (sim, ball) => {
+      ball.simulated.weight = 0;
+      ball.cue({ patch: slide, role: sim.role, loop: true });
+    },
+    (_sim, ball) => {
+      ball.simulated.weight = 1;
     },
   ],
 ];

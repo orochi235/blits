@@ -17,6 +17,9 @@ section here.
 - After a seek back, a call the host made between frames, such as a `drive`, a `cue` or a write to
   the simulated voice's weight, reaches the world on the frame after it, as it first did, where the
   replay used to apply it a frame early.
+- A seek into an authored hold keeps the hold and its speed from the frame sought, where the
+  first frame after it placed nothing and the next set the body at rest, so a body let go soon
+  after was released standing still.
 
 ## 0.7.4
 

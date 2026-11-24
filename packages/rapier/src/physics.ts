@@ -399,8 +399,12 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       for (let i = log.length - 1; i >= 0; i--)
         if ((log[i] as Entry).seq > s.frame) log.splice(i, 1);
     from = s.at;
-    holding = {};
-    held.clear();
+    // The holds and their speed as the frame sought left them, logged by the frame after it.
+    let n = 0;
+    while (n < pushLog.length && (pushLog[n] as Frame).at <= s.at + EPS) n++;
+    const after = pushLog[n];
+    if (after === undefined) adopt({}, s.at);
+    else adopt(after.holds, Math.min(pushLog[n - 1]?.at ?? s.at, s.at));
     stale = true;
   });
   const read = () => {
