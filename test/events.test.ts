@@ -88,4 +88,26 @@ describe('events', () => {
     m.atRest(part);
     expect(m.drain()).toHaveLength(2);
   });
+
+  // Outside the ball the weight reads 0 unasked, but the patch still steps there.
+  it('stamps what a subject outside its voice\'s bound sent with that subject and voice', () => {
+    const a = { id: 'a' };
+    const far = { id: 'far' };
+    const m = mix<Part, Pose>(PART, { stepMs: 5 });
+    m.plot([a, far], new Float64Array([0, 0, 10, 0]));
+    const near = m.cue({ patch: charger(1 / 10) });
+    const bound = m.cue({ patch: charger(1 / 10), weight: m.around({ x: 0, y: 0, r: 1 }) });
+    m.sync(0);
+    m.probe(a);
+    m.probe(far);
+    m.sync(10);
+    m.probe(a);
+    m.probe(far);
+    expect(m.drain().map((e) => [e.timestamp, e.subject.id, e.voice])).toEqual([
+      [10, 'a', near.id],
+      [10, 'a', bound.id],
+      [10, 'far', near.id],
+      [10, 'far', bound.id],
+    ]);
+  });
 });
