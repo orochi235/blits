@@ -212,6 +212,9 @@ export function beginFade<I, O>(
   at?: number,
 ): void {
   if (voice.state === 'done' || voice.state === 'fading') return;
+  // One an owner keeps quiet past its passes under history is done as far as a fade goes: without
+  // history it would have left, and fading it would bring back its last frame.
+  if (voice.quietAt(nowFor(mix, voice))) return;
   const over = fadeMsFor(mix, opts.over ?? voice.fade.out ?? 0);
   // A voice is linked into its subjects' chains once it plays, and a fading one plays.
   const waiting = voice.state === 'pending';

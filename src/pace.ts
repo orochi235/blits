@@ -1,4 +1,4 @@
-import { type Clock, elapsedWith, rateWith, retime, timeWith } from './clock.js';
+import { type Clock, elapsedWith, rateWith, rebaseWith, retime, timeWith } from './clock.js';
 
 /** A clock in a pace's log, with the frame that set it, which a history store's cut goes by. */
 export interface Paced extends Clock {
@@ -106,6 +106,19 @@ export class Pace {
     if (this.keeps && was.anchorNow < u) log.push(next);
     else log[log.length - 1] = next;
     this.shed(reach);
+  }
+
+  /**
+   * Holds the clock still from host time `from` to `to`, in frame `seq`, as rate 0 would, and runs
+   * it on from there as it ran at `from`.
+   */
+  hold(from: number, to: number, seq: number): void {
+    const was = this.clock;
+    const next = { ...was, seq };
+    rebaseWith(next, from);
+    next.anchorNow = to;
+    if (this.keeps) this.log.push(next);
+    else this.log[this.log.length - 1] = next;
   }
 
   /** Lets go of the clocks over before mix time `reach`, and answers them. */

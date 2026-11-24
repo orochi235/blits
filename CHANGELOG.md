@@ -39,6 +39,21 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   index again, so `around` and `within` voices read it as they did then. The drop freed the index
   for good, and they read 0 for it until a new `plot`. The index is handed out again once history
   no longer reaches the drop.
+- A mix dropped from its transport reads as it stood at the drop: its clock stays at the
+  transport's mix time then. It read at the transport's clock, so a stepping voice kept playing on
+  whenever it was probed, and a seek to a frame after the drop showed a state no frame had shown.
+- Calls made in the frame after a `rebase` play again in that frame after a seek back, not in the
+  frame before it. The two frames shared one host time, so the tape could not tell them apart and
+  a seek forward or back to the earlier frame showed the later one's cues. Under a tape a rebase
+  now holds the mix clock for 2⁻¹⁰ host ms, as rate 0 would, giving that frame a host time of its
+  own.
+- A seek back holds back only the events a subject sends again while it steps back up to the
+  moment sought. It held back every event stamped at or before that moment, so one first sent
+  after it was lost on the way forward again: a voice cued later with `seek` or a `start` in the
+  past, or rebuilt by a handle's `seek`, sent nothing for its steps before the moment.
+- Fading or muting a child its owner keeps quiet past its passes under history leaves it quiet. It
+  started a fade from full weight, so its last frame came back for the length of the fade, where
+  without history the child had left and read 0.
 - A motion voice whose subjects were all dropped while they waited out their stagger goes `inert`
   once past it. It kept their records listed as waiting, unread for good, so `inert` never held:
   100 subjects probed and dropped inside a 500 ms stagger left a spring awake to the end.

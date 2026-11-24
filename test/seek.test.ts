@@ -250,6 +250,45 @@ describe('seek', () => {
     expect(m.drain().map((e) => e.event)).toEqual([40]);
   });
 
+  for (const lanes of [true, false])
+    for (const how of ['seek', 'start', 'handle'] as const)
+      it(`sends again an event stamped before the moment but first sent after it (${how}, lanes ${lanes})`, () => {
+        // Sends once, 50 ms into a subject: a voice that reaches that before the moment sought, but
+        // only in a frame after it, sends with a stamp from before it.
+        const sender = patch<Part, Pose, { n: number }>(0, () => ({}), {
+          writes: [],
+          state: () => ({ n: 0 }),
+          step: (st, dt, _s, setting) => {
+            st.n += dt;
+            if (st.n >= 50 && st.n - dt < 50) setting.send('half');
+          },
+        });
+        const m = mix<Part, Pose>(K, { history: { ms: 1e6, every: 50, tape }, stepMs: 4, lanes });
+        let h: Handle<Part> | undefined;
+        // Played again, the tape makes the calls.
+        const frame = (host: number, t: number) => {
+          m.sync(host);
+          if (host !== t) {
+            m.probe(a);
+            return m.drain().map((e) => e.timestamp);
+          }
+          if (t === 0 && how === 'handle') h = m.cue({ patch: sender, subjects: [a] });
+          if (t === 48) {
+            if (how === 'seek') m.cue({ patch: sender, seek: 100, subjects: [a] });
+            if (how === 'start') m.cue({ patch: sender, start: -60, subjects: [a] });
+            if (how === 'handle') h?.seek(100);
+          }
+          m.probe(a);
+          return m.drain().map((e) => e.timestamp);
+        };
+        const sent = [0, 16, 32, 48, 64].map((t) => frame(t, t));
+        expect(sent[3]).toHaveLength(1);
+        expect(sent[3]?.[0]).toBeLessThan(32);
+        m.seek(32);
+        m.drain();
+        expect([frame(80, 48), frame(96, 64)]).toEqual(sent.slice(3));
+      });
+
   it('brings back a subject faded out of a voice after the moment as it stood, until the fade plays again', () => {
     const m = mix<Part, Pose>(K, { history: { ms: 5000, tape }, stepMs: 5 });
     m.sync(0);
@@ -613,6 +652,36 @@ describe('sync', () => {
     expect(m.now).toBe(frame);
     m.seek(m.now);
   });
+});
+
+describe('a call in the frame after a rebase', () => {
+  const up = patch<Part, Pose>(1000, (ph) => ({ x: 1 + ph }), { writes: ['x'] });
+  for (const lanes of [true, false])
+    it(`plays again in that frame, not the one before it (lanes ${lanes})`, () => {
+      const m = mix<Part, Pose>(K, { history: { ms: 1e6, every: 50, tape }, stepMs: 4, lanes });
+      const shown: number[] = [];
+      const seqs: number[] = [];
+      for (const h of [0, 16, 32, 48, 364, 380]) {
+        if (h === 364) m.rebase();
+        m.sync(h);
+        if (h === 364) m.cue({ patch: up, subjects: [a] });
+        seqs.push(m.seq);
+        shown.push(m.probe(a).x);
+      }
+      expect(shown[3]).toBe(0);
+      expect(shown[4]).toBe(1);
+      m.seek({ frame: seqs[4] as number });
+      expect(m.probe(a).x).toBe(shown[4]);
+      m.seek({ frame: seqs[3] as number });
+      expect(m.probe(a).x).toBe(shown[3]);
+      m.seek(16);
+      const again: number[] = [];
+      for (const h of [396, 412, 428]) {
+        m.sync(h);
+        again.push(m.probe(a).x);
+      }
+      expect(again).toEqual([shown[2], shown[3], shown[5]]);
+    });
 });
 
 describe('project', () => {

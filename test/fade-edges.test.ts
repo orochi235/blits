@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { expect, test } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -117,3 +118,34 @@ test('a fade, a rise, a mute and a cue refuse a fade time that is not finite and
   expect(() => h.rise({ over: Number.NaN })).toThrow(RangeError);
   expect(x(m, 50)).toBeCloseTo(5, 9);
 });
+
+// Under history an owned child that has run out stays live and quiet; fading it must not bring
+// back its last frame, since history must not change what plays.
+for (const lanes of [true, false])
+  for (const how of ['mute', 'fade'] as const)
+    test(`a ${how} leaves a finished owned child quiet under history (lanes ${lanes})`, () => {
+      const run = (hist: boolean) => {
+        const m = mix<Part, Pose>(K, {
+          lanes,
+          stepMs: 4,
+          ...(hist ? { history: { ms: 1e6, every: 50, tape } } : {}),
+        });
+        const out: number[] = [];
+        let first: ReturnType<typeof m.cue> | undefined;
+        for (let t = 0; t <= 224; t += 16) {
+          m.sync(t);
+          if (t === 0) {
+            const o = m.owns({});
+            first = m.cue({ patch: ramp(100, 1, 2), owner: o });
+            m.cue({ patch: ramp(100, 1, 2), owner: o, start: 300 });
+          }
+          if (t === 160) {
+            if (how === 'mute') m.mute({ over: 100 });
+            else first?.fade({ over: 100 });
+          }
+          out.push(m.probe(a).x);
+        }
+        return out;
+      };
+      expect(run(true)).toEqual(run(false));
+    });

@@ -149,6 +149,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   slot = -1;
   /** Taken off its transport, so it takes no more calls until a seek puts it back. */
   dropped = false;
+  /** The transport's mix time when it was dropped, where its clock stands while it is. */
+  droppedAt = Number.NaN;
   readonly name: string | undefined;
   /**
    * This mix's frame among every mix's: moved by a sync or seek, and by a control change, drop,
@@ -320,7 +322,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   };
   readonly send = (event: unknown): void => {
     const { voice, subject } = this.sending;
-    if (voice === null || this.projecting || voice.setting.timestamp <= this.sentTo) return;
+    if (voice === null || this.projecting || voice.setting.timestamp <= this.heldTo) return;
     this.sent.push({
       timestamp: voice.setting.timestamp,
       subject,
@@ -329,8 +331,12 @@ export class Mixer<I, O> implements Mix<I, O> {
       event,
     });
   };
-  /** The moment a seek went back to: what is stepped again up to it was sent the first time. */
+  /** The moment a seek went back to: what a record it put back steps again up to it was sent. */
   sentTo = Number.NEGATIVE_INFINITY;
+  /** The records a seek put back, whose steps up to `sentTo` were sent the first time. */
+  resent: WeakSet<Subject<unknown>> | null = null;
+  /** Stamps at or before this send nothing: `sentTo`, or while a record steps, its own horizon. */
+  heldTo = Number.NEGATIVE_INFINITY;
   /** The weight `contribution` found besides the delta, read by the caller at once. */
   w = 0;
 
@@ -425,7 +431,7 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   // The transport's clock, read and written as the mix's own by every module that moves it.
   get now(): number {
-    return this.transport.now;
+    return this.dropped ? this.droppedAt : this.transport.now;
   }
   set now(v: number) {
     this.transport.now = v;

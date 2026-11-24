@@ -24,6 +24,11 @@ import { gave, historyFor } from './watch.js';
 
 /** How far the tape's reach moves before it is pruned again, ms of mix time. */
 const TAPE_STEP_MS = 1000;
+/**
+ * The host ms a rebase holds the mix clock for under a tape: past an ulp of any host time, so the
+ * frame after it has a host time of its own.
+ */
+const HELD = 2 ** -10;
 
 import type {
   Marked,
@@ -181,6 +186,7 @@ export class Transport implements TransportApi {
     this.members.splice(i, 1);
     scoredDrop(m);
     m.dropped = true;
+    m.droppedAt = this.now;
     if (this.history !== undefined) {
       this.dropped.push({ mix: m, at: this.now, seq: this.seq });
       record(this, 'drop', (stage) => {
@@ -296,12 +302,20 @@ export class Transport implements TransportApi {
     }
     const before = this.now;
     // A rebase carries `u` over the gap as it stands: worked out through the offset, it can land an
-    // ulp behind, under where the mix was born.
+    // ulp behind, under where the mix was born. With a tape it steps `u` on by `HELD` while the
+    // mix clock holds, as rate 0 would, so the tape tells calls in this frame from the last one's.
     const rebased = this.rebasing && !Number.isNaN(this.last);
-    if (rebased) this.offset = timestamp - this.u;
+    let u = timestamp - this.offset;
+    if (rebased) {
+      u = this.u;
+      if (this.tape !== undefined && !this.projecting) {
+        u = this.u + HELD;
+        this.paced().hold(this.u, u, this.seq + 1);
+      }
+      this.offset = timestamp - u;
+    }
     this.rebasing = false;
     this.last = timestamp;
-    const u = rebased ? this.u : timestamp - this.offset;
     let pace = this.pace;
     let now = pace === null ? u : pace.sync(u);
     const later = u !== this.u;
@@ -402,7 +416,7 @@ export class Transport implements TransportApi {
     const tape = this.tape as Tape;
     if (steady && rate >= 0 && tape.timestampAt(tape.undoDepth()) === undefined) {
       this.drive = null;
-      if (rate !== this.paced) this.ramp(rate, 0);
+      if (rate !== this.pacedRate) this.ramp(rate, 0);
     }
     for (const m of this.members) {
       const bookers = m.bookers;
@@ -410,8 +424,23 @@ export class Transport implements TransportApi {
     }
   }
 
+  /** Its pace, made where mix time has been host time until now. */
+  private paced(): Pace {
+    if (this.pace !== null) return this.pace;
+    // A read ahead keeps every clock too: it moves once across calls a mix met frame by frame.
+    const pace = new Pace(this.history !== undefined || this.projecting);
+    this.pace = pace;
+    this.pacedSeq = this.seq;
+    // Until now mix time was host time, so a pending voice's start is the host time it was given.
+    for (const m of this.members)
+      for (const v of m.cued)
+        if (v.state === 'pending' && !v.placing && v.owner === null && v.spec.start !== undefined)
+          pin(m, v, v.start);
+    return pace;
+  }
+
   /** The rate the mix's own clock plays at, apart from any drive. */
-  private get paced(): number {
+  private get pacedRate(): number {
     return this.pace === null ? 1 : this.pace.rateAt(this.u);
   }
 
@@ -425,7 +454,7 @@ export class Transport implements TransportApi {
       throw new Error('blits: a mix that has never synced has nothing to run back through');
     let drive = this.drive;
     if (drive === null) {
-      const clock = { anchorNow: 0, anchorElapsed: this.now, rate: this.paced, ramp: null };
+      const clock = { anchorNow: 0, anchorElapsed: this.now, rate: this.pacedRate, ramp: null };
       drive = { clock, wall: 0 };
       this.drive = drive;
     }
@@ -515,7 +544,7 @@ export class Transport implements TransportApi {
 
   get rate(): number {
     const drive = this.drive;
-    return drive === null ? this.paced : rateWith(drive.clock, drive.wall);
+    return drive === null ? this.pacedRate : rateWith(drive.clock, drive.wall);
   }
 
   set rate(r: number) {
@@ -531,18 +560,8 @@ export class Transport implements TransportApi {
       this.steer(rate, over);
       return;
     }
-    if (this.pace === null) {
-      // A read ahead keeps every clock too: it moves once across calls a mix met frame by frame.
-      this.pace = new Pace(this.history !== undefined || this.projecting);
-      this.pacedSeq = this.seq;
-      // Until now mix time was host time, so a pending voice's start is the host time it was given.
-      for (const m of this.members)
-        for (const v of m.cued)
-          if (v.state === 'pending' && !v.placing && v.owner === null && v.spec.start !== undefined)
-            pin(m, v, v.start);
-    }
     const reach = this.history === undefined ? Number.NEGATIVE_INFINITY : this.keepsFrom();
-    this.pace.change(this.u, rate, over, reach, this.seq);
+    this.paced().change(this.u, rate, over, reach, this.seq);
     this.hushed++;
     try {
       for (const m of this.members) m.stir();
