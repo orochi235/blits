@@ -32,15 +32,6 @@ Owner tags:
   the frame-3 sets put it at; without a store it matches. Filed under the rate-0 `set` entry until
   that fix of the same day showed it is a separate cause. One route: check which motion changes
   `unpage` and `rewind` keep for a seek to a frame before them.
-- **[agent] A seek back near a fade at rest steps a record where play's stood still** (2026-11-24,
-  replay fuzz programs 754 and 888, reproduced): under `fade({ at: 'rest' })` (888 rises it again
-  later), the read in the seek frame steps a put-back record through stamps play's record only
-  stepped past at the rise, so they go out in the seek frame instead of later (888, subject 0's
-  first event, 1060); in 754, after a handle `seek` and `rate = -1`, two records send their whole
-  history again at frame 11, as records stepped afresh. Until the put-back fix of the same day the
-  stamp hold dropped 888's in the seek frame, so it never went out, and 754 failed sooner, at
-  frame 6, on an event that fix now sends. One route: compare what
-  `restedBy` and `sentBack` decide for these records at the moment sought with play's records then.
 - **[agent] With a store, a seek past memory holds back a put-back record's steps by stamp**
   (2026-11-24, reasoned): `mix.sends` keeps the step count each record had sent from for the
   frames memory reaches, and a mark for the rest, so a seek to an earlier frame after the record's

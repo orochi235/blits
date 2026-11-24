@@ -95,12 +95,12 @@ function past<T extends { at: number }>(list: readonly T[], reach: number): numb
 }
 
 /**
- * Whether a record put back or read back for mix time `t` had rested by then, from when the live
- * one did: a subject may have rested and moved on since, so a probe at `t` would not find it at
- * rest again.
+ * Whether a record put back or read back for mix time `t` had rested by then, from `restedAt`, when
+ * the live one did: a subject may have rested and moved on since, so a probe at `t` would not find
+ * it at rest again.
  */
-export function restedBy(h: Subject<unknown>, live: Subject<unknown>, t: number): void {
-  h.restedAt = live.restedAt <= t ? live.restedAt : Number.NaN;
+export function restedBy(h: Subject<unknown>, restedAt: number, t: number): void {
+  h.restedAt = restedAt <= t ? restedAt : Number.NaN;
 }
 
 /** A copy of the state a voice's patch keeps for a subject. */

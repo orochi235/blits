@@ -223,7 +223,7 @@ export function recall<I, O>(
   const snap = live.snaps && last(live.snaps, t, true);
   if (snap) {
     const h = copyHeld(voice, snap.held);
-    restedBy(h, live, t);
+    restedBy(h, live.restedAt, t);
     bandsAt(h, live.bandLog, cut.seq);
     // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
     if (c !== undefined && copy !== undefined && !(h.since <= snap.at)) origin(c, copy, h);
@@ -235,7 +235,7 @@ export function recall<I, O>(
   // voice's since.
   const h = freshOf(voice, subject, live.reaches);
   h.delay = live.delay;
-  restedBy(h, live, t);
+  restedBy(h, live.restedAt, t);
   bandsAt(h, live.bandLog, cut.seq);
   if (c === undefined || copy === undefined) {
     h.since = live.since;
