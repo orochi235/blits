@@ -117,6 +117,21 @@ describe('seek({ frame })', () => {
     expect(run.m.probe(a).x).toBe(ref.m.probe(a).x);
   });
 
+  // The calls rate 0 holds at 480 after the frame sought are ahead on the tape, at the mix's own time.
+  it('stays on the current frame after a seek back, making no call rate 0 holds at its time', () => {
+    const run = play();
+    run.m.seek({ frame: run.seqs.get(544) as number });
+    run.m.seek({ frame: run.m.seq });
+    expect(run.m.now).toBe(480);
+    expect(run.m.probe(a).x).toBe(run.poses.get(544));
+    expect(run.m.project({ frame: run.m.seq }).probe(a).x).toBe(run.poses.get(544));
+    const last = frames[frames.length - 1] as number;
+    for (const t of frames.filter((t) => t > 544)) {
+      run.m.sync(last + (t - 544));
+      expect(run.m.probe(a).x, `frame ${t}`).toBe(run.poses.get(t));
+    }
+  });
+
   it('refuses a frame its history does not hold', () => {
     const run = play();
     const at576 = run.seqs.get(576) as number;

@@ -115,6 +115,9 @@ export function contribution<I, O>(
   primed[Primed.PASS] = pass;
   this.prime(voice, held);
   const setting = voice.setting;
+  // Outside its bound nothing weighs it, which is where a send learns whose it is otherwise.
+  this.sending.voice = voice;
+  this.sending.subject = subject;
 
   // A signal that keeps state makes its voice stateful, as a patch that does: a lane would call
   // it for subjects no probe asked about.

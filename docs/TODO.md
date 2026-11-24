@@ -23,6 +23,35 @@ Owner tags:
   the frame, so it still shows the voice. Matching play needs the frames it will play, which a read
   ahead does not know; decide whether a read ahead should treat every pass start as a frame, or
   whether this stays a stated limit of the fuzz.
+- **[agent] A motion `set` never shows while rate 0 holds the clock, though a seek there shows
+  it** (2026-11-23, replay fuzz programs 364, 470, 639, 783, 809, 824 and 918): a
+  probe keeps the delta it read at the mix's time (`held.probed === now` in `contribution`, and a
+  lane's `settle`), which `signals.test`'s "set between two probes of one frame" pins within a
+  frame. Under rate 0 every later frame stands at that time too, so a spring `set` while held
+  shows its old place until the clock moves, and `project(now)` and a seek to a later frame there
+  show the new one. One route: let go of the record's delta for the changed subject at the next
+  frame, a sync rate 0 holds included, not at once; a set made before anything read that frame
+  shows in it. Making it show at once (tried and backed out, 2026-11-23) breaks the within-frame
+  rule.
+- **[agent] A seek holds back events a put-back record sends after the moment sought, stamped at
+  or before it** (2026-11-23, replay fuzz programs 553, 737, 754, 888 and 986): a
+  record a seek put back stays in `mix.resent` for good, and `heldTo` drops every event its steps
+  stamp at or before `sentTo`, taking them for ones sent the first time. A voice turned to run
+  back (handle `rate = -1`), a handle `ramp`, or a `rise` after a fade at rest makes a later step
+  stamp a time before the moment sought, which play sent and the seek's replay drops. One route:
+  hold back only up to where the record had stepped by the moment sought, and take it out of
+  `resent` once it steps past there.
+- **[agent] A read ahead across a cue joining a span reads its children off** (2026-11-23, replay
+  fuzz program 463): a span (`duration: 600`, `order: 'together'`) holds a staggered `turn` child,
+  and a second child is cued at frame 10 anchored after the first by −20. Sought back to frame 9,
+  a read ahead to frame 10's time reads the angles 7–18° off what play showed, though playing
+  on from that seek matches. One route: compare the copies' refit at the cue with the live mix's, step by step.
+- **[agent] A seek past memory with a store loses a voice cued while rate 0 held the clock**
+  (2026-11-23, replay fuzz program 964, store only): a `pick` voice of a role, `rate: 0`,
+  `freeze: 'both'`, is cued at frame 6 in the frame the mix's rate goes to 0, and frame 7 ramps
+  the rate to 2. After `prepare` and a seek back to frame 2, replaying to frame 8 shows nothing
+  of it where play showed it; without a store, or without either rate call, it matches. One
+  route: diff the pace and frames `unpage` puts back against what the run held at frame 2.
 - **[agent] A seek back within memory may miss an announced mark a later one displaced as an end**
   (2026-11-23, reasoned, not reproduced): with a store, memory keeps only the ends of the marks it
   has paged (`endMarks` in `src/paging.ts`) and lets go of one once another takes its place. A mark
