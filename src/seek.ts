@@ -179,7 +179,11 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   // Those that left after it are back, under the keys a store pages them by.
   const keys = mix.keys;
   if (keys !== null)
-    for (const e of left) if (e.seq > seq) (voice.keyed ??= new Set()).add(keys.key(e.subject));
+    for (const e of left) {
+      if (!(e.seq > seq)) continue;
+      voice.keyed ??= new Set();
+      voice.keyed.add(keys.key(e.subject));
+    }
   let records = voice.subjects;
   if (!(records instanceof Restored)) {
     const every = apart(mix.opts.history as { every?: number });
