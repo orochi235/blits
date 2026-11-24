@@ -213,7 +213,7 @@ describe.each([true, false])('a retarget from a turning subject, lanes %s', (lan
     read: (v: unknown) => number,
     base: number,
   ): number[] => {
-    const m = mix<string, P>(kit<P>({ r: channel }), { lanes });
+    const m = mix<string, P>(kit<P>({ r: channel as never }), { lanes });
     const spin = m.cue({
       patch: patch<string, P>(0, () => ({ r: as(base + 0.2 * m.now) }), { writes: ['r'] }),
       role: 'r',
