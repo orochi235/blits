@@ -260,8 +260,12 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
     record: (h, label, again) =>
       record(mix, label, (stage) => {
         const to = stage.mix(mix);
-        if (to === mix) again(h);
-        else if (to !== undefined) {
+        if (to === mix) {
+          // A voice cued inside `Mix.call` is made again, under its id, as the call plays again.
+          const v = VoiceHandle.voiceOf(h);
+          const now = v === null ? undefined : cuedById(mix, h.id);
+          again(now === undefined || now === v ? h : (handle(mix, now) as VoiceHandle<I, O>));
+        } else if (to !== undefined) {
           const voice = cuedById(to, h.id);
           if (voice !== undefined) again(handle(to, voice) as VoiceHandle<I, O>);
         }

@@ -34,7 +34,8 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   why.
 - A voice cued inside `Mix.call` keeps its place ahead of voices the host cued after the call when
   the mix plays past it again after a seek back. Made again, it sorted after them, so on a `last()`
-  channel the earlier voice won.
+  channel the earlier voice won. A host's call on the handle it gave, a `fade` say, acts on the
+  voice made again, where it acted on the one the seek let go and was lost.
 - A seek ahead refused because the mix's rate never reaches the time sought leaves the mix where
   it stood. It had already played the recorded calls on the way, leaving the mix at the moment
   rate 0 held it, at that rate, with its clock running back on the next sync.
