@@ -40,8 +40,8 @@ that ramps a rate change (`transport.ramp`) and fades a **mute** (`mix.mute`), a
 Blank, `over` sets a rate at once and mutes over each voice's own `fade.out`.
 The full mix and every solo play on one blits `transport()`, synced at each animation frame's time, so
 the rate is the transport's: the debug panel shows it and can set it, and at 0 the score holds. Pausing stops the syncs, and
-playing again calls `rebase()`. The score runs on mix time. A scrub ahead is `transport.seek`, which a rate of 0
-never reaches, so stepping forward is off then. A scrub back either replays from 0, rebuilding the mixes and doing
+playing again calls `rebase()`. The score runs on mix time. A scrub ahead is `transport.seek`, which jumps
+there at a rate of 0, so stepping forward works while the score holds. A scrub back either replays from 0, rebuilding the mixes and doing
 again what the host did (each sync at its time, each rate change, each rebase), which shows exactly what playback
 showed short of live changes; or calls blits' `transport.seek`, which restores from the history the transport keeps,
 the rate recorded then included. By `transport.seek`, the transport shows its `now` and `seq`. Either way the

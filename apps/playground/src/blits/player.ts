@@ -187,8 +187,9 @@ export class Player {
   }
 
   /**
-   * Moves the score to mix time `t`. Ahead, blits plays the mixes there under the rate; back, by
-   * `seekBy`. False where the rate (0) never reaches it ahead, which leaves the score where it was.
+   * Moves the score to mix time `t`. Ahead, blits plays the mixes there under the rate, or jumps
+   * there where the rate (0) never reaches it; back, by `seekBy`. False where blits refuses the
+   * time, which leaves the score where it was.
    */
   seek(t: number): boolean {
     const { transport } = this.built;
@@ -366,7 +367,7 @@ export class Player {
 
   /**
    * Does `op` to the transport and records it, then reads the frame. False, recording nothing,
-   * where a seek ahead never arrives under the rate.
+   * where blits refuses a seek's time.
    */
   private apply(op: Act): boolean {
     const { transport } = this.built;

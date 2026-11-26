@@ -106,7 +106,7 @@ describe('Player', () => {
     expect(p.livened).toBe(true);
   });
 
-  it("runs at the transport's rate, which every mix shares, a seek ahead never passes at 0, and a rebuild keeps", () => {
+  it("runs at the transport's rate, which every mix shares, a seek ahead jumps at 0, and a rebuild keeps", () => {
     const p = player();
     play(p, 300);
     p.setRate(0.5);
@@ -122,8 +122,10 @@ describe('Player', () => {
     const held = p.t;
     step(p, 5);
     expect(p.t).toBe(held);
-    expect(p.seek(held + 100)).toBe(false);
-    expect(p.t).toBe(held);
+    expect(p.seek(held + 100)).toBe(true);
+    expect(p.t).toBe(held + 100);
+    step(p, 5);
+    expect(p.t).toBe(held + 100);
   });
 
   it('a seek back restores the rate recorded then, and a lap keeps the rate it ends at', () => {
