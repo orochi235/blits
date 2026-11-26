@@ -10,6 +10,20 @@ const line = patch<{ id: string }, { x: number }>(1000, (p) => ({ x: p * 1000 })
   writes: ['x'],
 });
 
+describe('a seek while the clock runs back', () => {
+  it.each(['jump', 'play'] as const)('keeps a ramp under way, seeking by %s', (seek) => {
+    const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape }, seek });
+    mix(K, { name: 'back', transport: t });
+    t.sync(0);
+    t.rate = -0.05;
+    t.ramp(0, 400);
+    t.seek(100);
+    t.sync(1000);
+    expect(t.now).toBeCloseTo(90, 9);
+    expect(t.rate).toBe(0);
+  });
+});
+
 describe("a transport made with seek: 'jump'", () => {
   it('leaves a ramp under way where it stood on a seek ahead', () => {
     const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape }, seek: 'jump' });

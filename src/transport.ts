@@ -519,9 +519,11 @@ export class Transport implements TransportApi {
   sought(t: number): void {
     const drive = this.drive;
     if (drive === null || this.driving) return;
-    const rate = rateWith(drive.clock, drive.wall);
-    drive.clock = { ...drive.clock, anchorNow: drive.wall, anchorElapsed: t };
-    retime(drive.clock, drive.wall, rate, 0);
+    // Re-anchored where it landed, with what is left of a ramp under way running on from there.
+    const clock = { ...drive.clock };
+    rebaseWith(clock, drive.wall);
+    clock.anchorElapsed = t;
+    drive.clock = clock;
   }
 
   /** Begins a frame at mix time `at` and the host time the transport stands at. */
