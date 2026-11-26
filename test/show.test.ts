@@ -217,7 +217,7 @@ describe('a show', () => {
     const fromShow = make(opts);
     play(fromShow, FULL, KINDS);
     const byHand = make(opts);
-    const owner = byHand.owns({ name: 'full' });
+    const owner = byHand.owns({ name: 'full', fade: { out: 100 } });
     const fn = (k: Kind<Row, Pose>, params: Record<string, number>, length: number) =>
       k(params, { length, cue: { kind: '' } }) as never;
     byHand.cue({
@@ -288,8 +288,12 @@ describe('a show', () => {
         play(m, { cues: [cue as Show['cues'][number]] }, kinds);
     expect(bad({ kind: 'nope' })).toThrow(/kind "nope", which kinds lacks/);
     expect(bad({ kind: 'a', length: 10, end: 20 })).toThrow(/a length or an end, not both/);
-    expect(bad({ kind: 'a', hold: 10 })).toThrow(/takes no hold/);
-    expect(bad({ active: { kind: 'a' }, length: 10 })).toThrow(/takes no length/);
+    expect(bad({ kind: 'a', hold: 10 })).toThrow(/"hold", which a kind cue does not take/);
+    expect(bad({ active: { kind: 'a' }, length: 10 })).toThrow(/"length", which an arc cue/);
+    expect(bad({ kind: 'a', lenght: 10 })).toThrow(/"lenght"/);
+    expect(bad({ knd: 'a' })).toThrow(/names no kind, and no enter, active or exit/);
+    expect(bad({ active: { kind: 'nope' } })).toThrow(/active 0 plays kind "nope"/);
+    expect(bad({ kind: 'a', freeze: 'after', end: 50 })).toThrow(/takes no end/);
     expect(
       bad(
         { kind: 'k', ease: 'ease-in' },
@@ -302,6 +306,83 @@ describe('a show', () => {
         },
       ),
     ).toThrow(/this is a keys patch/);
+  });
+
+  it('checks every cue before cueing any, and drops what a throwing kind left', () => {
+    const m = make();
+    const before = m.voices().length;
+    expect(() =>
+      play(m, { cues: [{ kind: 'fa', freeze: 'after' }, { kind: 'nope' }] }, KINDS),
+    ).toThrow(/nope/);
+    expect(m.voices().length).toBe(before);
+    const n = make();
+    expect(() =>
+      play(
+        n,
+        { cues: [{ kind: 'fa', freeze: 'after' }, { kind: 'boom' }] },
+        {
+          ...KINDS,
+          boom: () => {
+            throw new Error('boom');
+          },
+        },
+      ),
+    ).toThrow('boom');
+    expect(at(n, 50)).toEqual([0, 0, 0]);
+  });
+
+  it('keeps the weight a kind gave a muted cue, for its unmute', () => {
+    const m = make();
+    const h = play(
+      m,
+      { cues: [{ kind: 'w', muted: true }] },
+      {
+        w: () => ({
+          patch: flat('a')({}, { length: 1000, cue: { kind: 'w' } }) as never,
+          weight: () => 0.25,
+        }),
+      },
+    );
+    expect(at(m, 10)[0]).toBe(0);
+    (h.cues[0]?.[0] as Handle<Row>).weight = 1;
+    expect(at(m, 20)[0]).toBe(0.25);
+  });
+
+  it('names only the first of the voices a kind layers', () => {
+    const m = make();
+    const h = play(
+      m,
+      { cues: [{ name: 'two', kind: 'w', start: 0, length: 100 }] },
+      {
+        w: (_p, input) => [
+          { patch: flat('a')({}, input) as never },
+          { patch: flat('b')({ level: 0.5 }, input) as never },
+        ],
+      },
+    );
+    expect(h.cues[0]).toHaveLength(2);
+    expect(at(m, 50)).toEqual([1, 0.5, 0]);
+    expect(m.marks(0, 1000).filter((k) => k.name === 'two' && k.mark === 'start')).toHaveLength(1);
+  });
+
+  it('fades the whole show out over its longest fade.out', () => {
+    const m = make();
+    const h = play(
+      m,
+      {
+        cues: [
+          { kind: 'fa', start: 0, length: 5000, fade: { out: 400 } },
+          { kind: 'fb', start: 0, length: 5000, fade: { out: 200 } },
+        ],
+      },
+      KINDS,
+    );
+    at(m, 100);
+    h.fade();
+    expect(at(m, 300)).toEqual([0.5, 0.5, 0]);
+    expect(h.state).toBe('fading');
+    at(m, 600);
+    expect(h.state).toBe('done');
   });
 
   it('drops a show with no cues as it plays it', () => {

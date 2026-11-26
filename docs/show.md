@@ -32,7 +32,7 @@ const handle = play(m, show, {
   draw: (params, { length }) => ({ patch: drawPatch(params, length), subjects: nets }),
   rise: () => RISE, float: () => FLOAT, shimmer: () => SHIMMER, sink: () => SINK,
 });
-handle.fade();             // stops the whole show over each voice's own fade.out
+handle.fade();             // stops the whole show over its longest cue fade.out, here 700 ms
 handle.cues[2][0];         // the title's ArcHandle, to release an open hold
 ```
 
@@ -72,7 +72,8 @@ Settled from the code, all 2026-11-25:
   blits' `Placement.end` does. `length` places it after the start (an anchored start shifted by
   `length`, which every anchor form allows); `end` places it outright. With neither, the cue lasts
   to the show's `duration` where its start is a number, and otherwise as long as its patch. A cue
-  freezing `'after'` gets no placed end, since it stays until the show is stopped.
+  freezing `'after'` gets no placed end, since it stays until the show is stopped, and an `end` on
+  one is refused; its `length` still goes to the factory.
 - **The factory gets the resolved length**, `(params, { length, cue })`, since x-pcb's and
   x-xstitch's patches are built to it. It is undefined where nothing gives one, and the factory
   picks its patch's own. `play` calls each factory once per cue, in show order, so a kind may carry
@@ -83,9 +84,17 @@ Settled from the code, all 2026-11-25:
   which this becomes once it lands. A shader patch wrapped so runs on the CPU, since its WGSL never
   sees the curve.
 - **`ease` and `fade.ease` take blits' easing names and shapes, not a function**, so they stay data.
-- **`muted` cues the cue at weight 0**, rather than leaving it out: anchors to it still answer, and
-  a host unmutes it live by writing its handle's `weight`. x-pcb and beamos both leave muted layers
-  out, which silently stalls anything anchored to one.
+- **`muted` cues the cue and writes 0 to its handles' `weight`**, rather than leaving it out:
+  anchors to it still answer, and a host unmutes it live by writing the weight back, 1 where the
+  kind gave a weight signal (the handle's weight multiplies into it) or none, the kind's number where
+  it gave one. x-pcb and beamos both leave muted layers out, which silently stalls anything anchored
+  to one.
+- **The show stops over the longest `fade.out` among its cues**: `play` gives the owner that fade
+  out unless its spec sets one, since an owner's `fade()` ramps by its own `fade.out` and ignores
+  its voices'.
+- **Every cue is checked before any is cued**: an unknown kind, an unknown key (data typed by hand
+  loses a misspelled one silently otherwise), a cue with neither a `kind` nor any part, and both a
+  `length` and an `end`. A kind that throws drops the owner and what was cued before it.
 - **`duration` is the host's length for its scrubber.** `play` reads it only as the default end
   above; it does not stop the show there, so a frozen last frame stays.
 - **`handle.cues` lists, per cue, the handles of the voices it cued**: one, or several where its
