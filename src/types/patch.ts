@@ -1,8 +1,10 @@
+import type { PennerName } from '../penner.js';
 import type { WaveOptions } from '../wave.js';
 import type { Kit } from './channel.js';
 
 /**
- * How a change speeds up and slows down: a curve from 0 to 1. One of CSS's names, a cubic Bézier
+ * How a change speeds up and slows down: a curve from 0 to 1. One of CSS's names or Penner's
+ * (`easeInQuad` … `easeInOutBounce`, carried as a Bézier or as `linear()` points), a cubic Bézier
  * as in CSS's `cubic-bezier()`, `steps` as CSS's `steps()`, points joined by straight lines as
  * CSS's `linear()`, or a function of your own.
  *
@@ -15,6 +17,7 @@ export type Easing =
   | 'ease-in'
   | 'ease-out'
   | 'ease-in-out'
+  | PennerName
   | { readonly bezier: readonly [x1: number, y1: number, x2: number, y2: number] }
   | { readonly steps: number; readonly jump?: 'start' | 'end' | 'none' | 'both' }
   | { readonly linear: readonly LinearPoint[] };

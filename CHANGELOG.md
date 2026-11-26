@@ -12,6 +12,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   and phase `elapsed` ms fall in.
 - `slewStep(value, target, ms, { riseMs, fallMs })` is the step `slew` takes, for a host limiting
   a value outside a mix.
+- Penner's easing curves are named easings, `'easeInQuad'` through `'easeInOutBounce'` (`PennerName`).
+  Each is data, so it runs on the GPU: a cubic Bézier within 0.003 of Penner's function where one
+  fits (18 of 30), otherwise `linear()` points within 0.001. `scripts/penner/fit.mjs` makes them.
 - A transport with no history and no mix on it seeks, either way, moving its clock alone and
   keeping its rate and any ramp; it threw for want of history.
 

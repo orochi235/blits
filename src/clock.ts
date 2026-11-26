@@ -6,7 +6,11 @@ export function rampTime(over: number): void {
     throw new RangeError(`blits: a ramp takes a finite time of 0 or more, not ${over}`);
 }
 
-/** How many passes a voice's `loop` plays. */
+/**
+ * How many passes a voice's `loop` plays: one for none or `false`, Infinity for `true`.
+ *
+ * @category voice
+ */
 export function passesOf(loop: boolean | number | undefined): number {
   const l = loop ?? false;
   return l === true ? Number.POSITIVE_INFINITY : l === false ? 1 : l;
@@ -24,13 +28,19 @@ const over = (elapsed: number, duration: number, passes: number): boolean =>
  * The phase `elapsed` voice ms into a patch of `duration` ms playing `passes` passes, held at 1 once
  * they are done. A pure function rather than one writing phase and pass together, so a hot caller
  * keeps both in registers.
+ *
+ * @category voice
  */
 export function phaseAt(elapsed: number, duration: number, passes: number): number {
   if (!(duration > 0)) return 0;
   return over(elapsed, duration, passes) ? 1 : (elapsed % duration) / duration;
 }
 
-/** The pass `elapsed` voice ms falls in, held at the last once they are done. */
+/**
+ * The pass `elapsed` voice ms falls in, held at the last once they are done.
+ *
+ * @category voice
+ */
 export function passAt(elapsed: number, duration: number, passes: number): number {
   if (!(duration > 0)) return 0;
   return over(elapsed, duration, passes) ? passes - 1 : Math.floor(elapsed / duration);

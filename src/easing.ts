@@ -1,4 +1,5 @@
 import { clampWeight } from './clock.js';
+import { type PennerName, penner } from './penner.js';
 import type { Easing, LinearPoint } from './types.js';
 
 /**
@@ -79,7 +80,7 @@ function bezier(x1: number, y1: number, x2: number, y2: number): Curve {
 
 pack(linear, 0);
 
-const named: Record<Exclude<Easing, object | ((u: number) => number)>, Curve> = {
+const named: Record<Exclude<Easing, object | PennerName | ((u: number) => number)>, Curve> = {
   linear,
   ease: bezier(0.25, 0.1, 0.25, 1),
   'ease-in': bezier(0.42, 0, 1, 1),
@@ -223,7 +224,9 @@ function linearCurve(list: readonly LinearPoint[]): Curve {
 export function curve(easing: Easing): Curve {
   if (typeof easing === 'function') return easing;
   if (typeof easing === 'string') {
-    const found = named[easing];
+    const found =
+      (named as Record<string, Curve | undefined>)[easing] ??
+      (Object.hasOwn(penner, easing) ? curve(penner[easing as PennerName]) : undefined);
     if (!found) throw new Error(`blits: no easing named ${easing}`);
     return found;
   }

@@ -136,9 +136,6 @@ Owner tags:
     descriptor object may share the first's changes.
   - The `Along` store (`src/store.ts`) may lose a delete once a later copy sets that key again, so
     an earlier copy asked afterwards rebuilds the record from the live mix.
-- **[agent] The Penner curves in `curve`.** `curve`'s named set is the five CSS curves. weasel's geom keeps
-  31 Penner curves with its own bezier solver, and is moving them here so geom can re-export them. Closes
-  when `curve` names them and blits' solver is the only one.
 
 ## Speed
 

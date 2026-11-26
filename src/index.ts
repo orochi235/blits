@@ -51,6 +51,7 @@ export { glide, spring, tween } from './motion.js';
 export { HistoryMiss } from './paging.js';
 export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
+export type { PennerName } from './penner.js';
 export type { AngleOptions } from './rotation.js';
 export { angle, quat } from './rotation.js';
 export type { Input, LagOptions, Level, SlewOptions } from './signals.js';
