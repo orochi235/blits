@@ -27,6 +27,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A rate or ramp set after a seek back plays the calls recorded ahead on at that rate, as a rate
+  below 0 already did, and keeps that rate across later seeks; it was recorded as a host call,
+  which branched the tape and dropped every call ahead, the same rate set again included.
 - A `spring`, `tween` or `glide` moves the way the channel it writes goes between two values, where
   it moved each number in a straight line. On an `angle` (or a `vec` of angles) a spring or tween
   heads the short way round: from 350 to 10 it no longer passes 180, and from 0 to 360 it no longer

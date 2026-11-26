@@ -424,8 +424,7 @@ export class Transport implements TransportApi {
     const c = drive.clock;
     const steady = ended(c, drive.wall);
     const rate = rateWith(c, drive.wall);
-    const tape = this.tape as Tape;
-    if (steady && rate >= 0 && tape.timestampAt(tape.undoDepth()) === undefined) {
+    if (steady && rate >= 0 && !this.callsAhead) {
       this.drive = null;
       if (rate !== this.pacedRate) this.ramp(rate, 0);
     }
@@ -464,6 +463,14 @@ export class Transport implements TransportApi {
   /** The rate the mix's own clock plays at, apart from any drive. */
   private get pacedRate(): number {
     return this.pace === null ? 1 : this.pace.rateAt(this.u);
+  }
+
+  /** Whether the tape holds calls ahead of where the transport stands, after a seek back. */
+  private get callsAhead(): boolean {
+    const tape = this.tape;
+    return (
+      tape !== undefined && !this.projecting && tape.timestampAt(tape.undoDepth()) !== undefined
+    );
   }
 
   /** Runs the mix by `drive` from now, at `rate`, reached over `over` host ms. */
@@ -581,8 +588,9 @@ export class Transport implements TransportApi {
     if (!Number.isFinite(rate))
       throw new RangeError(`blits: a mix's rate is a finite number, not ${rate}`);
     rampTime(over);
-    // A call the tape plays again sets the rate it recorded; a drive is the host's, never taped.
-    if (!this.replaying && (rate < 0 || this.drive !== null)) {
+    // A call the tape plays again sets the rate it recorded; a drive is the host's, never taped. A
+    // rate set while recorded calls lie ahead drives too, so it plays them on rather than cutting them.
+    if (!this.replaying && (rate < 0 || this.drive !== null || this.callsAhead)) {
       this.steer(rate, over);
       return;
     }

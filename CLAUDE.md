@@ -15,8 +15,8 @@ debug panel and shows readers code they shouldn't write.
   mix `history` anyway, so the panel can seek it.
 - **To scrub a whole mix, pause it by not syncing it, not with `rate = 0`,** and call `rebase()` on
   resume, as `site/src/live/loop.ts` does on blur. A seek back restores the rate recorded then, and
-  any host call made after a seek back (a `rate` write included) cuts off the tape ahead, so every
-  later seek forward throws. `sequence.ts` scrubs this way.
+  any host call made after a seek back other than a `rate` write cuts off the tape ahead, so every
+  later seek forward lands on the new branch. `sequence.ts` scrubs this way.
 - **Losing focus, `loop()` settles a demo to rest before it stops:** its voices fade out over
   400 ms and rise again on focus. A demo on a transport passes its mixes as `settle`, and one that
   seeks back passes `settle: false`, since the fade would cut off the tape ahead.

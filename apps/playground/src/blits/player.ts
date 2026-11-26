@@ -212,7 +212,7 @@ export class Player {
     const ramp = this.ramping();
     this.lapped += length;
     this.seek(t);
-    // Even unchanged: a host call after the seek back cuts the rate changes the tape holds ahead.
+    // Even unchanged: the seek back restored the rate recorded there, and this one plays the tape on.
     this.apply({ kind: 'rate', rate, over: 0 });
     if (ramp !== null) this.apply({ kind: 'rate', rate: ramp.rate, over: ramp.left });
     const first = this.samples[0]?.t ?? Number.POSITIVE_INFINITY;

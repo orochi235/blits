@@ -148,15 +148,8 @@ Owner tags:
   - `now` stays NaN with no mix on it, so weasel adds an empty pilot mix.
   - Seeking needs restore history with a tape, so its frames grow for the clock's whole life. Wanted: a
     seekable transport with no restore history.
-  - A seek reverts the rate, so weasel re-asserts its rate after every seek.
-  - A rate or ramp call after a seek back branches the tape and drops the calls recorded ahead, even
-    one setting the rate it already has (2026-11-26, weasel `clock-on-transport` @ `ee6d6b6a01`,
-    clockMix.test "seeks the mix back with the clock, and plays a later cue again going forward"):
-    `sync(0)`, `sync(500)`, cue a 1000 ms patch, `sync(800)`, `seek(200)`, `rate = 1`, `seek(700)`
-    reads the voice at 0, where without the rate call it reads 200 ms in. weasel's clock re-asserts
-    its rate after every seek, so it loses its cues. Proposed: a transport's rate and ramp don't cut
-    the tape ahead, either untaped or recorded without cutting redo; `CLAUDE.md`'s demo rules and
-    the playground's loop (`apps/playground/src/blits/player.ts`) work around the same cut.
+  - A seek reverts the rate, so weasel re-asserts its rate after every seek. A rate set after a seek
+    back now holds across later seeks (2026-11-26); one set before still reverts on a seek back.
   - An earlier timestamp makes `sync` throw.
   - `onWake` never fires from rate, seek or ramp on a transport with no voices.
 
