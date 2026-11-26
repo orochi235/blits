@@ -121,6 +121,33 @@ Owner tags:
     descriptor object may share the first's changes.
   - The `Along` store (`src/store.ts`) may lose a delete once a later copy sets that key again, so
     an earlier copy asked afterwards rebuilds the record from the live mix.
+- **[agent] A `Transport` that can be a clock on its own** (2026-11-25). weasel rebuilt its
+  `@weasel-js/clock` on a transport (weasel branch `clock-on-transport`, `f54a75c0d1`). 11 of its 13 test
+  files pass unchanged; 10 property tests fail on transport gaps.
+  - **Seek ahead under a negative rate throws.** It fails with "the mix's rate never reaches t", because
+    `ramp()` steers the drive rather than the pace. A seek ahead should be able to jump.
+  - **A ramp stops ulps short of `to`.** `rateWith` divides host time that a seek pushed out to ~1e7, so
+    the low bits are lost. Snap to `to` within a few ulps of the ramp's end.
+  - **A move to `Infinity` crashes an empty mix** in `DueQueue.pop` (`dueToken` of undefined). Cap time
+    at `MAX_VALUE`.
+  - **A ramp to rest across an infinite gap reads NaN.** `elapsedWith` computes `0 * Infinity`.
+
+  The workarounds weasel needs, each a proposed transport change:
+  - `now` stays NaN with no mix on it, so weasel adds an empty pilot mix.
+  - Seeking needs restore history with a tape, so its frames grow for the clock's whole life. Wanted: a
+    seekable transport with no restore history.
+  - A seek reverts the rate, so weasel re-asserts its rate after every seek. A paused seek ahead throws.
+  - An earlier timestamp makes `sync` throw.
+  - `onWake` never fires from rate, seek or ramp on a transport with no voices.
+
+  Closes when weasel's clock runs on a transport with no workarounds and both property test files pass.
+- **[agent] Export the pass math** (`passesOf`, `passAt`, `phaseAt` in `src/clock.ts`). weasel keeps its own
+  copies in `@weasel-js/clock` (`place.ts`) and animator (`lapsOf`). Closes when they're public.
+- **[agent] The Penner curves in `curve`.** `curve`'s named set is the five CSS curves. weasel's geom keeps
+  31 Penner curves with its own bezier solver, and is moving them here so geom can re-export them. Closes
+  when `curve` names them and blits' solver is the only one.
+- **[agent] A pure slew step.** `slew` only runs inside a mix, so weasel's animator keeps its own standalone
+  slew limiter. Export the step that the signal uses. Closes when it's public and `slew` calls it.
 
 ## Speed
 
