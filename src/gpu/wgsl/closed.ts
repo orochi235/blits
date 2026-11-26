@@ -1,4 +1,4 @@
-import { BOUND, COAST, CRITICAL, EASED, OVER, UNDER } from '../../closed.js';
+import { BOUND, COAST, CRITICAL, DRIFT, EASED, OVER, UNDER } from '../../closed.js';
 import { EASING_WGSL } from './easing.js';
 
 /**
@@ -44,6 +44,12 @@ fn blits_closed_coast(k: u32, y0: f32, v0: f32, t: f32) -> vec2f {
   let tau = values[k + 2u];
   let e = exp(-t / tau);
   return vec2f(y0 * e, (-y0 / tau) * e);
+}`;
+
+const DRIFT_WGSL = /* wgsl */ `
+fn blits_closed_drift(k: u32, y0: f32, v0: f32, t: f32) -> vec2f {
+  if (abs(v0) <= values[k + 1u]) { return vec2f(y0, 0.0); }
+  return vec2f(y0 + v0 * t, v0);
 }`;
 
 /** Where a row's flags word carries each axis's `Branch`, two bits an axis from this bit. */
@@ -92,10 +98,19 @@ const SPRUNG: Readonly<Record<number, { name: string; wgsl: string }>> = {
   [CRITICAL]: { name: 'critical', wgsl: CRITICAL_WGSL },
   [OVER]: { name: 'over', wgsl: OVER_WGSL },
   [COAST]: { name: 'coast', wgsl: COAST_WGSL },
+  [DRIFT]: { name: 'drift', wgsl: DRIFT_WGSL },
 };
 
 /** The forms the GPU runs. */
-export const FORMS: ReadonlySet<number> = new Set([UNDER, CRITICAL, OVER, COAST, EASED, BOUND]);
+export const FORMS: ReadonlySet<number> = new Set([
+  UNDER,
+  CRITICAL,
+  OVER,
+  COAST,
+  EASED,
+  BOUND,
+  DRIFT,
+]);
 
 /**
  * WGSL setting `x`, an `array<f32, n>`, to a stretch of law `form` at voice time `t`, as `closed()`

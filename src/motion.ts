@@ -1,4 +1,4 @@
-import { BOUND, COAST, CRITICAL, EASED, OVER, UNDER } from './closed.js';
+import { BOUND, COAST, CRITICAL, DRIFT, EASED, OVER, UNDER } from './closed.js';
 import { type Curve, curve } from './easing.js';
 import { Motions } from './motions.js';
 import { reading } from './reading.js';
@@ -181,6 +181,16 @@ class SpringShape<I, V extends Value> extends StockShape<I, V> implements Shape<
   spec(): MotionSpec {
     return this.motion;
   }
+  /** With no stiffness nothing pulls toward the target: it coasts to where damping stops it. */
+  override aim(x: number[], v: number[], was: number[] | null, s: I, put: boolean): number[] {
+    const form = this.law[0];
+    if (form === COAST) {
+      const tau = this.law[2] as number;
+      return x.map((xi, i) => xi + (v[i] as number) * tau);
+    }
+    if (form === DRIFT) return x.slice();
+    return super.aim(x, v, was, s, put);
+  }
 }
 
 class GlideShape<I, V extends Value> extends StockShape<I, V> implements Shape<I> {
@@ -266,15 +276,16 @@ export function spring<I, O, V extends Value = number>(
   const k = opts.stiffness ?? 170;
   const c = opts.damping ?? 26;
   const m = opts.mass ?? 1;
-  if (!(k > 0 && k < Infinity) || !(m > 0 && m < Infinity) || !(c >= 0 && c < Infinity))
+  if (!(m > 0 && m < Infinity) || !(k >= 0 && k < Infinity) || !(c >= 0 && c < Infinity))
     throw new RangeError(
-      'blits: a spring takes a finite positive stiffness and mass, and finite damping of 0 or more',
+      'blits: a spring takes a finite positive mass, and finite stiffness and damping of 0 or more',
     );
   const settle = opts.settle ?? 1e-4;
   const w0 = Math.sqrt(k / m);
   const zeta = c / (2 * Math.sqrt(k * m));
   let law: number[];
-  if (zeta < 1) law = [UNDER, settle, zeta, w0, w0 * Math.sqrt(1 - zeta * zeta)];
+  if (k === 0) law = c === 0 ? [DRIFT, settle, 0, 0, 0] : [COAST, settle, m / c, 0, 0];
+  else if (zeta < 1) law = [UNDER, settle, zeta, w0, w0 * Math.sqrt(1 - zeta * zeta)];
   else if (zeta === 1) law = [CRITICAL, settle, 0, w0, 0];
   else {
     const s = Math.sqrt(zeta * zeta - 1);

@@ -26,7 +26,9 @@ export interface Motion<V extends Value = number> {
 
 /**
  * A patch whose motion is a closed form per subject. It lands in the same place at any frame rate,
- * and its changes mid-flight start from where the subject is and how fast it moves.
+ * and its changes mid-flight start from where the subject is and how fast it moves. It moves the
+ * way the channel it writes goes between two values: round the short way on an `angle`, along the
+ * sphere on a `quat`, by its parts on an `affine`, round the hue on an `ink`.
  *
  * @category patch
  */
@@ -78,13 +80,19 @@ export interface SpringOptions<I, V extends Value> extends MotionOptions<I, V> {
   to: PerSubject<I, V>;
   /** Where each subject starts. Default: `to`, at rest. */
   from?: PerSubject<I, V>;
-  /** How hard the spring pulls toward its target, per second squared. Default 170. */
+  /**
+   * How hard the spring pulls toward its target, per second squared. Default 170. At 0 nothing
+   * pulls: a subject coasts as a `glide` of `ms` `1000 · mass / damping` does, and a target changes
+   * nothing.
+   */
   stiffness?: number;
   /**
    * How fast the spring's motion dies away, per second. Default 26, just short of critical at the
-   * default stiffness.
+   * default stiffness. At 0 a spring oscillates about its target for good; with no stiffness
+   * either, a subject moves on at its velocity.
    */
   damping?: number;
+  /** Positive. Default 1. */
   mass?: number;
 }
 

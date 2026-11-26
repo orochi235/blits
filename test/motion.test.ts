@@ -966,7 +966,7 @@ describe('a subject faded out of a motion voice', () => {
 });
 
 describe('motion constants a law cannot run on', () => {
-  it.each([{ stiffness: 0 }, { mass: 0 }, { damping: -1 }, { stiffness: Number.NaN }])(
+  it.each([{ stiffness: -1 }, { mass: 0 }, { damping: -1 }, { stiffness: Number.NaN }])(
     'are refused by spring: %j',
     (opts) => {
       expect(() => spring<{ id: number }, { x: number }>('x', { to: () => 0, ...opts })).toThrow(

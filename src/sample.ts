@@ -42,8 +42,8 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   const samples = lane.samples;
   const landed = lane.landed;
   const xs = run.xs;
-  // A tween round the hue is no straight line between its ends: `sampleBare` reads it round the hue.
-  const ease = run.round ? undefined : run.ease;
+  // A tween in a space is no straight line between its ends: `sampleBare` reads it in its space.
+  const ease = run.space !== null ? undefined : run.ease;
   // A tween whose stretches tell the lane before they change keeps no sample: see `unbareLane`.
   if (run.watcher === null) {
     run.watcher = lanes;

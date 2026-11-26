@@ -1,8 +1,18 @@
 import { doubles, keepsEnds, type Vec, vouch } from './channels.js';
+import { closedParts, compose, parts } from './parts.js';
+import { movesIn, type Space } from './spaces.js';
 import { shortWay } from './turns.js';
 import type { Channel } from './types.js';
 
 type M = Vec<6>;
+
+/** A transform: a motion moves its parts, as `lerp` goes between two. */
+const PARTS: Space = {
+  is: 'is a 2D transform',
+  values: 'matrices, six numbers each',
+  axes: 6,
+  closed: closedParts,
+};
 
 /** `a` then `b`, as the matrix product `a·b`, written into `out`, which may be either. */
 function multiply(out: number[], a: ArrayLike<number>, b: ArrayLike<number>): number[] {
@@ -14,42 +24,6 @@ function multiply(out: number[], a: ArrayLike<number>, b: ArrayLike<number>): nu
   out[3] = a1 * b2 + a3 * b3;
   out[4] = a0 * b4 + a2 * b5 + a4;
   out[5] = a1 * b4 + a3 * b5 + a5;
-  return out;
-}
-
-/**
- * A matrix's parts, `[x, y, rotate, shear, scaleX, scaleY]`: the translation, the rotation, then
- * the scaled axes, x along `scaleX` and y `shear` along x and `scaleY` across it. `shear` is an
- * amount, not CSS's ratio to `scaleY`, so a y axis lying along x survives where `scaleY` is 0. A
- * flip lands in `scaleY`, and a matrix with no extent along x takes its rotation from its y axis.
- */
-function parts(out: number[], m: ArrayLike<number>): number[] {
-  const [a, b, c, d, e, f] = m as M;
-  const sx = Math.hypot(a, b);
-  const angle = sx === 0 ? Math.atan2(-c, d) : Math.atan2(b, a);
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  const sy = -sin * c + cos * d;
-  out[0] = e;
-  out[1] = f;
-  out[2] = angle;
-  out[3] = cos * c + sin * d;
-  out[4] = sx;
-  out[5] = sy;
-  return out;
-}
-
-/** The matrix with `parts` `[x, y, rotate, shear, scaleX, scaleY]`, written into `out`. */
-function compose(out: number[], p: ArrayLike<number>): number[] {
-  const [x, y, angle, k, sx, sy] = p as M;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  out[0] = cos * sx;
-  out[1] = sin * sx;
-  out[2] = cos * k - sin * sy;
-  out[3] = sin * k + cos * sy;
-  out[4] = x;
-  out[5] = y;
   return out;
 }
 
@@ -90,6 +64,9 @@ function copy(out: number[], v: ArrayLike<number>): number[] {
  * between transforms whose shear and y scale both change the frames between differ from CSS's,
  * and a transform flattened onto a line keeps its shape.
  *
+ * A `spring`, `tween` or `glide` on it moves the parts too, so a tween follows `lerp` and a spring
+ * turns the short way round to its target. Its velocity is the rate of change of the six numbers.
+ *
  * @category channel
  */
 export function affine(): Channel<Vec<6>> {
@@ -105,6 +82,7 @@ export function affine(): Channel<Vec<6>> {
     lerp: (a, b, u) => between(doubles(6, 0), a, b, u) as M,
   };
   vouch(channel as Channel<unknown>, { op: 'own', axes: 6 });
+  movesIn(channel as Channel<unknown>, PARTS);
   keepsEnds(channel.lerp);
   return channel;
 }

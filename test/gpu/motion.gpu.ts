@@ -95,6 +95,9 @@ const SPRINGS = [
   ['under-damped', 180, 12],
   ['critically damped', 100, 20],
   ['over-damped', 100, 50],
+  ['with no damping', 180, 0],
+  ['with no stiffness', 0, 12],
+  ['with neither', 0, 0],
 ] as const;
 
 for (const [kind, stiffness, damping] of SPRINGS)

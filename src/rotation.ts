@@ -1,6 +1,16 @@
 import { doubles, type LerpInto, lerpsInPlace, type Vec, vouch } from './channels.js';
+import { movesIn, type Space } from './spaces.js';
+import { closedSphere } from './sphere.js';
 import { shortWay } from './turns.js';
 import type { Channel } from './types.js';
+
+/** A rotation: a motion turns it about an axis, never off the unit sphere. */
+const SPHERE: Space = {
+  is: 'is a rotation',
+  values: 'unit quaternions, four numbers each',
+  axes: 4,
+  closed: closedSphere,
+};
 
 /**
  * What `angle` takes.
@@ -19,7 +29,9 @@ export interface AngleOptions {
  * A rotation about one axis that interpolates the short way round. It adds as `sum` does, and from
  * 350 to 10 it passes 0, not 180. A weight below 1 fades it the short way to rest too. Its values
  * are angles, so two a whole number of turns apart are the same value, and a fold may answer with
- * either.
+ * either. A `spring` or `tween` on it heads the short way round to its target, so it may land a
+ * whole number of turns from the value given, and a `glide` turns as far as it is flung. So does
+ * a motion on a `vec` of angles, axis by axis.
  *
  * @category channel
  */
@@ -93,6 +105,12 @@ const scratch: number[] = doubles(4, 0);
  * turns a contribution part of the way from no rotation, along the short arc, and `lerp` takes the
  * short arc between two.
  *
+ * A `spring`, `tween` or `glide` on it turns the rotation about an axis, staying on the unit
+ * sphere: a tween follows `lerp`'s arc, and a spring heads for its target the short way, or for its
+ * negation, which is the same rotation. Its velocity is the quaternion's rate of change, so for
+ * angular velocity `ω` (radians a second, about axes fixed to the subject) at `q` it is
+ * `½ q ⊗ [ωx, ωy, ωz, 0]`.
+ *
  * @category channel
  */
 export function quat(): Channel<Vec<4>> {
@@ -107,6 +125,7 @@ export function quat(): Channel<Vec<4>> {
     lerp: (a, b, u) => slerp(doubles(4, 0), a, b, u) as Q,
   };
   vouch(channel as Channel<unknown>, { op: 'own', axes: 4, signless: true });
+  movesIn(channel as Channel<unknown>, SPHERE);
   lerpsInPlace(
     channel as Channel<unknown>,
     ((out: number[] | undefined, a: Q, b: Q, u: number) =>

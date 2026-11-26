@@ -190,7 +190,7 @@ function released<I>(
   const vs = change.v ?? numbers(landing.v, 0, n);
   const known = subject === absent ? (undefined as I) : subject;
   const put = change.x !== undefined && change.v === undefined;
-  const aimed = motions.shape.aim(xs, vs, to, known, put);
+  const aimed = motions.aim(xs, vs, to, known, put);
   const length = subject === absent ? ms : (motions.shape.ms?.(known) ?? 0);
   return { at, ms: length, x0: xs, v0: vs, to: aimed, change };
 }

@@ -53,6 +53,28 @@ DevTools extension's are in their READMEs.
   asked rather than asking again. A subject dropped and met again live is asked again, as the docs
   promise, and its replay gets that second answer. Not until the voice ends: a long voice would
   keep an entry for every subject ever dropped.
+- **Every valid spring constant has a closed form** (2026-11-25). Only a non-positive mass, a
+  negative constant or a non-finite one is refused. Stiffness 0 coasts as a glide of
+  `ms = 1000 · mass / damping`, its target ignored; stiffness and damping both 0 drift at the
+  velocity given, and a drift within `settle` counts as stopped for its whole stretch, so it never
+  creeps and then snaps (left to the agent).
+- **A motion takes its arithmetic from the channel it writes, never from per-call ops**
+  (2026-11-25). A closed form is `target + d₀·c₁(t) + v₀·c₂(t)`, so it needs only add and scale in
+  the channel's space: numbers, `vec` and oklab `color` as they are; `ink`'s hue in LCh; `quat` on
+  the rotation vector from a base; `affine` on its parts, as its `lerp` goes. A value blits cannot
+  write as numbers is encoded at the consumer's boundary (weasel's `axesOf`), since the tape, lanes
+  and GPU all need numbers. Left to the agent, same day:
+  - An `angle` motion (and a `vec` of angles) keeps its value continuous and lands a whole number of
+    turns from a target given the long way, rather than jumping at release to keep the target's
+    number. The target is rewritten when a stretch is released, so the stretch stays a line and runs
+    on crowds, lanes and the GPU as before. A glide's rest is no target, so a fling turns as far as
+    it carries.
+  - A `quat` motion's velocity is the quaternion's rate of change, as every other motion's is its
+    value's, not an angular velocity. A spring or tween's base is its target on the sphere's side
+    nearest where the stretch starts, so its value never flips sign; a glide's base is where it
+    starts, so a fling may turn past a half turn.
+  - Motions on `quat`, `affine` and `ink` stay off crowds and the GPU, as `ink`'s already did, and a
+    glide on them refuses bounds.
 - **Spans** (2026-10-07): fit strategies over a constraint solver or a host helper; `overrun` is
   opt-in and never the default; joins are `all`/`any`; the children's hints are plain fields on the
   spec, not under `give`.

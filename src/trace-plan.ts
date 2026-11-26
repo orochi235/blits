@@ -60,7 +60,7 @@ function shapeOf<I, O>(
   const built = voice.built;
   const patch = voice.patch;
   const motion = voice.motion;
-  const tweened = motion !== undefined && motion.ease !== undefined && !motion.round;
+  const tweened = motion !== undefined && motion.ease !== undefined && motion.space === null;
   const waved = wavePlanOf(patch);
   if (!tweened && waved === undefined && (patch.form !== 'keys' || built === null)) return false;
   if (patch.step !== undefined) return false;
