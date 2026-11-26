@@ -104,6 +104,35 @@ function composeRate(out: Float64Array, p: Float64Array, dp: Float64Array): void
   out[5] = dp[1] as number;
 }
 
+/**
+ * Turns parts `p`, moving at `dp`, into whichever of the matrix's two forms lies nearer `goal`
+ * along the rotation, shear and scales: `[θ, k, sx, sy]` and `[θ + π, −k, −sx, −sy]` are one
+ * matrix, and `parts` always answers with `sx` of 0 or more. A spring that overshoots `scaleX` past
+ * 0 has the second, so taking the first on a retarget would spin it half a turn; the rotation is
+ * then taken the short way to the goal's.
+ */
+function nearer(p: Float64Array, dp: Float64Array, goal: Float64Array): void {
+  const TURN = 2 * Math.PI;
+  const g = goal[2] as number;
+  const k = p[3] as number;
+  const sx = p[4] as number;
+  const sy = p[5] as number;
+  const as = shortWay((p[2] as number) - g, TURN);
+  const flipped = shortWay((p[2] as number) + Math.PI - g, TURN);
+  const gk = goal[3] as number;
+  const gx = goal[4] as number;
+  const gy = goal[5] as number;
+  const kept = Math.abs(as) + Math.abs(k - gk) + Math.abs(sx - gx) + Math.abs(sy - gy);
+  const other = Math.abs(flipped) + Math.abs(k + gk) + Math.abs(sx + gx) + Math.abs(sy + gy);
+  if (other < kept) {
+    p[2] = g + flipped;
+    for (let i = 3; i < 6; i++) {
+      p[i] = -(p[i] as number);
+      dp[i] = -(dp[i] as number);
+    }
+  } else p[2] = g + as;
+}
+
 const P0 = new Float64Array(6);
 const D0 = new Float64Array(6);
 const GOAL = new Float64Array(6);
@@ -112,8 +141,9 @@ const DS = new Float64Array(6);
 
 /**
  * `closed` for a stretch of a 2D transform, solved on its parts as `affine`'s `lerp` goes between
- * two, so a tween follows that lerp. A spring or tween's rotation is taken the short way round to
- * its target's; a glide coasts each part on, and a fling may turn it any number of times.
+ * two. A spring or tween starts from the form of its matrix nearer its target (`nearer`), so it
+ * follows that lerp but where the start is mirrored against the target; a glide coasts each part
+ * on, and a fling may turn it any number of times.
  */
 export function closedParts(
   law: Float64Array,
@@ -139,8 +169,7 @@ export function closedParts(
   } else if (form === DRIFT) GOAL.set(P0);
   else {
     parts(GOAL, to, g);
-    const goal = GOAL[2] as number;
-    P0[2] = goal + shortWay((P0[2] as number) - goal, 2 * Math.PI);
+    nearer(P0, D0, GOAL);
   }
   const still = closed(law, ease, 6, at, ms, P0, 0, D0, 0, GOAL, 0, t, PS, DS);
   if (still && form !== COAST && form !== DRIFT) {

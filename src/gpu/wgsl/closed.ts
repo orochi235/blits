@@ -48,7 +48,6 @@ fn blits_closed_coast(k: u32, y0: f32, v0: f32, t: f32) -> vec2f {
 
 const DRIFT_WGSL = /* wgsl */ `
 fn blits_closed_drift(k: u32, y0: f32, v0: f32, t: f32) -> vec2f {
-  if (abs(v0) <= values[k + 1u]) { return vec2f(y0, 0.0); }
   return vec2f(y0 + v0 * t, v0);
 }`;
 

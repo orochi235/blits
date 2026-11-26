@@ -65,7 +65,9 @@ function copy(out: number[], v: ArrayLike<number>): number[] {
  * and a transform flattened onto a line keeps its shape.
  *
  * A `spring`, `tween` or `glide` on it moves the parts too, so a tween follows `lerp` and a spring
- * turns the short way round to its target. Its velocity is the rate of change of the six numbers.
+ * turns the short way round to its target, but for one starting from a transform mirrored against
+ * its target: that one flips a scale through 0 rather than turning half round. Its velocity is the
+ * rate of change of the six numbers.
  *
  * @category channel
  */

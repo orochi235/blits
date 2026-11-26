@@ -187,7 +187,7 @@ function released<I>(
 ): Segment {
   const n = motions.n;
   const xs = change.x ?? numbers(landing.x, 0, n);
-  const vs = change.v ?? numbers(landing.v, 0, n);
+  const vs = motions.moving(change.v ?? numbers(landing.v, 0, n));
   const known = subject === absent ? (undefined as I) : subject;
   const put = change.x !== undefined && change.v === undefined;
   const aimed = motions.aim(xs, vs, to, known, put);

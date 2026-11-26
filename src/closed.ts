@@ -79,7 +79,7 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
   if (form === UNDER) solveUnder(law, y0, v0);
   else if (form === CRITICAL) solveCritical(law, y0, v0, t);
   else if (form === OVER) solveOver(law, y0, v0);
-  else if (form === DRIFT) solveDrift(law, y0, v0, t);
+  else if (form === DRIFT) solveDrift(y0, v0, t);
   else solveGlide(law, y0);
 }
 
@@ -128,15 +128,10 @@ function solveGlide(law: Float64Array, y0: number): void {
 }
 
 /**
- * Nothing pulls or slows it, so it moves on at `v0`. With no rest to settle at, a speed within the
- * law's settle counts as stopped, the whole stretch through, so it never creeps and then snaps.
+ * Nothing pulls or slows it, so it moves on at `v0`. A speed within settle was stopped when the
+ * stretch was released (`Motions.moving`), so it never creeps and then snaps.
  */
-function solveDrift(law: Float64Array, y0: number, v0: number, t: number): void {
-  if (Math.abs(v0) <= (law[1] as number)) {
-    solved.y = y0;
-    solved.dy = 0;
-    return;
-  }
+function solveDrift(y0: number, v0: number, t: number): void {
   solved.y = y0 + v0 * t;
   solved.dy = v0;
 }

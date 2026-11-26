@@ -185,6 +185,17 @@ export class Motions<I> {
    * target taken the short way round from `x`. A glide's rest is no target, and a fling may turn it
    * more than half a turn.
    */
+  /**
+   * The velocity a stretch starts with: for a drift, each axis within settle stopped, decided once
+   * here in doubles, since the GPU reads the stretch in floats and must not decide it again.
+   */
+  moving(v: number[]): number[] {
+    const law = this.shape.law;
+    if (law[0] !== DRIFT) return v;
+    const settle = law[1] as number;
+    return v.map((vi) => (Math.abs(vi) <= settle ? 0 : vi));
+  }
+
   aim(x: number[], v: number[], was: number[] | null, subject: I, put: boolean): number[] {
     const to = this.shape.aim(x, v, was, subject, put);
     const turn = this.turn;
@@ -229,7 +240,7 @@ export class Motions<I> {
   /** The stretch a subject met afresh starts with, its axes and the law set up for it, numbering no one. */
   fresh(subject: I): Segment {
     const x = this.shape.from(subject);
-    const v = this.shape.velocity(subject, x);
+    const v = this.moving(this.shape.velocity(subject, x));
     const to = this.aim(x, v, null, subject, false);
     const n = this.n < 0 ? x.length : this.n;
     this.check(x, n);

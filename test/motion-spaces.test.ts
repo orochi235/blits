@@ -2,7 +2,7 @@ import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { affine, matrix } from '../src/affine.js';
 import { kit, type Vec, vec } from '../src/channels.js';
-import { color, oklab } from '../src/color.js';
+import { color, ink, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { angle, quat } from '../src/rotation.js';
@@ -244,6 +244,7 @@ describe('a motion on a quat', () => {
       const rate = lo.map((x, i) => ((hi[i] as number) - x) / ((2 * h) / 1000));
       near(s.read(a, t + (t === 150 ? h : 0))?.velocity as number[], rate, 3);
     }
+    near(s.read(a, 150 + 1e-6)?.value as number[], s.read(a, 150 - 1e-6)?.value as number[], 6);
   });
 });
 
@@ -333,6 +334,110 @@ describe('a motion on an affine', () => {
     }
     near(s.read(a, 150 + 1e-6)?.value as number[], s.read(a, 150 - 1e-6)?.value as number[], 4);
     near(s.read(a, 150)?.velocity as number[], [1, -2, 0.5, 3, 40, -10], 9);
+  });
+});
+
+describe('a retarget in a space', () => {
+  it('on an angle heads the short way from where the subject is', () => {
+    const s = spring<Part, Pose>('r', { from: 0.2, to: 0.2, stiffness: K_, damping: C_ });
+    const m = mix<Part, Pose>(K, { name: 'angle retarget' });
+    m.cue({ patch: s });
+    m.sync(0);
+    m.probe(a);
+    s.to(a, 6);
+    for (let t = 16; t <= 4000; t += 16) {
+      m.sync(t);
+      m.probe(a);
+      expect(Math.abs(s.read(a)?.value as number)).toBeLessThan(0.6);
+    }
+    expect(s.read(a)?.value).toBeCloseTo(6 - TURN, 9);
+  });
+
+  it('on an affine whose scale overshot past 0 plays on as if nothing changed', () => {
+    const FROM = matrix({ scaleX: 1 });
+    const TO = matrix({ scaleX: 0.05 });
+    const run = (again: boolean) => {
+      const s = spring<Part, Pose, number[]>('m', {
+        from: FROM,
+        to: TO,
+        stiffness: 170,
+        damping: 2,
+        settle: 0,
+      });
+      const m = mix<Part, Pose>(K, { name: again ? 'retargeted' : 'plain' });
+      m.cue({ patch: s });
+      const out: number[][] = [];
+      for (let t = 0; t <= 800; t += 16) {
+        if (again && t === 240) s.to(a, TO, 240);
+        m.sync(t);
+        out.push(m.probe(a).m);
+      }
+      return out;
+    };
+    const plain = run(false);
+    const again = run(true);
+    expect(plain[15]?.[0] as number).toBeLessThan(0);
+    plain.forEach((p, i) => {
+      near(again[i] as number[], p, 6);
+    });
+  });
+});
+
+describe('a spring with no stiffness in a space', () => {
+  const RED = oklab(0xff0000);
+  const cases = [
+    { ch: 'q', from: about([0, 0, 1], 0.3), v: [0.4, -0.2, 1.1, 0.05] },
+    { ch: 'm', from: matrix({ x: 5, rotate: 1, scaleX: 2 }), v: [0.3, 0.1, -0.5, 0.2, 40, -9] },
+    { ch: 'c', from: RED, v: [0.1, -0.05, 0.02, 0] },
+  ] as const;
+  for (const { ch, from, v } of cases)
+    it(`coasts as a glide does on ${ch}`, () => {
+      const s = spring<Part, Pose, number[]>(ch, {
+        from: [...from],
+        to: [...from],
+        velocity: [...v],
+        stiffness: 0,
+        damping: 4,
+        settle: 0,
+      });
+      const g = glide<Part, Pose, number[]>(ch, {
+        from: [...from],
+        velocity: [...v],
+        ms: 250,
+        settle: 0,
+      });
+      const got = play(s, ch, TIMES);
+      const want = play(g, ch, TIMES);
+      TIMES.forEach((_, i) => {
+        near(got[i] as number[], want[i] as number[], 12);
+      });
+    });
+
+  it('on an ink coasts round the hue as a glide does', () => {
+    const KI = kit<{ i: number[] }>({ i: ink() });
+    const RED = oklab(0xff0000);
+    const v = [0, 0.05, 0.1, 0];
+    const both = [
+      spring<Part, { i: number[] }, number[]>('i', {
+        from: RED,
+        to: RED,
+        velocity: v,
+        stiffness: 0,
+        damping: 2,
+        settle: 0,
+      }),
+      glide<Part, { i: number[] }, number[]>('i', { from: RED, velocity: v, ms: 500, settle: 0 }),
+    ].map((p) => {
+      const m = mix<Part, { i: number[] }>(KI, { name: 'ink coast' });
+      m.cue({ patch: p });
+      return TIMES.map((t) => {
+        m.sync(t);
+        return m.probe(a).i;
+      });
+    });
+    TIMES.forEach((_, i) => {
+      near(both[0]?.[i] as number[], both[1]?.[i] as number[], 12);
+    });
   });
 });
 

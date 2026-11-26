@@ -73,8 +73,16 @@ DevTools extension's are in their READMEs.
     value's, not an angular velocity. A spring or tween's base is its target on the sphere's side
     nearest where the stretch starts, so its value never flips sign; a glide's base is where it
     starts, so a fling may turn past a half turn.
+  - An `affine` stretch starts from whichever of a matrix's two parts forms, `[θ, k, sx, sy]` or
+    `[θ + π, −k, −sx, −sy]`, lies nearer the target's parts (summed distance), so a spring whose
+    scale overshot past 0 plays on through a retarget rather than spinning half a turn. A tween
+    therefore matches `lerp`, which always takes the first form, except where the second is nearer,
+    as from a mirrored transform; a rotation with unit scales always keeps the first.
   - Motions on `quat`, `affine` and `ink` stay off crowds and the GPU, as `ink`'s already did, and a
     glide on them refuses bounds.
+  - The change is marked Breaking in `CHANGELOG.md` (from 0 to 360 a tween on an `angle` no longer
+    turns), so a release carrying it is 2.0.0 unless the owner rules it a fix. No consumer in
+    `~/src` cues a motion on an `angle`, `quat` or `affine`.
 - **Spans** (2026-10-07): fit strategies over a constraint solver or a host helper; `overrun` is
   opt-in and never the default; joins are `all`/`any`; the children's hints are plain fields on the
   spec, not under `give`.

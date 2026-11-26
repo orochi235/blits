@@ -118,6 +118,20 @@ describe('a spring with a constant at 0', () => {
       n.sync(t);
       expect(n.probe(a).x).toBe(3);
     }
+    expect((still.read(a) as { velocity: number }).velocity).toBe(0);
+    const creeping = spring<Part, Pose>('x', {
+      from: 3,
+      to: 0,
+      velocity: 1.00000001e-4,
+      stiffness: 0,
+      damping: 0,
+    });
+    const c = mix<Part, Pose>(K, { name: 'creeping' });
+    c.cue({ patch: creeping });
+    c.sync(0);
+    c.probe(a);
+    c.sync(1e6);
+    expect(c.probe(a).x).toBeCloseTo(3.100000001, 12);
   });
 
   for (const law of LAWS)
