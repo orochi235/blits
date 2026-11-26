@@ -115,6 +115,7 @@ export type {
   Hold,
   Keyframe,
   Kit,
+  LinearPoint,
   Mark,
   Marked,
   MarkName,

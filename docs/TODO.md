@@ -16,9 +16,6 @@ Owner tags:
 
 ## Engine
 
-- **[agent] A sampled easing curve** (2026-11-25, for weasel's CSS animation import): CSS `linear()` gives
-  an easing as points with optional positions, and `curve()` has no form for it (`src/easing.ts`). Closes
-  when `curve({ linear: [...] })` matches CSS's `linear()` on its spec examples and `curveData` packs it.
 - **[agent] A voice's clock run through a remap** (2026-11-25, for Lottie precomp time remap and named ranges
   in weasel). Ruled 2026-11-25: one primitive, a remap on a voice or owner's clock, with a linear window
   (play `[a, b]` of its source) as the plain case and a curve as the general one; with `loop` and `rate` it

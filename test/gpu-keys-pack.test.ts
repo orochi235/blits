@@ -54,6 +54,18 @@ describe('packing a keys patch', () => {
       500, 0, 2, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 3, 4, 100, 1, 1, 0, 0, 0, 0, 0, 5,
     ]);
   });
+  it('moves the points of a linear easing after every track, its head pointing to them', () => {
+    const k = keys<unknown, O>(1000, [
+      { at: 0, delta: { v: 0 } },
+      { at: 1, delta: { v: 1 }, ease: { linear: [0, [0.5, 0.25], 1] } },
+    ]);
+    const got = pack(k);
+    if (got === undefined || !('values' in got)) throw new Error('not packed');
+    const values = [...got.values];
+    const head = 1 + 2 + 7 + 1;
+    expect(values.slice(head, head + 5)).toEqual([3, values.length - 6 - head, 3, 0, 0]);
+    expect(values.slice(-6)).toEqual([0, 0, 0.25, 0.5, 1, 1]);
+  });
   it('refuses a stop eased by a function', () => {
     const k = keys<unknown, O>(1000, [
       { at: 0, delta: { v: 0 } },
