@@ -262,6 +262,8 @@ export function seek(transport: Transport, to: number | { readonly frame: number
 function seekTo(transport: Transport, to: number | { readonly frame: number }): Sought {
   if (transport.projecting) throw new Error('blits: a projection does not seek');
   const history = transport.history;
+  if (!history && transport.members.length === 0 && typeof to === 'number')
+    return seekClock(transport, to);
   if (!history) throw new Error('blits: seeking needs a mix made with history');
   const tape = transport.tape;
   if (tape === undefined)
@@ -333,10 +335,11 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
     transport.now = t;
   } else {
     transport.left = { t: transport.now, u: transport.u };
-    tape.goto(tape.depthAt(frame.at === t ? frame.u : hostAt(transport, t)));
+    tape.goto(tape.depthAt(hostBack(transport, t, frame)));
     backTo(transport, t, frame);
     transport.tick(t);
   }
+  transport.pin(t);
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
   transport.offset = transport.last - transport.u;
   transport.kept();
@@ -350,12 +353,39 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
 }
 
 /**
+ * Moves a transport with no history and no mix on it to mix time `t`: there is nothing to put back
+ * or play again, so its clock alone moves there, keeping its rate and any ramp.
+ */
+function seekClock(transport: Transport, t: number): Sought {
+  if (!Number.isFinite(t)) throw new RangeError('blits: a mix seeks to a finite time');
+  if (Number.isNaN(transport.now))
+    throw new Error('blits: a mix that has never synced has nothing to seek');
+  const back = t < transport.now;
+  transport.u = transport.jump(t);
+  transport.offset = transport.last - transport.u;
+  transport.tick(t);
+  transport.now = t;
+  transport.sought(t);
+  return { at: t, frame: transport.seq, back };
+}
+
+/**
  * Puts the transport and every mix on it back as they stood at mix time `t`, at the end of
  * `frame`, the tape already there.
  */
+/**
+ * The host time a seek back to mix time `t` lands at, in `frame` or after it: never past where the
+ * transport stands, or before the frame, though a time finer than host time holds reads as neither.
+ */
+function hostBack(transport: Transport, t: number, frame: Frame): number {
+  if (frame.at === t) return frame.u;
+  const u = hostAt(transport, t);
+  return u > transport.u ? transport.u : u < frame.u ? frame.u : u;
+}
+
 function backTo(transport: Transport, t: number, frame: Frame): void {
   // On the frame itself, its own host time: rate 0 may have held the clock there for several.
-  const u = frame.at === t ? frame.u : hostAt(transport, t);
+  const u = hostBack(transport, t, frame);
   const seq = frame.seq;
   transport.undrop(seq);
   // What history kept after the frame is let go; the tape holds the calls that made it.

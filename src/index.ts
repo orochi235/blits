@@ -6,6 +6,7 @@ export type { BlendMode } from './blend-modes.js';
 export { add, blendMode, darken, lighten, multiply, screen } from './blend-modes.js';
 export type { LastOptions, NumberOptions, NumberTuple, Vec } from './channels.js';
 export { kit, last, max, mul, sum, vec } from './channels.js';
+export { passAt, passesOf, phaseAt } from './clock.js';
 export type { ColorOptions } from './color.js';
 export { color, css, ink, mixHex, oklab, toHex } from './color.js';
 export type { Curve } from './easing.js';
@@ -50,10 +51,11 @@ export { glide, spring, tween } from './motion.js';
 export { HistoryMiss } from './paging.js';
 export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
+export type { PennerName } from './penner.js';
 export type { AngleOptions } from './rotation.js';
 export { angle, quat } from './rotation.js';
 export type { Input, LagOptions, Level, SlewOptions } from './signals.js';
-export { gate, input, lag, level, peak, share, slew } from './signals.js';
+export { gate, input, lag, level, peak, share, slew, slewStep } from './signals.js';
 export { fold } from './stack.js';
 export {
   colorBurn,

@@ -212,6 +212,8 @@ export class Transport implements TransportApi {
 
   seek(to: number | { readonly frame: number }): void {
     seek(this, to);
+    // With no mix on it to stir, the transport itself was changed.
+    if (this.members.length === 0) this.woke();
   }
 
   prepare(time: number): Promise<void> {
@@ -295,10 +297,8 @@ export class Transport implements TransportApi {
       throw new RangeError(
         `blits: sync was given ${timestamp}; it takes the host clock as a finite number`,
       );
-    if (timestamp < this.last && !this.rebasing)
-      throw new RangeError(
-        `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
-      );
+    // A host clock that went back counts no time, as a rebase does, and reads on from there.
+    if (timestamp < this.last) this.rebasing = true;
     if (this.drive !== null) {
       this.driven(timestamp);
       return;
@@ -322,6 +322,9 @@ export class Transport implements TransportApi {
     let pace = this.pace;
     let now = pace === null ? u : pace.sync(u);
     const later = u !== this.u;
+    // With no host time gone by, the clock stands where it stood: a seek to a time finer than host
+    // time holds would read back as its neighbor.
+    if (!later && !Number.isNaN(this.now)) now = this.now;
     const still = later && now === this.now;
     this.u = u;
     if (Number.isNaN(this.born)) this.born = now;
@@ -426,6 +429,8 @@ export class Transport implements TransportApi {
     const rate = rateWith(c, drive.wall);
     if (steady && rate >= 0 && !this.callsAhead) {
       this.drive = null;
+      // Its syncs moved the clock by seeks, if at all, so the host reads on from where it stands now.
+      this.offset = this.last - this.u;
       if (rate !== this.pacedRate) this.ramp(rate, 0);
     }
     for (const m of this.members) {
@@ -443,6 +448,16 @@ export class Transport implements TransportApi {
     const u = this.u + HELD;
     this.paced().hold(this.u, u, this.seq + 1, t);
     return u;
+  }
+
+  /**
+   * Makes the mix clock read exactly `t` at the host time it stands at, in the frame being played,
+   * where a seek landed on a host time too coarse to say `t` or between two clocks a jump parted.
+   */
+  pin(t: number): void {
+    const pace = this.pace;
+    if (pace === null ? this.u === t : pace.reading(this.u) === t) return;
+    this.paced().hold(this.u, this.u, this.seq, t);
   }
 
   /** Its pace, made where mix time has been host time until now. */
@@ -463,6 +478,11 @@ export class Transport implements TransportApi {
   /** The rate the mix's own clock plays at, apart from any drive. */
   private get pacedRate(): number {
     return this.pace === null ? 1 : this.pace.rateAt(this.u);
+  }
+
+  /** Whether it is a clock alone, with no history and no mix: a rate below 0 runs that clock back. */
+  private get bare(): boolean {
+    return this.history === undefined && this.members.length === 0;
   }
 
   /** Whether the tape holds calls ahead of where the transport stands, after a seek back. */
@@ -590,7 +610,7 @@ export class Transport implements TransportApi {
     rampTime(over);
     // A call the tape plays again sets the rate it recorded; a drive is the host's, never taped. A
     // rate set while recorded calls lie ahead drives too, so it plays them on rather than cutting them.
-    if (!this.replaying && (rate < 0 || this.drive !== null || this.callsAhead)) {
+    if (!this.replaying && !this.bare && (rate < 0 || this.drive !== null || this.callsAhead)) {
       this.steer(rate, over);
       return;
     }
@@ -603,6 +623,7 @@ export class Transport implements TransportApi {
     } finally {
       this.unhush();
     }
+    if (this.members.length === 0) this.woke();
   }
 }
 

@@ -14,7 +14,8 @@ describe('a timestamp that is not a number', () => {
     m.sync(1000);
     expect(() => m.sync(Number.NaN)).toThrow(RangeError);
     expect(m.now).toBe(1000);
-    expect(() => m.sync(10)).toThrow(/went back/);
+    m.sync(1016);
+    expect(m.now).toBe(1016);
   });
 });
 

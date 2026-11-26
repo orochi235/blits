@@ -751,11 +751,13 @@ describe('seek, by mix time where voice time runs back', () => {
 });
 
 describe('sync', () => {
-  it('refuses to go back, short of a rebase', () => {
+  it('counts no time going back, as a rebase does', () => {
     const m = mix<Part, Pose>(K);
     m.sync(100);
-    expect(() => m.sync(50)).toThrow(/seek/);
+    m.sync(50);
+    expect(m.now).toBe(100);
     m.sync(100);
+    expect(m.now).toBe(150);
     m.rebase();
     m.sync(20);
     m.sync(40);

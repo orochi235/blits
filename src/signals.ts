@@ -169,6 +169,27 @@ export interface SlewOptions {
 }
 
 /**
+ * Where a value slewing toward `target` stands `ms` later, moving no faster than
+ * {@link SlewOptions.riseMs | `riseMs`} per unit climbing or {@link SlewOptions.fallMs | `fallMs`}
+ * draining, and never past `target`. The step {@link slew | `slew`} takes each read, for a host
+ * limiting a value outside a mix.
+ *
+ * @category signal
+ */
+export function slewStep(
+  value: number,
+  target: number,
+  ms: number,
+  { riseMs = 0, fallMs = 0 }: Pick<SlewOptions, 'riseMs' | 'fallMs'> = {},
+): number {
+  const gap = target - value;
+  const per = gap > 0 ? riseMs : fallMs;
+  if (!(per > 0)) return target;
+  const step = ms / per;
+  return gap > 0 ? Math.min(target, value + step) : Math.max(target, value - step);
+}
+
+/**
  * A signal that follows another at a limited speed, in straight lines. No faster than {@link SlewOptions.riseMs | `riseMs`}
  * per unit climbing or {@link SlewOptions.fallMs | `fallMs`} draining. The mix keeps its state per voice and subject, so two
  * voices handed the same slew each follow on their own. A subject starts on its input, or at {@link SlewOptions.from | `from`}
@@ -184,16 +205,14 @@ export function slew<I, H = unknown>(
     const target = of(subject, setting);
     const held = setting.keep<Slewed>(read, () => firstSight(target, from, setting));
     if (setting.timestamp === held.seen) return held.value;
-    let next = target;
-    if (!Number.isNaN(held.seen) && Number.isFinite(setting.dt)) {
-      const gap = target - held.value;
-      const ms = gap > 0 ? riseMs : fallMs;
-      if (ms > 0) {
-        // No longer than `dt`, which `maxDt` caps, as every step is.
-        const step = Math.min(setting.timestamp - held.seen, setting.dt) / ms;
-        next = gap > 0 ? Math.min(target, held.value + step) : Math.max(target, held.value - step);
-      }
-    }
+    // No longer than `dt`, which `maxDt` caps, as every step is.
+    const next =
+      !Number.isNaN(held.seen) && Number.isFinite(setting.dt)
+        ? slewStep(held.value, target, Math.min(setting.timestamp - held.seen, setting.dt), {
+            riseMs,
+            fallMs,
+          })
+        : target;
     held.value = next;
     held.seen = setting.timestamp;
     return next;

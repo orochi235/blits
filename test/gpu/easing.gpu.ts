@@ -43,6 +43,10 @@ const CASES: Case[] = [
     },
     branchy: false,
   },
+  // Penner's, one carried as a Bézier and two as many linear() points.
+  { name: 'easeOutCubic', easing: 'easeOutCubic', branchy: false },
+  { name: 'easeOutBounce', easing: 'easeOutBounce', branchy: true },
+  { name: 'easeInOutElastic', easing: 'easeInOutElastic', branchy: true },
 ];
 
 test('blits_ease matches the TS curves', async (device) => {
