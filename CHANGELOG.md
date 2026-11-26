@@ -6,8 +6,23 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ## Unreleased
 
+### Added
+
+- `passesOf`, `passAt` and `phaseAt` are public: the passes a voice's `loop` plays, and the pass
+  and phase `elapsed` ms fall in.
+- `slewStep(value, target, ms, { riseMs, fallMs })` is the step `slew` takes, for a host limiting
+  a value outside a mix.
+- A transport with no history and no mix on it seeks, either way, moving its clock alone and
+  keeping its rate and any ramp; it threw for want of history.
+
 ### Fixed
 
+- A sync to a timestamp earlier than the last counts no time, as after a `rebase`, and the mix
+  reads on from it; it threw.
+- A rate, ramp or seek on a transport with no mix on it wakes its `onWake` listeners; nothing
+  heard of it.
+- A seek back to a time finer than host time holds, under a clock at rest, lands at a finite host
+  time; it landed at Infinity, and the next rate read NaN.
 - A sync with no host time gone by since the last leaves the mix clock where it stood. After a
   `rebase`, a seek to a time finer than host time holds there (`1e-300`, say) read back as its
   neighbor on the next sync at the same timestamp.

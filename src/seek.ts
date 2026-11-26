@@ -262,6 +262,8 @@ export function seek(transport: Transport, to: number | { readonly frame: number
 function seekTo(transport: Transport, to: number | { readonly frame: number }): Sought {
   if (transport.projecting) throw new Error('blits: a projection does not seek');
   const history = transport.history;
+  if (!history && transport.members.length === 0 && typeof to === 'number')
+    return seekClock(transport, to);
   if (!history) throw new Error('blits: seeking needs a mix made with history');
   const tape = transport.tape;
   if (tape === undefined)
@@ -347,6 +349,23 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
   }
   transport.sought(t);
   return { at: t, frame: frame?.seq ?? transport.seq, back: frame !== undefined };
+}
+
+/**
+ * Moves a transport with no history and no mix on it to mix time `t`: there is nothing to put back
+ * or play again, so its clock alone moves there, keeping its rate and any ramp.
+ */
+function seekClock(transport: Transport, t: number): Sought {
+  if (!Number.isFinite(t)) throw new RangeError('blits: a mix seeks to a finite time');
+  if (Number.isNaN(transport.now))
+    throw new Error('blits: a mix that has never synced has nothing to seek');
+  const back = t < transport.now;
+  transport.u = transport.jump(t);
+  transport.offset = transport.last - transport.u;
+  transport.tick(t);
+  transport.now = t;
+  transport.sought(t);
+  return { at: t, frame: transport.seq, back };
 }
 
 /**

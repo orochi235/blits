@@ -212,6 +212,8 @@ export class Transport implements TransportApi {
 
   seek(to: number | { readonly frame: number }): void {
     seek(this, to);
+    // With no mix on it to stir, the transport itself was changed.
+    if (this.members.length === 0) this.woke();
   }
 
   prepare(time: number): Promise<void> {
@@ -295,10 +297,8 @@ export class Transport implements TransportApi {
       throw new RangeError(
         `blits: sync was given ${timestamp}; it takes the host clock as a finite number`,
       );
-    if (timestamp < this.last && !this.rebasing)
-      throw new RangeError(
-        `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
-      );
+    // A host clock that went back counts no time, as a rebase does, and reads on from there.
+    if (timestamp < this.last) this.rebasing = true;
     if (this.drive !== null) {
       this.driven(timestamp);
       return;
@@ -606,6 +606,7 @@ export class Transport implements TransportApi {
     } finally {
       this.unhush();
     }
+    if (this.members.length === 0) this.woke();
   }
 }
 

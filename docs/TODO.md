@@ -136,31 +136,9 @@ Owner tags:
     descriptor object may share the first's changes.
   - The `Along` store (`src/store.ts`) may lose a delete once a later copy sets that key again, so
     an earlier copy asked afterwards rebuilds the record from the live mix.
-- **[agent] A `Transport` that can be a clock on its own** (2026-11-25). weasel rebuilt its
-  `@weasel-js/clock` on a transport (weasel branch `clock-on-transport`, `f54a75c0d1`). 11 of its 13 test
-  files pass unchanged; 10 property tests failed on four transport gaps, fixed 2026-11-26 (a seek ahead
-  the rate never carries the mix to now jumps there; a ramp ends on its target; mix time stops at
-  `MAX_VALUE`; a clock at rest reads no NaN across an infinite gap). Rerun weasel's property tests on
-  the release carrying them: blits reproduced the seek gap only at rate 0 or a ramp to rest, not under
-  a negative rate, so weasel's negative-rate case may be another.
-
-  The workarounds weasel needs, each a proposed transport change:
-  - `now` stays NaN with no mix on it, so weasel adds an empty pilot mix.
-  - Seeking needs restore history with a tape, so its frames grow for the clock's whole life. Wanted: a
-    seekable transport with no restore history.
-  - A seek reverts the rate, so weasel re-asserts its rate after every seek. A rate set after a seek
-    back now holds across later seeks (2026-11-26); one set before still reverts on a seek back.
-  - An earlier timestamp makes `sync` throw.
-  - `onWake` never fires from rate, seek or ramp on a transport with no voices.
-
-  Closes when weasel's clock runs on a transport with no workarounds and both property test files pass.
-- **[agent] Export the pass math** (`passesOf`, `passAt`, `phaseAt` in `src/clock.ts`). weasel keeps its own
-  copies in `@weasel-js/clock` (`place.ts`) and animator (`lapsOf`). Closes when they're public.
 - **[agent] The Penner curves in `curve`.** `curve`'s named set is the five CSS curves. weasel's geom keeps
   31 Penner curves with its own bezier solver, and is moving them here so geom can re-export them. Closes
   when `curve` names them and blits' solver is the only one.
-- **[agent] A pure slew step.** `slew` only runs inside a mix, so weasel's animator keeps its own standalone
-  slew limiter. Export the step that the signal uses. Closes when it's public and `slew` calls it.
 
 ## Speed
 
