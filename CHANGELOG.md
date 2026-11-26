@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `penner` is public: the bezier or `linear()` data each of Penner's named curves stands for, for a
+  host writing a named easing out as data.
+
 ## 1.5.2
 
 ### Fixed

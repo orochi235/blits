@@ -29,6 +29,12 @@ describe("Penner's curves by name", () => {
     },
   );
 
+  it('hands its data to hosts from the package root', async () => {
+    const root = await import('../src/index.js');
+    expect(root.penner).toBe(penner);
+    expect(root.penner.easeOutBack).toEqual(penner.easeOutBack);
+  });
+
   it('refuses a name that is not one', () => {
     expect(() => curve('easeInNothing' as PennerName)).toThrow(/no easing named/);
   });

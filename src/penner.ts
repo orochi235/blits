@@ -2,7 +2,10 @@
 
 /**
  * Robert Penner's easing curves, as data `curve` carries: a CSS cubic-bezier within 0.003 of the
- * function where one fits, otherwise `linear()` points within 0.001.
+ * function where one fits, otherwise `linear()` points within 0.001. Each entry is the
+ * `Easing` data its name stands for, for a host writing a named curve out as CSS, SMIL or Lottie.
+ *
+ * @category patch
  */
 export const penner = {
   easeInQuad: { bezier: [0.30858, 0.00001, 0.6428, 0.2856] },
