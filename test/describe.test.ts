@@ -29,7 +29,7 @@ describe('describe', () => {
   });
 
   it('lists each voice as voices() does, with what it writes in kit order', () => {
-    const m = mix<Row, Pose>(K);
+    const m = mix<Row, Pose>(K, { lanes: true });
     const h = m.cue({ name: 'lead', patch: writing('c', 'a'), tags: ['x'], score: 's' });
     const [v] = m.describe().voices;
     expect(v).toEqual({
@@ -164,7 +164,7 @@ const kept = (...w: (keyof LanePose)[]) =>
 type LaneMix = ReturnType<typeof mix<Row, LanePose>>;
 
 /** Cues on a fresh mix, then syncs and probes one subject so the lanes decide. */
-function laneOf(cue: (m: LaneMix) => void, opts: { lanes?: boolean } = {}) {
+function laneOf(cue: (m: LaneMix) => void, opts: { lanes?: boolean } = { lanes: true }) {
   const m = mix<Row, LanePose>(LK, opts);
   cue(m);
   m.sync(0);
@@ -179,7 +179,7 @@ describe('describe: whether a voice runs on a lane', () => {
   });
 
   it('says new for a voice the lanes have not met since it was cued', () => {
-    const m = mix<Row, LanePose>(LK);
+    const m = mix<Row, LanePose>(LK, { lanes: true });
     m.cue({ name: 'fresh', patch: writes('a') });
     expect(byName(m.describe().voices, 'fresh').lane).toEqual({ on: false, why: 'new' });
   });
@@ -202,7 +202,7 @@ describe('describe: whether a voice runs on a lane', () => {
   });
 
   it('says last for each member of a blend writing a last channel', () => {
-    const m = mix<Row, LanePose>(LK);
+    const m = mix<Row, LanePose>(LK, { lanes: true });
     m.blend([writes('t'), writes('t')], level(0), { name: 'bl' });
     m.sync(0);
     m.probe({ id: 'x' });
@@ -267,7 +267,7 @@ describe('describe: whether a voice runs on a lane', () => {
   });
 
   it('takes up voices cued between probes', () => {
-    const m = mix<Row, LanePose>(LK);
+    const m = mix<Row, LanePose>(LK, { lanes: true });
     m.cue({ name: 'first', patch: writes('a') });
     m.sync(0);
     m.probe({ id: 'x' });
@@ -285,7 +285,7 @@ describe('describe: whether a voice runs on a lane', () => {
   });
 
   it('reports a voice moving off its lane as of the last probe', () => {
-    const m = mix<Row, LanePose>(LK);
+    const m = mix<Row, LanePose>(LK, { lanes: true });
     m.cue({ name: 'lead', patch: writes('a') });
     m.sync(0);
     m.probe({ id: 'x' });

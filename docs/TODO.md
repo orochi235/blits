@@ -163,10 +163,6 @@ Owner tags:
   when `curve` names them and blits' solver is the only one.
 - **[agent] A pure slew step.** `slew` only runs inside a mix, so weasel's animator keeps its own standalone
   slew limiter. Export the step that the signal uses. Closes when it's public and `slew` calls it.
-- **[agent] `npm run test:general` is red in `test/describe.test.ts`** (2026-11-25, on main at
-  `07de7aab`): 13 tests assert a voice's `lane` report (`why: 'new'`, on its lane), which can't hold
-  with `BLITS_LANES=off` turning lanes off for every mix. Pin `lanes: true` on those mixes, or skip the
-  lane block under the general run.
 
 ## Speed
 
