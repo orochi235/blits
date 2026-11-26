@@ -856,7 +856,7 @@ export const penner = {
     ],
   },
 } as const satisfies Record<
-  string,
+  PennerName,
   | { readonly bezier: readonly [number, number, number, number] }
   | { readonly linear: readonly (readonly [number, number])[] }
 >;
@@ -866,4 +866,34 @@ export const penner = {
  *
  * @category patch
  */
-export type PennerName = keyof typeof penner;
+export type PennerName =
+  | 'easeInQuad'
+  | 'easeOutQuad'
+  | 'easeInOutQuad'
+  | 'easeInCubic'
+  | 'easeOutCubic'
+  | 'easeInOutCubic'
+  | 'easeInQuart'
+  | 'easeOutQuart'
+  | 'easeInOutQuart'
+  | 'easeInQuint'
+  | 'easeOutQuint'
+  | 'easeInOutQuint'
+  | 'easeInSine'
+  | 'easeOutSine'
+  | 'easeInOutSine'
+  | 'easeInExpo'
+  | 'easeOutExpo'
+  | 'easeInOutExpo'
+  | 'easeInCirc'
+  | 'easeOutCirc'
+  | 'easeInOutCirc'
+  | 'easeInBack'
+  | 'easeOutBack'
+  | 'easeInOutBack'
+  | 'easeInElastic'
+  | 'easeOutElastic'
+  | 'easeInOutElastic'
+  | 'easeInBounce'
+  | 'easeOutBounce'
+  | 'easeInOutBounce';
