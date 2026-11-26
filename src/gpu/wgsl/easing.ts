@@ -37,7 +37,7 @@ fn blits_bezier(at: u32, u: f32) -> f32 {
   return ((ay * t + by) * t + cy) * t;
 }
 
-fn blits_linear(at: u32, u: f32) -> f32 {
+fn blits_ease_points(at: u32, u: f32) -> f32 {
   let p = at + u32(values[at + 1u]);
   let n = u32(values[at + 2u]);
   var hit = -1;
@@ -66,7 +66,7 @@ fn blits_ease(at: u32, u: f32) -> f32 {
     let c = clamp(u, 0.0, 1.0);
     return min(jumps, floor(c * n) + values[at + 2u]) / jumps;
   }
-  if (kind == 3u) { return blits_linear(at, u); }
+  if (kind == 3u) { return blits_ease_points(at, u); }
   return u;
 }
 `;
