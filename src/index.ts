@@ -10,6 +10,7 @@ export type { ColorOptions } from './color.js';
 export { color, css, ink, mixHex, oklab, toHex } from './color.js';
 export type { Curve } from './easing.js';
 export { curve } from './easing.js';
+export { passAt, passesOf, phaseAt } from './clock.js';
 export type { NormOptions } from './extremes.js';
 export { min, norm } from './extremes.js';
 export type {
@@ -53,7 +54,7 @@ export { keys, patch } from './patch.js';
 export type { AngleOptions } from './rotation.js';
 export { angle, quat } from './rotation.js';
 export type { Input, LagOptions, Level, SlewOptions } from './signals.js';
-export { gate, input, lag, level, peak, share, slew } from './signals.js';
+export { gate, input, lag, level, peak, share, slew, slewStep } from './signals.js';
 export { fold } from './stack.js';
 export {
   colorBurn,

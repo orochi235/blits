@@ -105,6 +105,29 @@ describe('a seek to a time finer than host time can hold', () => {
   });
 });
 
+describe('a seek back to a time finer than host time can hold, under a clock at rest', () => {
+  it('lands at a finite host time, so a later ramp reads a rate', () => {
+    const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape } });
+    mix<{ id: string }, Pose>(K, { name: 'fine', transport: t });
+    t.sync(0);
+    t.rebase();
+    t.ramp(1, 0);
+    t.ramp(0, 0);
+    t.rebase();
+    t.sync(0);
+    t.rebase();
+    t.sync(0);
+    t.ramp(1, 0);
+    t.seek(1e-323);
+    t.ramp(0, 0);
+    t.seek(5e-324);
+    t.ramp(0, 0);
+    t.ramp(1, 10);
+    expect(t.rate).toBe(0);
+    expect(t.now).toBe(5e-324);
+  });
+});
+
 describe('a clock run past the largest number', () => {
   it('stops there, on a mix with nothing cued and on a transport', () => {
     const m = mix<{ id: string }, Pose>(K, { name: 'fast' });
