@@ -6,6 +6,17 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ## Unreleased
 
+### Breaking
+
+- A `spring`, `tween` or `glide` moves the way the channel it writes goes between two values, where
+  it moved each number in a straight line. On an `angle` (or a `vec` of angles) a spring or tween
+  heads the short way round: from 350 to 10 it no longer passes 180, and from 0 to 360 it no longer
+  turns at all. Its value stays continuous, so it may land a whole number of turns from the target
+  given; a glide still turns as far as it is flung. On a `quat` it turns along the sphere, as
+  `lerp`'s arc, and stays a unit quaternion; its velocity is the quaternion's rate of change. On an
+  `affine` it moves the transform's parts, as `lerp` does, the rotation the short way round. A glide
+  with bounds on a `quat` or `affine` is refused, as on `ink`.
+
 ### Added
 
 - `{ linear: [...] }` is an easing: CSS's `linear()`, straight lines between points, each an output
@@ -15,6 +26,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   moves them past its tracks.
 - `steps` takes `jump: 'none'` and `jump: 'both'`, as CSS's `steps()` does, on the CPU and the
   GPU.
+- `spring` takes a stiffness of 0: with damping it coasts as a `glide` of `ms` `1000 · mass /
+  damping`, and a target changes nothing; with no damping either it moves on at its velocity for
+  good. Each runs on the GPU too.
 
 ### Fixed
 

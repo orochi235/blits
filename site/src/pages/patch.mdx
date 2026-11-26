@@ -52,6 +52,8 @@ const pulse = keys<Part, PartPose>(
 
 The motion form, `spring`, `glide` or `tween`, moves each subject toward where it heads, solved in closed form, and can be retargeted mid-flight. A spring or a glide has momentum and can be pushed; a tween eases from one value to another over [`ms`](TweenOptions.ms), each subject's endpoints its own. It has a duration of 0; it reads the voice's elapsed time.
 
+A motion moves the way its channel goes between two values: the short way round an `angle`, along the sphere on a `quat`, by its parts on an `affine`, and round the hue on an `ink`, so a tween follows the channel's own `lerp`. A spring's stiffness and damping may each be 0: with no damping it oscillates for good, with no stiffness it coasts as a glide does, and with neither it keeps the velocity it was given.
+
 ```ts
 import { spring, tween } from '@msb235/blits';
 

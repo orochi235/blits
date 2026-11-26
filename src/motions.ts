@@ -1,7 +1,6 @@
 import { applied, change, commit, cut, dueTo, insert, peek, queue, rewind } from './changes.js';
-import { BOUND, closed } from './closed.js';
+import { BOUND, COAST, closed, DRIFT } from './closed.js';
 import type { Curve } from './easing.js';
-import { closedLch } from './lch.js';
 import {
   made,
   outlived,
@@ -19,6 +18,7 @@ import {
 import { absent, Numbers } from './numbers.js';
 import { reading } from './reading.js';
 import { lastIndex } from './sorted.js';
+import type { Space } from './spaces.js';
 import { Store } from './store.js';
 import {
   type Change,
@@ -31,6 +31,7 @@ import {
   type Shape,
   type Watcher,
 } from './stretch.js';
+import { shortWay } from './turns.js';
 import { sloped } from './tweened.js';
 import type { MotionSpec } from './types.js';
 
@@ -72,10 +73,8 @@ const wrongKind = (channel: string, holdsNumber: boolean): Error =>
     `blits: channel ${channel} holds ${holdsNumber ? 'a number' : 'an array'}, and this motion patch gives a subject ${holdsNumber ? 'an array' : 'a number'}`,
   );
 
-const notOklab = (channel: string): Error =>
-  new Error(
-    `blits: channel ${channel} goes round the hue, and a motion on it moves oklab() values, four numbers each`,
-  );
+const notIn = (channel: string, space: Space): Error =>
+  new Error(`blits: channel ${channel} ${space.is}, and a motion on it moves ${space.values}`);
 
 /**
  * A motion patch's subjects: the stretch each is playing, in one flat array by a number the patch
@@ -145,20 +144,28 @@ export class Motions<I> {
   /** Whether the channel it was cued on holds a number; undefined until it is cued. */
   private holdsNumber: boolean | undefined = undefined;
   private channel = '';
-  /** Whether the channel it was cued on travels round the hue, as `ink` does, and its stretches too. */
-  round = false;
+  /**
+   * The space the channel it was cued on keeps its values in, where that is no line, as round the
+   * hue for `ink` or the sphere for `quat`: its stretches are solved there. Null for a line.
+   */
+  space: Space | null = null;
+  /**
+   * The full turn of the angles the channel it was cued on holds, else 0: a stretch heading for a
+   * target heads the short way round, its target kept within half a turn of where it starts.
+   */
+  turn = 0;
 
   /**
    * Records what the channel the patch is cued on holds, refusing a value of the other kind: at once
    * where every subject's value is one kind, else on the first sample of a subject whose value is not.
-   * `round` for a channel that travels round the hue, as `ink` does.
+   * `space` for a channel whose values lie in one, `turn` for one of angles.
    */
-  cuedOn(channel: string, holdsNumber: boolean, round = false): void {
-    if (round && this.shape.law[0] === BOUND)
+  cuedOn(channel: string, holdsNumber: boolean, space: Space | null = null, turn = 0): void {
+    if (space !== null && this.shape.law[0] === BOUND)
       throw new Error(
-        `blits: channel ${channel} goes round the hue, and a glide's bounds are a box on its OKLab axes; glide it without bounds`,
+        `blits: channel ${channel} ${space.is}, and a glide's bounds are a box on its raw numbers; glide it without bounds`,
       );
-    if (round && this.n >= 0 && this.n !== 4) throw notOklab(channel);
+    if (space !== null && this.n >= 0 && this.n !== space.axes) throw notIn(channel, space);
     const every = this.shape.scalarEvery();
     if (every !== undefined && every !== holdsNumber) throw wrongKind(channel, holdsNumber);
     for (let s = 0; s < this.numbers.size; s++)
@@ -169,7 +176,38 @@ export class Motions<I> {
         throw wrongKind(channel, holdsNumber);
     this.holdsNumber = holdsNumber;
     this.channel = channel;
-    this.round = round;
+    this.space = space;
+    this.turn = turn;
+  }
+
+  /**
+   * Where a stretch from `x` moving at `v` heads, as the shape aims it: for a channel of angles, a
+   * target taken the short way round from `x`. A glide's rest is no target, and a fling may turn it
+   * more than half a turn.
+   */
+  /**
+   * The velocity a stretch starts with: for a drift, each axis within settle stopped, decided once
+   * here in doubles, since the GPU reads the stretch in floats and must not decide it again.
+   */
+  moving(v: number[]): number[] {
+    const law = this.shape.law;
+    if (law[0] !== DRIFT) return v;
+    const settle = law[1] as number;
+    return v.map((vi) => (Math.abs(vi) <= settle ? 0 : vi));
+  }
+
+  aim(x: number[], v: number[], was: number[] | null, subject: I, put: boolean): number[] {
+    const to = this.shape.aim(x, v, was, subject, put);
+    const turn = this.turn;
+    if (turn === 0) return to;
+    const form = this.shape.law[0];
+    if (form === COAST || form === BOUND || form === DRIFT) return to;
+    const out = new Array<number>(to.length);
+    for (let i = 0; i < to.length; i++) {
+      const xi = x[i] as number;
+      out[i] = xi - shortWay(xi - (to[i] as number), turn);
+    }
+    return out;
   }
 
   frame(subject: I): number {
@@ -202,8 +240,8 @@ export class Motions<I> {
   /** The stretch a subject met afresh starts with, its axes and the law set up for it, numbering no one. */
   fresh(subject: I): Segment {
     const x = this.shape.from(subject);
-    const v = this.shape.velocity(subject, x);
-    const to = this.shape.aim(x, v, null, subject, false);
+    const v = this.moving(this.shape.velocity(subject, x));
+    const to = this.aim(x, v, null, subject, false);
     const n = this.n < 0 ? x.length : this.n;
     this.check(x, n);
     this.check(v, n);
@@ -230,7 +268,7 @@ export class Motions<I> {
 
   /** Sets the axes every subject moves on, at the first. */
   size(n: number): void {
-    if (this.round && n !== 4) throw notOklab(this.channel);
+    if (this.space !== null && n !== this.space.axes) throw notIn(this.channel, this.space);
     if (this.lawBuf !== this.runs && n !== this.lodgedAxes) this.unlodge();
     this.n = n;
     this.stride = RunField.X0 + 3 * n;
@@ -702,8 +740,9 @@ export class Motions<I> {
     xo: Float64Array,
     vo: Float64Array,
   ): boolean {
-    if (this.round)
-      return closedLch(this.lawBuf, this.shape.ease, at, ms, x0, x, v0, v, to, g, t, xo, vo);
+    const space = this.space;
+    if (space !== null)
+      return space.closed(this.lawBuf, this.shape.ease, at, ms, x0, x, v0, v, to, g, t, xo, vo);
     return closed(this.lawBuf, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
   }
 }

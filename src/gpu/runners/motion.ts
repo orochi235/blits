@@ -49,7 +49,8 @@ export function motionPack(patch: object, channels: ChannelLookup): Packed | und
   const name = (patch as { writes: readonly string[] }).writes[0] as string;
   const code = channels.get(name);
   if (code === undefined) return { why: `it writes ${name}, whose rule the GPU has no WGSL for` };
-  if (motions.round) return { why: 'it moves round the hue, which the GPU does not' };
+  if (motions.space !== null)
+    return { why: `its channel ${motions.space.is}, which the GPU does not` };
   const axes = widthOf(code);
   if (motions.n >= 0 && motions.n !== axes)
     return { why: `its subjects move on ${motions.n} axes, and ${name} takes ${axes}` };

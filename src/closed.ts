@@ -9,6 +9,8 @@ export const OVER = 2;
 export const COAST = 3;
 export const EASED = 4;
 export const BOUND = 5;
+/** A spring with neither stiffness nor damping: it keeps the velocity it is given. */
+export const DRIFT = 6;
 
 const solved = { y: 0, dy: 0 };
 
@@ -60,6 +62,8 @@ function prepare(law: Float64Array, t: number): void {
       timed.e2 = Math.exp((law[3] as number) * t);
       return;
     }
+    case DRIFT:
+      return;
     default:
       timed.e = Math.exp(-t / (law[2] as number));
   }
@@ -75,6 +79,7 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
   if (form === UNDER) solveUnder(law, y0, v0);
   else if (form === CRITICAL) solveCritical(law, y0, v0, t);
   else if (form === OVER) solveOver(law, y0, v0);
+  else if (form === DRIFT) solveDrift(y0, v0, t);
   else solveGlide(law, y0);
 }
 
@@ -120,6 +125,15 @@ function solveGlide(law: Float64Array, y0: number): void {
   const e = timed.e;
   solved.y = y0 * e;
   solved.dy = (-y0 / tau) * e;
+}
+
+/**
+ * Nothing pulls or slows it, so it moves on at `v0`. A speed within settle was stopped when the
+ * stretch was released (`Motions.moving`), so it never creeps and then snaps.
+ */
+function solveDrift(y0: number, v0: number, t: number): void {
+  solved.y = y0 + v0 * t;
+  solved.dy = v0;
 }
 
 /**

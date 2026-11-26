@@ -73,7 +73,7 @@ What runs where:
 
 | On the GPU | On the CPU, as `mixer` runs it |
 |---|---|
-| `keys` eased by a CSS name, a `bezier` or `steps`; `wave`; `tween`, `spring` and `glide`; `shaderPatch` | `fn` patches. `keys` with an easing function or a `lerpBy` of its own. A motion on an `ink`, which moves round the hue, or eased by a function |
+| `keys` eased by a CSS name, a `bezier` or `steps`; `wave`; `tween`, `spring` and `glide`; `shaderPatch` | `fn` patches. `keys` with an easing function or a `lerpBy` of its own. A motion on an `ink`, a `quat` or an `affine`, which move off a straight line, or eased by a function |
 | A voice weighted by a number or a weight signal (fades included), staggered or not, reaching every registered subject or some of them (`subjects`, `target`), held by owners, spans and arcs | A weight signal that keeps state per subject (`slew`, `lag`, `gate`) or sends events, a blend member, an input the mix's history records or one that doesn't report its changes, and every voice under an owner weighted per subject. A patch with `state`, `from: 'current'`, a bounded voice, or one parting from subjects. A stagger asked as subjects are met (no `subjects` at `cue`) on a voice that ends |
 | `sum`, `mul`, `max`, `min`, `norm`, `screen`, `darken`, `vec` of those, `angle`, `color()`, and all 25 color blend modes on `color` or `ink`, roles included | `last`, `quat`, `ink()` and `ink(last())`, `affine` |
 | | `probe`, `pull`, `project`, `seek`, history, and the debug panel. A motion voice read back through history or by a projection stays on the CPU that frame |

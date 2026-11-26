@@ -1,10 +1,10 @@
+import { turnOf } from './axes.js';
 import { type Blend, blendOf } from './blend.js';
 import { checkHits } from './book.js';
 import { checkWithin, confine } from './bound.js';
 import { changed } from './chain.js';
 import { rampTime } from './clock.js';
 import { copyable } from './clone.js';
-import { roundsHue } from './color.js';
 import { schedule } from './due.js';
 import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
 import { begin, patchKeeps } from './held.js';
@@ -17,6 +17,7 @@ import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
 import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
 import { insertById } from './sorted.js';
+import { spaceOf } from './spaces.js';
 import { checkChild, checkPatchChild, refit } from './spans.js';
 import { cuedById, motionOwner } from './strays.js';
 import { record, taping, unplayable } from './tape.js';
@@ -207,10 +208,10 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
     const channel = patch.writes[0] as keyof O;
     const ch = mix.kit[channel] as Channel<unknown>;
     const rest = ch.rest;
-    if (typeof rest === 'number') motion.cuedOn(String(channel), true);
-    else if (Array.isArray(rest) || ArrayBuffer.isView(rest))
-      motion.cuedOn(String(channel), false, roundsHue(ch));
-    else if (roundsHue(ch)) motion.cuedOn(String(channel), false, true);
+    const space = spaceOf(ch) ?? null;
+    if (typeof rest === 'number') motion.cuedOn(String(channel), true, null, turnOf(ch));
+    else if (Array.isArray(rest) || ArrayBuffer.isView(rest) || space !== null)
+      motion.cuedOn(String(channel), false, space, turnOf(ch));
   }
   if (patch.reads) {
     const host = mix.opts.host;
