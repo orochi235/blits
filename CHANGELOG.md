@@ -6,17 +6,6 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ## Unreleased
 
-### Breaking
-
-- A `spring`, `tween` or `glide` moves the way the channel it writes goes between two values, where
-  it moved each number in a straight line. On an `angle` (or a `vec` of angles) a spring or tween
-  heads the short way round: from 350 to 10 it no longer passes 180, and from 0 to 360 it no longer
-  turns at all. Its value stays continuous, so it may land a whole number of turns from the target
-  given; a glide still turns as far as it is flung. On a `quat` it turns along the sphere, as
-  `lerp`'s arc, and stays a unit quaternion; its velocity is the quaternion's rate of change. On an
-  `affine` it moves the transform's parts, as `lerp` does, the rotation the short way round. A glide
-  with bounds on a `quat` or `affine` is refused, as on `ink`.
-
 ### Added
 
 - `@msb235/blits/show`: a `Show` is a list of cues as plain data that round-trips through JSON, and
@@ -38,6 +27,14 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A `spring`, `tween` or `glide` moves the way the channel it writes goes between two values, where
+  it moved each number in a straight line. On an `angle` (or a `vec` of angles) a spring or tween
+  heads the short way round: from 350 to 10 it no longer passes 180, and from 0 to 360 it no longer
+  turns at all. Its value stays continuous, so it may land a whole number of turns from the target
+  given; a glide still turns as far as it is flung. On a `quat` it turns along the sphere, as
+  `lerp`'s arc, and stays a unit quaternion; its velocity is the quaternion's rate of change. On an
+  `affine` it moves the transform's parts, as `lerp` does, the rotation the short way round. A glide
+  with bounds on a `quat` or `affine` is refused, as on `ink`.
 - A seek ahead to a time the mix's rate never carries it to, paused or slowing to rest short of it,
   jumps there and keeps the rate and any ramp as they stand; it threw "the mix's rate never
   reaches". A seek ahead on a transport with no mix on it moves the transport's clock, which stayed

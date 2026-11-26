@@ -100,6 +100,9 @@ DevTools extension's are in their READMEs.
 - **Semver from 0.1.1** (2026-09-30). Below 1.0.0 a break bumps the minor. 1.0.0 only on the
   owner's say-so. Every release gets a `CHANGELOG.md` section, and releases go out from tags.
 - **blits-panel releases in lockstep with the engine, at its version**, from 1.1.0 on (2026-11-05).
+- **Motions moving in their channel's space ship in 1.5.0 as a fix, not a break** (2026-11-26): a
+  spring, tween or glide that went the long way round an angle, or moved a quaternion's numbers in a
+  straight line, was wrong, so consumers on `^1` get the change without a major.
 
 ## Site
 
