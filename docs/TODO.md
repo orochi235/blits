@@ -16,6 +16,23 @@ Owner tags:
 
 ## Engine
 
+- **[agent] A sampled easing curve** (2026-11-25, for weasel's CSS animation import): CSS `linear()` gives
+  an easing as points with optional positions, and `curve()` has no form for it (`src/easing.ts`). Closes
+  when `curve({ linear: [...] })` matches CSS's `linear()` on its spec examples and `curveData` packs it.
+- **[maintainer] An owner's clock driven by a curve** (2026-11-25, for Lottie precomp time remap in weasel):
+  an owner's `rate` scales its children's clock, but nothing maps the owner's time through a curve, as a
+  remap that freezes, reverses or scrubs within a parent does. Needs a call on whether it is a voice-level
+  control or a patch-shaped input. Closes when an owner takes a remap, seeks and read-aheads agree with play,
+  and the fuzz covers it.
+- **[maintainer] Named ranges on a score** (2026-11-25, for Lottie markers in weasel): marks are points, so
+  a host can't "play `intro`, then loop `idle`" by name. Closes when a score carries named ranges and a
+  voice or owner can play or loop one, or the owner rules that it belongs to hosts.
+- **[maintainer] Keys on a vector channel travel a curve** (2026-11-25, for Lottie and SMIL motion in
+  weasel): a `keys` patch on a `vec` channel lerps each component, so motion between keys is a straight line
+  and easing shapes timing only. Lottie adds spatial tangents per key, constant-speed ("roving") keys and
+  orientation along the path. Closes when a keys patch can take spatial tangents and a constant-speed
+  option, or the owner rules the path belongs in the patch, not the keyframe.
+
 - **[maintainer] A read ahead cannot see a resting frame it skips** (2026-11-23, replay fuzz
   programs 98, 630 and 717, the only programs of 1–1008 still failing on 2026-11-24):
   `fade({ at: 'rest' })` takes a subject out at the first frame its delta equals rest, and a looping
