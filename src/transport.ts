@@ -3,6 +3,7 @@ import {
   clampTime,
   elapsedWith,
   ended,
+  rampOf,
   rampTime,
   rateWith,
   rebaseWith,
@@ -242,7 +243,15 @@ export class Transport implements TransportApi {
   }
 
   get inert(): boolean {
+    // With no mix, the clock itself: stopped, with nothing changed since the last sync.
+    if (this.members.length === 0) return !this.woken && this.rate === 0 && this.ramping === null;
     return this.members.every((m) => m.inert);
+  }
+
+  get ramping(): { to: number; left: number } | null {
+    const drive = this.drive;
+    if (drive !== null) return rampOf(drive.clock, drive.wall);
+    return this.pace === null ? null : this.pace.rampAt(this.u);
   }
 
   onWake(fn: () => void): () => void {
@@ -577,6 +586,16 @@ export class Transport implements TransportApi {
   memoryFrom(): number {
     const history = this.history;
     return history === undefined ? Number.POSITIVE_INFINITY : this.now - history.ms;
+  }
+
+  get horizon(): number {
+    if (this.history === undefined)
+      return this.members.length === 0 && !Number.isNaN(this.now)
+        ? Number.NEGATIVE_INFINITY
+        : Number.NaN;
+    const first = this.frames.first?.at ?? Number.NaN;
+    const memory = this.pager === null ? this.memoryFrom() : Number.NEGATIVE_INFINITY;
+    return Math.max(this.born, this.floor, memory, first);
   }
 
   get timestamp(): number {

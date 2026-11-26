@@ -636,6 +636,10 @@ export class Mixer<I, O> implements Mix<I, O> {
     seek(this.own('seek'), to);
   }
 
+  get horizon(): number {
+    return this.transport.horizon;
+  }
+
   prepare(time: number): Promise<void> {
     return this.own('prepare').prepare(time);
   }
@@ -716,6 +720,10 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   set rate(r: number) {
     this.own('rate').ramp(r, 0);
+  }
+
+  get ramping(): { to: number; left: number } | null {
+    return this.transport.ramping;
   }
 
   ramp(rate: number, over: number): void {

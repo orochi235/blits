@@ -45,6 +45,8 @@ export interface Transport {
   /** As `Mix.rate`, multiplied into every voice of every mix on it. */
   rate: number;
   ramp(rate: number, over: number): void;
+  /** As `Mix.ramping`. */
+  readonly ramping: { readonly to: number; readonly left: number } | null;
   /**
    * As `Mix.seek`, for every mix on it at once. Back, each mix restores itself; forward, the one
    * tape plays every mix's calls again in the order they were made, so an anchor across mixes
@@ -70,6 +72,11 @@ export interface Transport {
   when(time: number): number;
   /** The mix time at the last sync or seek; NaN before the first. */
   readonly now: number;
+  /**
+   * As `Mix.horizon`, for every mix on it. With no history and no mix on it, it seeks anywhere, so
+   * -Infinity once synced.
+   */
+  readonly horizon: number;
   /** Host time: the host's timestamp at the last sync; NaN before the first. */
   readonly timestamp: number;
   /** As `Mix.seq`, the number of the frame being played. It is the same for every mix on it. */
@@ -92,7 +99,10 @@ export interface Transport {
   project(at: number | { readonly frame: number }): TransportProjection;
   /** Any mix on it live. */
   readonly live: boolean;
-  /** Every mix on it inert. */
+  /**
+   * Every mix on it inert. With no mix on it, its own clock is: rate 0, no ramp under way, and no
+   * rate, ramp or seek since the last sync.
+   */
   readonly inert: boolean;
   /**
    * Calls `fn` when any mix on it needs frames again after a sync. It fires once until the next

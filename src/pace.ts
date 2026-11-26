@@ -3,6 +3,7 @@ import {
   clampTime,
   elapsedWith,
   ended,
+  rampOf,
   rateWith,
   rebaseWith,
   retime,
@@ -87,6 +88,11 @@ export class Pace {
     const c = this.clock;
     if (this.waiting || Number.isNaN(u)) return c.ramp === null ? c.rate : c.ramp.from;
     return rateWith(c, u);
+  }
+
+  /** The ramp under way at host time `u`, as {@link rampOf} reads it; before the first sync, all of it. */
+  rampAt(u: number): { to: number; left: number } | null {
+    return rampOf(this.clock, this.waiting ? Number.NaN : u);
   }
 
   /** Whether the mix clock stands still from host time `u` on, short of another change. */

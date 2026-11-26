@@ -16,6 +16,13 @@ Owner tags:
 
 ## Engine
 
+- **[maintainer] A seek that re-evaluates rather than restores** (2026-11-26): history under a mix
+  grows with the run, so seeking anywhere in an endless or looping run's past needs unbounded
+  records (or a `store`, which bounds memory but not the store). A mix whose voices keep no step
+  state could instead be seeked by reading it at the target time, as `project` already reads mixes
+  without history, reaching back only to the last host call. Needs a ruling on whether blits takes
+  a seek with that limit. No consumer waits on it: weasel's clock bounds its history with a finite
+  `ms` instead (2026-11-26). Closes on the ruling, or when such a seek ships.
 - **[agent] A voice's clock run through a remap** (2026-11-25, for Lottie precomp time remap and named ranges
   in weasel). Ruled 2026-11-25: one primitive, a remap on a voice or owner's clock, with a linear window
   (play `[a, b]` of its source) as the plain case and a curve as the general one; with `loop` and `rate` it

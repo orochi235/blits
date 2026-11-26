@@ -77,3 +77,100 @@ describe('a sync to an earlier timestamp', () => {
     expect(t.now).toBe(400);
   });
 });
+
+describe('reading a ramp under way', () => {
+  it('gives the rate it heads for and the host ms left, from the last sync', () => {
+    const t = transport();
+    t.sync(0);
+    expect(t.ramping).toBeNull();
+    t.ramp(2, 100);
+    expect(t.ramping).toEqual({ to: 2, left: 100 });
+    t.sync(40);
+    expect(t.ramping).toEqual({ to: 2, left: 60 });
+    t.sync(100);
+    expect(t.ramping).toBeNull();
+    t.ramp(0, 50);
+    t.rate = 3;
+    expect(t.ramping).toBeNull();
+  });
+
+  it('holds all of a ramp set before the first sync, and survives a seek on a bare clock', () => {
+    const t = transport();
+    t.ramp(0, 80);
+    expect(t.ramping).toEqual({ to: 0, left: 80 });
+    t.sync(1000);
+    t.sync(1020);
+    t.seek(5);
+    expect(t.ramping).toEqual({ to: 0, left: 60 });
+  });
+
+  it('reads the same on a mix as on its transport', () => {
+    const t = transport();
+    const m = mix(kit<{ x: number }>({ x: sum() }), { transport: t, name: 'ramped' });
+    t.sync(0);
+    t.ramp(0.5, 200);
+    t.sync(50);
+    expect(m.ramping).toEqual({ to: 0.5, left: 150 });
+    expect(t.ramping).toEqual(m.ramping);
+  });
+});
+
+describe('the earliest time a seek reaches', () => {
+  it('is where a seek lands and a seek before it throws, under history in memory', () => {
+    const t = transport({ history: { ms: 100, tape } });
+    mix(kit<{ x: number }>({ x: sum() }), { transport: t, name: 'reached' });
+    expect(t.horizon).toBeNaN();
+    for (let at = 0; at <= 500; at += 16) t.sync(at);
+    const horizon = t.horizon;
+    expect(horizon).toBeGreaterThanOrEqual(t.now - 100);
+    expect(() => t.seek(horizon - 1)).toThrow(/older than/);
+    t.seek(horizon);
+    expect(t.now).toBe(horizon);
+  });
+
+  it('starts at the first sync', () => {
+    const t = transport({ history: { ms: 1e6, tape } });
+    mix(kit<{ x: number }>({ x: sum() }), { transport: t, name: 'young' });
+    t.sync(40);
+    t.sync(56);
+    expect(t.horizon).toBe(40);
+    t.rate = 0;
+    t.sync(72);
+    t.sync(88);
+    expect(t.horizon).toBe(40);
+  });
+
+  it('is unbounded on a bare clock, and NaN for a mix without history', () => {
+    const t = transport();
+    expect(t.horizon).toBeNaN();
+    t.sync(0);
+    expect(t.horizon).toBe(Number.NEGATIVE_INFINITY);
+    const m = mix(kit<{ x: number }>({ x: sum() }), { name: 'unseekable' });
+    m.sync(0);
+    expect(m.horizon).toBeNaN();
+  });
+});
+
+describe('inert on a transport with no mix', () => {
+  it('is its clock at rest: rate 0, no ramp, nothing since the last sync', () => {
+    const t = transport();
+    t.sync(0);
+    expect(t.inert).toBe(false);
+    t.rate = 0;
+    expect(t.inert).toBe(false);
+    t.sync(16);
+    expect(t.inert).toBe(true);
+    t.seek(50);
+    expect(t.inert).toBe(false);
+    t.sync(32);
+    expect(t.inert).toBe(true);
+    t.ramp(1, 100);
+    t.sync(48);
+    expect(t.inert).toBe(false);
+    t.ramp(0, 10);
+    t.sync(52);
+    expect(t.inert).toBe(false);
+    t.sync(64);
+    expect(t.inert).toBe(true);
+  });
+});

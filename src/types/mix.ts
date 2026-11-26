@@ -243,6 +243,11 @@ export interface Mix<I, O, H = unknown> {
    */
   ramp(rate: number, over: number): void;
   /**
+   * The ramp of the rate under way: the rate it heads for and the host ms left of it, counted from
+   * the last sync. Null once it has ended, and for a rate set at once.
+   */
+  readonly ramping: { readonly to: number; readonly left: number } | null;
+  /**
    * The mix time the clock will read at host `timestamp`, by the rate and any ramp in force at the
    * last sync, so a host can say where a moment ahead falls in mix time, as `trace` takes it.
    * `rebase` and `seek` are counted as the clock stands; a later rate write or ramp changes the
@@ -358,6 +363,12 @@ export interface Mix<I, O, H = unknown> {
   seek(to: number | { readonly frame: number }): void;
   /** As `Transport.prepare`, for a mix made alone. */
   prepare(time: number): Promise<void>;
+  /**
+   * The earliest mix time a `seek` reaches now, from memory: a seek to any time from here on lands,
+   * and one before it throws. With a history {@link HistoryOptions.store | `store`}, earlier times
+   * need `prepare` first. NaN before the first sync and where the mix cannot seek, without history.
+   */
+  readonly horizon: number;
   /**
    * The mix clock at the last sync or seek. It is the time `seek` and `project` take; NaN before
    * the first sync. Host time at the mix's rate, less what `rebase` took out and `seek` moved.

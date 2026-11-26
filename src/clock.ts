@@ -252,6 +252,20 @@ export function ended(c: Clock, now: number): boolean {
   return now >= end - 4 * Number.EPSILON * Math.max(Math.abs(end), r.over);
 }
 
+/**
+ * The ramp a clock is under at `now`: the rate it heads for and the ms left of it, from `now` on;
+ * null once it has none or it has ended. Never more than the ramp's length, so a clock anchored
+ * ahead of `now`, or not yet anchored, has all of it left.
+ */
+export function rampOf(c: Clock, now: number): { to: number; left: number } | null {
+  const r = c.ramp;
+  if (r === null) return null;
+  const left = c.anchorNow + r.over - now;
+  if (Number.isNaN(left)) return { to: r.to, left: r.over };
+  if (ended(c, now)) return null;
+  return { to: r.to, left: left > r.over ? r.over : left };
+}
+
 /** Mix time kept finite, so a clock run past the largest number stops there rather than at Infinity. */
 export function clampTime(t: number): number {
   return t > Number.MAX_VALUE ? Number.MAX_VALUE : t < -Number.MAX_VALUE ? -Number.MAX_VALUE : t;

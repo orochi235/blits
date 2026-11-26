@@ -4,6 +4,20 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `ramping` on a mix and a transport reads the ramp of the rate under way: `{ to, left }`, the rate
+  it heads for and the host ms left of it from the last sync, or null.
+- `horizon` on a mix and a transport is the earliest mix time a `seek` reaches from memory: a seek
+  to it lands and one before it throws. A host scrubbing under a finite `history.ms` clamps to it.
+
+### Fixed
+
+- `inert` on a transport with no mix on it reads its own clock: rate 0, no ramp under way, and no
+  rate, ramp or seek since the last sync. It was always true.
+
 ## 1.5.3
 
 ### Added
