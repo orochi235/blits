@@ -88,6 +88,23 @@ describe('a seek ahead the rate never carries the mix to', () => {
   });
 });
 
+describe('a seek to a time finer than host time can hold', () => {
+  it.each([0, 1])('stays there through a sync at the same timestamp after a rebase, at rate %s', (rate) => {
+    const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape } });
+    mix<{ id: string }, Pose>(K, { name: 'fine', transport: t });
+    t.sync(0);
+    if (rate !== 1) t.rate = rate;
+    t.rebase();
+    t.sync(0);
+    t.seek(1e-300);
+    t.sync(0);
+    expect(t.now).toBe(1e-300);
+    t.seek(5e-324);
+    t.sync(0);
+    expect(t.now).toBe(5e-324);
+  });
+});
+
 describe('a clock run past the largest number', () => {
   it('stops there, on a mix with nothing cued and on a transport', () => {
     const m = mix<{ id: string }, Pose>(K, { name: 'fast' });

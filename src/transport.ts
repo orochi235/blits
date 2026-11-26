@@ -322,6 +322,9 @@ export class Transport implements TransportApi {
     let pace = this.pace;
     let now = pace === null ? u : pace.sync(u);
     const later = u !== this.u;
+    // With no host time gone by, the clock stands where it stood: a seek to a time finer than host
+    // time holds would read back as its neighbor.
+    if (!later && !Number.isNaN(this.now)) now = this.now;
     const still = later && now === this.now;
     this.u = u;
     if (Number.isNaN(this.born)) this.born = now;

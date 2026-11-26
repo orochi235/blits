@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A sync with no host time gone by since the last leaves the mix clock where it stood. After a
+  `rebase`, a seek to a time finer than host time holds there (`1e-300`, say) read back as its
+  neighbor on the next sync at the same timestamp.
+
 ## 1.5.0
 
 ### Added
