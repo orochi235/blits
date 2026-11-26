@@ -14,7 +14,7 @@ describe("Penner's curves by name", () => {
     '%s stays within its tolerance of the function, ends on 0 and 1, and packs for the GPU',
     (name) => {
       const c = curve(name);
-      const f = (reference as Record<string, (t: number) => number>)[name] as (t: number) => number;
+      const f = reference[name] as (t: number) => number;
       const tol = 'bezier' in penner[name] ? 0.003 : 0.001;
       let worst = 0;
       for (let i = 0; i <= 2000; i++) {
