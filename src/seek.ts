@@ -314,7 +314,7 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
           ? left.u
           : hostAhead(transport, t);
       u = Number.isNaN(last) ? at : Math.max(last, at);
-      if (!Number.isFinite(u)) u = transport.jump(t);
+      if (!Number.isFinite(u) || transport.jumps) u = transport.jump(t);
     } catch (e) {
       if (transport.seq !== seq || tape.undoDepth() !== depth) {
         const f = transport.frames.all().find((f) => f.seq === seq) as Frame;

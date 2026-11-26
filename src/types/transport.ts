@@ -9,6 +9,13 @@ import type { Marked } from './place.js';
  */
 export interface TransportOptions {
   history?: MixOptions['history'];
+  /**
+   * How a seek ahead moves the clock. `'play'` plays the mixes there under the rate, running out
+   * any ramp on the way, as a sync to there would; `'jump'` moves there at once, the rate and any
+   * ramp standing as they were, for a transport kept as a clock. Recorded calls on the way are
+   * made either way. Default `'play'`.
+   */
+  seek?: 'play' | 'jump';
 }
 
 /**

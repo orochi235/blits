@@ -160,6 +160,9 @@ export class Transport implements TransportApi {
    * `shared` for one the host made, whose mixes may not move it themselves; a mix made alone makes
    * one that is not.
    */
+  /** Whether a seek ahead jumps there, the transport's `seek: 'jump'`, rather than plays there. */
+  jumps = false;
+
   constructor(
     readonly history: MixOptions['history'],
     readonly shared: boolean,
@@ -673,6 +676,7 @@ export function announce(
 export function transport(opts: TransportOptions = {}): TransportApi {
   const { history, added } = historyFor(opts);
   const t = new Transport(history, true);
+  t.jumps = opts.seek === 'jump';
   if (added) gave(t);
   return t;
 }

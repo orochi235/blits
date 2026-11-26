@@ -52,6 +52,7 @@ export function phaseAt(elapsed: number, duration: number, passes: number, edge 
   if (!(duration > 0) || duration === Number.POSITIVE_INFINITY) return 0;
   const pass = passAt(elapsed, duration, passes, edge);
   if (over(elapsed, duration, passes)) return passes - pass;
+  if (edge && (pass + 1) * duration - elapsed <= 4 * Number.EPSILON * Math.abs(elapsed)) return 1;
   const u = (elapsed - pass * duration) / duration;
   return u < 0 ? 0 : u > 1 ? 1 : u;
 }

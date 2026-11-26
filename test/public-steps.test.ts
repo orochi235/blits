@@ -31,6 +31,11 @@ describe('the pass math, from the public entry', () => {
     expect([passAt(0, 1000, 3, true), phaseAt(0, 1000, 3, true)]).toEqual([0, 0]);
   });
 
+  it('reads that end as phase 1 exactly, where the product rounds a few ulps off the line', () => {
+    expect(phaseAt(150, 0.1, Number.POSITIVE_INFINITY, true)).toBe(1);
+    expect(phaseAt(2048.156150749791, 682.718716916597, Number.POSITIVE_INFINITY, true)).toBe(1);
+  });
+
   it('places time before 0 in the passes before, at a phase from 0 to 1', () => {
     expect([
       passAt(-250, 1000, Number.POSITIVE_INFINITY),
