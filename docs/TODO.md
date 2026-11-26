@@ -83,11 +83,20 @@ Owner tags:
   first subject's last frame from 100 to 300); backward the mirror case shows nothing ("waits for a
   subject staggered ahead of it" in `test/backward.test.ts`). Either hold both ways, or show
   nothing both ways, which would snap each subject of a staggered entrance back as it finishes.
-- **[waiting] `plot(subjects, xy, cell)`, `cell` as a third argument, stays deprecated until a
-  major release made for other reasons** (no 2.0.0 for it alone, 2026-11-21). The removal then:
-  the overload in `src/types/mix.ts`, the warning in `src/plot.ts` (a number there throws instead),
-  its test in `test/plot-axes.test.ts`, the line in `docs/schema.html`, and `{ cell }` in
-  `bench/frame.mjs`, `bench/recaddr.mjs` and `bench/plotleak.mjs`.
+- **[waiting] Deprecated names stay until a major release made for other reasons** (no 2.0.0 for
+  them alone, 2026-11-21). Removing any of them breaks callers, so each waits past its "one release"
+  for the next major. What goes then:
+  - `plot(subjects, xy, cell)`, `cell` as a third argument: the overload in `src/types/mix.ts`, the
+    warning in `src/plot.ts` (a number there throws instead), its test in `test/plot-axes.test.ts`,
+    the line in `docs/schema.html`, and `{ cell }` in `bench/frame.mjs`, `bench/recaddr.mjs` and
+    `bench/plotleak.mjs`.
+  - `locus` on a voice and `loci` on a mix, renamed `role` and `roles` in 0.15.0: the fields in
+    `src/types/voice.ts` and `src/types/mix.ts`, the translation and warnings in `src/cue.ts`, the
+    tests and fuzz ops that still cue with them (`grep -rn 'locus\|loci' test`), and the site's
+    `locus` redirect page and glossary entry.
+  - `color({ lerp })`, deprecated since `ink()` took over its `'oklch'` path (`'oklab'` is plain
+    `color()`): `ColorOptions` and the warning in `src/color.ts`, and its tests in
+    `test/color.test.ts`.
 - **[maintainer] A ticker has no single teardown** (filed 2026-11-15 from automated review).
   `ticker()` (`src/ticker.ts`) gives a remover per `add`, `after` and `hold`, and `stop()` only
   cancels the waiting frame: every mix's `onWake` subscription stays, so a mix waking restarts the
