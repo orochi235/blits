@@ -6,6 +6,7 @@ export type * from './types/motion.js';
 export type * from './types/outline.js';
 export type * from './types/patch.js';
 export type * from './types/place.js';
+export type * from './types/show.js';
 export type * from './types/trace.js';
 export type * from './types/transport.js';
 export type * from './types/voice.js';

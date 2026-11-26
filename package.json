@@ -42,6 +42,10 @@
     "./fling": {
       "types": "./dist/fling.d.ts",
       "default": "./dist/fling.js"
+    },
+    "./show": {
+      "types": "./dist/show.d.ts",
+      "default": "./dist/show.js"
     }
   },
   "files": [
