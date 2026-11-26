@@ -25,25 +25,35 @@ const over = (elapsed: number, duration: number, passes: number): boolean =>
   Number.isFinite(passes) && elapsed >= duration * passes;
 
 /**
- * The phase `elapsed` voice ms into a patch of `duration` ms playing `passes` passes, held at 1 once
- * they are done. A pure function rather than one writing phase and pass together, so a hot caller
- * keeps both in registers.
+ * The pass `elapsed` voice ms falls in, of a patch of `duration` ms playing `passes` passes: the
+ * last once they are done, a fraction's included. The quotient and the remainder can round to
+ * different passes (`50 / 0.1` is 500, `50 % 0.1` nearly 0.1), so the pass is settled against the
+ * product the phase is measured from. With `edge`, the start of a pass after the first reads as the
+ * end of the one before.
  *
  * @category voice
  */
-export function phaseAt(elapsed: number, duration: number, passes: number): number {
-  if (!(duration > 0)) return 0;
-  return over(elapsed, duration, passes) ? 1 : (elapsed % duration) / duration;
+export function passAt(elapsed: number, duration: number, passes: number, edge = false): number {
+  if (!(duration > 0) || duration === Number.POSITIVE_INFINITY) return 0;
+  if (over(elapsed, duration, passes)) return Math.ceil(passes) - 1;
+  let pass = Math.floor(elapsed / duration);
+  if (pass * duration > elapsed) pass -= 1;
+  else if ((pass + 1) * duration <= elapsed) pass += 1;
+  return edge && pass > 0 && elapsed === pass * duration ? pass - 1 : pass;
 }
 
 /**
- * The pass `elapsed` voice ms falls in, held at the last once they are done.
+ * How far into its pass `elapsed` voice ms is, 0..1, as {@link passAt | `passAt`} places it: once the
+ * passes are done, where the last ends, which is short of 1 for a fraction of a pass.
  *
  * @category voice
  */
-export function passAt(elapsed: number, duration: number, passes: number): number {
-  if (!(duration > 0)) return 0;
-  return over(elapsed, duration, passes) ? passes - 1 : Math.floor(elapsed / duration);
+export function phaseAt(elapsed: number, duration: number, passes: number, edge = false): number {
+  if (!(duration > 0) || duration === Number.POSITIVE_INFINITY) return 0;
+  const pass = passAt(elapsed, duration, passes, edge);
+  if (over(elapsed, duration, passes)) return passes - pass;
+  const u = (elapsed - pass * duration) / duration;
+  return u < 0 ? 0 : u > 1 ? 1 : u;
 }
 
 /**

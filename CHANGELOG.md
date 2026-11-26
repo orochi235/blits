@@ -9,17 +9,27 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 ### Added
 
 - `passesOf`, `passAt` and `phaseAt` are public: the passes a voice's `loop` plays, and the pass
-  and phase `elapsed` ms fall in.
+  and phase `elapsed` ms fall in. `passAt` and `phaseAt` take `edge`, which reads the start of a
+  pass after the first as the end of the one before.
 - `slewStep(value, target, ms, { riseMs, fallMs })` is the step `slew` takes, for a host limiting
   a value outside a mix.
 - Penner's easing curves are named easings, `'easeInQuad'` through `'easeInOutBounce'` (`PennerName`).
   Each is data, so it runs on the GPU: a cubic Bézier within 0.003 of Penner's function where one
   fits (18 of 30), otherwise `linear()` points within 0.001. `scripts/penner/fit.mjs` makes them.
 - A transport with no history and no mix on it seeks, either way, moving its clock alone and
-  keeping its rate and any ramp; it threw for want of history.
+  keeping its rate and any ramp, and runs back at a rate below 0; both threw for want of history.
 
 ### Fixed
 
+- A voice whose `loop` is a fraction ends partway through its last pass: past its end, loop 2.5
+  reads pass 2 at phase 0.5, where it read pass 1.5 at phase 1. A pass and its phase are worked
+  out from one product, so they no longer round onto different passes (`50 / 0.1` against
+  `50 % 0.1`).
+- After a seek, the mix clock reads exactly the time sought: a seek back into a time a jump ahead
+  passed over, or ahead to a time finer than host time holds, read the jump's target or its
+  neighbor on the next sync.
+- A sync at the same timestamp after a run back that started and ended while a `rebase` was
+  pending counts no time; it jumped over the whole gap since the rebase.
 - A sync to a timestamp earlier than the last counts no time, as after a `rebase`, and the mix
   reads on from it; it threw.
 - A rate, ramp or seek on a transport with no mix on it wakes its `onWake` listeners; nothing

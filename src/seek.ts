@@ -339,6 +339,7 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
     backTo(transport, t, frame);
     transport.tick(t);
   }
+  transport.pin(t);
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
   transport.offset = transport.last - transport.u;
   transport.kept();

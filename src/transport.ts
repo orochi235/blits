@@ -429,6 +429,8 @@ export class Transport implements TransportApi {
     const rate = rateWith(c, drive.wall);
     if (steady && rate >= 0 && !this.callsAhead) {
       this.drive = null;
+      // Its syncs moved the clock by seeks, if at all, so the host reads on from where it stands now.
+      this.offset = this.last - this.u;
       if (rate !== this.pacedRate) this.ramp(rate, 0);
     }
     for (const m of this.members) {
@@ -446,6 +448,16 @@ export class Transport implements TransportApi {
     const u = this.u + HELD;
     this.paced().hold(this.u, u, this.seq + 1, t);
     return u;
+  }
+
+  /**
+   * Makes the mix clock read exactly `t` at the host time it stands at, in the frame being played,
+   * where a seek landed on a host time too coarse to say `t` or between two clocks a jump parted.
+   */
+  pin(t: number): void {
+    const pace = this.pace;
+    if (pace === null ? this.u === t : pace.reading(this.u) === t) return;
+    this.paced().hold(this.u, this.u, this.seq, t);
   }
 
   /** Its pace, made where mix time has been host time until now. */
@@ -466,6 +478,11 @@ export class Transport implements TransportApi {
   /** The rate the mix's own clock plays at, apart from any drive. */
   private get pacedRate(): number {
     return this.pace === null ? 1 : this.pace.rateAt(this.u);
+  }
+
+  /** Whether it is a clock alone, with no history and no mix: a rate below 0 runs that clock back. */
+  private get bare(): boolean {
+    return this.history === undefined && this.members.length === 0;
   }
 
   /** Whether the tape holds calls ahead of where the transport stands, after a seek back. */
@@ -593,7 +610,7 @@ export class Transport implements TransportApi {
     rampTime(over);
     // A call the tape plays again sets the rate it recorded; a drive is the host's, never taped. A
     // rate set while recorded calls lie ahead drives too, so it plays them on rather than cutting them.
-    if (!this.replaying && (rate < 0 || this.drive !== null || this.callsAhead)) {
+    if (!this.replaying && !this.bare && (rate < 0 || this.drive !== null || this.callsAhead)) {
       this.steer(rate, over);
       return;
     }
