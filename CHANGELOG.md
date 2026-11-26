@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A seek while the mix runs back (a rate below 0) keeps a ramp under way running from where the
+  seek landed; it held the rate the ramp had reached.
+
 ## 1.5.1
 
 ### Added
