@@ -6,6 +6,12 @@ This package follows [semver](https://semver.org) and shares the engine's versio
 everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## 1.5.2
+
+### Changed
+
+- Built and tested against engine 1.5.2.
+
 ## 1.5.1
 
 ### Changed
