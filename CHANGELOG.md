@@ -8,6 +8,12 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Added
 
+- `@msb235/blits/show`: a `Show` is a list of cues as plain data that round-trips through JSON, and
+  `play(mix, show, kinds)` cues it on a mix under one owner. A kind cue names a factory in `kinds`
+  that makes its patch or voices from its `params`, and places it by `start` (a time or an anchor
+  to another cue), `length` or `end`, with `fade`, `ease`, `freeze` and `muted`. An arc cue plays
+  as `mix.arc`, from `enter`, `active` and `exit` pieces with `hold` and `blend`. The handle
+  stops, seeks or fades the whole show, and `handle.cues` holds each cue's own handles.
 - `{ linear: [...] }` is an easing: CSS's `linear()`, straight lines between points, each an output
   alone (spread evenly between its neighbors), `[output, at]`, or `[output, from, to]` held over two
   inputs, with inputs as fractions where CSS writes percentages. It runs on the GPU: `curveData`

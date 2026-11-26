@@ -22,7 +22,13 @@ Owner tags:
   covers freezing, reversing, scrubbing within a parent, and playing or looping a slice. Named ranges are not
   a blits concept: hosts keep the names (weasel's `Clip`) and cue a window. A voice can't start partway into
   its patch today, so the window is new either way. Closes when a voice and an owner take a remap, seeks and
-  read-aheads agree with play, and the fuzz covers it.
+  read-aheads agree with play, and the fuzz covers it. `@msb235/blits/show` wraps a `patch()` patch's `at` for
+  a cue's `ease` meanwhile, and refuses `keys`, motions and waves; once this lands, `ease` becomes a curve
+  remap and works on every patch (`docs/show.md`).
+- **[waiting] Move the five timeline libraries onto `@msb235/blits/show`** (2026-11-25), in this order:
+  x-xstitch and x-pcb, then beamos, then blinken, then klieg, which first moves its slot crossfade onto
+  `mix.arc`. `docs/show.md` has each one's schema as a show and what doesn't fit. Waits on the show
+  subpath being released. Closes when each plays its timeline through `play`.
 - **[maintainer] Keys on a vector channel travel a curve** (2026-11-25, for Lottie and SMIL motion in
   weasel): a `keys` patch on a `vec` channel lerps each component, so motion between keys is a straight line
   and easing shapes timing only. Lottie adds spatial tangents per key, constant-speed ("roving") keys and

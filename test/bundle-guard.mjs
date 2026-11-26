@@ -21,6 +21,7 @@ for (const [entry, want] of [
   ['gpu', true],
   ['index', false],
   ['lean', false],
+  ['show', false],
 ]) {
   const has = await carries(entry);
   const ok = has === want;
