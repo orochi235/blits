@@ -71,9 +71,10 @@ describe('easing', () => {
     expect(toBlits(undefined)).toBeUndefined();
   });
 
-  it('turns a weasel named curve into bezier points, and shows them by name again', () => {
-    expect(toBlits('easeOutQuad')).toEqual({ bezier: [0.5, 1, 0.89, 1] });
-    expect(toWeasel({ bezier: [0.5, 1, 0.89, 1] })).toBe('easeOutQuad');
+  it('passes a weasel named curve to blits by its name, and shows it by name again', () => {
+    expect(toBlits('easeOutQuad')).toBe('easeOutQuad');
+    expect(toBlits('easeOutBounce')).toBe('easeOutBounce');
+    expect(toWeasel('easeInElastic')).toBe('easeInElastic');
     expect(toBlits('linear')).toBe('linear');
   });
 
@@ -82,9 +83,7 @@ describe('easing', () => {
     expect(toBlits({ bezier: [0.25, 0.1, 0.25, 1] })).toBe('ease');
   });
 
-  it('refuses a curve with no bezier form', () => {
-    expect(toBlits('easeOutBounce')).toBeNull();
-    expect(toBlits('easeInElastic')).toBeNull();
+  it('refuses a curve that is neither a name nor points', () => {
     expect(toBlits(resolveEasing('easeOutQuad'))).toBeNull();
   });
 
@@ -95,7 +94,7 @@ describe('easing', () => {
     ];
     const tracks = tracksOf(before, 400);
     const key = tracks[0]?.keys[1];
-    if (key) key.easing = 'easeOutBounce';
+    if (key) key.easing = resolveEasing('easeOutBounce');
     const after = stopsOf(tracks, 400, before);
     expect(after[1]?.ease).toBe('ease-out');
     expect(JSON.parse(JSON.stringify(after))).toEqual(after);
