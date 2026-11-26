@@ -206,11 +206,34 @@ export interface Clock {
 export function elapsedWith(c: Clock, now: number): number {
   const dt = now - c.anchorNow;
   const r = c.ramp;
-  if (r === null) return c.anchorElapsed + dt * c.rate;
-  if (dt <= 0) return c.anchorElapsed + dt * r.from;
-  const d = r.to - r.from;
-  if (dt <= r.over) return c.anchorElapsed + r.from * dt + (d * dt * dt) / (2 * r.over);
-  return c.anchorElapsed + r.from * r.over + (d * r.over) / 2 + r.to * (dt - r.over);
+  if (r === null) return c.anchorElapsed + run(c.rate, dt);
+  if (dt <= 0) return c.anchorElapsed + run(r.from, dt);
+  if (ended(c, now))
+    return (
+      c.anchorElapsed + r.from * r.over + ((r.to - r.from) * r.over) / 2 + run(r.to, dt - r.over)
+    );
+  return c.anchorElapsed + r.from * dt + ((r.to - r.from) * dt * dt) / (2 * r.over);
+}
+
+/** How far `rate` carries a clock over `dt`; a clock at rest goes nowhere, however long the gap. */
+function run(rate: number, dt: number): number {
+  return rate === 0 ? 0 : rate * dt;
+}
+
+/**
+ * Whether a clock's ramp is over at `now`, counting a time within a few ulps of its end as past it:
+ * host time far from 0 has lost the low bits that would put it exactly there.
+ */
+export function ended(c: Clock, now: number): boolean {
+  const r = c.ramp;
+  if (r === null) return true;
+  const end = c.anchorNow + r.over;
+  return now >= end - 4 * Number.EPSILON * Math.max(Math.abs(end), r.over);
+}
+
+/** Mix time kept finite, so a clock run past the largest number stops there rather than at Infinity. */
+export function clampTime(t: number): number {
+  return t > Number.MAX_VALUE ? Number.MAX_VALUE : t < -Number.MAX_VALUE ? -Number.MAX_VALUE : t;
 }
 
 /** The time a clock reads `elapsed`, inverting `elapsedWith`; Infinity where it never will. */
@@ -278,8 +301,9 @@ export function phaseBefore(elapsed: number, duration: number): number {
 export function rateWith(c: Clock, now: number): number {
   const r = c.ramp;
   if (r === null) return c.rate;
+  if (ended(c, now)) return r.to;
   const u = (now - c.anchorNow) / r.over;
-  return u >= 1 ? r.to : u <= 0 ? r.from : r.from + (r.to - r.from) * u;
+  return u <= 0 ? r.from : r.from + (r.to - r.from) * u;
 }
 
 /** Moves a clock's anchor to `now`, carrying what is left of a ramp. */
@@ -287,10 +311,8 @@ export function rebaseWith(c: Clock, now: number): void {
   const rate = rateWith(c, now);
   c.anchorElapsed = elapsedWith(c, now);
   const r = c.ramp;
-  if (r !== null) {
-    const left = c.anchorNow + r.over - now;
-    c.ramp = left > 0 ? { from: rate, to: r.to, over: left } : null;
-  }
+  if (r !== null)
+    c.ramp = ended(c, now) ? null : { from: rate, to: r.to, over: c.anchorNow + r.over - now };
   c.anchorNow = now;
 }
 

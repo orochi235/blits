@@ -1,4 +1,13 @@
-import { type Clock, elapsedWith, rateWith, rebaseWith, retime, timeWith } from './clock.js';
+import {
+  type Clock,
+  clampTime,
+  elapsedWith,
+  ended,
+  rateWith,
+  rebaseWith,
+  retime,
+  timeWith,
+} from './clock.js';
 
 /** A clock in a pace's log, with the frame that set it, which a history store's cut goes by. */
 export interface Paced extends Clock {
@@ -45,7 +54,7 @@ export class Pace {
     const log = this.log;
     let i = log.length - 1;
     while (i > 0 && (log[i] as Paced).anchorNow > u) i--;
-    return elapsedWith(log[i] as Clock, u);
+    return clampTime(elapsedWith(log[i] as Clock, u));
   }
 
   /**
@@ -67,7 +76,10 @@ export class Pace {
     const log = this.log;
     let i = 0;
     while (i + 1 < log.length && t > (log[i + 1] as Paced).anchorElapsed) i++;
-    return timeWith(log[i] as Clock, t);
+    const u = timeWith(log[i] as Clock, t);
+    // A time a jump passed over is reached where the jump lands.
+    const next = log[i + 1];
+    return next !== undefined && u > next.anchorNow ? next.anchorNow : u;
   }
 
   /** The rate at host time `u`; before the first sync, the rate the first frame starts at. */
@@ -82,7 +94,7 @@ export class Pace {
     const c = this.clock;
     const r = c.ramp;
     if (r === null) return c.rate === 0;
-    return r.to === 0 && !this.waiting && u >= c.anchorNow + r.over;
+    return r.to === 0 && !this.waiting && ended(c, u);
   }
 
   /**
@@ -110,13 +122,14 @@ export class Pace {
 
   /**
    * Holds the clock still from host time `from` to `to`, in frame `seq`, as rate 0 would, and runs
-   * it on from there as it ran at `from`.
+   * it on from there as it ran at `from`: from where it stood, or from mix time `at`, a jump.
    */
-  hold(from: number, to: number, seq: number): void {
+  hold(from: number, to: number, seq: number, at?: number): void {
     const was = this.clock;
     const next = { ...was, seq };
     rebaseWith(next, from);
     next.anchorNow = to;
+    if (at !== undefined) next.anchorElapsed = at;
     if (this.keeps) this.log.push(next);
     else this.log[this.log.length - 1] = next;
   }

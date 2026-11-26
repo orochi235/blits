@@ -1,6 +1,8 @@
 import {
   type Clock,
+  clampTime,
   elapsedWith,
+  ended,
   rampTime,
   rateWith,
   rebaseWith,
@@ -392,7 +394,7 @@ export class Transport implements TransportApi {
     this.last = timestamp;
     this.woken = false;
     const clock = drive.clock;
-    let t = elapsedWith(clock, drive.wall);
+    let t = clampTime(elapsedWith(clock, drive.wall));
     const first = this.pager === null ? (this.frames.first?.at ?? this.born) : this.born;
     const floor = Math.max(this.born, this.floor, first);
     if (t < floor) {
@@ -420,7 +422,7 @@ export class Transport implements TransportApi {
       }
     }
     const c = drive.clock;
-    const steady = c.ramp === null || drive.wall >= c.anchorNow + c.ramp.over;
+    const steady = ended(c, drive.wall);
     const rate = rateWith(c, drive.wall);
     const tape = this.tape as Tape;
     if (steady && rate >= 0 && tape.timestampAt(tape.undoDepth()) === undefined) {
@@ -431,6 +433,17 @@ export class Transport implements TransportApi {
       const bookers = m.bookers;
       if (bookers !== null) for (const b of bookers) b.sync();
     }
+  }
+
+  /**
+   * Moves the mix clock to `t` at once, a held step of host time on, its rate and any ramp running on
+   * from there as they stood; answers the host time it lands at. A seek ahead the rate never carries
+   * the mix to jumps this way.
+   */
+  jump(t: number): number {
+    const u = this.u + HELD;
+    this.paced().hold(this.u, u, this.seq + 1, t);
+    return u;
   }
 
   /** Its pace, made where mix time has been host time until now. */
@@ -540,7 +553,8 @@ export class Transport implements TransportApi {
 
   time(timestamp: number): number {
     const drive = this.drive;
-    if (drive !== null) return elapsedWith(drive.clock, drive.wall + timestamp - this.last);
+    if (drive !== null)
+      return clampTime(elapsedWith(drive.clock, drive.wall + timestamp - this.last));
     return readingAt(this, timestamp - this.offset);
   }
 

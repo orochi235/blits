@@ -287,8 +287,8 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
   }
   if (frame === undefined) {
     // Ahead, under the rate the recorded calls up to `t` set, past any frames rate 0 held at `t`.
-    // Which rate that is shows only once the calls are played, so a seek that cannot reach `t`
-    // puts the mix back where it stood.
+    // Which rate that is shows only once the calls are played; one that never reaches `t`, paused or
+    // slowing to rest short of it, jumps there. A seek that throws puts the mix back where it stood.
     const seq = transport.seq;
     const depth = tape.undoDepth();
     const left = transport.left;
@@ -312,7 +312,7 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
           ? left.u
           : hostAhead(transport, t);
       u = Number.isNaN(last) ? at : Math.max(last, at);
-      if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
+      if (!Number.isFinite(u)) u = transport.jump(t);
     } catch (e) {
       if (transport.seq !== seq || tape.undoDepth() !== depth) {
         const f = transport.frames.all().find((f) => f.seq === seq) as Frame;
@@ -329,6 +329,8 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
     // a frame first, as a sync's does, so a voice that ends on the way is done in that frame.
     transport.tick(t);
     if (Number.isNaN(last) || transport.now !== t) for (const m of transport.members) move(m, t);
+    // With no mix on it, its clock still moves, as a sync's does.
+    transport.now = t;
   } else {
     transport.left = { t: transport.now, u: transport.u };
     tape.goto(tape.depthAt(frame.at === t ? frame.u : hostAt(transport, t)));

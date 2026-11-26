@@ -38,6 +38,15 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A seek ahead to a time the mix's rate never carries it to, paused or slowing to rest short of it,
+  jumps there and keeps the rate and any ramp as they stand; it threw "the mix's rate never
+  reaches". A seek ahead on a transport with no mix on it moves the transport's clock, which stayed
+  where it was.
+- A ramp of the mix's rate ends on its target: host time far from 0 could land a few ulps short of
+  the ramp's end and leave the rate just under it.
+- Mix time stops at `Number.MAX_VALUE`: a rate that carried it to Infinity crashed a mix with
+  nothing due and left a transport reading NaN.
+- `time(Infinity)` after a ramp to rate 0 reads where the clock came to rest, where it read NaN.
 - A child cued backward into a span (`rate` below 0) is refused at cue, as a span cued backward
   is; it was laid out with a negative length, placed at its start and let go on the first frame,
   and the span read a length of 0. Its handle can still turn it once it plays.
