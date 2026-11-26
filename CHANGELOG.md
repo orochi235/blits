@@ -6,6 +6,16 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ## Unreleased
 
+### Added
+
+- `{ linear: [...] }` is an easing: CSS's `linear()`, straight lines between points, each an output
+  alone (spread evenly between its neighbors), `[output, at]`, or `[output, from, to]` held over two
+  inputs, with inputs as fractions where CSS writes percentages. It runs on the GPU: `curveData`
+  packs its head in the curve's usual slot and its points after it, and a `keys` patch's packer
+  moves them past its tracks.
+- `steps` takes `jump: 'none'` and `jump: 'both'`, as CSS's `steps()` does, on the CPU and the
+  GPU.
+
 ### Fixed
 
 - A child cued backward into a span (`rate` below 0) is refused at cue, as a span cued backward

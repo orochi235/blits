@@ -1,4 +1,4 @@
-import { curveData } from '../../easing.js';
+import { CURVE_WIDTH, curveData } from '../../easing.js';
 import { builtOf } from '../../patch.js';
 import type { Patch } from '../../types.js';
 import { type ChannelLookup, EASING_FUNCTION, type Packed } from '../runner.js';
@@ -25,6 +25,8 @@ export function keysPack(patch: object, channels: ChannelLookup): Packed | undef
   const built = builtOf(p);
   const values: number[] = [built.duration];
   const codes: ChannelCode[] = [];
+  // A curve whose numbers outrun its slot, by where its head sits: the rest goes after every track.
+  const tails: [head: number, rest: readonly number[]][] = [];
   for (const track of built.tracks) {
     const code = channels.get(track.channel);
     if (code === undefined || (code.lerp === undefined && code.lerpAll === undefined))
@@ -40,9 +42,15 @@ export function keysPack(patch: object, channels: ChannelLookup): Packed | undef
       if (curve === undefined) return { why: EASING_FUNCTION };
       const v = numbersOf(pt.value, width);
       if (v === undefined) return { why: 'a stop holds a value the GPU cannot read' };
-      values.push(pt.at, ...curve, ...Array.from(v));
+      values.push(pt.at);
+      if (curve.length > CURVE_WIDTH) tails.push([values.length, curve.slice(CURVE_WIDTH)]);
+      values.push(...curve.slice(0, CURVE_WIDTH), ...Array.from(v));
     }
     codes.push(code);
+  }
+  for (const [head, rest] of tails) {
+    values[head + 1] = values.length - head;
+    values.push(...rest);
   }
   return {
     runner: keysRunner(

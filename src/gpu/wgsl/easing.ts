@@ -1,6 +1,7 @@
 /**
- * `blits_ease(at, u)`: evaluates the curve packed by `curveData` at `values[at .. at + 5]`, as
- * `bezier` and `steps` in `src/easing.ts` do. Needs `values: array<f32>` in scope. The f32 limits
+ * `blits_ease(at, u)`: evaluates the curve packed by `curveData` at `values[at .. at + 5]`, a
+ * `linear` easing's points where its head says, as `bezier`, `steps` and `linear` in
+ * `src/easing.ts` do. Needs `values: array<f32>` in scope. The f32 limits
  * (Newton to 1e-6, bisection capped at 24 steps) are what f32 can reach.
  */
 export const EASING_WGSL = /* wgsl */ `
@@ -36,15 +37,36 @@ fn blits_bezier(at: u32, u: f32) -> f32 {
   return ((ay * t + by) * t + cy) * t;
 }
 
+fn blits_linear(at: u32, u: f32) -> f32 {
+  let p = at + u32(values[at + 1u]);
+  let n = u32(values[at + 2u]);
+  var hit = -1;
+  var below = -1;
+  for (var i = 0u; i < n; i++) {
+    let x = values[p + 2u * i];
+    if (x == u) { hit = i32(i); }
+    if (x < u) { below = i32(i); }
+  }
+  if (hit >= 0) { return values[p + 2u * u32(hit) + 1u]; }
+  let a = u32(min(max(below, 0), i32(n) - 2));
+  let ax = values[p + 2u * a];
+  let ay = values[p + 2u * a + 1u];
+  let bx = values[p + 2u * a + 2u];
+  let by = values[p + 2u * a + 3u];
+  if (ax == bx) { return by; }
+  return ay + (by - ay) * ((u - ax) / (bx - ax));
+}
+
 fn blits_ease(at: u32, u: f32) -> f32 {
   let kind = u32(values[at]);
   if (kind == 1u) { return blits_bezier(at, u); }
   if (kind == 2u) {
     let n = values[at + 1u];
+    let jumps = n + values[at + 3u];
     let c = clamp(u, 0.0, 1.0);
-    if (values[at + 2u] > 0.5) { return min(n, floor(c * n) + 1.0) / n; }
-    return floor(c * n) / n;
+    return min(jumps, floor(c * n) + values[at + 2u]) / jumps;
   }
+  if (kind == 3u) { return blits_linear(at, u); }
   return u;
 }
 `;

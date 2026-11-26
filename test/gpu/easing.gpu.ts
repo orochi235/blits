@@ -1,4 +1,4 @@
-import { CURVE_WIDTH, type Curve, curve, curveData } from '../../src/easing.js';
+import { type Curve, curve, curveData } from '../../src/easing.js';
 import { EASING_WGSL } from '../../src/gpu/wgsl/easing.js';
 import type { Easing } from '../../src/index.js';
 import { close, closeNear, readBack, test } from './harness.js';
@@ -25,14 +25,36 @@ const CASES: Case[] = [
       branchy: true,
     })),
   ),
+  { name: 'steps(3, none)', easing: { steps: 3, jump: 'none' }, branchy: true },
+  { name: 'steps(3, both)', easing: { steps: 3, jump: 'both' }, branchy: true },
+  { name: 'linear(0, 0.25, 1)', easing: { linear: [0, 0.25, 1] }, branchy: false },
+  {
+    name: 'linear(0, 0.5 60%, 0.25 40%, 1)',
+    easing: { linear: [0, [0.5, 0.6], [0.25, 0.4], 1] },
+    branchy: true,
+  },
+  {
+    name: 'linear(0 20%, 1 80%)',
+    easing: {
+      linear: [
+        [0, 0.2],
+        [1, 0.8],
+      ],
+    },
+    branchy: false,
+  },
 ];
 
 test('blits_ease matches the TS curves', async (device) => {
   const curves: Curve[] = CASES.map((c) => curve(c.easing));
-  const values = new Float32Array(CASES.length * CURVE_WIDTH);
-  curves.forEach((c, k) => {
-    values.set(curveData(c) as readonly number[], k * CURVE_WIDTH);
-  });
+  // A linear curve's points follow its head, so each case starts where the one before ended.
+  const starts: number[] = [];
+  const flat: number[] = [];
+  for (const c of curves) {
+    starts.push(flat.length);
+    flat.push(...(curveData(c) as readonly number[]));
+  }
+  const values = Float32Array.from(flat);
   const us = new Float32Array(US);
   const total = CASES.length * US.length;
   const code = `${
@@ -42,11 +64,12 @@ test('blits_ease matches the TS curves', async (device) => {
 @group(0) @binding(2) var<storage, read_write> outs: array<f32>;
 `
   }${EASING_WGSL}
+var<private> starts: array<u32, ${starts.length}> = array<u32, ${starts.length}>(${starts.map((s) => `${s}u`).join(', ')});
 @compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3u) {
   let i = id.x;
   if (i >= ${total}u) { return; }
   let k = i / ${US.length}u;
-  outs[i] = blits_ease(k * ${CURVE_WIDTH}u, us[i % ${US.length}u]);
+  outs[i] = blits_ease(starts[k], us[i % ${US.length}u]);
 }`;
   const mk = (bytes: number, usage: number) => device.createBuffer({ size: bytes, usage });
   const a = mk(values.byteLength, 0x80 | 0x08);

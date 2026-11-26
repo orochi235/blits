@@ -3,7 +3,8 @@ import type { Kit } from './channel.js';
 
 /**
  * How a change speeds up and slows down: a curve from 0 to 1. One of CSS's names, a cubic Bézier
- * as in CSS's `cubic-bezier()`, `steps`, or a function of your own.
+ * as in CSS's `cubic-bezier()`, `steps` as CSS's `steps()`, points joined by straight lines as
+ * CSS's `linear()`, or a function of your own.
  *
  * @category patch
  */
@@ -15,7 +16,20 @@ export type Easing =
   | 'ease-out'
   | 'ease-in-out'
   | { readonly bezier: readonly [x1: number, y1: number, x2: number, y2: number] }
-  | { readonly steps: number; readonly jump?: 'start' | 'end' };
+  | { readonly steps: number; readonly jump?: 'start' | 'end' | 'none' | 'both' }
+  | { readonly linear: readonly LinearPoint[] };
+
+/**
+ * One point of a `linear` easing, as CSS's `linear()` takes it: an output alone, placed evenly
+ * between its neighbors; an output and the input it sits at; or an output held from one input to
+ * a second. Inputs are fractions, where CSS writes percentages.
+ *
+ * @category patch
+ */
+export type LinearPoint =
+  | number
+  | readonly [output: number, at: number]
+  | readonly [output: number, from: number, to: number];
 
 /**
  * One stop of a `keys` patch.
