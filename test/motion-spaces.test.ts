@@ -1,7 +1,7 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { affine, matrix } from '../src/affine.js';
-import { kit, vec } from '../src/channels.js';
+import { kit, type Vec, vec } from '../src/channels.js';
 import { color, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
@@ -176,9 +176,9 @@ function times(a: readonly number[], b: readonly number[]): number[] {
 }
 
 describe('a motion on a quat', () => {
-  const FROM = about([0, 0, 1], 0.3);
+  const FROM = about([0, 0, 1], 0.3) as Vec<4>;
   // 170° away, and written on the far side of the sphere from FROM.
-  const TO = times(FROM, about([1, 1, 0], (170 * Math.PI) / 180)).map((x) => -x);
+  const TO = times(FROM, about([1, 1, 0], (170 * Math.PI) / 180)).map((x) => -x) as Vec<4>;
 
   it('tweens along the arc the channel lerps on, staying a unit quaternion', () => {
     const got = play(
