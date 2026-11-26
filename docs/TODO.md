@@ -121,6 +121,10 @@ Owner tags:
     descriptor object may share the first's changes.
   - The `Along` store (`src/store.ts`) may lose a delete once a later copy sets that key again, so
     an earlier copy asked afterwards rebuilds the record from the live mix.
+- **[agent] `npm run test:general` is red in `test/describe.test.ts`** (2026-11-25, on main at
+  `07de7aab`): 13 tests assert a voice's `lane` report (`why: 'new'`, on its lane), which can't hold
+  with `BLITS_LANES=off` turning lanes off for every mix. Pin `lanes: true` on those mixes, or skip the
+  lane block under the general run.
 
 ## Speed
 
