@@ -30,7 +30,25 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
 - Consumers on blits: klieg, wod, sherpa (through klieg, one deduped copy), magicsmoke, astv,
   blinken, weasel, portfolio, agnew, each pinning its own version.
 
+## Now (2026-11-27)
+
+- `main` carries unreleased engine additions under CHANGELOG "Unreleased": handle `landed`,
+  `settleBy: 'length'`, glide `edge` (`'stop'`, `{ reflect }`), a faster motion `read`, and the
+  read-ahead-across-a-jump fix. They are for weasel's animator rebuild; it can adopt them only once
+  a release (1.7.0) carries them. **Never tag that release without Mike saying "release".**
+- Next, in order, with no approval gates (Mike said so for this run): fix replay-fuzz programs 163,
+  then 140, under "transport, jumps" (`BLITS_REPLAY_SEEDS=163-163 npx vitest run replay-fuzz -t
+  "transport, jumps"` on the fleet; the two Engine entries in `docs/TODO.md` hold the shrunk calls
+  and where the 163 trace points). Then build the voice-clock remap (`docs/TODO.md`, ruled
+  2026-11-25) to the end in one session. Commit on `main` and push as each piece lands, with
+  `onto test` green first.
+- A sweep of programs 1–400 under "transport, jumps" fails only 140 and 163; widen the sweep once
+  they pass.
+
 ## Traps
+
+- **`npx vitest` hangs on this laptop** with no output (seen 2026-11-27); run tests through
+  `onto do --kind test` even for one file.
 
 - **`onto test` runs the suite only, not lint**, and release.yml lints before it publishes, so an
   agent's unformatted file stops a release. Run `npx biome check .` on a merge before calling it
