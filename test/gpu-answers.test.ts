@@ -22,8 +22,8 @@ const wave = shaderPatch<C, P>(1000, {
 const cells = (n: number): C[] => Array.from({ length: n }, (_, i) => ({ i }));
 
 /** A mix at time 0 with one voice cued by `spec`, the voice, and an `Answers` for it. */
-function setup(spec: Record<string, unknown>) {
-  const m = mix<C, P>(K, { name: 'answers' });
+function setup(spec: Record<string, unknown>, lanes?: boolean) {
+  const m = mix<C, P>(K, lanes === undefined ? { name: 'answers' } : { name: 'answers', lanes });
   m.sync(0);
   m.cue({ patch: wave, loop: true, ...spec });
   const mixer = mixerOf(m);
@@ -195,12 +195,16 @@ describe('Answers', () => {
   it("takes a laned voice's no to a subject it met rather than asking target again", () => {
     const list = cells(6);
     let calls = 0;
-    const { m, voice, answers } = setup({
-      target: (c: C) => {
-        calls++;
-        return c.i % 3 === 0;
+    // A laned voice's, so lanes stay on under `BLITS_LANES=off`.
+    const { m, voice, answers } = setup(
+      {
+        target: (c: C) => {
+          calls++;
+          return c.i % 3 === 0;
+        },
       },
-    });
+      true,
+    );
     for (const c of list) m.probe(c);
     expect(voice.unreachedBits).not.toBeNull();
     expect(calls).toBe(6);
