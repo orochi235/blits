@@ -17,6 +17,7 @@ import { isRested } from './record.js';
 import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
 import { byId, lastIndex } from './sorted.js';
+import { HELD } from './stamps.js';
 import { Store } from './store.js';
 import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, madeTo, nextStamp, record, replay } from './tape.js';
@@ -324,7 +325,8 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
         // the tape played again may have landed there already.
         const landed = !Number.isNaN(last) && readingAt(transport, last) === t;
         if (landed) u = last;
-        else if (!Number.isFinite(u) || transport.jumps) {
+        // A rate so slow that host time would land past where it can count a held step never gets there.
+        else if (!(u + HELD > u) || transport.jumps) {
           u = transport.jump(t);
           jumped = true;
         }

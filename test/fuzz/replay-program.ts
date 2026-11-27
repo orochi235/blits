@@ -4,6 +4,7 @@ import { glide, spring, tween } from '../../src/motion.js';
 import { keys, patch } from '../../src/patch.js';
 import { angle } from '../../src/rotation.js';
 import type { Patch } from '../../src/types.js';
+import { rng } from './rng.js';
 
 export interface Pose {
   x: number;
@@ -192,24 +193,6 @@ export interface Program {
   dts: number[]; // host gap before frame f (dts[0] = start time)
   ops: Op[];
   named: boolean; // staggered voices name their subjects
-}
-
-function rng(seed: number) {
-  let s = seed >>> 0 || 1;
-  const f = () => {
-    s ^= s << 13;
-    s >>>= 0;
-    s ^= s >>> 17;
-    s ^= s << 5;
-    s >>>= 0;
-    return s / 4294967296;
-  };
-  return {
-    f,
-    i: (n: number) => Math.floor(f() * n),
-    pick: <T>(a: readonly T[]): T => a[Math.floor(f() * a.length)] as T,
-    p: (x: number) => f() < x,
-  };
 }
 
 /**

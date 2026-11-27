@@ -318,9 +318,7 @@ export class Transport implements TransportApi {
     // ulp behind, under where the mix was born. With a tape it steps `u` on by `HELD` while the
     // mix clock holds, as rate 0 would, so the tape tells calls in this frame from the last one's.
     const rebased = this.rebasing && !Number.isNaN(this.last);
-    let u = timestamp - this.offset;
-    // The offset is a difference, and taking it back can land an ulp behind where host time stands.
-    if (u < this.u) u = this.u;
+    let u = this.hostAt(timestamp);
     if (rebased) {
       u = this.u;
       if (this.tape !== undefined && !this.projecting) {
@@ -658,11 +656,25 @@ export class Transport implements TransportApi {
 
   time(timestamp: number): number {
     const drive = this.drive;
-    if (drive === null) return readingAt(this, timestamp - this.offset);
+    if (drive === null) {
+      const u = this.hostAt(timestamp);
+      return u === this.u ? this.now : readingAt(this, u);
+    }
     // The host time since the last sync first: added to `wall` alone, it could vanish below an ulp.
     const t = clampTime(elapsedWith(drive.clock, drive.wall + (timestamp - this.last)));
     const floor = this.driveFloor;
     return t < floor ? floor : t;
+  }
+
+  /**
+   * Host time at the host's `timestamp`: its timestamp less the offset, never behind where host time
+   * stands, and exactly there at the last sync's own timestamp. The offset is a difference, and
+   * taking it back can land an ulp either side.
+   */
+  private hostAt(timestamp: number): number {
+    if (timestamp === this.last) return this.u;
+    const u = timestamp - this.offset;
+    return u < this.u ? this.u : u;
   }
 
   /** The earliest mix time a drive runs back to: where history reaches, held there. */

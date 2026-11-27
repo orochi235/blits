@@ -31,6 +31,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   short of the held step a jump stood on, and read the clock from before the jump.
 - A jump seek ahead that a jump the tape played again already landed jumps no further, and tapes
   no second jump.
+- A sync at the last sync's timestamp, and `time` there, read host time exactly where it stands:
+  taking the offset back could land an ulp past it as well as behind, and move the clock.
+- A seek ahead under `seek: 'play'` at a rate so slow that host time would land beyond where it
+  can count a held step (about 278 years on) jumps there, as one the rate never carries does: it
+  moved host time so far that no later sync could move it on.
 - A drive that ends while a ramp is under way on the mix's own clock leaves the rate it ended at:
   it kept the ramp where the ramp's rate then matched, so a ramp to 0 began under a later rate.
 - A seek ahead that lands where the recorded run never went, with calls still ahead on the tape,

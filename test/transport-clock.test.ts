@@ -151,6 +151,17 @@ describe('a seek, below an ulp of host time', () => {
     expect(t.time(16.7)).toBe(t.now);
   });
 
+  it('jumps a seek ahead at a rate too slow for host time to count its way there', () => {
+    const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape } });
+    mix(kit<{ x: number }>({ x: sum() }), { transport: t, name: 'slow' });
+    t.sync(0);
+    t.rate = 1e-300;
+    t.seek(100);
+    t.rate = 1;
+    t.sync(16);
+    expect(t.now).toBe(116);
+  });
+
   it('predicts no time below where running back stops', () => {
     const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape } });
     mix(kit<{ x: number }>({ x: sum() }), { transport: t, name: 'back' });
