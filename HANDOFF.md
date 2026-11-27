@@ -40,9 +40,16 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
   mix time rate 0 held over a later frame's sync lands at the end of the hold (schema, Seeking),
   which `alone()` in `test/fuzz/replay.ts` now sees through each frame's `synced` time. Programs
   1–600 pass (2026-11-27).
-- The voice-clock remap (`docs/TODO.md`) is being built on branch `clock-remap`, worktree
-  `.claude/worktrees/clock-remap`, by a subagent of weasel-7a's session; `animator-rest` is theirs too.
-  Leave both to them unless they hand over.
+- The voice-clock remap (`remap` on a voice or owner), `settleOn: 'speed'` and `landsIn` merged to
+  `main` 2026-11-27 (unreleased). An owner's remap runs only forward; reversing or scrubbing is a
+  voice's remap or the owner's `rate`. weasel waits on a release carrying these (branches
+  `animator-rest-from-blits`, `clock-remap`, `coast-on-glide` there).
+- Next: replay fuzz program 98 under "transport", then the four remap-mode programs (242, 243,
+  259, 344): both Engine entries in `docs/TODO.md`. A sweep of 1–300 across every mode fails only
+  those. `.playwright-mcp/r98.ts` bundles with esbuild and runs one program locally in under a
+  second (`npx esbuild .playwright-mcp/r98.ts --bundle --platform=node --format=esm
+  --outfile=.playwright-mcp/r98.mjs && node .playwright-mcp/r98.mjs 98`), sidestepping vitest.
+- Branches `clock-remap` and `animator-rest` are merged; their worktrees are weasel-7a's to remove.
 
 ## Traps
 
