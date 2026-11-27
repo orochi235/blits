@@ -16,24 +16,6 @@ Owner tags:
 
 ## Engine
 
-- **[agent] A read ahead counts a call made at a frame's own time after it, under a mix at rate 0
-  and a jump** (2026-11-27, replay fuzz "transport, jumps", program 140, shrunk to `mrate` 0 on
-  mix 1 at frame 24, then a cue on mix 1 and a 2,000 ms jump at frame 25): a read ahead to frame
-  24's time (1384) replays the cue stamped at 1384 and shows its voice, where frame 24 showed none.
-  Without the jump, or without the rate 0, the same cue is not counted, so the read ahead tells a
-  call after a frame from one before it some way the jump or the rate breaks; not found yet. Likely
-  one cause with the next entry. Closes when program 140 passes.
-- **[agent] A blend cued while the rate is 0 shows sooner on replay than in play** (2026-11-26,
-  replay fuzz "transport, jumps", program 163, shrunk to `owns` with `start: 120`, rate 0, a jump,
-  `blend` owned by it): play shows the blend two frames after its cue, and a seek back and play on
-  shows it at the next frame. Same on the base commit without the jump, where the fuzz never checks
-  it, since every frame at rate 0 shares one mix time. Closes when program 163 passes.
-  Traced 2026-11-27 (a `DBG` log in `repin`, `src/place.ts`): the owner's start is pinned to host
-  1120. In play the transport stands at rate 0 from frame 2, so `mixAt` reads Infinity until a
-  sync reaches host 1120 (mix.u 1144) and then 1282. After `seekTime` to frame 2 (mix 1032), the
-  replay repins it to 1120 at mix.u 1048 and to 1369.999 later: the replay's pace treats the
-  pinned host time as reached, or under a moving rate, where play's clock stood still. Look first
-  at how a seek back's replay rebuilds the pace around the taped rate 0 and the jump.
 - **[maintainer] A seek that re-evaluates rather than restores** (2026-11-26): history under a mix
   grows with the run, so seeking anywhere in an endless or looping run's past needs unbounded
   records (or a `store`, which bounds memory but not the store). A mix whose voices keep no step

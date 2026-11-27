@@ -9,6 +9,8 @@ export { type GenOpts, type Mode, type Program, program } from './replay-program
 export interface Rec {
   host: number[];
   now: number[];
+  /** Each frame's mix time once it synced, before its calls: a jump among them moves `now` on. */
+  synced: number[];
   seq: number[];
   poses: number[][]; // per frame, flat numbers over mixes x subjects
   events: string[];
@@ -68,11 +70,13 @@ export function hostTimes(p: Program): number[] {
 }
 const rebasedAt = (p: Program, f: number) => p.ops.some((o) => o.k === 'rebase' && o.f === f);
 /**
- * Whether frame `f`'s mix time names it alone. A rebased sync holds the clock, so the frame after
- * one stands at its time too, though a jump in it records the frame at the jump's.
+ * Whether frame `f`'s mix time names it alone. A later frame whose sync stood at that time, held by
+ * rate 0 or a rebase before a jump moved it on, holds it too, and a seek there lands at its end.
  */
-const alone = (p: Program, r: Rec, f: number) =>
-  r.now.filter((x) => x === r.now[f]).length === 1 && !rebasedAt(p, f + 1);
+const alone = (r: Rec, f: number) => {
+  const t = r.now[f];
+  return r.now.filter((x) => x === t).length === 1 && !r.synced.some((x, g) => g > f && x === t);
+};
 
 function sys(e: Env) {
   if (e.t) {
@@ -130,10 +134,19 @@ export function play(p: Program, mode: Mode, upto = p.dts.length): { e: Env; rec
   vecVoices.set(e, vs);
   const S = sys(e);
   const host = hostTimes(p);
-  const rec: Rec = { host: [], now: [], seq: [], poses: [], events: [], errs: e.errs };
+  const rec: Rec = {
+    host: [],
+    now: [],
+    synced: [],
+    seq: [],
+    poses: [],
+    events: [],
+    errs: e.errs,
+  };
   for (let f = 0; f < upto; f++) {
     if (rebasedAt(p, f) && f > 0) S.rebase();
     S.sync(host[f] as number);
+    rec.synced.push(S.now);
     for (const o of p.ops) if (o.f === f) apply(e, o);
     rec.host.push(host[f] as number);
     rec.now.push(S.now);
@@ -223,7 +236,7 @@ async function runIn(
   const target = c.kind === 'seekTime' ? (r.now[k] as number) : { frame: r.seq[k] as number };
   if (c.kind === 'seekTime') {
     // only where that mix time names one frame
-    if (!alone(p, r, k)) return null;
+    if (!alone(r, k)) return null;
   }
   try {
     if (mode.store) await S.prepare(r.now[k] as number);
@@ -243,7 +256,7 @@ async function runIn(
       if (!mono) break;
       // A read ahead makes none of the driver's calls (schema, Drivers).
       if (p.ops.some((o) => o.k === 'call' && o.f > k && o.f <= f)) break;
-      if (!alone(p, r, f)) continue;
+      if (!alone(r, f)) continue;
       let got: number[];
       try {
         if (mode.store) await S.prepare(r.now[f] as number);

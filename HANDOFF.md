@@ -36,14 +36,13 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
   `settleBy: 'length'`, glide `edge` (`'stop'`, `{ reflect }`), a faster motion `read`, and the
   read-ahead-across-a-jump fix. They are for weasel's animator rebuild; it can adopt them only once
   a release (1.7.0) carries them. **Never tag that release without Mike saying "release".**
-- Next, in order, with no approval gates (Mike said so for this run): fix replay-fuzz programs 163,
-  then 140, under "transport, jumps" (`BLITS_REPLAY_SEEDS=163-163 npx vitest run replay-fuzz -t
-  "transport, jumps"` on the fleet; the two Engine entries in `docs/TODO.md` hold the shrunk calls
-  and where the 163 trace points). Then build the voice-clock remap (`docs/TODO.md`, ruled
-  2026-11-25) to the end in one session. Commit on `main` and push as each piece lands, with
-  `onto test` green first.
-- A sweep of programs 1–400 under "transport, jumps" fails only 140 and 163; widen the sweep once
-  they pass.
+- Replay fuzz programs 140 and 163 under "transport, jumps" were the harness's: a seek or read to a
+  mix time rate 0 held over a later frame's sync lands at the end of the hold (schema, Seeking),
+  which `alone()` in `test/fuzz/replay.ts` now sees through each frame's `synced` time. Programs
+  1–600 pass (2026-11-27).
+- The voice-clock remap (`docs/TODO.md`) is being built on branch `clock-remap`, worktree
+  `.claude/worktrees/clock-remap`, by a subagent of weasel-7a's session; `animator-rest` is theirs too.
+  Leave both to them unless they hand over.
 
 ## Traps
 
