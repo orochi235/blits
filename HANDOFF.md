@@ -18,8 +18,8 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git`, public. Released: engine and blits-panel 1.6.0
-  (in lockstep), blits-rapier 0.7.9, blits-quarks 0.17.9, blits-tone 0.12.10.
+- `main` at `git@github.com:orochi235/blits.git`, public. Released: engine and blits-panel 1.7.0
+  (in lockstep), blits-rapier 0.7.10, blits-quarks 0.17.10, blits-tone 0.12.11.
 - `npm run release -- <version>` (`scripts/release.mjs`) releases the engine, then the panel at the
   same version and each companion, one tag at a time, waiting on each run; a rerun resumes from the
   first missing tag. release.yml runs the check once and sets `BLITS_CHECKED` so `prepublishOnly`
@@ -32,12 +32,9 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
 
 ## Now (2026-11-27)
 
-- `main` carries unreleased engine work under CHANGELOG "Unreleased": the voice-clock `remap` (voice
-  and owner), `landed`, `landsIn`, `settleBy: 'length'`, `settleOn: 'speed'`, glide `edge`, a
-  faster motion `read`, and five seek-replay fixes. weasel's animator rebuild waits on a release
-  carrying them (1.7.0; branches `animator-rest-from-blits`, `clock-remap`, `coast-on-glide`
-  there). Nothing else in `docs/TODO.md` blocks it. **Never tag that release without Mike saying
-  "release".**
+- 1.7.0 is out, carrying what weasel's animator rebuild waited on (branches
+  `animator-rest-from-blits`, `clock-remap`, `coast-on-glide` there; weasel-7a moves the pins).
+  **Never tag a release without Mike saying "release".**
 - Replay fuzz 1–600 across every mode fails only program 98 under the transport, the maintainer
   entry "A read ahead cannot see a resting frame it skips" (2026-11-27).
 - `.playwright-mcp/find.ts` finds and shrinks one program's first failing check outside vitest
