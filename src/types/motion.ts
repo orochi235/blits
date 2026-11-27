@@ -75,6 +75,15 @@ export interface MotionOptions<I, V extends Value> {
    * as a Euclidean rest threshold does. On one axis the two are the same.
    */
   settleBy?: 'axis' | 'length';
+  /**
+   * What a coast (a spring with no stiffness, or a glide with no bounds) must do to land. `'reach'`
+   * (the default) lands it within `settle` of where friction would stop it, and that slow;
+   * `'speed'` lands it once its speed is within `settle`, where it stands then, which it heads for
+   * from release, so the curve stops there with no jump. A momentum scroll that ends once too slow
+   * to see is the case for it. Anything else with `'speed'` throws: a spring with stiffness, which
+   * is slowest at the far end of each swing, or a glide with bounds.
+   */
+  settleOn?: 'reach' | 'speed';
 }
 
 /**

@@ -28,6 +28,11 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `settleBy: 'length'` on a spring or a glide holds the distance left and the speed each as one
   length over the axes, as a Euclidean rest threshold does; `'axis'`, the default, holds each axis
   on its own.
+- `settleOn: 'speed'` on a coast (a spring with no stiffness, or a glide with no bounds) lands it
+  once its speed is within `settle`, where it stands then, rather than once it is also within
+  `settle` of where friction would stop it. The curve heads for that point from release, so it
+  stops with no jump; a coast with a long time constant lands seconds sooner. The GPU leaves such a
+  coast to the CPU, and a channel whose values lie in a space refuses it.
 - `edge` on a glide with `bounds`: `'stop'` stops a coast on the edge it reaches, and
   `{ reflect: r }` turns it back with `r` of its speed, off the far edge too, under the same
   friction. `'spring'`, the default, springs it back as before.

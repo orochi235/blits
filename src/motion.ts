@@ -3,11 +3,13 @@ import {
   backs,
   COAST,
   CRITICAL,
+  coastRest,
   DRIFT,
   EASED,
   OVER,
   REFLECT,
   reflected,
+  SPEED,
   STOP,
   UNDER,
   walked,
@@ -202,10 +204,7 @@ class SpringShape<I, V extends Value> extends StockShape<I, V> implements Shape<
   /** With no stiffness nothing pulls toward the target: it coasts to where damping stops it. */
   override aim(x: number[], v: number[], was: number[] | null, s: I, put: boolean): number[] {
     const form = this.law[0];
-    if (form === COAST) {
-      const tau = this.law[2] as number;
-      return x.map((xi, i) => xi + (v[i] as number) * tau);
-    }
+    if (form === COAST) return coastRest(this.law, x, v);
     if (form === DRIFT) return x.slice();
     return super.aim(x, v, was, s, put);
   }
@@ -232,8 +231,8 @@ class GlideShape<I, V extends Value> extends StockShape<I, V> implements Shape<I
     return this.motion;
   }
   override aim(x: number[], v: number[], _was: number[] | null, s: I, put: boolean): number[] {
+    if (this.limits === undefined) return coastRest(this.law, x, v);
     const rest = x.map((xi, i) => xi + (v[i] as number) * this.tau);
-    if (this.limits === undefined) return rest;
     const [min, max] = this.box(x, s);
     const reflect = this.law[0] === REFLECT;
     return rest.map((r, i) => {
@@ -298,6 +297,15 @@ function edgeOf(edge: GlideEdge | undefined): 'spring' | 'stop' | { readonly ref
   return r === 0 ? 'stop' : { reflect: r };
 }
 
+/** Whether `settleOn` asks a coast to land on its speed alone; `coast` says whether it is one. */
+function slowing(on: 'reach' | 'speed' | undefined, coast: boolean, what: string): boolean {
+  if (on !== undefined && on !== 'reach' && on !== 'speed')
+    throw new RangeError(`blits: settleOn is 'reach' or 'speed', not ${String(on)}`);
+  if (on !== 'speed') return false;
+  if (!coast) throw new RangeError(`blits: settleOn: 'speed' is for a coast, and ${what}`);
+  return true;
+}
+
 /** A law's settle: negative where it measures a length over the axes (`closed`, `Motions.moving`). */
 function settleLaw(settle: number, by: 'axis' | 'length' | undefined): number {
   if (!(settle >= 0 && settle < Infinity))
@@ -358,7 +366,8 @@ export function spring<I, O, V extends Value = number>(
   const w0 = Math.sqrt(k / m);
   const zeta = c / (2 * Math.sqrt(k * m));
   let law: number[];
-  if (k === 0) law = c === 0 ? [DRIFT, by, 0, 0, 0] : [COAST, by, m / c, 0, 0];
+  const slow = slowing(opts.settleOn, k === 0, 'a spring with stiffness pulls toward its target');
+  if (k === 0) law = c === 0 ? [DRIFT, by, 0, 0, 0] : [COAST, by, m / c, slow ? SPEED : 0, 0];
   else if (zeta < 1) law = [UNDER, by, zeta, w0, w0 * Math.sqrt(1 - zeta * zeta)];
   else if (zeta === 1) law = [CRITICAL, by, 0, w0, 0];
   else {
@@ -372,6 +381,7 @@ export function spring<I, O, V extends Value = number>(
     mass: m,
     settle,
     ...(opts.settleBy === 'length' && { settleBy: 'length' }),
+    ...(slow && { settleOn: 'speed' }),
   };
   return new SpringPatch<I, O, V>(
     writes,
@@ -405,6 +415,7 @@ export function glide<I, O, V extends Value = number>(
   const settle = opts.settle ?? 1e-4;
   const by = settleLaw(settle, opts.settleBy);
   const bounded = opts.bounds !== undefined;
+  const slow = slowing(opts.settleOn, !bounded, 'its bounds spring it back');
   const length = opts.settleBy === 'length' && { settleBy: 'length' as const };
   const edge = edgeOf(opts.edge);
   const law =
@@ -414,7 +425,7 @@ export function glide<I, O, V extends Value = number>(
         ? [BOUND, by, tau, Math.sqrt(k), STOP]
         : [REFLECT, by, tau, Math.sqrt(k), edge.reflect];
   const shape = new GlideShape(
-    bounded ? law : [COAST, by, tau, 0, 0],
+    bounded ? law : [COAST, by, tau, slow ? SPEED : 0, 0],
     bounded
       ? {
           kind: 'glide',
@@ -424,7 +435,7 @@ export function glide<I, O, V extends Value = number>(
           ...(edge !== 'spring' && { edge }),
           stiffness: k,
         }
-      : { kind: 'glide', ms, settle, ...length },
+      : { kind: 'glide', ms, settle, ...length, ...(slow && { settleOn: 'speed' as const }) },
     opts,
     tau,
   );

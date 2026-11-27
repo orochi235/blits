@@ -1,4 +1,4 @@
-import { BOUND, EASED, REFLECT } from '../../closed.js';
+import { BOUND, COAST, EASED, REFLECT, SPEED } from '../../closed.js';
 import { curveData } from '../../easing.js';
 import { motionOf } from '../../motion.js';
 import { SECOND } from '../anchors.js';
@@ -57,6 +57,8 @@ export function motionPack(patch: object, channels: ChannelLookup): Packed | und
   const law = motions.law();
   const form = law[0] as number;
   if (form === REFLECT) return { why: 'its bounds reflect a coast, which the GPU does not' };
+  if (form === COAST && law[3] === SPEED)
+    return { why: "it coasts to a stop once slow (settleOn: 'speed'), which the GPU does not" };
   if (!FORMS.has(form)) return { why: `the GPU has no WGSL for its law ${form}` };
   if (form === BOUND && axes > BOUND_AXES)
     return {

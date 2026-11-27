@@ -140,6 +140,8 @@ export interface SpringSpec {
   readonly settle: number;
   /** Present only where `settle` measures a length over the axes. */
   readonly settleBy?: 'length';
+  /** Present only on a coast that lands once slow, where it stands then. */
+  readonly settleOn?: 'speed';
 }
 
 /**
@@ -154,6 +156,8 @@ export interface GlideSpec {
   readonly settle: number;
   /** Present only where `settle` measures a length over the axes. */
   readonly settleBy?: 'length';
+  /** Present only on a glide with no bounds that lands once slow, where it stands then. */
+  readonly settleOn?: 'speed';
   /** What its bounds' edges do, where it has bounds and they don't spring back. */
   readonly edge?: 'stop' | { readonly reflect: number };
   /** The spring back's, per second squared; only on a glide with bounds. */

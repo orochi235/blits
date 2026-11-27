@@ -20,6 +20,30 @@ export const REFLECT = 7;
 /** A bounded glide's law `k3` where an edge stops a coast that crosses it; 0 springs it back. */
 export const STOP = 1;
 
+/** A coast's law `k2` where it lands once slow, where it stands then (`settleOn: 'speed'`). */
+export const SPEED = 1;
+
+/**
+ * Where a coast released at `x` moving at `v` comes to rest under `law`: `v·τ` on, or with
+ * `settleOn: 'speed'` short of that by `τ·settle` along its speed, where it has slowed to settle.
+ */
+export function coastRest(
+  law: readonly number[],
+  x: readonly number[],
+  v: readonly number[],
+): number[] {
+  const tau = law[2] as number;
+  if (law[3] !== SPEED) return x.map((xi, i) => xi + (v[i] as number) * tau);
+  const by = law[1] as number;
+  const settle = by < 0 ? -by : by;
+  const speed = by < 0 ? Math.hypot(...v) : 0;
+  return x.map((xi, i) => {
+    const vi = v[i] as number;
+    const s = by < 0 ? speed : Math.abs(vi);
+    return s <= settle ? xi : xi + vi * tau * (1 - settle / s);
+  });
+}
+
 /** The most edges a reflecting coast meets; at the last it stops, as its rest does. */
 const BOUNCES = 256;
 
@@ -300,6 +324,8 @@ export function closed(
   const by = law[1] as number;
   const length = by < 0;
   const settle = length ? -by : by;
+  if (law[0] === COAST && law[3] === SPEED)
+    return coastSlowing(law[2] as number, length, settle, n, v0, v, to, g, xo, vo, dt);
   let still = settle > 0;
   let far = 0;
   let fast = 0;
@@ -325,5 +351,47 @@ export function closed(
       xo[i] = to[g + i] as number;
       vo[i] = 0;
     }
+  return still;
+}
+
+/**
+ * A coast under `settleOn: 'speed'`, `dt` s after release, into `xo` and `vo`: its speed falls as
+ * e^(−t/τ) and it stops where that reaches `settle`, which is where it heads (`coastRest`). Each
+ * axis stops on its own, or with `length` all at once, when the speed as one length does.
+ */
+function coastSlowing(
+  tau: number,
+  length: boolean,
+  settle: number,
+  n: number,
+  v0: ArrayLike<number>,
+  v: number,
+  to: ArrayLike<number>,
+  g: number,
+  xo: Float64Array,
+  vo: Float64Array,
+  dt: number,
+): boolean {
+  const e = Math.exp(-dt / tau);
+  let speed = 0;
+  if (length) {
+    for (let i = 0; i < n; i++) speed += (v0[v + i] as number) ** 2;
+    speed = Math.sqrt(speed);
+  }
+  let still = true;
+  for (let i = 0; i < n; i++) {
+    const vi = v0[v + i] as number;
+    const s = length ? speed : Math.abs(vi);
+    const goal = to[g + i] as number;
+    if (s * e <= settle) {
+      xo[i] = goal;
+      vo[i] = 0;
+    } else {
+      // From where it stops, back along the speed it still has above settle.
+      xo[i] = goal - vi * tau * (e - settle / s);
+      vo[i] = vi * e;
+      still = false;
+    }
+  }
   return still;
 }

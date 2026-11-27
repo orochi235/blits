@@ -1,5 +1,5 @@
 import { applied, change, commit, cut, dueTo, insert, peek, queue, rewind } from './changes.js';
-import { BOUND, COAST, closed, DRIFT, REFLECT } from './closed.js';
+import { BOUND, COAST, closed, DRIFT, REFLECT, SPEED } from './closed.js';
 import type { Curve } from './easing.js';
 import {
   made,
@@ -169,6 +169,10 @@ export class Motions<I> {
     if (space !== null && (form === BOUND || form === REFLECT))
       throw new Error(
         `blits: channel ${channel} ${space.is}, and a glide's bounds are a box on its raw numbers; glide it without bounds`,
+      );
+    if (space !== null && form === COAST && this.shape.law[3] === SPEED)
+      throw new Error(
+        `blits: channel ${channel} ${space.is}, and settleOn: 'speed' stops a coast on its raw numbers; coast it with the default settleOn`,
       );
     if (space !== null && this.n >= 0 && this.n !== space.axes) throw notIn(channel, space);
     const every = this.shape.scalarEvery();
