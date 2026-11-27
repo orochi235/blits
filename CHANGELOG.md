@@ -22,6 +22,17 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   time without the tape knowing: a call made past a jump played at about where the seek back
   landed, and a jump seek short of the calls ahead shifted every one by the jump.
 - A seek back and playing on jumps where the host jumped: a jump at the end of the tape is taped.
+- A seek on a transport with no history and no mix moves host time no further: it stepped it on
+  2⁻¹⁰ ms, which swallowed a later sync's host time finer than that.
+- While a mix runs by a drive, `time` reads the last sync's own timestamp as `now`, where a host
+  time finer than an ulp could read a step behind it, and predicts nothing below where running
+  back stops.
+- A sync never takes host time back: one at the last sync's timestamp could land an ulp behind it,
+  short of the held step a jump stood on, and read the clock from before the jump.
+- A jump seek ahead that a jump the tape played again already landed jumps no further, and tapes
+  no second jump.
+- A drive that ends while a ramp is under way on the mix's own clock leaves the rate it ended at:
+  it kept the ramp where the ramp's rate then matched, so a ramp to 0 began under a later rate.
 - A seek ahead that lands where the recorded run never went, with calls still ahead on the tape,
   plays on by mix time at the rate the host gave it until it has made them, as a rate write there
   does.

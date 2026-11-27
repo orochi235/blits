@@ -319,6 +319,8 @@ export class Transport implements TransportApi {
     // mix clock holds, as rate 0 would, so the tape tells calls in this frame from the last one's.
     const rebased = this.rebasing && !Number.isNaN(this.last);
     let u = timestamp - this.offset;
+    // The offset is a difference, and taking it back can land an ulp behind where host time stands.
+    if (u < this.u) u = this.u;
     if (rebased) {
       u = this.u;
       if (this.tape !== undefined && !this.projecting) {
@@ -427,8 +429,7 @@ export class Transport implements TransportApi {
     this.woken = false;
     const clock = drive.clock;
     let t = clampTime(elapsedWith(clock, drive.wall));
-    const first = this.pager === null ? (this.frames.first?.at ?? this.born) : this.born;
-    const floor = Math.max(this.born, this.floor, first);
+    const floor = this.driveFloor;
     if (t < floor) {
       t = floor;
       drive.clock = { anchorNow: drive.wall, anchorElapsed: floor, rate: 0, ramp: null };
@@ -460,7 +461,9 @@ export class Transport implements TransportApi {
       this.drive = null;
       // Its syncs moved the clock by seeks, if at all, so the host reads on from where it stands now.
       this.offset = this.last - this.u;
-      if (rate !== this.pacedRate) this.ramp(rate, 0);
+      // A ramp the mix's own clock has under way would carry on from here, so it is replaced too.
+      if (rate !== this.pacedRate || (this.pace?.rampAt(this.u) ?? null) !== null)
+        this.ramp(rate, 0);
     }
     for (const m of this.members) {
       const bookers = m.bookers;
@@ -474,7 +477,8 @@ export class Transport implements TransportApi {
    * the mix to jumps this way.
    */
   jump(t: number): number {
-    const u = this.u + HELD;
+    // With no tape there are no calls to tell apart, and a held step would swallow a host time finer.
+    const u = this.tape === undefined ? this.u : this.u + HELD;
     this.paced().hold(this.u, u, this.seq + 1, t);
     return u;
   }
@@ -654,9 +658,17 @@ export class Transport implements TransportApi {
 
   time(timestamp: number): number {
     const drive = this.drive;
-    if (drive !== null)
-      return clampTime(elapsedWith(drive.clock, drive.wall + timestamp - this.last));
-    return readingAt(this, timestamp - this.offset);
+    if (drive === null) return readingAt(this, timestamp - this.offset);
+    // The host time since the last sync first: added to `wall` alone, it could vanish below an ulp.
+    const t = clampTime(elapsedWith(drive.clock, drive.wall + (timestamp - this.last)));
+    const floor = this.driveFloor;
+    return t < floor ? floor : t;
+  }
+
+  /** The earliest mix time a drive runs back to: where history reaches, held there. */
+  private get driveFloor(): number {
+    const first = this.pager === null ? (this.frames.first?.at ?? this.born) : this.born;
+    return Math.max(this.born, this.floor, first);
   }
 
   when(time: number): number {

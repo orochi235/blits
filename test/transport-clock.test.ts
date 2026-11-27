@@ -115,6 +115,51 @@ describe('reading a ramp under way', () => {
   });
 });
 
+describe('a seek, below an ulp of host time', () => {
+  it('leaves no trace in later syncs on a bare clock', () => {
+    const run = (seeks: boolean) => {
+      const t = transport();
+      t.sync(0);
+      t.rebase();
+      t.sync(0);
+      if (seeks) {
+        t.seek(5e-324);
+        t.seek(0);
+      }
+      t.ramp(1, 0);
+      t.rebase();
+      t.sync(0);
+      t.sync(5e-324);
+      return t.now;
+    };
+    expect(run(true)).toBe(run(false));
+  });
+
+  it('leaves time at the last sync equal to now once a drive ends', () => {
+    const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape }, seek: 'jump' });
+    mix(kit<{ x: number }>({ x: sum() }), { transport: t, name: 'driven' });
+    t.sync(0);
+    t.rebase();
+    t.ramp(-5e-324, 0);
+    t.seek(100);
+    t.sync(0);
+    t.sync(5e-324);
+    t.rebase();
+    t.seek(0);
+    t.ramp(1, 0);
+    t.sync(16.7);
+    expect(t.time(16.7)).toBe(t.now);
+  });
+
+  it('predicts no time below where running back stops', () => {
+    const t = transport({ history: { ms: Number.POSITIVE_INFINITY, tape } });
+    mix(kit<{ x: number }>({ x: sum() }), { transport: t, name: 'back' });
+    for (let at = 0; at <= 100; at += 20) t.sync(at);
+    t.rate = -1;
+    expect(t.time(1000)).toBe(0);
+  });
+});
+
 describe('the earliest time a seek reaches', () => {
   it('is where a seek lands and a seek before it throws, under history in memory', () => {
     const t = transport({ history: { ms: 100, tape } });

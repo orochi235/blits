@@ -99,3 +99,34 @@ describe('a jump seek ahead after a seek back, with no earlier jump', () => {
     expect(named(t)).toEqual(['mid']);
   });
 });
+
+describe('a drive that ends on a jump the tape played again', () => {
+  it('stands still at a sync with the same timestamp', () => {
+    const { t } = made();
+    t.ramp(1, 0);
+    t.seek(10);
+    t.seek(0.00042389122694430593);
+    t.ramp(1, 0);
+    t.seek(0.003);
+    t.seek(10);
+    t.sync(1000);
+    expect(t.now).toBe(10);
+    t.sync(1000);
+    expect(t.now).toBe(10);
+  });
+});
+
+describe('a drive that ends while a taped ramp is under way', () => {
+  it('leaves the rate the drive ended at, with no ramp', () => {
+    const { t } = made();
+    t.ramp(1, 0);
+    t.ramp(0, 333.3);
+    t.ramp(-1, 0);
+    t.ramp(1, 0);
+    t.sync(0);
+    expect(t.ramping).toBeNull();
+    expect(t.rate).toBe(1);
+    t.sync(1e7);
+    expect(t.now).toBe(1e7);
+  });
+});

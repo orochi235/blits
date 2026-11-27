@@ -320,8 +320,11 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
       if (!Number.isNaN(last) && last > transport.u) transport.u = last;
       const next = here ? undefined : nextStamp(transport);
       if (next === undefined) {
-        // At the end of the tape: a jump is the host's, taped so a replay jumps where it did.
-        if (!Number.isFinite(u) || transport.jumps) {
+        // At the end of the tape: a jump is the host's, taped so a replay jumps where it did. One
+        // the tape played again may have landed there already.
+        const landed = !Number.isNaN(last) && readingAt(transport, last) === t;
+        if (landed) u = last;
+        else if (!Number.isFinite(u) || transport.jumps) {
           u = transport.jump(t);
           jumped = true;
         }
