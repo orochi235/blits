@@ -23,6 +23,10 @@ Owner tags:
   without history, reaching back only to the last host call. Needs a ruling on whether blits takes
   a seek with that limit. No consumer waits on it: weasel's clock bounds its history with a finite
   `ms` instead (2026-11-26). Closes on the ruling, or when such a seek ships.
+- **[agent] Replay fuzz program 98 under "transport" reads ahead short of play** (2026-11-27,
+  `BLITS_REPLAY_SEEDS=98-98 -t "program 98, transport"`, both lanes settings, with and without a
+  store; fails the same on `8d69c0be`, before the remap): a seek to frame 2, then a read ahead to
+  frame 29, shows m0.s1.g 0.6002 where play showed 0.6214. Not shrunk yet. Closes when 98 passes.
 - **[agent] Four replay fuzz programs of the remap modes fail with no remap in them** (2026-11-27,
   `BLITS_REPLAY_SEEDS=1-400 -t remaps`; the remap modes draw other programs than the plain ones). Each
   shrinks to plain calls, and 243 and 259 fail the same with every remapped voice swapped for an
