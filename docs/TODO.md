@@ -16,6 +16,28 @@ Owner tags:
 
 ## Engine
 
+- **[agent] A read ahead across a jump places a pending host-time start where play did not**
+  (2026-11-26, replay fuzz "transport, jumps", programs 128 and 200; 54, 140, 148 and 171 read
+  ahead across a jump wrongly too, not yet put down to one cause): a voice or owner cued with a
+  `start` the host clock has not reached starts, in play, where that host time falls after a jump.
+  A read ahead from before the jump starts it where host time fell before it, so it shows the voice
+  early (program 200: x 41.16 where play showed 0). The base commit gives the same wrong answers,
+  so this predates the tape keeping mix times. Closes when those programs pass.
+- **[agent] A blend cued while the rate is 0 shows sooner on replay than in play** (2026-11-26,
+  replay fuzz "transport, jumps", program 163, shrunk to `owns` with `start: 120`, rate 0, a jump,
+  `blend` owned by it): play shows the blend two frames after its cue, and a seek back and play on
+  shows it at the next frame. Same on the base commit without the jump, where the fuzz never checks
+  it, since every frame at rate 0 shares one mix time. Closes when program 163 passes.
+- **[agent] A cheap read that a motion voice has landed** (2026-11-26, for weasel's animator
+  rebuild, whose springs now read `handle.read` per frame to test rest): `mix.atRest` is channel
+  rest, so a spring landed on 1 in a `sum` kit reads false, and `fade({ at: 'rest' })` takes the
+  voice off its lane. Wanted: a synchronous `Handle` read, true once every subject it reaches has
+  landed (`still` / `motions.landed`), with no fade and no lane eviction. Closes when weasel's
+  animator drops its own rest test.
+- **[agent] `settle` measured as a length over the axes** (2026-11-26, for weasel's animator, whose
+  `restThreshold` is Euclidean over distance and speed): blits tests each axis on its own
+  (`closed.ts`), so a multi-axis spring maps across only as `settle = t / sqrt(n)`, resting a few
+  frames later. Wanted: an option to test the length. Closes when `restThreshold` maps 1:1.
 - **[maintainer] A seek that re-evaluates rather than restores** (2026-11-26): history under a mix
   grows with the run, so seeking anywhere in an endless or looping run's past needs unbounded
   records (or a `store`, which bounds memory but not the store). A mix whose voices keep no step
@@ -23,6 +45,17 @@ Owner tags:
   without history, reaching back only to the last host call. Needs a ruling on whether blits takes
   a seek with that limit. No consumer waits on it: weasel's clock bounds its history with a finite
   `ms` instead (2026-11-26). Closes on the ruling, or when such a seek ships.
+- **[agent] `glide` edges that stop or reflect** (2026-11-26, for weasel's viewport coast,
+  `useDecayLoop.ts`, which keeps its own friction loop until this lands): `bounds` today springs
+  back from past an edge. weasel also needs an edge that clamps and drops that axis's velocity, and
+  one that reflects with a restitution (1 bounces, 0.5 is weasel's 'spring'), still closed form.
+  Shape is open, e.g. `edge: 'spring' | 'stop' | { reflect: number }`. Closes when glide takes
+  both and weasel's coast runs on it with no integrator of its own.
+- **[agent] Check spring frame cost on blits' own bench** (2026-11-26, from weasel's PERF.md: 10,000
+  springs cost 5.3 ms a frame through animator against 0.82 ms as one spring voice each; a 1,000-spring
+  profile put about a third of the frame in `cuedById`, `motions.read` and `stretch.numbers`, read
+  from self times). Run a spring bench on the fleet; if those three show hot per voice there, fix
+  them, and if not, close this with the numbers.
 - **[agent] A voice's clock run through a remap** (2026-11-25, for Lottie precomp time remap and named ranges
   in weasel). Ruled 2026-11-25: one primitive, a remap on a voice or owner's clock, with a linear window
   (play `[a, b]` of its source) as the plain case and a curve as the general one; with `loop` and `rate` it

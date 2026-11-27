@@ -13,7 +13,9 @@ export interface TransportOptions {
    * How a seek ahead moves the clock. `'play'` plays the mixes there under the rate, running out
    * any ramp on the way, as a sync to there would; `'jump'` moves there at once, the rate and any
    * ramp standing as they were, for a transport kept as a clock. Recorded calls on the way are
-   * made either way. Default `'play'`.
+   * made either way. With calls still ahead on the tape, after a seek back, one that lands where
+   * the recorded run never went plays on by mix time until it has made them, as a rate write there
+   * does. Default `'play'`.
    */
   seek?: 'play' | 'jump';
 }

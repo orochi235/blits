@@ -6,6 +6,7 @@ import { apart, bandsAt, controlsAt, copyHeld, copyHeldInto, restedBy, unread } 
 import { laneHost } from './hosts.js';
 import { leapBack } from './leaps.js';
 import { Leavings } from './leavings.js';
+import { readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { move, nextFrame } from './move.js';
@@ -18,7 +19,7 @@ import { recount } from './roster.js';
 import { byId, lastIndex } from './sorted.js';
 import { Store } from './store.js';
 import type { Snap, Subject } from './subject.js';
-import { hostAhead, hostAt, replay } from './tape.js';
+import { hostAhead, hostAt, madeTo, nextStamp, record, replay } from './tape.js';
 import type { Frame, Transport } from './transport.js';
 import type { Sought } from './types/mix.js';
 import { cover, coverFrame, cut, seekable } from './unpage.js';
@@ -287,6 +288,11 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
     // The frame being played is where the mix stands; any other is behind it, whatever its time.
     if (f.seq !== transport.seq) frame = f;
   }
+  // The clock the host gave it, which a seek that leaves the recorded run drives on at.
+  const rate = transport.rate;
+  const ramping = transport.ramping;
+  let jumped = false;
+  let drives = false;
   if (frame === undefined) {
     // Ahead, under the rate the recorded calls up to `t` set, past any frames rate 0 held at `t`.
     // Which rate that is shows only once the calls are played; one that never reaches `t`, paused or
@@ -299,11 +305,8 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
     let u: number;
     let last = Number.NaN;
     try {
-      if (!here)
-        last = replay(
-          transport,
-          (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
-        );
+      if (!here) last = replay(transport, (s) => s.at <= t);
+      transport.lag = 0;
       // Inverting the rate can land an ulp from where the host stood, which every later sync would carry.
       const at = here
         ? transport.u
@@ -314,7 +317,20 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
           ? left.u
           : hostAhead(transport, t);
       u = Number.isNaN(last) ? at : Math.max(last, at);
-      if (!Number.isFinite(u) || transport.jumps) u = transport.jump(t);
+      if (!Number.isNaN(last) && last > transport.u) transport.u = last;
+      const next = here ? undefined : nextStamp(transport);
+      if (next === undefined) {
+        // At the end of the tape: a jump is the host's, taped so a replay jumps where it did.
+        if (!Number.isFinite(u) || transport.jumps) {
+          u = transport.jump(t);
+          jumped = true;
+        }
+      } else if (!(u <= next.u && readingAt(transport, next.u) === next.at)) {
+        // Off the recorded run, short of the calls ahead or past where they were made: it jumps,
+        // and plays on by mix time until it has made them.
+        u = transport.jump(t);
+        drives = true;
+      }
     } catch (e) {
       if (transport.seq !== seq || tape.undoDepth() !== depth) {
         const f = transport.frames.all().find((f) => f.seq === seq) as Frame;
@@ -335,11 +351,14 @@ function seekTo(transport: Transport, to: number | { readonly frame: number }): 
     transport.now = t;
   } else {
     transport.left = { t: transport.now, u: transport.u };
-    tape.goto(tape.depthAt(hostBack(transport, t, frame)));
+    const end = endOf(transport, frame);
+    tape.goto(tape.depthAt(Number.isNaN(end) ? hostBack(transport, t, frame) : end));
     backTo(transport, t, frame);
     transport.tick(t);
   }
   transport.pin(t);
+  if (jumped) record(transport, 'jump', () => {});
+  if (drives) transport.driveFrom(t, rate, transport.jumps ? ramping : transport.ramping);
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
   transport.offset = transport.last - transport.u;
   transport.kept();
@@ -370,9 +389,15 @@ function seekClock(transport: Transport, t: number): Sought {
 }
 
 /**
- * Puts the transport and every mix on it back as they stood at mix time `t`, at the end of
- * `frame`, the tape already there.
+ * The stamp of the last call made by the end of `frame`: where the frame after it began on the
+ * tape, or where the tape stands for the frame being played. NaN for a frame paged before frames
+ * knew it, found by host time instead.
  */
+function endOf(transport: Transport, frame: Frame): number {
+  const after = transport.frames.all().find((f) => f.seq > frame.seq);
+  return after === undefined ? madeTo(transport.tape) : after.k;
+}
+
 /**
  * The host time a seek back to mix time `t` lands at, in `frame` or after it: never past where the
  * transport stands, or before the frame, though a time finer than host time holds reads as neither.

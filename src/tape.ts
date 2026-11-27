@@ -1,6 +1,7 @@
 import type { Mixer } from './mixer.js';
 import { move, waits } from './move.js';
 import type { Pace } from './pace.js';
+import { HELD, type Stamp } from './stamps.js';
 import type { Transport } from './transport.js';
 import type { Tape, TapeOp } from './types.js';
 
@@ -44,14 +45,14 @@ export function unplayable(what: string): never {
 const undone: TapeOp = { apply() {}, invert: () => undone };
 
 /**
- * The tape `history.tape` makes for a transport, stamping each call with the host time it was made
- * at: rate 0 holds mix time still across frames, and host time tells them apart.
+ * The tape `history.tape` makes for a transport, stamping each call as `Stamps` does: by the host
+ * time it was made at, rising past every stamp before.
  */
 export function tapeOf(transport: Transport): Tape | undefined {
   const make = transport.history?.tape;
   if (make === undefined) return undefined;
   return make(transport, {
-    now: () => (Number.isNaN(transport.u) ? Number.NEGATIVE_INFINITY : transport.u),
+    now: () => transport.stamps.current,
     branching: true,
     coalesceWindowMs: 0,
   });
@@ -97,7 +98,37 @@ export function record(on: Recorder, label: string, again: (stage: Stage) => voi
     },
     invert: () => undone,
   };
+  const t = (on as { transport?: Transport }).transport ?? (on as unknown as Transport);
+  t.stamps.mint(madeTo(tape), { at: t.now, u: t.u, seq: t.seq, jump: label === 'jump' });
   tape.recordEntry([op], label);
+}
+
+/** Where the next call the tape holds ahead was made; undefined with none ahead. */
+export function nextStamp(transport: Transport): Stamp | undefined {
+  const tape = transport.tape;
+  if (tape === undefined) return undefined;
+  const k = tape.timestampAt(tape.undoDepth());
+  return k === undefined ? undefined : transport.stamps.of(madeTo(tape), k);
+}
+
+/** The stamp of the last call the tape has made, so a frame knows where on the tape it began. */
+export function madeTo(tape: Tape | undefined): number {
+  if (tape === undefined) return Number.NEGATIVE_INFINITY;
+  return tape.timestampAt(tape.undoDepth() - 1) ?? Number.NEGATIVE_INFINITY;
+}
+
+/**
+ * Begins a frame on `onto` at host time `at` and mix time `now`, and moves its mixes there. The
+ * frame begins before they move, as a sync's does, so a voice that ends moving there leaves in this
+ * frame, not the one before. Host time moving while the rate holds the clock lands what waits, as a
+ * sync there does, and so does a rebasing sync's own frame, `lands`.
+ */
+function begin(onto: Transport, at: number, now: number, lands: boolean): void {
+  onto.u = at;
+  const later = now > onto.now;
+  onto.tick(later ? now : onto.now);
+  const held = (now === onto.now && onto.pace !== null) || lands;
+  for (const m of onto.members) if (later || (held && waits(m))) move(m, now);
 }
 
 /** The host time at which the mix clock reads `t`, under the rate it has now. */
@@ -119,15 +150,18 @@ export function hostAhead(
 }
 
 /**
- * Makes the recorded calls `due` by the host time each was made at again, each host time's in a
- * frame of its own with every mix on the transport moved to where it stood then, as the host made
- * them. Answers the host time of the last frame it played, NaN for none. Given `onto` and the
- * stage of its copies, it makes them on those, and the caller puts the tape back. `lands` is a
- * sync's own frame landing what waits with the mix clock standing still, as a rebase's does.
+ * Makes the recorded calls `due` by where each was made again, each frame's in a frame of its own
+ * with every mix on the transport moved to the mix time it stood at then, as the host made them.
+ * A frame plays at its own host time where the clock has not passed it, and a held step on
+ * otherwise; where the clock reads another mix time there, a jump since parted them, and it is
+ * made to read the recorded one. Answers the host time of the last frame it played, NaN for none.
+ * Given `onto` and the stage of its copies, it makes them on those, and the caller puts the tape
+ * back. `lands` is a sync's own frame landing what waits with the mix clock standing still, as a
+ * rebase's does.
  */
 export function replay(
   transport: Transport,
-  due: (u: number) => boolean,
+  due: (s: Stamp) => boolean,
   onto: Transport = transport,
   on: Stage = live,
   lands = false,
@@ -136,22 +170,44 @@ export function replay(
   if (tape === undefined) return Number.NaN;
   const u = onto.u;
   let last = Number.NaN;
+  let seq = Number.NaN;
   try {
     for (;;) {
-      const at = tape.timestampAt(tape.undoDepth());
-      if (at === undefined || !due(at)) return last;
-      if (at !== last) {
+      const k = tape.timestampAt(tape.undoDepth());
+      if (k === undefined) return last;
+      const s = transport.stamps.of(madeTo(tape), k);
+      if (!due(s)) return last;
+      if (s.seq !== seq) {
+        seq = s.seq;
+        // A jump left the frame the host made it in, a held step before it, which plays first.
+        const from = s.u - HELD;
+        if (s.jump && from > onto.ticked && transport.drive === null) {
+          last = from;
+          begin(
+            onto,
+            from,
+            onto.pace === null ? from : onto.pace.reading(from),
+            lands && from === u,
+          );
+        }
+        // Off the recorded run, its host time says nothing of where the clock stands.
+        const off = s.u <= onto.ticked;
+        const at = off ? onto.ticked + HELD : s.u;
         last = at;
         onto.u = at;
-        const now = onto.pace === null ? at : onto.pace.reading(at);
-        // The frame begins before the mixes move, as a sync's does, so a voice that ends moving
-        // there leaves in this frame, not the one before.
-        const later = now > onto.now;
-        onto.tick(later ? now : onto.now);
-        // Host time moved to `at` while the rate held the mix clock, or this is a rebasing sync's
-        // own frame: either lands what waits, as a sync there does.
-        const held = (now === onto.now && onto.pace !== null) || (lands && at === u);
-        for (const m of onto.members) if (later || (held && waits(m))) move(m, now);
+        let now = onto.pace === null ? at : onto.pace.reading(at);
+        if (
+          (off || s.jump || transport.drive !== null) &&
+          now !== s.at &&
+          s.at > Number.NEGATIVE_INFINITY
+        ) {
+          // A jump on the recorded run held the clock, any ramp with it, for a step before it landed.
+          onto.fix(s.at, s.jump && !off && transport.drive === null ? from : at);
+          now = s.at;
+        }
+        // The jump moved host time on a held step past the host's own clock; so does its replay.
+        if (s.jump) onto.lag += HELD;
+        begin(onto, at, now, lands && at === u);
       }
       transport.replaying = true;
       stage = on;

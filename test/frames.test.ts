@@ -5,7 +5,7 @@ describe('the frames a transport keeps', () => {
   it('finds the last frame at or before a time, as frames leave the front', () => {
     const frames = new Frames();
     for (let seq = 1; seq <= 5000; seq++) {
-      frames.push({ seq, at: seq * 10, u: seq * 10 });
+      frames.push({ seq, at: seq * 10, u: seq * 10, k: 0 });
       frames.shed(seq * 10 - 1000);
       expect(frames.length).toBe(Math.min(seq, 101));
       expect(frames.at(seq * 10 + 5)?.seq).toBe(seq);
@@ -18,7 +18,7 @@ describe('the frames a transport keeps', () => {
 
   it('hands each frame it lets go of to the caller, oldest first', () => {
     const frames = new Frames();
-    for (let seq = 1; seq <= 10; seq++) frames.push({ seq, at: seq, u: seq });
+    for (let seq = 1; seq <= 10; seq++) frames.push({ seq, at: seq, u: seq, k: 0 });
     const shed: number[] = [];
     frames.shed(4.5, (f) => shed.push(f.seq));
     expect(shed).toEqual([1, 2, 3]);
@@ -28,8 +28,8 @@ describe('the frames a transport keeps', () => {
 
   it('holds two frames at one mix time apart, and lands on the later', () => {
     const frames = new Frames();
-    frames.push({ seq: 1, at: 0, u: 0 });
-    frames.push({ seq: 2, at: 0, u: 16 });
+    frames.push({ seq: 1, at: 0, u: 0, k: 0 });
+    frames.push({ seq: 2, at: 0, u: 16, k: 0 });
     expect(frames.at(0)?.seq).toBe(2);
   });
 
@@ -38,12 +38,12 @@ describe('the frames a transport keeps', () => {
       const frames = new Frames();
       let seq = 0;
       for (let i = 0; i < pauseAt; i++) {
-        frames.push({ seq: ++seq, at: 16 * i, u: 16 * i }, 1000);
+        frames.push({ seq: ++seq, at: 16 * i, u: 16 * i, k: 0 }, 1000);
         frames.shed(16 * i - 1000);
       }
       const held = 16 * (pauseAt - 1);
       for (let i = pauseAt; i < pauseAt + 3000; i++) {
-        frames.push({ seq: ++seq, at: held, u: 16 * i }, 1000);
+        frames.push({ seq: ++seq, at: held, u: 16 * i, k: 0 }, 1000);
         frames.shed(held - 1000);
       }
       return frames.length;

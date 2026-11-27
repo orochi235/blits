@@ -141,7 +141,13 @@ function unpageTransport(transport: Transport, records: readonly Paged[]): void 
   if (paces.length > 0) transport.pace?.unshed(paces);
   const frames = own
     .filter((r) => r.stream === 'frame')
-    .map((r) => ({ seq: r.seq, at: r.at, u: r.data as number }));
+    .map((r) => {
+      // A frame paged as its host time alone predates `k`, and a seek back finds it by host time.
+      const d = r.data as number | { u: number; k: number };
+      return typeof d === 'number'
+        ? { seq: r.seq, at: r.at, u: d, k: Number.NaN }
+        : { seq: r.seq, at: r.at, u: d.u, k: d.k };
+    });
   transport.frames.set(before(frames, transport.frames.all()));
   const held = new Set(transport.announced.map((a) => a.order));
   const marks = own

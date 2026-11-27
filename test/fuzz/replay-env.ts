@@ -33,7 +33,7 @@ export function build(mode: Mode): Env {
     : { ms: 1e9, every: 50, tape };
   const base: MixOptions = { lanes: mode.lanes, stepMs: 4, keyOf: (p: Part) => p.id } as MixOptions;
   if (mode.transport) {
-    const t = transport({ history });
+    const t = transport(mode.jump ? { history, seek: 'jump' } : { history });
     const ms = [0, 1].map((i) => mix<Part, Pose>(K(), { ...base, transport: t, name: `m${i}` }));
     for (const m of ms) m.plot(SUBJ, xy);
     return { mode, t, ms, hs: new Map(), spans: new Set(), errs: [] };
@@ -222,6 +222,10 @@ export function apply(e: Env, op: Op): void {
         e.t?.drop(m);
         break;
       case 'rebase':
+        break;
+      case 'jump':
+        if (e.t) e.t.seek(e.t.now + op.by);
+        else m.seek(m.now + op.by);
         break;
     }
   } catch (err) {

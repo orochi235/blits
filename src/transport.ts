@@ -21,18 +21,14 @@ import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { type ScoreHolders, scoredDrop, scoredJoin } from './scored.js';
 import { seek } from './seek.js';
+import { above, HELD, Stamps } from './stamps.js';
 import { letGo } from './strays.js';
-import { hostAt, record, replay, tapeOf } from './tape.js';
+import { madeTo, record, replay, tapeOf } from './tape.js';
 import { throwLater } from './ticker.js';
 import { gave, historyFor } from './watch.js';
 
 /** How far the tape's reach moves before it is pruned again, ms of mix time. */
 const TAPE_STEP_MS = 1000;
-/**
- * The host ms a rebase holds the mix clock for under a tape: past an ulp of any host time, so the
- * frame after it has a host time of its own.
- */
-const HELD = 2 ** -10;
 
 import type {
   Marked,
@@ -73,6 +69,8 @@ export interface Frame {
   seq: number;
   at: number;
   u: number;
+  /** The stamp of the last call the tape had made when the frame began; NaN where not known. */
+  k: number;
 }
 
 /**
@@ -348,7 +346,20 @@ export class Transport implements TransportApi {
     // and so does the sync a rebase resumes on, which leaves both where they were.
     const lands = (later && pace !== null) || rebased;
     if (this.tape !== undefined && later) {
-      begun = replay(this, (at) => at <= u, this, undefined, lands) === u;
+      const last = replay(
+        this,
+        (s) => (s.jump ? s.u - HELD : s.u) <= u + this.lag,
+        this,
+        undefined,
+        lands,
+      );
+      if (this.lag !== 0) {
+        u += this.lag;
+        this.offset -= this.lag;
+        this.lag = 0;
+        this.u = u;
+      }
+      begun = last === u;
       pace = this.pace;
       now = pace === null ? u : pace.reading(u);
     }
@@ -368,16 +379,22 @@ export class Transport implements TransportApi {
     this.kept();
     const reach = this.keepsFrom();
     // In steps: the tape shifts every entry it keeps to let go of the oldest, and one a second
-    // behind reach is never played again. A store's reach has no end: under a rate whose older
-    // clocks it paged out, the host time of -Infinity reads as where the oldest still held begins.
+    // behind reach is never played again: those made before the frame a seek to reach lands in.
+    // A store's reach has no end, and it keeps the tape whole.
     if (
       this.tape !== undefined &&
       history !== undefined &&
       Number.isFinite(reach) &&
       !(reach - this.taped < TAPE_STEP_MS)
     ) {
-      const from = hostAt(this, reach);
-      if (from < Number.POSITIVE_INFINITY) this.tape.prune(from);
+      const k = this.frames.at(reach)?.k;
+      // The calls made by then are behind every seek; one ahead that shares the stamp stays.
+      const next = this.tape.timestampAt(this.tape.undoDepth());
+      const from = k === undefined || (next !== undefined && next <= k) ? k : above(k);
+      if (from !== undefined) {
+        this.tape.prune(from);
+        this.stamps.prune(from);
+      }
       this.taped = reach;
     }
     if (history !== undefined && this.dropped.length > 0)
@@ -539,11 +556,44 @@ export class Transport implements TransportApi {
   tick(at: number): void {
     const seq = ++this.seq;
     const history = this.history;
-    if (history !== undefined) this.frames.push({ seq, at, u: this.u }, history.ms);
+    if (history !== undefined)
+      this.frames.push({ seq, at, u: this.u, k: madeTo(this.tape) }, history.ms);
+    this.ticked = this.u;
     for (const m of this.members) {
       m.looked = false;
       if (m.unshown !== null) letGo(m, at);
     }
+  }
+
+  /**
+   * The host ms the jumps a replay made again moved host time on by, as each did when the host
+   * made it; the sync that played them reads its host clock that much later.
+   */
+  lag = 0;
+  /** The host time the last frame began at; NaN before any. */
+  ticked = Number.NaN;
+  /** The stamps on its tape, and where each call was made. */
+  readonly stamps = new Stamps();
+
+  /**
+   * Makes the mix clock read `t` at the host time it stands at, from the frame about to begin: a
+   * call played again where a jump parted host time from mix time is made where it was made. Given
+   * `from`, the clock holds from then to now first, as the jump being played again did.
+   */
+  fix(t: number, from = this.u): void {
+    this.paced().hold(from, this.u, this.seq + 1, t);
+  }
+
+  /**
+   * Under a drive from now on, read from mix time `t` at the rate and any ramp the host gave it,
+   * `rate` and `ramp`: a seek that left the recorded run, with calls still ahead on the tape, plays
+   * on by mix time until it has made them. A drive under way runs on.
+   */
+  driveFrom(t: number, rate: number, ramp: { to: number; left: number } | null): void {
+    if (this.drive !== null) return;
+    const clock: Clock = { anchorNow: 0, anchorElapsed: t, rate, ramp: null };
+    if (ramp !== null) retime(clock, 0, ramp.to, ramp.left);
+    this.drive = { clock, wall: 0 };
   }
 
   /** The number for the next voice or announced mark. */

@@ -67,6 +67,12 @@ export function hostTimes(p: Program): number[] {
   return out;
 }
 const rebasedAt = (p: Program, f: number) => p.ops.some((o) => o.k === 'rebase' && o.f === f);
+/**
+ * Whether frame `f`'s mix time names it alone. A rebased sync holds the clock, so the frame after
+ * one stands at its time too, though a jump in it records the frame at the jump's.
+ */
+const alone = (p: Program, r: Rec, f: number) =>
+  r.now.filter((x) => x === r.now[f]).length === 1 && !rebasedAt(p, f + 1);
 
 function sys(e: Env) {
   if (e.t) {
@@ -217,7 +223,7 @@ async function runIn(
   const target = c.kind === 'seekTime' ? (r.now[k] as number) : { frame: r.seq[k] as number };
   if (c.kind === 'seekTime') {
     // only where that mix time names one frame
-    if (r.now.filter((x) => x === r.now[k]).length !== 1) return null;
+    if (!alone(p, r, k)) return null;
   }
   try {
     if (mode.store) await S.prepare(r.now[k] as number);
@@ -237,7 +243,7 @@ async function runIn(
       if (!mono) break;
       // A read ahead makes none of the driver's calls (schema, Drivers).
       if (p.ops.some((o) => o.k === 'call' && o.f > k && o.f <= f)) break;
-      if (r.now.filter((x) => x === r.now[f]).length !== 1) continue;
+      if (!alone(p, r, f)) continue;
       let got: number[];
       try {
         if (mode.store) await S.prepare(r.now[f] as number);

@@ -10,11 +10,11 @@ import { move } from './move.js';
 import { rewire } from './owner.js';
 import { pin, place } from './place.js';
 import { recount } from './roster.js';
+import type { Stamp } from './stamps.js';
 import { Along, type Stand, Store } from './store.js';
 import type { Subject } from './subject.js';
-import { hostAhead, replay, takeFramed } from './tape.js';
+import { hostAhead, nextStamp, replay, takeFramed } from './tape.js';
 import { Transport } from './transport.js';
-import type { Tape } from './types.js';
 import { unreached } from './unreached.js';
 import type { Voice } from './voice.js';
 
@@ -43,7 +43,7 @@ export function playAhead(
   takeFramed();
   try {
     for (;;) {
-      const e = nextEvent(tape, c, t);
+      const e = nextEvent(transport, c, t);
       if (!(e < t)) break;
       playTo(transport, c, copies, e);
       // Where a call there came before its frame's read, `e` was a frame of its mix.
@@ -107,11 +107,11 @@ function resting(c: Transport): boolean {
  * call the tape holds, and while a voice could carry state across one, a mark of a voice or one
  * announced. Infinity where there is none.
  */
-function nextEvent(tape: Tape | undefined, c: Transport, t: number): number {
+function nextEvent(transport: Transport, c: Transport, t: number): number {
   const now = c.now;
   let e = Number.POSITIVE_INFINITY;
-  const call = tape?.timestampAt(tape.undoDepth());
-  if (call !== undefined) e = c.pace === null ? call : c.pace.reading(call);
+  const call = nextStamp(transport);
+  if (call !== undefined) e = call.at;
   if (!carries(c)) return e < t ? e : Number.POSITIVE_INFINITY;
   for (const m of c.members)
     for (const v of m.cued) {
@@ -144,9 +144,8 @@ function playTo(
   copies: Map<Mixer<unknown, unknown>, Mixer<unknown, unknown>>,
   to: number,
 ): void {
-  const tape = transport.tape;
-  const due = (at: number) => (c.pace === null ? at : c.pace.reading(at)) <= to;
-  const next = tape?.timestampAt(tape.undoDepth());
+  const due = (s: Stamp) => s.at <= to;
+  const next = nextStamp(transport);
   c.u = hostAhead(c, to);
   if (next !== undefined && due(next)) {
     // A call may write what a copy shares with the voice it was copied from.
@@ -159,6 +158,7 @@ function playTo(
       transport: () => c,
       mix: (of) => copies.get(of as unknown as Mixer<unknown, unknown>) as typeof of | undefined,
     });
+    c.lag = 0;
     c.u = Math.max(last, hostAhead(c, to));
   }
   // A call played at `to` itself moved the copies there before it, as a sync does.

@@ -17,6 +17,14 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 - `inert` on a transport with no mix on it reads its own clock: rate 0, no ramp under way, and no
   rate, ramp or seek since the last sync. It was always true.
+- After a seek back, a call still ahead on the tape plays at the mix time it was made at. A jump
+  (a seek ahead under `seek: 'jump'`, or one the rate never reached) moved host time apart from mix
+  time without the tape knowing: a call made past a jump played at about where the seek back
+  landed, and a jump seek short of the calls ahead shifted every one by the jump.
+- A seek back and playing on jumps where the host jumped: a jump at the end of the tape is taped.
+- A seek ahead that lands where the recorded run never went, with calls still ahead on the tape,
+  plays on by mix time at the rate the host gave it until it has made them, as a rate write there
+  does.
 
 ## 1.5.3
 

@@ -28,14 +28,20 @@ const modes = {
   transport: { transport: true, store: false },
   store: { transport: false, store: true },
   'transport and store': { transport: true, store: true },
+  'transport, jumps': { transport: true, store: false, jumps: true },
 };
 
 /** Each lanes setting's first failing check, shrunk to the calls that still fail it. */
-async function failures(seed: number, transport: boolean, store: boolean): Promise<string[]> {
+async function failures(
+  seed: number,
+  transport: boolean,
+  store: boolean,
+  jumps = false,
+): Promise<string[]> {
   const out: string[] = [];
-  const p = program(seed, { transport, ...KNOWN });
+  const p = program(seed, { transport, jumps, ...KNOWN });
   for (const lanes of [true, false]) {
-    const mode: Mode = { lanes, transport, store };
+    const mode: Mode = { lanes, transport, store, jump: jumps };
     const { e, rec } = play(p, mode);
     for (const m of e.ms) m.close();
     const frames = rec.now.length;
@@ -56,9 +62,10 @@ async function failures(seed: number, transport: boolean, store: boolean): Promi
 }
 
 describe('seek and replay against straight play', () => {
-  for (const [name, { transport, store }] of Object.entries(modes))
+  for (const [name, mode] of Object.entries(modes))
     for (const seed of seeds())
       it(`program ${seed}, ${name}`, async () => {
-        expect(await failures(seed, transport, store)).toEqual([]);
+        const jumps = 'jumps' in mode && mode.jumps;
+        expect(await failures(seed, mode.transport, mode.store, jumps)).toEqual([]);
       });
 });

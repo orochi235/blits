@@ -132,7 +132,7 @@ export function pageTransport(transport: Transport): void {
   const reach = transport.now - history.ms;
   const records: Paged[] = [];
   transport.frames.shed(reach, (f) =>
-    records.push({ mix: '', stream: 'frame', at: f.at, seq: f.seq, data: f.u }),
+    records.push({ mix: '', stream: 'frame', at: f.at, seq: f.seq, data: { u: f.u, k: f.k } }),
   );
   const pace = transport.pace;
   const timeOf = (u: number) => (pace === null ? u : pace.reading(u));

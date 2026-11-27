@@ -177,12 +177,15 @@ export type Op =
   | { k: 'drop'; f: number; mix: number; sub: number }
   | { k: 'mrate'; f: number; mix: number; v: number; over: number }
   | { k: 'tdrop'; f: number; mix: number }
-  | { k: 'rebase'; f: number };
+  | { k: 'rebase'; f: number }
+  | { k: 'jump'; f: number; by: number };
 
 export interface Mode {
   lanes: boolean;
   transport: boolean;
   store: boolean;
+  /** The transport is made with `seek: 'jump'`. */
+  jump?: boolean;
 }
 export interface Program {
   seed: number;
@@ -231,6 +234,8 @@ export interface GenOpts {
   noSpan?: boolean;
   /** A subject's fade out of a voice always ramps: a read ahead at an instant one still reads it. */
   noInstantSubjectFade?: boolean;
+  /** Host seeks ahead mid-run, which jump on a transport made with `seek: 'jump'`. */
+  jumps?: boolean;
 }
 export function program(seed: number, opts: GenOpts): Program {
   const r = rng(seed);
@@ -421,6 +426,8 @@ export function program(seed: number, opts: GenOpts): Program {
           break;
       }
     }
+    // Drawn only with jumps on, so every other program stays as it was.
+    if (opts.jumps && f > 0 && r.p(0.12)) ops.push({ k: 'jump', f, by: r.pick([40, 250, 2000]) });
   }
   return { seed, dts, ops, named: opts.named ?? false };
 }
