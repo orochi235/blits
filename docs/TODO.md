@@ -16,13 +16,13 @@ Owner tags:
 
 ## Engine
 
-- **[agent] A read ahead across a jump places a pending host-time start where play did not**
-  (2026-11-26, replay fuzz "transport, jumps", programs 128 and 200; 54, 140, 148 and 171 read
-  ahead across a jump wrongly too, not yet put down to one cause): a voice or owner cued with a
-  `start` the host clock has not reached starts, in play, where that host time falls after a jump.
-  A read ahead from before the jump starts it where host time fell before it, so it shows the voice
-  early (program 200: x 41.16 where play showed 0). The base commit gives the same wrong answers,
-  so this predates the tape keeping mix times. Closes when those programs pass.
+- **[agent] A read ahead counts a call made at a frame's own time after it, under a mix at rate 0
+  and a jump** (2026-11-27, replay fuzz "transport, jumps", program 140, shrunk to `mrate` 0 on
+  mix 1 at frame 24, then a cue on mix 1 and a 2,000 ms jump at frame 25): a read ahead to frame
+  24's time (1384) replays the cue stamped at 1384 and shows its voice, where frame 24 showed none.
+  Without the jump, or without the rate 0, the same cue is not counted, so the read ahead tells a
+  call after a frame from one before it some way the jump or the rate breaks; not found yet. Likely
+  one cause with the next entry. Closes when program 140 passes.
 - **[agent] A blend cued while the rate is 0 shows sooner on replay than in play** (2026-11-26,
   replay fuzz "transport, jumps", program 163, shrunk to `owns` with `start: 120`, rate 0, a jump,
   `blend` owned by it): play shows the blend two frames after its cue, and a seek back and play on

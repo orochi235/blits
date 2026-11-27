@@ -10,7 +10,7 @@ import { move } from './move.js';
 import { rewire } from './owner.js';
 import { pin, place } from './place.js';
 import { recount } from './roster.js';
-import type { Stamp } from './stamps.js';
+import { HELD, type Stamp } from './stamps.js';
 import { Along, type Stand, Store } from './store.js';
 import type { Subject } from './subject.js';
 import { hostAhead, nextStamp, replay, takeFramed } from './tape.js';
@@ -113,24 +113,24 @@ function nextEvent(transport: Transport, c: Transport, t: number): number {
   const call = nextStamp(transport);
   if (call !== undefined) e = call.at;
   if (!carries(c)) return e < t ? e : Number.POSITIVE_INFINITY;
+  // Play never reaches the mix time a jump passes over: an event there, a start pinned to host time
+  // before the jump moves it, comes after the jump plays again.
+  let reach = e;
+  if (call?.jump === true) {
+    const from = call.u - HELD;
+    reach = Math.min(e, c.pace === null ? from : c.pace.reading(from));
+  }
+  const sooner = (at: number | undefined): void => {
+    if (at !== undefined && at > now && at < e && at <= reach) e = at;
+  };
   for (const m of c.members)
     for (const v of m.cued) {
       if (v.state === 'done') continue;
-      for (const mark of voiceMarks) {
-        const at = markOf(m, v, mark);
-        if (at !== undefined && at > now && at < e) e = at;
-      }
+      for (const mark of voiceMarks) sooner(markOf(m, v, mark));
       const inner = v.spec.marks;
-      if (inner !== undefined)
-        for (const mark of Object.keys(inner)) {
-          const at = markOf(m, v, mark);
-          if (at !== undefined && at > now && at < e) e = at;
-        }
+      if (inner !== undefined) for (const mark of Object.keys(inner)) sooner(markOf(m, v, mark));
     }
-  for (const a of c.announced) {
-    const at = c.pace === null ? a.at : c.pace.at(a.at, c.u);
-    if (at > now && at < e) e = at;
-  }
+  for (const a of c.announced) sooner(c.pace === null ? a.at : c.pace.at(a.at, c.u));
   return e < t ? e : Number.POSITIVE_INFINITY;
 }
 

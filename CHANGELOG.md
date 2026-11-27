@@ -20,6 +20,9 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Fixed
 
+- A read ahead across a jump the tape holds plays the jump before any event in the mix time it
+  passes over. A voice that steps, waiting on a start given in host time, started in the read where
+  host time fell before the jump, and carried the state it stepped there.
 - A motion patch's `read`, and a handle's, cost a tenth of the allocation it did: a subject playing
   its latest stretch is read from its run, and a handle no longer looks its voice up among every
   voice cued. At 10,000 springs each read once a frame, a frame took 2.20 ms where it took 3.59

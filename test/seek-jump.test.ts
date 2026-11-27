@@ -4,7 +4,7 @@ import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { transport } from '../src/transport.js';
-import type { TransportOptions } from '../src/types.js';
+import type { TransportOptions, VoiceSpec } from '../src/types.js';
 
 interface Pose {
   x: number;
@@ -129,4 +129,45 @@ describe('a drive that ends while a taped ramp is under way', () => {
     t.sync(1e7);
     expect(t.now).toBe(1e7);
   });
+});
+
+describe('a read ahead across a jump the tape holds', () => {
+  const drift = () =>
+    patch<string, Pose, { x: number }>(0, (_p, _s, st) => ({ x: st.state.x }), {
+      writes: ['x'],
+      state: () => ({ x: 0 }),
+      step: (s, dt) => {
+        s.x += (50 - s.x) * Math.min(1, dt / 200);
+      },
+    });
+  const cases: Record<string, () => Omit<VoiceSpec<string, Pose>, 'start'>> = {
+    'a voice that steps': () => ({ patch: drift() }),
+    'one sought in and looping on a step of its own': () => ({
+      patch: drift(),
+      seek: 130,
+      loop: true,
+      stepMs: 12,
+    }),
+    'a staggered one': () => ({ patch: drift(), stagger: () => 30 }),
+    'one that does not step': () => ({ patch: up }),
+  };
+  for (const [name, spec] of Object.entries(cases))
+    it(`starts ${name}, waiting on a host-time start, where play did`, () => {
+      const t = transport({ history: { ms: 1e9, every: 50, tape }, seek: 'jump' });
+      const m = mix<string, Pose>(K, { transport: t, name: 'jumped', stepMs: 4 });
+      t.sync(0);
+      m.cue({ ...spec(), start: m.timestamp + 100 });
+      const now: number[] = [];
+      const seen: number[] = [];
+      for (let f = 0; f <= 12; f++) {
+        // Mix time jumps past the start's host time before host time reaches it.
+        if (f === 3) t.seek(t.now + 250);
+        t.sync(f * 16);
+        now.push(t.now);
+        seen.push(m.probe('a').x);
+      }
+      t.seek(now[2] as number);
+      const read = now.slice(3).map((n) => t.project(n).of(m).probe('a').x);
+      expect(read).toEqual(seen.slice(3));
+    });
 });
