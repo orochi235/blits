@@ -4,6 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## 0.12.10
+
+### Changed
+
+- Built and tested against engine 1.6.0.
+
 ## 0.12.9
 
 ### Changed
