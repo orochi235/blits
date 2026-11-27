@@ -18,8 +18,8 @@ calls in `docs/decisions.md`, measurements in `bench/README.md` and `bench/runs/
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git`, public. Released: engine and blits-panel 1.5.3
-  (in lockstep), blits-rapier 0.7.8, blits-quarks 0.17.8, blits-tone 0.12.9.
+- `main` at `git@github.com:orochi235/blits.git`, public. Released: engine and blits-panel 1.6.0
+  (in lockstep), blits-rapier 0.7.9, blits-quarks 0.17.9, blits-tone 0.12.10.
 - `npm run release -- <version>` (`scripts/release.mjs`) releases the engine, then the panel at the
   same version and each companion, one tag at a time, waiting on each run; a rerun resumes from the
   first missing tag. release.yml runs the check once and sets `BLITS_CHECKED` so `prepublishOnly`
