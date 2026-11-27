@@ -8,6 +8,7 @@ import { nowSoFar } from './now.js';
 import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import type { WholeRecord } from './record.js';
+import { childTimeFor } from './remap.js';
 import { scoreTouched } from './scored.js';
 import { last } from './sorted.js';
 import type { BandMark, Snap, Subject } from './subject.js';
@@ -61,7 +62,7 @@ export function elapsedThen<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: numbe
 
 /** What an owner's clock read at an earlier mix time; apart, so `elapsedThen` stays small. */
 function ownerThen<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>, t: number): number {
-  return elapsedThen(mix, owner, t);
+  return childTimeFor(owner, elapsedThen(mix, owner, t));
 }
 
 /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */

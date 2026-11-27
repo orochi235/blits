@@ -8,6 +8,20 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 
 ### Added
 
+- `remap` on a voice runs its clock through a window of its patch's time and a curve: each pass
+  plays `window: [from, to]` (default the whole pass) along `curve` over `length` ms. With `loop`
+  and `rate` it plays or loops a slice, plays one backward (`to` below `from`), freezes a frame (a
+  window of one time) or scrubs (a curve that turns back). The patch is read at the remapped time,
+  which `setting.elapsed` reports; `marks`, `hits`, `seek` and `setting.pass` count on the voice's
+  own clock. Not for a motion. Such a voice runs off lanes (`'remap'`) and on the CPU.
+- `remap` on an owner runs the clock its children read through a window and a curve that never
+  turns back: their starts count on it, and seeks, read-aheads and marks follow it. Not on a span
+  or an arc.
+- `sourceAt(remap, elapsed, duration, loop)` reads the patch time a remapped voice plays at, for a
+  host that keeps its own clock; `remapLength(remap, duration)` is a pass's length.
+- `@msb235/blits/show`'s cue `ease` is now its voices' remap curve, so it eases `keys` and `wave`
+  patches too, not only `patch()` ones.
+
 - `landed` on a voice's handle reads whether every subject the voice's motion reaches has landed
   where it heads, with no `to`, `push` or `set` waiting. It fades nothing and takes no subject off
   its lane, and a spring landed on 1 in a `sum` channel reads true where `atRest` reads false.

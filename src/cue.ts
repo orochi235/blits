@@ -14,6 +14,7 @@ import type { Mixer } from './mixer.js';
 import { motionOf } from './motion.js';
 import { adopt, Holding, ownerPatch, ownerReading } from './owner.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
+import { remapFor, remapLength } from './remap.js';
 import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
 import { insertById } from './sorted.js';
@@ -180,8 +181,14 @@ export function checkPatch<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void 
   playable(mix, spec);
   if (spec.from === 'current' && patch.form !== 'keys')
     throw new Error("blits: from: 'current' needs a keys patch");
-  if (spec.hits !== undefined) checkHits(spec.hits, patch.duration);
-  if (spec.marks !== undefined) checkMarks(spec.marks, patch.duration);
+  const owner = patch === (ownerPatch as Patch<I, O, unknown>);
+  if (spec.remap !== undefined && motionOf<I>(patch) !== undefined)
+    throw new Error('blits: a motion runs by its own laws, not a phase, so it takes no remap');
+  const pass =
+    spec.remap === undefined || owner ? patch.duration : remapLength(spec.remap, patch.duration);
+  if (spec.remap !== undefined && owner) remapFor(spec.remap, 0, true);
+  if (spec.hits !== undefined) checkHits(spec.hits, pass);
+  if (spec.marks !== undefined) checkMarks(spec.marks, pass);
 }
 
 /** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */

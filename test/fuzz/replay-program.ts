@@ -3,7 +3,7 @@ import { kit, last, mul, sum, vec } from '../../src/channels.js';
 import { glide, spring, tween } from '../../src/motion.js';
 import { keys, patch } from '../../src/patch.js';
 import { angle } from '../../src/rotation.js';
-import type { Patch } from '../../src/types.js';
+import type { Patch, Remap } from '../../src/types.js';
 import { rng } from './rng.js';
 
 export interface Pose {
@@ -145,6 +145,7 @@ export interface CueOp {
   marks?: boolean;
   hits?: boolean;
   stepMs?: number;
+  remap?: Remap;
 }
 export type Op =
   | CueOp
@@ -159,6 +160,7 @@ export type Op =
       start?: number;
       owner?: number;
       span?: { duration: number; order: 'queue' | 'stagger' | 'together' };
+      remap?: Remap;
     }
   | {
       k: 'blend';
@@ -219,7 +221,29 @@ export interface GenOpts {
   noInstantSubjectFade?: boolean;
   /** Host seeks ahead mid-run, which jump on a transport made with `seek: 'jump'`. */
   jumps?: boolean;
+  /** Voices and owners cued with a remap of their clocks. */
+  remaps?: boolean;
+  /**
+   * No `fade({ at: 'rest' })`, a plain fade in its place: a read ahead cannot see a resting frame
+   * it skips (docs/TODO.md), which programs 3 and 197 of the remap modes meet with no remap in them.
+   */
+  noFadeRest?: boolean;
 }
+
+/** The remaps a voice is cued with: slices forward and back, a curve, a held frame, a scrub. */
+const VOICE_REMAPS: Remap[] = [
+  { window: [50, 150] },
+  { window: [150, 20], length: 200 },
+  { window: [0, 120], curve: 'ease-in-out' },
+  { window: [30, 30], length: 80 },
+  { window: [0, 200], curve: { linear: [0, 1, 0.3] }, length: 160 },
+];
+/** The remaps an owner is cued with: a slice, a curve, and one that holds partway. */
+const OWNER_REMAPS: Remap[] = [
+  { window: [40, 240], length: 150 },
+  { window: [0, 300], curve: 'ease-in', length: 250 },
+  { window: [0, 200], curve: { linear: [0, [0.4, 0.3], [0.4, 0.6], 1] }, length: 300 },
+];
 export function program(seed: number, opts: GenOpts): Program {
   const r = rng(seed);
   const F = 30 + r.i(20);
@@ -265,6 +289,8 @@ export function program(seed: number, opts: GenOpts): Program {
     if (r.p(0.3)) c.marks = true;
     if (r.p(0.2)) c.hits = true;
     if (r.p(0.2)) c.stepMs = r.pick([8, 12]);
+    // Drawn only with remaps on, so every other program stays as it was.
+    if (opts.remaps && !MOTION.has(pk) && r.p(0.5)) c.remap = r.pick(VOICE_REMAPS);
     voices.push({ id: c.id, mix: mx, motion: MOTION.has(pk), name: `v${c.id}` });
     return c;
   };
@@ -315,6 +341,7 @@ export function program(seed: number, opts: GenOpts): Program {
           if (r.p(0.4)) o.fade = { in: 100, out: 100 };
           if (!span && r.p(0.3)) o.start = r.pick([0, 50, 120]);
           if (myOwners.length && r.p(0.3)) o.owner = r.pick(myOwners).id;
+          if (opts.remaps && !span && r.p(0.5)) o.remap = r.pick(OWNER_REMAPS);
           if (span)
             o.span = {
               duration: r.pick([300, 600]),
@@ -383,7 +410,8 @@ export function program(seed: number, opts: GenOpts): Program {
           );
           let a = r.f();
           if (what === 'fadeSub' && opts.noInstantSubjectFade) a = Math.max(a, 0.5);
-          ops.push({ k: 'h', f, tgt: v.id, what, a, b: r.f(), sub: r.i(4) });
+          const call = what === 'fadeRest' && opts.noFadeRest ? 'fade' : what;
+          ops.push({ k: 'h', f, tgt: v.id, what: call, a, b: r.f(), sub: r.i(4) });
           break;
         }
         case 'mute':

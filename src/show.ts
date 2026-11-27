@@ -1,4 +1,3 @@
-import { curve } from './easing.js';
 import type {
   Anchor,
   ArcCue,
@@ -49,16 +48,20 @@ function shifted(anchor: Anchor, ms: number): Anchor {
   return { with: anchor.before, by: ms - (anchor.by ?? 0) };
 }
 
-/** `patch` with its phase run through `ease`. Refused where the patch's shape is read as data. */
-function eased<I, O, H>(patch: AnyPatch<I, O, H>, ease: Ease | undefined): AnyPatch<I, O, H> {
-  if (ease === undefined) return patch;
-  if (patch.form !== 'fn' || patch.wave !== undefined)
+/**
+ * `voice` with its clock run through `ease`, as its remap's curve. A patch with no duration and no
+ * window has no phase to run through it, and a motion, which the mix refuses a remap, none either.
+ */
+function eased<I, O, H>(voice: KindVoice<I, O, H>, ease: Ease | undefined): KindVoice<I, O, H> {
+  if (ease === undefined) return voice;
+  const remap = voice.remap;
+  if (remap?.curve !== undefined)
     throw new Error(
-      `blits: a cue's ease warps the phase of a patch() patch, and this is a ${patch.wave ? 'wave' : patch.form} patch, whose shape is read as data`,
+      "blits: a cue's ease is its voices' remap curve, and its kind gave one already",
     );
-  const c = curve(ease);
-  const at = patch.at;
-  return { ...patch, at: (phase, subject, setting) => at.call(patch, c(phase), subject, setting) };
+  if (voice.patch.form !== 'motion' && remap?.window === undefined && !(voice.patch.duration > 0))
+    return voice;
+  return { ...voice, remap: { ...remap, curve: ease } };
 }
 
 const isPatch = <I, O, H>(x: object): x is AnyPatch<I, O, H> => 'form' in x && 'at' in x;
@@ -79,7 +82,7 @@ function voicesOf<I, O, H>(
       ? made
       : [made as KindVoice<I, O, H>];
   if (list.length === 0) throw new Error(`blits: ${where}'s kind "${cue.kind}" made no voice`);
-  return list.map((v) => ({ ...v, patch: eased(v.patch, cue.ease) }));
+  return list.map((v) => eased(v, cue.ease));
 }
 
 const listOf = <T>(x: T | readonly T[] | undefined): readonly T[] | undefined =>

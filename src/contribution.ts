@@ -1,7 +1,7 @@
 import { inBound } from './bound.js';
 import { slotOf } from './chain.js';
 import { numericOf } from './channels.js';
-import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
+import { passAt, phaseOf, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, restsAt } from './fold.js';
 import { originate, patchKeeps, voiceKeeps, waits } from './held.js';
@@ -15,6 +15,7 @@ import { pageOut } from './paging.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { isRested } from './record.js';
+import { childSpeed, sourceOf, sourcePhase } from './remap.js';
 import type { Subject } from './subject.js';
 import type { Sample } from './trail.js';
 import { shortWay } from './turns.js';
@@ -65,11 +66,6 @@ function sentBack<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unkn
   return mix.sinceOf(voice, held.delay) !== held.since;
 }
 
-/** The phase `elapsed` voice ms puts a voice at, before its start included. */
-export function phaseOf(elapsed: number, duration: number, passes: number): number {
-  return elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, passes);
-}
-
 const NOTHING: Record<string, unknown> = Object.freeze({});
 
 /**
@@ -118,10 +114,13 @@ export function contribution<I, O>(
 
   const duration = voice.duration;
   const pass = passAt(elapsed, duration, voice.passes);
+  const remap = voice.remap;
+  const source =
+    remap === null ? elapsed : sourceOf(remap, phaseOf(elapsed, duration, voice.passes));
 
   const primed = this.primed;
   primed[Primed.NOW] = now;
-  primed[Primed.ELAPSED] = elapsed;
+  primed[Primed.ELAPSED] = source;
   primed[Primed.PASS] = pass;
   this.prime(voice, held);
   const setting = voice.setting;
@@ -197,12 +196,18 @@ export function contribution<I, O>(
       held.slope = this.slopeFor(voice, subject, now);
     }
   } else if (voice.built) {
-    held.phase = phaseOf(elapsed, duration, voice.passes);
+    held.phase =
+      remap === null
+        ? phaseOf(elapsed, duration, voice.passes)
+        : sourcePhase(source, voice.patch.duration);
     delta = this.keyed(voice, subject, held);
   } else if (voice.motion !== undefined) {
     delta = moved(voice.motion, voice.patch.writes[0] as string, subject, setting, held);
   } else {
-    const phase = phaseOf(elapsed, duration, voice.passes);
+    const phase =
+      remap === null
+        ? phaseOf(elapsed, duration, voice.passes)
+        : sourcePhase(source, voice.patch.duration);
     delta = voice.patch.at(phase, subject, setting as never) as Record<string, unknown>;
     if (voice.unchecked) checkWrites(voice, delta);
   }
@@ -505,7 +510,10 @@ function lastTwo<I, O>(mix: Mixer<I, O>, subject: I): [Sample, Sample] | undefin
 function clockSpeed<I, O>(voice: Voice<I, O>, now: number): number {
   const owner = voice.owner;
   if (owner === null) return voice.rateAt(now);
-  return voice.rateAt(ownerReading(owner, now)) * clockSpeed(owner, now);
+  const r = owner.remap;
+  const ownSpeed = clockSpeed(owner, now);
+  const speed = r === null ? ownSpeed : childSpeed(r, owner.elapsedAt(now)) * ownSpeed;
+  return voice.rateAt(ownerReading(owner, now)) * speed;
 }
 
 /** Whether a value read in two frames stayed put, to within rounding. */
@@ -612,9 +620,11 @@ export function read<I, O>(
       const setting = voice.setting;
       // The setting the probe that read the delta had, but for `dt`: a dry read advances nothing.
       const elapsed = voice.shownAt(voice.rawAt(now, held.delay));
+      const remap = voice.remap;
       setting.timestamp = now;
       setting.dt = 0;
-      setting.elapsed = elapsed;
+      setting.elapsed =
+        remap === null ? elapsed : sourceOf(remap, phaseOf(elapsed, voice.duration, voice.passes));
       setting.pass = passAt(elapsed, voice.duration, voice.passes);
       setting.weight = 0;
       setting.state = held.state;

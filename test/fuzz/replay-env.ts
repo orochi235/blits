@@ -87,6 +87,7 @@ function specOf(e: Env, c: CueOp, m: Mix<Part, Pose>): VoiceSpec<Part, Pose> {
   if (c.marks) s.marks = { hit: 70 };
   if (c.hits) s.hits = [{ at: 40, event: 'h' }];
   if (c.stepMs !== undefined) s.stepMs = c.stepMs;
+  if (c.remap !== undefined) s.remap = c.remap;
   return s;
 }
 
@@ -118,6 +119,7 @@ export function apply(e: Env, op: Op): void {
         if (op.start !== undefined) spec.start = m.timestamp + op.start;
         const o = op.owner !== undefined ? e.hs.get(op.owner) : undefined;
         if (o) spec.owner = o;
+        if (op.remap !== undefined) spec.remap = op.remap;
         if (e.mode.transport) spec.score = 's';
         e.hs.set(op.id, op.span ? m.span({ ...spec, ...op.span }) : m.owns(spec));
         if (op.span) e.spans.add(op.id);

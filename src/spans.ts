@@ -9,6 +9,7 @@ import { nextFrame } from './move.js';
 import { leave, MOST } from './origin.js';
 import { type Holding, ownerReading, plays, starts } from './owner.js';
 import { resolve } from './place.js';
+import { childTimeFor, remapLength } from './remap.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
 import type { Earlier, Voice } from './voice.js';
 
@@ -56,7 +57,9 @@ export function checkChild<I, O>(spec: VoiceSpec<I, O>, child: Voice<I, O>): voi
 /** As `checkChild`, for a patch's voice not yet made, so `blend` can refuse a member before any is cued. */
 export function checkPatchChild<I, O>(spec: VoiceSpec<I, O>): void {
   unplaced(spec);
-  if (!Number.isFinite(spanOf(spec.patch.duration, passesOf(spec.loop)))) throw endless();
+  const length =
+    spec.remap === undefined ? spec.patch.duration : remapLength(spec.remap, spec.patch.duration);
+  if (!Number.isFinite(spanOf(length, passesOf(spec.loop)))) throw endless();
 }
 
 function unplaced<I, O>(spec: VoiceSpec<I, O>): void {
@@ -165,7 +168,7 @@ function clockOf<I, O>(span: Voice<I, O>, at: number): number {
  * its children left at.
  */
 function readingAt<I, O>(voice: Voice<I, O>, at: number): number {
-  const t = voice.owner === null ? at : readingAt(voice.owner, at);
+  const t = voice.owner === null ? at : childTimeFor(voice.owner, readingAt(voice.owner, at));
   if (t === Number.NEGATIVE_INFINITY || (voice.state === 'pending' && !(t >= voice.start)))
     return Number.NEGATIVE_INFINITY;
   return elapsedWith(voice, t);

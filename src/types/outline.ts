@@ -107,6 +107,7 @@ export type OutlineLane = { readonly on: true } | { readonly on: false; readonly
  *   runs faster off lanes than on, where a fill walks its subjects a second time.
  * - `'kind'`: it writes a channel no lane folds, such as a custom one.
  * - `'shared'`: it writes a channel that a voice off lanes also writes, which closes the channel.
+ * - `'remap'`: its clock, or an owner's above it, runs through a remap.
  *
  * @category mix
  */
@@ -128,4 +129,5 @@ export type OffLane =
   | 'role'
   | 'calls'
   | 'kind'
-  | 'shared';
+  | 'shared'
+  | 'remap';

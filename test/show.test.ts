@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { curve } from '../src/easing.js';
 import { mix } from '../src/mixer.js';
+import { tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import { type Kind, play, type Show } from '../src/show.js';
 import type { Handle, Mix, MixOptions } from '../src/types.js';
@@ -296,16 +297,26 @@ describe('a show', () => {
     expect(bad({ kind: 'a', freeze: 'after', end: 50 })).toThrow(/takes no end/);
     expect(
       bad(
-        { kind: 'k', ease: 'ease-in' },
-        {
-          k: () =>
-            keys<Row, Pose>(100, [
-              { at: 0, delta: { a: 0 } },
-              { at: 1, delta: { a: 1 } },
-            ]),
-        },
+        { kind: 's', ease: 'ease-in' },
+        { s: () => tween<Row, Pose>('a', { from: 0, to: 1, ms: 100 }) },
       ),
-    ).toThrow(/this is a keys patch/);
+    ).toThrow(/a motion runs by its own laws/);
+  });
+
+  it('eases a keys patch through its remap, as a patch() patch', () => {
+    const ramped = (): Kind<Row, Pose> => () =>
+      keys<Row, Pose>(200, [
+        { at: 0, delta: { a: 0 } },
+        { at: 1, delta: { a: 1 } },
+      ]);
+    const m = make({ history: { ms: 1e9, every: 50, tape } });
+    play(m, { cues: [{ kind: 'k', start: 0, ease: 'ease-in', freeze: 'after' }] }, { k: ramped() });
+    const easeIn = curve('ease-in');
+    expect(ahead(m, 50)[0]).toBe(round(easeIn(0.25)));
+    expect(at(m, 100)[0]).toBe(round(easeIn(0.5)));
+    expect(at(m, 150)[0]).toBe(round(easeIn(0.75)));
+    m.seek(50);
+    expect(round(m.probe(r).a)).toBe(round(easeIn(0.25)));
   });
 
   it('checks every cue before cueing any, and drops what a throwing kind left', () => {

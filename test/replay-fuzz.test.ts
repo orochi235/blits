@@ -29,6 +29,8 @@ const modes = {
   store: { transport: false, store: true },
   'transport and store': { transport: true, store: true },
   'transport, jumps': { transport: true, store: false, jumps: true },
+  remaps: { transport: false, store: false, remaps: true },
+  'remaps, transport and store': { transport: true, store: true, remaps: true },
 };
 
 /** Each lanes setting's first failing check, shrunk to the calls that still fail it. */
@@ -37,9 +39,10 @@ async function failures(
   transport: boolean,
   store: boolean,
   jumps = false,
+  remaps = false,
 ): Promise<string[]> {
   const out: string[] = [];
-  const p = program(seed, { transport, jumps, ...KNOWN });
+  const p = program(seed, { transport, jumps, remaps, noFadeRest: remaps, ...KNOWN });
   for (const lanes of [true, false]) {
     const mode: Mode = { lanes, transport, store, jump: jumps };
     const { e, rec } = play(p, mode);
@@ -66,6 +69,7 @@ describe('seek and replay against straight play', () => {
     for (const seed of seeds())
       it(`program ${seed}, ${name}`, async () => {
         const jumps = 'jumps' in mode && mode.jumps;
-        expect(await failures(seed, mode.transport, mode.store, jumps)).toEqual([]);
+        const remaps = 'remaps' in mode && mode.remaps;
+        expect(await failures(seed, mode.transport, mode.store, jumps, remaps)).toEqual([]);
       });
 });

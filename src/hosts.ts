@@ -19,6 +19,7 @@ import { absent } from './numbers.js';
 import { descendants, ownerReading, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
+import { remapped } from './remap.js';
 import { landed } from './rests.js';
 import { heard } from './signals.js';
 import { cuedById, frameOf } from './strays.js';
@@ -147,6 +148,8 @@ export function unfit<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): OffLane | und
   const spec = voice.spec;
   const patch = voice.patch;
   if (voice.keeping) return 'state';
+  // A lane reads a clock that runs straight; a remap bends it, here or in an owner above.
+  if (remapped(voice)) return 'remap';
   // Waiting to start, a voice shows the frame it will start on, which no fill reads its clock for.
   if ((voice.freezesBefore || voice.state === 'fading') && voice.unstarted(mix.now)) return 'wait';
   // A fill takes a time before 0 as before a subject's start, which no time is for this voice.

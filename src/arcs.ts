@@ -4,6 +4,7 @@ import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { ownerReading } from './owner.js';
 import { startAt } from './place.js';
+import { remapLength } from './remap.js';
 import { refit } from './spans.js';
 import type { ArcHandle, ArcSpec, ArcVoice, Handle, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
@@ -93,7 +94,8 @@ function lengthOf<I, O, H>(part: readonly ArcVoice<I, O, H>[]): number {
   for (const v of part) {
     const loop = v.loop;
     const passes = loop === undefined || loop === false ? 1 : loop === true ? Infinity : loop;
-    const own = v.duration ?? (v.patch.duration > 0 ? v.patch.duration * passes : 0);
+    const pass = v.remap === undefined ? v.patch.duration : remapLength(v.remap, v.patch.duration);
+    const own = v.duration ?? (pass > 0 ? pass * passes : 0);
     if (!(own >= 0)) throw new RangeError(`blits: an arc's part lasts 0 ms or more, not ${own}`);
     if (own > most) most = own;
   }
@@ -112,6 +114,10 @@ export function cueArc<I, O>(mix: Mixer<I, O>, spec: ArcSpec<I, O>): ArcHandle<I
   if ((spec as { freeze?: unknown }).freeze !== undefined)
     throw new Error(
       'blits: an arc holds each part’s first and last frames itself, so it takes no freeze',
+    );
+  if ((spec as { remap?: unknown }).remap !== undefined)
+    throw new Error(
+      'blits: an arc lays its parts out on its own clock, so it takes no remap; remap a part',
     );
   const { enter, active, exit, hold, blend, ...own } = spec;
   const parts = [listOf(enter), listOf(active), listOf(exit)] as (

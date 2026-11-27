@@ -5,6 +5,7 @@ import { ownerReading, startedAt } from './origin.js';
 
 export { ownerReading };
 
+import { ownTimeFor } from './remap.js';
 import type { Patch } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -60,7 +61,8 @@ export function ownedElapsed<I, O>(voice: Voice<I, O>, owner: Voice<I, O>, now: 
 
 /** The mix time an owner's clock reads `t`, by its controls now; Infinity where it never will. */
 export function mixTime<I, O>(owner: Voice<I, O>, t: number): number {
-  const up = owner.backs ? backWith(owner, t) : timeWith(owner, t);
+  const own = ownTimeFor(owner, t);
+  const up = owner.backs ? backWith(owner, own) : timeWith(owner, own);
   return owner.owner === null ? up : mixTime(owner.owner, up);
 }
 

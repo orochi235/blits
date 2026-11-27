@@ -35,6 +35,7 @@ import {
   turnedBack,
 } from './owner.js';
 import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
+import { type Remapped, remapFor } from './remap.js';
 import type { Seat } from './seat.js';
 import { keeping, VoiceSetting } from './setting.js';
 import { type Fitting, lingers } from './spans.js';
@@ -252,7 +253,13 @@ export class Voice<I, O> {
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;
+  /** Ms one pass lasts on its clock: its patch's, or its remap's length. */
   readonly duration: number;
+  /**
+   * What its clock runs through: for a voice, from a pass's phase to the time its patch is read at;
+   * for an owner, from its own clock to the one its children run on. Null for none.
+   */
+  readonly remap: Remapped | null;
   /** Voice ms its passes last, Infinity for a patch with no passes or a loop for good. */
   readonly span: number;
   /** The state behind a motion patch, undefined for any other. */
@@ -615,7 +622,10 @@ export class Voice<I, O> {
       : undefined;
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
     this.passes = passesOf(spec.loop);
-    this.duration = patch.duration;
+    const owns = patch === ownerPatch;
+    this.remap = spec.remap === undefined ? null : remapFor(spec.remap, patch.duration, owns);
+    // A remapped voice's passes are the remap's; an owner's remap reaches only its children.
+    this.duration = this.remap === null || owns ? patch.duration : this.remap.length;
     this.span = spanOf(this.duration, this.passes);
     this.motion = motionOf<I>(patch);
     const freezes = this.motion === undefined ? spec.freeze : undefined;

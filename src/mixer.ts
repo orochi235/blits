@@ -587,6 +587,10 @@ export class Mixer<I, O> implements Mix<I, O> {
       throw new Error(
         'blits: a span lays out its children forward from its start, so it is not cued backward',
       );
+    if (spec.remap !== undefined)
+      throw new Error(
+        'blits: a span lays its children out on its own clock, so it takes no remap; remap a child',
+      );
     this.fitting = new Fitting(spec as SpanSpec<unknown>);
     try {
       const handle = this.owns(spec);

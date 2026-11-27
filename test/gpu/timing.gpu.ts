@@ -1,5 +1,4 @@
-import { fadeInAt, passAt } from '../../src/clock.js';
-import { phaseOf } from '../../src/contribution.js';
+import { fadeInAt, passAt, phaseOf } from '../../src/clock.js';
 import { CURVE_WIDTH, type Curve, curve, curveData } from '../../src/easing.js';
 import { passBits } from '../../src/gpu/columns.js';
 import type { GpuDevice } from '../../src/gpu/webgpu.js';

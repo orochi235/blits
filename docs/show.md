@@ -78,11 +78,10 @@ Settled from the code, all 2026-11-25:
   x-xstitch's patches are built to it. It is undefined where nothing gives one, and the factory
   picks its patch's own. `play` calls each factory once per cue, in show order, so a kind may carry
   a value from one cue to the next (x-xstitch's `from: 'carry'`).
-- **`ease` warps a cue's phase**, as x-xstitch's does: `play` hands the patch `ease(phase)` in place
-  of `phase`. It works only on a `patch()`-made patch; on `keys`, a motion or a `wave` it is refused,
-  since their shape is read as data. The general form is the voice clock remap in `docs/TODO.md`,
-  which this becomes once it lands. A shader patch wrapped so runs on the CPU, since its WGSL never
-  sees the curve.
+- **`ease` warps a cue's phase**, as x-xstitch's does: it becomes the curve of each voice's `remap`
+  (2026-11-27), so it works on `patch()`, `keys` and `wave` patches alike. A motion takes no remap
+  and is refused; a patch with no duration has no phase, and is left as it is. A remapped voice
+  runs on the CPU, off lanes, since neither reads a bent clock.
 - **`ease` and `fade.ease` take blits' easing names and shapes, not a function**, so they stay data.
 - **`muted` cues the cue and writes 0 to its handles' `weight`**, rather than leaving it out:
   anchors to it still answer, and a host unmutes it live by writing the weight back, 1 where the

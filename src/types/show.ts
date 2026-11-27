@@ -65,7 +65,10 @@ export interface KindCue extends CueBase {
   length?: number;
   /** Where it ends, on the show's clock or as an anchor, its fade out ending there. */
   end?: number | Anchor;
-  /** The curve its phase runs through. Only for a patch `patch()` made. */
+  /**
+   * The curve its phase runs through: its voices' {@link VoiceSpec.remap | `remap`} curve. Any patch
+   * but a motion, which takes no remap.
+   */
   ease?: Ease;
   /** As a voice's {@link VoiceSpec.freeze | `freeze`}. One freezing after has no end of its own: it stays until the show is stopped. */
   freeze?: 'before' | 'after' | 'both';
@@ -81,7 +84,7 @@ export interface Piece {
   params?: { readonly [key: string]: Json };
   /** How long it holds its part, as an arc voice's {@link ArcVoice.duration | `duration`}. */
   length?: number;
-  /** The curve its phase runs through. Only for a patch `patch()` made. */
+  /** The curve its phase runs through, as a kind cue's `ease`. */
   ease?: Ease;
 }
 

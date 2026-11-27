@@ -54,6 +54,7 @@ export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
 export type { PennerName } from './penner.js';
 export { penner } from './penner.js';
+export { remapLength, sourceAt } from './remap.js';
 export type { AngleOptions } from './rotation.js';
 export { angle, quat } from './rotation.js';
 export type { Input, LagOptions, Level, SlewOptions } from './signals.js';
@@ -144,6 +145,7 @@ export type {
   Query,
   Registry,
   RegistryChange,
+  Remap,
   RiseOptions,
   Run,
   SeekOptions,

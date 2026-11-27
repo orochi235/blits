@@ -1,4 +1,5 @@
 import { backsWith, backWith, type Clock, elapsedWith, timeWith } from './clock.js';
+import { childTimeFor, ownTimeFor } from './remap.js';
 import type { Voice } from './voice.js';
 
 /** A clock a voice ran on before its current one, until its local time `until`. */
@@ -126,7 +127,7 @@ export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boo
   }
   // Infinity where its clock will never read it: the subject waits for a clock that will.
   if (Number.isNaN(t)) t = timeWith(voice, elapsed);
-  return voice.owner === null ? t : originOf(voice.owner, t, rebuilt);
+  return voice.owner === null ? t : originOf(voice.owner, ownTimeFor(voice.owner, t), rebuilt);
 }
 
 /**
@@ -135,14 +136,14 @@ export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boo
  */
 export function ownerReading<I, O>(owner: Voice<I, O>, now: number): number {
   const t = owner.owner === null ? now : ownerReading(owner.owner, now);
-  return t >= owner.start ? elapsedWith(owner, t) : Number.NEGATIVE_INFINITY;
+  return t >= owner.start ? childTimeFor(owner, elapsedWith(owner, t)) : Number.NEGATIVE_INFINITY;
 }
 
 /** The mix time a voice started, or will by its owners' controls now: where its clock read 0. */
 export function startedAt<I, O>(voice: Voice<I, O>): number {
   const owner = voice.owner;
   if (owner === null) return voice.start;
-  const t = originOf(owner, voice.start, false);
+  const t = originOf(owner, ownTimeFor(owner, voice.start), false);
   // An owner standing still reads the child's start at every mix time since it stopped; the child
   // started no earlier than its cue, so its fade in counts from there.
   return t < voice.cuedAt && ownerReading(owner, voice.cuedAt) === voice.start ? voice.cuedAt : t;

@@ -158,6 +158,15 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    */
   loop?: boolean | number;
   /**
+   * A remap of its clock: each pass plays `window` of its patch's time along `curve`, over
+   * `length` ms of the voice's own clock, so `loop` repeats the window and `rate` runs through it.
+   * A window from a later time to an earlier plays the patch backward, a curve that turns back
+   * scrubs it, and a window of one time freezes a frame. The patch is read at the time the remap
+   * gives, held to its one pass, and `setting.elapsed` is that time; `setting.pass`, `marks`, `hits`
+   * and `seek` count on the voice's own clock. Not for a motion, which runs by its own laws.
+   */
+  remap?: Remap;
+  /**
    * Per-subject delay in voice ms. It is klieg's stagger grammar reduced to the one thing the mix
    * needs. It runs once per subject and the answer is kept: at `cue` for every subject a voice
    * names in `subjects`, else, like `target`, on first sight. So a voice naming its subjects ends by
@@ -281,6 +290,28 @@ export interface BlendMember<I, O, H = unknown> {
 }
 
 /**
+ * A clock run through a curve. On a voice it says which stretch of its patch's time each pass plays,
+ * and how; on an owner, the clock its children run on.
+ *
+ * @category voice
+ */
+export interface Remap {
+  /**
+   * The stretch played, `[from, to]` in ms of the source's time: the patch's for a voice, the
+   * children's clock for an owner. `to` below `from` plays it backward. Default for a voice: its
+   * patch's whole pass, `[0, duration]`; a patch with no duration, and an owner, need one.
+   */
+  window?: readonly [from: number, to: number];
+  /**
+   * How a pass runs through the window: 0 at `from`, 1 at `to`. Any easing, one that turns back or
+   * holds included, so a curve sampled from keyframes scrubs. Default: straight.
+   */
+  curve?: Easing;
+  /** How long a pass lasts on its own clock, ms. Default: the window's width. */
+  length?: number;
+}
+
+/**
  * What `owns` takes. An owner has no patch, and plays only through the voices it holds.
  *
  * @category voice
@@ -314,6 +345,15 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   fade?: FadeSpec;
   /** The freeze every child without one of its own takes. */
   freeze?: 'before' | 'after' | 'both';
+  /**
+   * Runs the clock its children read through a remap: as its own clock goes from 0 to `length`,
+   * theirs goes from `from` to `to` along `curve`, and before and after that on at the window's
+   * average speed. Their `start`s count on that clock; its handle's `seek` and `elapsed`, and its
+   * own `hits` and `marks`, count on its own. It runs them forward: a window from a lower time to a
+   * higher, a curve that may hold but never turns back. Runs them back by `rate`. Not on a span or
+   * an arc, which lay their children out on their own clocks.
+   */
+  remap?: Remap;
   /** Words a source attaches to it, as a voice's. */
   tags?: readonly string[];
   /** What other voices call it by, among its siblings. */

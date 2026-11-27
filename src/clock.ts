@@ -322,6 +322,11 @@ export function backWith(c: Clock, elapsed: number): number {
   );
 }
 
+/** The phase `elapsed` voice ms puts a voice at, before its start included. */
+export function phaseOf(elapsed: number, duration: number, passes: number): number {
+  return elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, passes);
+}
+
 /**
  * The phase of a time before 0, for a loop with no first pass: where the pass before 0, and each
  * one before that, would read it.

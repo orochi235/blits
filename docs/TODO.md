@@ -23,15 +23,19 @@ Owner tags:
   without history, reaching back only to the last host call. Needs a ruling on whether blits takes
   a seek with that limit. No consumer waits on it: weasel's clock bounds its history with a finite
   `ms` instead (2026-11-26). Closes on the ruling, or when such a seek ships.
-- **[agent] A voice's clock run through a remap** (2026-11-25, for Lottie precomp time remap and named ranges
-  in weasel). Ruled 2026-11-25: one primitive, a remap on a voice or owner's clock, with a linear window
-  (play `[a, b]` of its source) as the plain case and a curve as the general one; with `loop` and `rate` it
-  covers freezing, reversing, scrubbing within a parent, and playing or looping a slice. Named ranges are not
-  a blits concept: hosts keep the names (weasel's `Clip`) and cue a window. A voice can't start partway into
-  its patch today, so the window is new either way. Closes when a voice and an owner take a remap, seeks and
-  read-aheads agree with play, and the fuzz covers it. `@msb235/blits/show` wraps a `patch()` patch's `at` for
-  a cue's `ease` meanwhile, and refuses `keys`, motions and waves; once this lands, `ease` becomes a curve
-  remap and works on every patch (`docs/show.md`).
+- **[agent] Four replay fuzz programs of the remap modes fail with no remap in them** (2026-11-27,
+  `BLITS_REPLAY_SEEDS=1-400 -t remaps`; the remap modes draw other programs than the plain ones). Each
+  shrinks to plain calls, and 243 and 259 fail the same with every remapped voice swapped for an
+  unremapped patch of the remap's pass length (run on teitou):
+  242 (alone, and transport and store): a `sender` with `stepMs: 12`, `freeze: 'after'` and a named
+  stagger, ramped at frame 1; a seek to frame 5 loses an event the next frame sent in play.
+  243 (transport and store): a stateful patch with a finite pass, `loop: 2`, `freeze: 'both'`, cued at
+  frame 6, then a `seekKeep` at frame 8; a read ahead from a seek to frame 2 shows 0 where play showed 3.73.
+  259 (transport and store): a keys voice weighed `around` and anchored after the end of a voice whose
+  stagger is asked as met; a seek back to frame 2 shows g 1 at frame 5 where play showed 0.94.
+  344 (transport and store): an announcement, a mix rate of 2, then a `call` cueing a keys voice
+  anchored to the announcement; a seek back to frame 2 shows 0.472 at frame 29 where play showed 0.424.
+  Closes when those programs pass in both remap modes.
 - **[agent] Move the five timeline libraries onto `@msb235/blits/show`** (2026-11-25), in this order:
   x-xstitch and x-pcb, then beamos, then blinken, then klieg, which first moves its slot crossfade onto
   `mix.arc`. `docs/show.md` has each one's schema as a show and what doesn't fit. The subpath shipped in

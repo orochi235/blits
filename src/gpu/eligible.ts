@@ -1,6 +1,7 @@
 import { curveData } from '../easing.js';
 import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
+import { remapped } from '../remap.js';
 import type { Voice } from '../voice.js';
 import { type Answers, varies } from './answers.js';
 import { overRoom } from './bounds.js';
@@ -76,6 +77,7 @@ function why<I, O>(
     if (!codes.has(name))
       return `it writes ${name}, ${unfit.get(codes)?.get(name) ?? 'whose rule the GPU has no WGSL for'}`;
   if (voice.axes !== null) return "it weighs a channel's axes apart";
+  if (remapped(voice)) return 'its clock, or an owner’s above it, runs through a remap';
   const packed = packOf(voice.patch, codes);
   if (packed === undefined) return `no gpu runner takes a ${voice.patch.form} patch`;
   if ('why' in packed) return packed.why;
