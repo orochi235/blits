@@ -19,8 +19,9 @@ import { absent } from './numbers.js';
 import { descendants, ownerReading, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
+import { landed } from './rests.js';
 import { heard } from './signals.js';
-import { cuedById } from './strays.js';
+import { cuedById, frameOf } from './strays.js';
 import type { Subject } from './subject.js';
 import { record, taping } from './tape.js';
 import type { Booker, BookOptions, Channel, Doubt, Handle, OffLane } from './types.js';
@@ -272,6 +273,8 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       if (held !== undefined) return held.weight;
       return mix.share === null ? 0 : mix.share.weightAt(voice, slot);
     },
+    landed: (voice) => landed(mix, voice, mix.now),
+    frameOf: (voice, subject) => frameOf(mix, voice, subject),
     taping: () => taping(mix),
     attached: () => mix.attached(),
     record: (h, label, again) =>

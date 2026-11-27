@@ -1,4 +1,4 @@
-import { BOUND, COAST, CRITICAL, DRIFT, EASED, OVER, UNDER } from '../../closed.js';
+import { BOUND, COAST, CRITICAL, DRIFT, EASED, OVER, STOP, UNDER } from '../../closed.js';
 import { EASING_WGSL } from './easing.js';
 
 /**
@@ -86,6 +86,7 @@ fn blits_closed_bound(k: u32, branch: u32, x0: f32, goal: f32, v0: f32, t: f32) 
     let e = exp(-t / tau);
     return vec2f(y0 + v0 * tau * (1.0 - e), v0 * e);
   }
+  if (values[k + 4u] == ${STOP}.0) { return vec2f(0.0, 0.0); }
   let s = t + tau * log(left);
   let vc = v0 * left;
   let e = exp(-w0 * s);
@@ -148,14 +149,21 @@ export function closedWgsl(form: number, n: number): { helpers: string[]; body: 
     helpers: solve.helpers,
     body: [
       'let dt = max(0.0, t - persub[r]) / 1000.0;',
-      'let settle = values[k + 1u];',
+      'let by = values[k + 1u];',
+      'let length = by < 0.0;',
+      'let settle = abs(by);',
       'var still = settle > 0.0;',
+      'var far = 0.0;',
+      'var fast = 0.0;',
       `for (var a = 0u; a < ${n}u; a++) {`,
       `let goal = ${to('a')};`,
       `let yd = ${solve.call};`,
       'x[a] = goal + yd.x;',
-      'if (abs(yd.x) > settle || abs(yd.y) > settle) { still = false; }',
+      'far += yd.x * yd.x;',
+      'fast += yd.y * yd.y;',
+      'if (!length && (abs(yd.x) > settle || abs(yd.y) > settle)) { still = false; }',
       '}',
+      'if (length && (sqrt(far) > settle || sqrt(fast) > settle)) { still = false; }',
       `if (still) { for (var a = 0u; a < ${n}u; a++) { x[a] = ${to('a')}; } }`,
     ].join(' '),
   };

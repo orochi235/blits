@@ -4,6 +4,27 @@ This package follows [semver](https://semver.org): a breaking change bumps the m
 addition the minor, and a fix the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `landed` on a voice's handle reads whether every subject the voice's motion reaches has landed
+  where it heads, with no `to`, `push` or `set` waiting. It fades nothing and takes no subject off
+  its lane, and a spring landed on 1 in a `sum` channel reads true where `atRest` reads false.
+- `settleBy: 'length'` on a spring or a glide holds the distance left and the speed each as one
+  length over the axes, as a Euclidean rest threshold does; `'axis'`, the default, holds each axis
+  on its own.
+- `edge` on a glide with `bounds`: `'stop'` stops a coast on the edge it reaches, and
+  `{ reflect: r }` turns it back with `r` of its speed, off the far edge too, under the same
+  friction. `'spring'`, the default, springs it back as before.
+
+### Fixed
+
+- A motion patch's `read`, and a handle's, cost a tenth of the allocation it did: a subject playing
+  its latest stretch is read from its run, and a handle no longer looks its voice up among every
+  voice cued. At 10,000 springs each read once a frame, a frame took 2.20 ms where it took 3.59
+  (teitou, `bench/springreads.sh`).
+
 ## 1.6.0
 
 ### Added

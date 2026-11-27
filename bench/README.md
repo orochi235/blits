@@ -50,6 +50,11 @@ the machine being used.
   `bench/stopmaps.mjs` counts the Maps, WeakMaps and Sets a stop and a steady frame touch, by caller,
   and `bench/stopextra.mjs` times a stop with extra subject-keyed maps of its own (`EXTRA=k`), the
   most that folding one of the mix's away could save.
+- `bench/springreads.sh <rounds>` times weasel's animator shape, `springs^` with each voice's
+  handle `read` every frame (`READS=read` in `frame.mjs`) or its `landed` asked (`READS=landed`),
+  and `bench/springreads.mjs` tables it. At 10,000 springs on teitou a `read` a voice cost 3.59 ms
+  a frame over 0.46 without, and 2.20 once a read skipped building its stretch and looking its
+  voice up (2026-11-26, `runs/2026-11-26-spring-reads*.txt`).
 - `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over any number of builds,
   releases included, and `bench/lineage.mjs` tables it.
 

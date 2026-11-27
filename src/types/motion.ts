@@ -69,6 +69,12 @@ export interface MotionOptions<I, V extends Value> {
    * Default 1e-4; 0 keeps the curve exact.
    */
   settle?: number;
+  /**
+   * How `settle` measures near and slow. `'axis'` (the default) holds each axis to it on its own;
+   * `'length'` holds the distance still to go, and the speed, each as one length over every axis,
+   * as a Euclidean rest threshold does. On one axis the two are the same.
+   */
+  settleBy?: 'axis' | 'length';
 }
 
 /**
@@ -111,9 +117,25 @@ export interface GlideOptions<I, V extends Value> extends MotionOptions<I, V> {
   ms?: number;
   /** The least and greatest value a coast comes to rest at, per axis. Default none. */
   bounds?: PerSubject<I, readonly [min: V, max: V]>;
+  /**
+   * What an edge of `bounds` does to a coast that reaches it, on that axis alone. `'spring'` (the
+   * default) lets it coast on past the edge and springs it back; `'stop'` stops it on the edge;
+   * `{ reflect: r }` turns it back off the edge with `r` of the speed it met the edge at, 1 for
+   * every bit of it and 0 to stop, coasting on from there under the same friction, off the far edge
+   * too if it gets that far. Whatever the edge, a subject let go past one springs back to it unless
+   * it coasts back inside.
+   */
+  edge?: GlideEdge;
   /** The spring back's, per second squared, with `bounds`. Default 170, as a spring's. */
   stiffness?: number;
 }
+
+/**
+ * What an edge of a glide's `bounds` does to a coast that reaches it.
+ *
+ * @category patch
+ */
+export type GlideEdge = 'spring' | 'stop' | { readonly reflect: number };
 
 /**
  * What `tween` takes.

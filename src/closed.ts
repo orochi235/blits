@@ -11,6 +11,17 @@ export const EASED = 4;
 export const BOUND = 5;
 /** A spring with neither stiffness nor damping: it keeps the velocity it is given. */
 export const DRIFT = 6;
+/**
+ * A glide whose bounds turn it back, keeping the law's `k3` of its speed at each edge. Its stretch
+ * carries both edges of every axis, since a bounce may carry it to the far one.
+ */
+export const REFLECT = 7;
+
+/** A bounded glide's law `k3` where an edge stops a coast that crosses it; 0 springs it back. */
+export const STOP = 1;
+
+/** The most edges a reflecting coast meets; at the last it stops, as its rest does. */
+const BOUNCES = 256;
 
 const solved = { y: 0, dy: 0 };
 
@@ -154,11 +165,7 @@ function solveBound(law: Float64Array, x0: number, goal: number, v0: number, t: 
   }
   const w0 = law[3] as number;
   if (y0 * over > 0) {
-    const e = Math.exp(-w0 * t);
-    const b = v0 + w0 * y0;
-    const y = e * (y0 + b * t);
-    solved.y = y;
-    solved.dy = e * b - w0 * y;
+    springBack(w0, y0, v0, t);
     return;
   }
   // e^(−t/τ) where the coast meets the edge: the fraction of its speed it still has there.
@@ -170,6 +177,11 @@ function solveBound(law: Float64Array, x0: number, goal: number, v0: number, t: 
     solved.dy = v0 * e;
     return;
   }
+  if (law[4] === STOP) {
+    solved.y = 0;
+    solved.dy = 0;
+    return;
+  }
   const s = t - cross;
   const vc = v0 * left;
   const e = Math.exp(-w0 * s);
@@ -177,12 +189,91 @@ function solveBound(law: Float64Array, x0: number, goal: number, v0: number, t: 
   solved.dy = e * vc * (1 - w0 * s);
 }
 
+/** A critically damped spring of ω₀ `w0` from `y0` off its goal at `v0`, `t` s on. */
+function springBack(w0: number, y0: number, v0: number, t: number): void {
+  const e = Math.exp(-w0 * t);
+  const b = v0 + w0 * y0;
+  const y = e * (y0 + b * t);
+  solved.y = y;
+  solved.dy = e * b - w0 * y;
+}
+
+/** Where `reflected` leaves a coast: its position and velocity. */
+export const walked = { x: 0, v: 0 };
+
+/**
+ * A coast from `x0` at `v0` between `lo` and `hi`, `t` s on (Infinity for its rest), into
+ * `walked`: each edge it reaches turns it back with `r` of the speed it met the edge at, and it
+ * coasts on from there under the same friction. From outside the bounds it coasts in through the
+ * near edge; `backs` says when it springs back instead.
+ */
+export function reflected(
+  tau: number,
+  r: number,
+  lo: number,
+  hi: number,
+  x0: number,
+  v0: number,
+  t: number,
+): void {
+  let x = x0;
+  let v = v0;
+  let s = t;
+  for (let i = 0; ; i++) {
+    if (v === 0) break;
+    if (i === BOUNCES) {
+      v = 0;
+      break;
+    }
+    const wall = v > 0 ? hi : lo;
+    // e^(−t/τ) where the coast meets the wall: the fraction of its speed it still has there.
+    const left = 1 - (wall - x) / (v * tau);
+    if (!(left > 0)) break;
+    const cross = -tau * Math.log(left);
+    if (s < cross) break;
+    s -= cross;
+    x = wall;
+    v = -r * v * left;
+  }
+  const e = s === Number.POSITIVE_INFINITY ? 0 : Math.exp(-s / tau);
+  walked.x = x + v * tau * (1 - e);
+  walked.v = v * e;
+}
+
+/** Whether a reflecting coast let go at `x0`, past an edge, springs back rather than coasting in. */
+export function backs(tau: number, lo: number, hi: number, x0: number, v0: number): boolean {
+  if (x0 < lo) return !(x0 + v0 * tau > lo);
+  if (x0 > hi) return !(x0 + v0 * tau < hi);
+  return false;
+}
+
+/** One axis of a reflecting glide heading for `goal`, its edges `lo` and `hi`, into `solved`. */
+function solveReflect(
+  law: Float64Array,
+  x0: number,
+  goal: number,
+  v0: number,
+  lo: number,
+  hi: number,
+  t: number,
+): void {
+  const tau = law[2] as number;
+  if (backs(tau, lo, hi, x0, v0)) {
+    springBack(law[3] as number, x0 - goal, v0, t);
+    return;
+  }
+  reflected(tau, law[4] as number, lo, hi, x0, v0, t);
+  solved.y = walked.x - goal;
+  solved.dy = walked.v;
+}
+
 /**
  * A stretch at voice time `t`, released at `at` from `x0` moving at `v0` toward `to` (each read
  * from its offset), into `xo` and `vo`: the one copy of the closed forms, which `law` (a patch's
  * `[form, settle, k1, k2, k3]`, the head of a patch's buffer or a copy of it) picks between. A tween reads `ease` and
  * `ms`, the stretch's length, dividing in milliseconds so a boundary lands exactly; every other
- * form ignores them.
+ * form ignores them. A reflecting glide reads each axis's edges from `edges` at `e`: every axis's
+ * least edge, then every axis's greatest.
  */
 export function closed(
   law: Float64Array,
@@ -199,21 +290,36 @@ export function closed(
   t: number,
   xo: Float64Array,
   vo: Float64Array,
+  edges?: ArrayLike<number>,
+  e = 0,
 ): boolean {
   if (law[0] === EASED)
     return eased(ease as Curve, n, progress(t, at, ms), ms, x0, x, to, g, xo, vo);
   const dt = Math.max(0, t - at) / 1000;
-  const settle = law[1] as number;
+  // A negative settle holds the distance and the speed each as one length over the axes.
+  const by = law[1] as number;
+  const length = by < 0;
+  const settle = length ? -by : by;
   let still = settle > 0;
+  let far = 0;
+  let fast = 0;
   prepare(law, dt);
   for (let i = 0; i < n; i++) {
     const goal = to[g + i] as number;
     if (law[0] === BOUND) solveBound(law, x0[x + i] as number, goal, v0[v + i] as number, dt);
-    else solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
+    else if (law[0] === REFLECT) {
+      const lo = (edges as ArrayLike<number>)[e + i] as number;
+      const hi = (edges as ArrayLike<number>)[e + n + i] as number;
+      solveReflect(law, x0[x + i] as number, goal, v0[v + i] as number, lo, hi, dt);
+    } else solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
     xo[i] = goal + solved.y;
     vo[i] = solved.dy;
-    if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;
+    if (length) {
+      far += solved.y * solved.y;
+      fast += solved.dy * solved.dy;
+    } else if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;
   }
+  if (length && (Math.sqrt(far) > settle || Math.sqrt(fast) > settle)) still = false;
   if (still)
     for (let i = 0; i < n; i++) {
       xo[i] = to[g + i] as number;

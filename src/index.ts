@@ -36,6 +36,7 @@ export {
 export { mix, mixer } from './mixer.js';
 export type {
   Glide,
+  GlideEdge,
   GlideOptions,
   Motion,
   MotionOptions,

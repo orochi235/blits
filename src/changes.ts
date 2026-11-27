@@ -192,7 +192,10 @@ function released<I>(
   const put = change.x !== undefined && change.v === undefined;
   const aimed = motions.aim(xs, vs, to, known, put);
   const length = subject === absent ? ms : (motions.shape.ms?.(known) ?? 0);
-  return { at, ms: length, x0: xs, v0: vs, to: aimed, change };
+  const seg: Segment = { at, ms: length, x0: xs, v0: vs, to: aimed, change };
+  const edges = motions.shape.edges?.(xs, known, put);
+  if (edges !== undefined) seg.edges = edges;
+  return seg;
 }
 
 export function commit<I>(this: Motions<I>, s: number, t: number): void {

@@ -12,6 +12,8 @@ export interface Segment {
   x0: number[];
   v0: number[];
   to: number[];
+  /** A reflecting glide's edges: every axis's least, then every axis's greatest. */
+  edges?: number[];
   /** The change that released it; undefined for a subject's first stretch. */
   change?: Change;
 }
@@ -118,6 +120,11 @@ export interface Shape<I> {
    * `set` released.
    */
   aim: (x: number[], v: number[], was: number[] | null, subject: I, put: boolean) => number[];
+  /**
+   * A reflecting glide's edges for a stretch released from `x` (least per axis, then greatest),
+   * which `aim` heads it inside of; undefined on every other shape.
+   */
+  edges?: (x: number[], subject: I, put: boolean) => number[] | undefined;
   /** `[form, settle, k1, k2, k3]`. */
   law: readonly number[];
   /** Whether a subject's value is a number rather than an array. */

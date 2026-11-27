@@ -138,6 +138,8 @@ export interface SpringSpec {
   readonly damping: number;
   readonly mass: number;
   readonly settle: number;
+  /** Present only where `settle` measures a length over the axes. */
+  readonly settleBy?: 'length';
 }
 
 /**
@@ -150,6 +152,10 @@ export interface GlideSpec {
   /** The friction's time constant, ms. */
   readonly ms: number;
   readonly settle: number;
+  /** Present only where `settle` measures a length over the axes. */
+  readonly settleBy?: 'length';
+  /** What its bounds' edges do, where it has bounds and they don't spring back. */
+  readonly edge?: 'stop' | { readonly reflect: number };
   /** The spring back's, per second squared; only on a glide with bounds. */
   readonly stiffness?: number;
 }

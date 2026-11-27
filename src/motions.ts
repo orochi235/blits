@@ -1,5 +1,5 @@
 import { applied, change, commit, cut, dueTo, insert, peek, queue, rewind } from './changes.js';
-import { BOUND, COAST, closed, DRIFT } from './closed.js';
+import { BOUND, COAST, closed, DRIFT, REFLECT } from './closed.js';
 import type { Curve } from './easing.js';
 import {
   made,
@@ -46,6 +46,9 @@ export const enum Law {
 }
 const HEAD = Law.HEAD;
 
+/** Where `Motions.read` leaves a position and velocity, grown to the widest patch read. */
+export let readScratch = { x: new Float64Array(4), v: new Float64Array(4) };
+
 /**
  * Where each field of a subject's run sits from the run's start: its release time, its flags, a
  * tween's ms, then `x0`, with `v0` and `to` after it `n` and `2n` along.
@@ -82,7 +85,8 @@ const notIn = (channel: string, space: Space): Error =>
  * The one copy, read by `at` and by a mix's lane alike.
  *
  * After the law, each subject's run of `stride` numbers is its release time, its flags, a tween's
- * ms for the stretch, then `x0`, `v0` and `to` per axis. A live sample reads this one buffer and nothing else the patch owns: at
+ * ms for the stretch, then `x0`, `v0` and `to` per axis, and a reflecting glide's edges after
+ * them, each axis's least then each axis's greatest. A live sample reads this one buffer and nothing else the patch owns: at
  * 10k springs of one subject each, a buffer per field, a map lookup per sample and the law in an
  * object of its own took a call from 130 ns to 490.
  */
@@ -161,7 +165,8 @@ export class Motions<I> {
    * `space` for a channel whose values lie in one, `turn` for one of angles.
    */
   cuedOn(channel: string, holdsNumber: boolean, space: Space | null = null, turn = 0): void {
-    if (space !== null && this.shape.law[0] === BOUND)
+    const form = this.shape.law[0];
+    if (space !== null && (form === BOUND || form === REFLECT))
       throw new Error(
         `blits: channel ${channel} ${space.is}, and a glide's bounds are a box on its raw numbers; glide it without bounds`,
       );
@@ -192,8 +197,9 @@ export class Motions<I> {
   moving(v: number[]): number[] {
     const law = this.shape.law;
     if (law[0] !== DRIFT) return v;
-    const settle = law[1] as number;
-    return v.map((vi) => (Math.abs(vi) <= settle ? 0 : vi));
+    const by = law[1] as number;
+    if (by < 0) return Math.hypot(...v) <= -by ? v.map(() => 0) : v;
+    return v.map((vi) => (Math.abs(vi) <= by ? 0 : vi));
   }
 
   aim(x: number[], v: number[], was: number[] | null, subject: I, put: boolean): number[] {
@@ -201,7 +207,7 @@ export class Motions<I> {
     const turn = this.turn;
     if (turn === 0) return to;
     const form = this.shape.law[0];
-    if (form === COAST || form === BOUND || form === DRIFT) return to;
+    if (form === COAST || form === BOUND || form === REFLECT || form === DRIFT) return to;
     const out = new Array<number>(to.length);
     for (let i = 0; i < to.length; i++) {
       const xi = x[i] as number;
@@ -252,7 +258,15 @@ export class Motions<I> {
     if (this.n < 0) this.size(n);
     this.grow(1);
     this.freshFlags = scalar ? SCALAR : 0;
-    return { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to };
+    const seg: Segment = { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to };
+    const edges = this.shape.edges?.(x, subject, false);
+    if (edges !== undefined) seg.edges = edges;
+    return seg;
+  }
+
+  /** Whether each run carries its edges after `to`, as a reflecting glide's does. */
+  get reflects(): boolean {
+    return this.shape.law[0] === REFLECT;
   }
 
   /** The run a subject the patch has not met starts with, as plain data, made once until a release. */
@@ -271,7 +285,7 @@ export class Motions<I> {
     if (this.space !== null && n !== this.space.axes) throw notIn(this.channel, this.space);
     if (this.lawBuf !== this.runs && n !== this.lodgedAxes) this.unlodge();
     this.n = n;
-    this.stride = RunField.X0 + 3 * n;
+    this.stride = RunField.X0 + (this.reflects ? 5 : 3) * n;
     if (shared.xs.length < n) shared = { xs: new Float64Array(n), vs: new Float64Array(n) };
     this.xs = shared.xs;
     this.vs = shared.vs;
@@ -360,6 +374,7 @@ export class Motions<I> {
     const b = this.base(s);
     if (((runs[b + RunField.FLAGS] as number) & (PENDING | OLDER)) !== 0) return false;
     if (out === runs && o === b) return true;
+    if (this.reflects) return false;
     const end = RunField.X0 + 3 * this.n;
     for (let i = 0; i < end; i++) out[o + i] = runs[b + i] as number;
     return true;
@@ -400,7 +415,7 @@ export class Motions<I> {
       else {
         const x = b + RunField.X0;
         const ms = runs[b + RunField.MS] as number;
-        this.evaluate(at, ms, runs, x, runs, x + this.n, runs, x + 2 * this.n, t, xo, vo);
+        this.evaluateRun(at, ms, x, t, xo, vo);
       }
       return;
     }
@@ -434,17 +449,10 @@ export class Motions<I> {
     const runs = this.runs;
     const b = this.bareAt(s);
     if (b < 0) return false;
-    const x = b + RunField.X0;
-    const n = this.n;
-    this.evaluate(
+    this.evaluateRun(
       runs[b + RunField.AT] as number,
       runs[b + RunField.MS] as number,
-      runs,
-      x,
-      runs,
-      x + n,
-      runs,
-      x + 2 * n,
+      b + RunField.X0,
       t,
       xo,
       vo,
@@ -462,7 +470,6 @@ export class Motions<I> {
    */
   landed(seeks: number): boolean {
     const runs = this.runs;
-    const n = this.n;
     if (seeks !== this.landedSeeks) {
       this.landedSeeks = seeks;
       for (let s = 0; s < this.numbers.size; s++) {
@@ -482,8 +489,7 @@ export class Motions<I> {
       if (!(t >= at)) return false;
       const x = b + RunField.X0;
       const ms = runs[b + RunField.MS] as number;
-      if (!this.evaluate(at, ms, runs, x, runs, x + n, runs, x + 2 * n, t, this.xs, this.vs))
-        return false;
+      if (!this.evaluateRun(at, ms, x, t, this.xs, this.vs)) return false;
       runs[b + RunField.FLAGS] = flags | LANDED;
     }
     return true;
@@ -528,21 +534,31 @@ export class Motions<I> {
     return (list[list.length - 1] as Change).at !== undefined;
   }
 
-  /** Position and velocity at `at`, default the latest frame; undefined until there is one. */
-  read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
+  /**
+   * Position and velocity at `at`, default the latest frame, into `read`'s scratch, which the next
+   * read overwrites; the subject's number, or -1 until there is a frame. A subject playing its
+   * latest stretch with nothing waiting is read from its run, as a live sample reads it.
+   */
+  read(subject: I, at?: number): number {
     const s = this.known(subject);
-    if (s === undefined) return undefined;
+    if (s === undefined) return -1;
     const when = at ?? this.frame(subject);
-    if (Number.isNaN(when)) return undefined;
-    const x = new Float64Array(this.n);
-    const v = new Float64Array(this.n);
+    if (Number.isNaN(when)) return -1;
+    if (readScratch.x.length < this.n)
+      readScratch = { x: new Float64Array(this.n), v: new Float64Array(this.n) };
+    const { x, v } = readScratch;
+    const b = this.base(s);
+    const flags = this.runs[b + RunField.FLAGS] as number;
+    const at0 = this.runs[b + RunField.AT] as number;
     sloped(true);
     try {
-      this.peek(s, when, x, v);
+      if ((flags & PENDING) === 0 && this.dueTo(s) === undefined && !(flags & OLDER && when < at0))
+        this.evaluateRun(at0, this.runs[b + RunField.MS] as number, b + RunField.X0, when, x, v);
+      else this.peek(s, when, x, v);
     } finally {
       sloped(false);
     }
-    return { x, v, s };
+    return s;
   }
 
   check(a: readonly number[] | undefined, n: number): void {
@@ -594,7 +610,7 @@ export class Motions<I> {
    * or moves on other axes than the row's `axes`.
    */
   lodge(hot: Float64Array, at: number, law: Float64Array, axes: number): boolean {
-    if (this.numbers.size > 1 || (this.n >= 0 && this.n !== axes)) return false;
+    if (this.numbers.size > 1 || (this.n >= 0 && this.n !== axes) || this.reflects) return false;
     if (this.cap > 0 && this.numbers.size === 1) {
       const b = this.base(0);
       for (let i = 0; i < this.stride; i++) hot[at + i] = this.runs[b + i] as number;
@@ -653,6 +669,9 @@ export class Motions<I> {
       this.runs[b + RunField.X0 + n + i] = seg.v0[i] as number;
       this.runs[b + RunField.X0 + 2 * n + i] = seg.to[i] as number;
     }
+    const edges = seg.edges;
+    if (edges !== undefined && this.reflects)
+      for (let i = 0; i < 2 * n; i++) this.runs[b + RunField.X0 + 3 * n + i] = edges[i] as number;
   }
 
   /** The stretch subject `s` is playing now, as an object. */
@@ -665,6 +684,7 @@ export class Motions<I> {
       x0: numbers(this.runs, x, n),
       v0: numbers(this.runs, x + n, n),
       to: numbers(this.runs, x + 2 * n, n),
+      ...(this.reflects && { edges: numbers(this.runs, x + 3 * n, 2 * n) }),
       change: this.causes?.[s],
     };
   }
@@ -702,29 +722,35 @@ export class Motions<I> {
   }
 
   evaluateSegment(seg: Segment, t: number, xo: Float64Array, vo: Float64Array): void {
-    this.evaluate(seg.at, seg.ms, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo);
+    this.evaluate(seg.at, seg.ms, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo, seg.edges, 0);
   }
 
   /** `evaluateSegment` of `latest(s)`, read from the run without building it. */
   evaluateLatest(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     const runs = this.runs;
     const b = this.base(s);
-    const x = b + RunField.X0;
-    const n = this.n;
-    const at = runs[b + RunField.AT] as number;
-    this.evaluate(
-      at,
+    this.evaluateRun(
+      runs[b + RunField.AT] as number,
       runs[b + RunField.MS] as number,
-      runs,
-      x,
-      runs,
-      x + n,
-      runs,
-      x + 2 * n,
+      b + RunField.X0,
       t,
       xo,
       vo,
     );
+  }
+
+  /** `evaluate` of the run whose `x0` starts at `x` in `runs`. */
+  private evaluateRun(
+    at: number,
+    ms: number,
+    x: number,
+    t: number,
+    xo: Float64Array,
+    vo: Float64Array,
+  ): boolean {
+    const runs = this.runs;
+    const n = this.n;
+    return this.evaluate(at, ms, runs, x, runs, x + n, runs, x + 2 * n, t, xo, vo, runs, x + 3 * n);
   }
 
   private evaluate(
@@ -739,11 +765,31 @@ export class Motions<I> {
     t: number,
     xo: Float64Array,
     vo: Float64Array,
+    edges: ArrayLike<number> | undefined,
+    e: number,
   ): boolean {
     const space = this.space;
     if (space !== null)
       return space.closed(this.lawBuf, this.shape.ease, at, ms, x0, x, v0, v, to, g, t, xo, vo);
-    return closed(this.lawBuf, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
+    const n = this.n;
+    return closed(
+      this.lawBuf,
+      this.shape.ease,
+      n,
+      at,
+      ms,
+      x0,
+      x,
+      v0,
+      v,
+      to,
+      g,
+      t,
+      xo,
+      vo,
+      edges,
+      e,
+    );
   }
 }
 

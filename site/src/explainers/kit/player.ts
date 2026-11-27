@@ -454,6 +454,7 @@ const inert: Handle = {
   push() {},
   set() {},
   read: () => undefined,
+  landed: false,
   weightOf: () => 0,
   done: Promise.resolve(),
   played: Promise.resolve(false),

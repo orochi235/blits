@@ -4,7 +4,7 @@
 what a `Show` is, how `play` schedules one, the calls made building it, and how each of the five
 libraries that stage timed effects on blits would write theirs as one.
 
-Built 2026-11-25 on the `show` branch, not yet merged or released.
+Built 2026-11-25; released in 1.5.3.
 
 ## What it is
 

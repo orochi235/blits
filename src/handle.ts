@@ -22,6 +22,10 @@ export interface HandleHost<I, O> {
   rise(voice: Voice<I, O>, opts: RiseOptions | undefined): void;
   release(voice: Voice<I, O>): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
+  /** Whether every subject the voice's motion reaches sits where it heads at the latest frame. */
+  landed(voice: Voice<I, O>): boolean;
+  /** The voice time `subject` was at in the latest frame, NaN before it has one. */
+  frameOf(voice: Voice<I, O>, subject: I): number;
   /**
    * Records a write the host made through `h`, which `again` makes once more where a seek replays
    * it, on the handle it is given: `h`, or a read ahead's handle on its copy of the voice.
@@ -226,6 +230,11 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (this.#host.taping()) this.#host.record(this, 'release', (h) => h.release());
   }
 
+  get landed(): boolean {
+    const voice = this.#voice;
+    return voice !== null && this.#host.landed(voice);
+  }
+
   weightOf(subject: I): number {
     const voice = this.#voice;
     return voice === null ? 0 : this.#host.weightOf(voice, subject);
@@ -257,7 +266,10 @@ export class VoiceHandle<I, O> implements Handle<I> {
   read(subject: I, at?: number): Motion<Value> | undefined {
     const voice = this.#voice;
     if (voice === null || motionOf(voice.patch) === undefined) return undefined;
-    return (voice.patch as unknown as Moves<I>).read(subject, at);
+    // The handle knows its voice, so the patch need not look it up among every voice cued.
+    const off = voice.state === 'done' || voice.parked;
+    const when = at ?? (off ? undefined : this.#host.frameOf(voice, subject));
+    return (voice.patch as unknown as Moves<I>).read(subject, when);
   }
 }
 

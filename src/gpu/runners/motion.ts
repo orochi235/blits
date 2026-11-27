@@ -1,4 +1,4 @@
-import { BOUND, EASED } from '../../closed.js';
+import { BOUND, EASED, REFLECT } from '../../closed.js';
 import { curveData } from '../../easing.js';
 import { motionOf } from '../../motion.js';
 import { SECOND } from '../anchors.js';
@@ -56,6 +56,7 @@ export function motionPack(patch: object, channels: ChannelLookup): Packed | und
     return { why: `its subjects move on ${motions.n} axes, and ${name} takes ${axes}` };
   const law = motions.law();
   const form = law[0] as number;
+  if (form === REFLECT) return { why: 'its bounds reflect a coast, which the GPU does not' };
   if (!FORMS.has(form)) return { why: `the GPU has no WGSL for its law ${form}` };
   if (form === BOUND && axes > BOUND_AXES)
     return {

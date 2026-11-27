@@ -542,6 +542,14 @@ export interface Handle<I = unknown> {
    * own `read`. Undefined for any other voice, and wherever the patch's `read` is.
    */
   read(subject: I, at?: number): Motion<Value> | undefined;
+  /**
+   * Whether every subject this voice's motion patch reaches has landed where it heads, as of the
+   * latest frame: on its target and still, within the patch's `settle`, with no `to`, `push` or
+   * `set` still waiting. Reading it fades nothing and takes no subject off its lane, as
+   * `fade({ at: 'rest' })` does, and it costs next to nothing once every subject has landed. False
+   * for a voice playing no motion patch, and for one still pending or done.
+   */
+  readonly landed: boolean;
   /** Resolves when the voice has been removed from the mix, however that happened. */
   readonly done: Promise<void>;
   /**

@@ -58,14 +58,24 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
   const fadeIn = this.reducedNow ? 0 : (voice.fade.in ?? 0);
   if (fadeIn > 0 && now - this.sinceOf(voice, voice.latest) < fadeIn) return false;
   if (voice.state === 'frozen' || voice.holding !== null) return true;
+  if (voice.motion === undefined || !(voice.elapsedAt(now) >= voice.latest)) return false;
+  return landed(this, voice, now);
+}
+
+/**
+ * Whether every subject a motion voice reaches sits where it heads at the latest frame, with no
+ * change waiting: false for a voice playing no motion patch, or not yet started or done.
+ */
+export function landed<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): boolean {
   const motion = voice.motion;
-  if (motion === undefined || !(voice.elapsedAt(now) >= voice.latest)) return false;
+  if (motion === undefined || Number.isNaN(now)) return false;
+  if (voice.state === 'pending' || voice.state === 'done') return false;
   // A subject met inside its stagger and not read since has no run yet, and moves once it is. A
   // drop takes it out of `met`, and its record, listed in `early`, goes once its origin passes.
   unearly(voice, now);
   const met = voice.met;
   if (met !== null) {
-    const history = this.opts.history !== undefined;
+    const history = mix.opts.history !== undefined;
     let waiting = false;
     for (const subject of met) {
       const h = voice.subjects.get(subject);
@@ -75,7 +85,7 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
         break;
       }
       met.delete(subject);
-      if (history) metLeft(this, voice, subject);
+      if (history) metLeft(mix, voice, subject);
     }
     if (met.size === 0) voice.met = null;
     if (waiting) return false;

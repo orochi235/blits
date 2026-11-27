@@ -1,12 +1,26 @@
-import { BOUND, COAST, CRITICAL, DRIFT, EASED, OVER, UNDER } from './closed.js';
+import {
+  BOUND,
+  backs,
+  COAST,
+  CRITICAL,
+  DRIFT,
+  EASED,
+  OVER,
+  REFLECT,
+  reflected,
+  STOP,
+  UNDER,
+  walked,
+} from './closed.js';
 import { type Curve, curve } from './easing.js';
-import { Motions } from './motions.js';
+import { Motions, readScratch } from './motions.js';
 import { reading } from './reading.js';
 import { release } from './shared.js';
 import type { Shape } from './stretch.js';
 import { sampleThen } from './then.js';
 import type {
   Glide,
+  GlideEdge,
   GlideOptions,
   Motion,
   PerSubject,
@@ -20,6 +34,7 @@ import type { Easing, MotionSpec, Setting } from './types.js';
 
 export type {
   Glide,
+  GlideEdge,
   GlideOptions,
   Motion,
   MotionOptions,
@@ -90,9 +105,12 @@ class MotionPatch<I, O, V extends Value> {
   }
   read(subject: I, at?: number): Motion<V> | undefined {
     const state = this.motions;
-    const r = state.read(subject, at);
-    if (r === undefined) return undefined;
-    return { value: state.value(r.s, r.x) as V, velocity: state.value(r.s, r.v) as V };
+    const s = state.read(subject, at);
+    if (s < 0) return undefined;
+    return {
+      value: state.value(s, readScratch.x) as V,
+      velocity: state.value(s, readScratch.v) as V,
+    };
   }
 }
 
@@ -112,7 +130,7 @@ class GlidePatch<I, O, V extends Value> extends MotionPatch<I, O, V> {
   constructor(
     writes: keyof O,
     motions: Motions<I>,
-    private readonly edges: PerSubject<I, readonly [min: V, max: V]> | undefined,
+    private readonly limits: PerSubject<I, readonly [min: V, max: V]> | undefined,
   ) {
     super(writes, motions);
   }
@@ -120,7 +138,7 @@ class GlidePatch<I, O, V extends Value> extends MotionPatch<I, O, V> {
     this.motions.change(subject, { at, v: axes(velocity) });
   }
   bounds(subject: I): readonly [min: V, max: V] | undefined {
-    const b = this.edges;
+    const b = this.limits;
     return b === undefined ? undefined : per(b, subject);
   }
 }
@@ -196,7 +214,7 @@ class SpringShape<I, V extends Value> extends StockShape<I, V> implements Shape<
 class GlideShape<I, V extends Value> extends StockShape<I, V> implements Shape<I> {
   readonly ease = undefined;
   readonly ms = undefined;
-  private readonly edges: PerSubject<I, readonly [min: V, max: V]> | undefined;
+  private readonly limits: PerSubject<I, readonly [min: V, max: V]> | undefined;
   constructor(
     readonly law: readonly number[],
     private readonly motion: MotionSpec,
@@ -208,31 +226,86 @@ class GlideShape<I, V extends Value> extends StockShape<I, V> implements Shape<I
     private readonly tau: number,
   ) {
     super(opts.from, opts.velocity, opts.from);
-    this.edges = opts.bounds;
+    this.limits = opts.bounds;
   }
   spec(): MotionSpec {
     return this.motion;
   }
   override aim(x: number[], v: number[], _was: number[] | null, s: I, put: boolean): number[] {
     const rest = x.map((xi, i) => xi + (v[i] as number) * this.tau);
-    if (this.edges === undefined) return rest;
-    const [lo, hi] = per(this.edges, s);
-    const min = axes(lo);
-    const max = axes(hi);
-    if (min.length !== rest.length || max.length !== rest.length)
-      throw new Error('blits: bounds on a glide have as many axes as its subjects');
+    if (this.limits === undefined) return rest;
+    const [min, max] = this.box(x, s);
+    const reflect = this.law[0] === REFLECT;
     return rest.map((r, i) => {
       const a = min[i] as number;
       const b = max[i] as number;
       const xi = x[i] as number;
       // A set past an edge stays there: a drag holds it out, and only a push lets it spring back.
       if (put && (xi < a || xi > b)) return r;
-      return r < a ? a : r > b ? b : r;
+      if (!reflect || backs(this.tau, a, b, xi, v[i] as number)) return r < a ? a : r > b ? b : r;
+      reflected(
+        this.tau,
+        this.law[4] as number,
+        a,
+        b,
+        xi,
+        v[i] as number,
+        Number.POSITIVE_INFINITY,
+      );
+      return walked.x;
     });
+  }
+
+  edges(x: number[], s: I, put: boolean): number[] | undefined {
+    if (this.law[0] !== REFLECT) return undefined;
+    const [min, max] = this.box(x, s);
+    const n = x.length;
+    const out = new Array<number>(2 * n);
+    for (let i = 0; i < n; i++) {
+      const a = min[i] as number;
+      const b = max[i] as number;
+      const xi = x[i] as number;
+      // A set past an edge coasts on as an unbounded glide; MAX_VALUE, not Infinity, survives JSON.
+      const free = put && (xi < a || xi > b);
+      out[i] = free ? -Number.MAX_VALUE : a;
+      out[n + i] = free ? Number.MAX_VALUE : b;
+    }
+    return out;
+  }
+
+  /** Subject `s`'s least and greatest edge per axis. */
+  private box(x: number[], s: I): [number[], number[]] {
+    const [lo, hi] = per(this.limits as PerSubject<I, readonly [min: V, max: V]>, s);
+    const min = axes(lo);
+    const max = axes(hi);
+    if (min.length !== x.length || max.length !== x.length)
+      throw new Error('blits: bounds on a glide have as many axes as its subjects');
+    return [min, max];
   }
 }
 
 const EASED_LAW: readonly number[] = [EASED, 0, 0, 0, 0];
+
+/** A glide's `edge`, checked, with a reflect of 0 taken as the stop it is. */
+function edgeOf(edge: GlideEdge | undefined): 'spring' | 'stop' | { readonly reflect: number } {
+  if (edge === undefined || edge === 'spring') return 'spring';
+  if (edge === 'stop') return 'stop';
+  const r = typeof edge === 'object' && edge !== null ? edge.reflect : Number.NaN;
+  if (!(r >= 0 && r <= 1))
+    throw new RangeError(
+      "blits: a glide's edge is 'spring', 'stop' or { reflect: r } with r from 0 to 1",
+    );
+  return r === 0 ? 'stop' : { reflect: r };
+}
+
+/** A law's settle: negative where it measures a length over the axes (`closed`, `Motions.moving`). */
+function settleLaw(settle: number, by: 'axis' | 'length' | undefined): number {
+  if (!(settle >= 0 && settle < Infinity))
+    throw new RangeError('blits: a motion patch takes a finite settle of 0 or more');
+  if (by !== undefined && by !== 'axis' && by !== 'length')
+    throw new RangeError(`blits: settleBy is 'axis' or 'length', not ${String(by)}`);
+  return by === 'length' ? -settle : settle;
+}
 
 class TweenShape<I, V extends Value> extends StockShape<I, V> implements Shape<I> {
   readonly law = EASED_LAW;
@@ -281,17 +354,25 @@ export function spring<I, O, V extends Value = number>(
       'blits: a spring takes a finite positive mass, and finite stiffness and damping of 0 or more',
     );
   const settle = opts.settle ?? 1e-4;
+  const by = settleLaw(settle, opts.settleBy);
   const w0 = Math.sqrt(k / m);
   const zeta = c / (2 * Math.sqrt(k * m));
   let law: number[];
-  if (k === 0) law = c === 0 ? [DRIFT, settle, 0, 0, 0] : [COAST, settle, m / c, 0, 0];
-  else if (zeta < 1) law = [UNDER, settle, zeta, w0, w0 * Math.sqrt(1 - zeta * zeta)];
-  else if (zeta === 1) law = [CRITICAL, settle, 0, w0, 0];
+  if (k === 0) law = c === 0 ? [DRIFT, by, 0, 0, 0] : [COAST, by, m / c, 0, 0];
+  else if (zeta < 1) law = [UNDER, by, zeta, w0, w0 * Math.sqrt(1 - zeta * zeta)];
+  else if (zeta === 1) law = [CRITICAL, by, 0, w0, 0];
   else {
     const s = Math.sqrt(zeta * zeta - 1);
-    law = [OVER, settle, -w0 * (zeta - s), -w0 * (zeta + s), 0];
+    law = [OVER, by, -w0 * (zeta - s), -w0 * (zeta + s), 0];
   }
-  const motion: MotionSpec = { kind: 'spring', stiffness: k, damping: c, mass: m, settle };
+  const motion: MotionSpec = {
+    kind: 'spring',
+    stiffness: k,
+    damping: c,
+    mass: m,
+    settle,
+    ...(opts.settleBy === 'length' && { settleBy: 'length' }),
+  };
   return new SpringPatch<I, O, V>(
     writes,
     new Motions(new SpringShape(law, motion, opts)),
@@ -322,10 +403,28 @@ export function glide<I, O, V extends Value = number>(
     throw new RangeError('blits: a glide takes a finite positive stiffness');
   const tau = ms / 1000;
   const settle = opts.settle ?? 1e-4;
+  const by = settleLaw(settle, opts.settleBy);
   const bounded = opts.bounds !== undefined;
+  const length = opts.settleBy === 'length' && { settleBy: 'length' as const };
+  const edge = edgeOf(opts.edge);
+  const law =
+    edge === 'spring'
+      ? [BOUND, by, tau, Math.sqrt(k), 0]
+      : edge === 'stop'
+        ? [BOUND, by, tau, Math.sqrt(k), STOP]
+        : [REFLECT, by, tau, Math.sqrt(k), edge.reflect];
   const shape = new GlideShape(
-    bounded ? [BOUND, settle, tau, Math.sqrt(k), 0] : [COAST, settle, tau, 0, 0],
-    bounded ? { kind: 'glide', ms, settle, stiffness: k } : { kind: 'glide', ms, settle },
+    bounded ? law : [COAST, by, tau, 0, 0],
+    bounded
+      ? {
+          kind: 'glide',
+          ms,
+          settle,
+          ...length,
+          ...(edge !== 'spring' && { edge }),
+          stiffness: k,
+        }
+      : { kind: 'glide', ms, settle, ...length },
     opts,
     tau,
   );

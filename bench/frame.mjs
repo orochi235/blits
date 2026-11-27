@@ -100,6 +100,9 @@ const settle = () => spring('position', { from: [0, 0, 0], to: (s) => [s.seed, 1
 // animator wrote it before there was one: a `fn` looking each subject's endpoints up per call.
 // LONG=<ms> keeps a long row's tweens in flight past FRAMES=5000 (83 s), for a profile of the in-flight frame.
 const LONG = Number(process.env.LONG ?? 10000);
+// READS=read reads each `springs` voice's handle every frame, as weasel's animator reads its
+// springs to report them; READS=landed asks the handle's `landed` instead.
+const READS = process.env.READS;
 const smooth = (u) => u * u * (3 - 2 * u);
 const glideTo = () =>
   tween('position', { from: [0, 0, 0], to: (s) => [s.seed, 1, 0], ms: LONG, ease: smooth });
@@ -450,7 +453,9 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       m.cue({ patch: flicker(0), target: (s) => s === mine, loop: true });
   if (kind === 'named')
     for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine], loop: true });
-  if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
+  const springs = [];
+  if (kind === 'springs')
+    for (const mine of subjects) springs.push([m.cue({ patch: settle(), subjects: [mine] }), mine]);
   // A span of ten clips every four frames, each starting 2 s after it is cued, so as many play.
   const reel = kind === 'spans' ? m.owns({ start: 0 }) : null;
   let spanned = 0;
@@ -714,6 +719,9 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       }
     else if (pulls) m.pull(list, columns);
     else for (let j = 0; j < list.length; j++) m.probe(list[j], scratch);
+    if (READS === 'read')
+      for (let j = 0; j < springs.length; j++) springs[j][0].read(springs[j][1]);
+    else if (READS === 'landed') for (let j = 0; j < springs.length; j++) springs[j][0].landed;
   };
   let t = 0;
   let first = 0;
