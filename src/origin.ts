@@ -20,13 +20,15 @@ export const MOST = 256;
  * Keeps the clock a voice is leaving at its local time `u`, ahead of a rate change, ramp or seek,
  * where a subject's origin could still be found on it.
  */
-export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void {
+export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false, kept = false): void {
   const past = voice.clocks;
   // A voice with neither stagger nor children is only ever asked when its clock read 0, and where
   // one running back last reached it.
   const reach =
     voice.holding !== null || voice.spec.stagger !== undefined ? Number.POSITIVE_INFINITY : 0;
+  // A seek that keeps state leaves the clock a frozen record's end is found on: see `keptEnd`.
   if (
+    !kept &&
     past !== null &&
     !backsWith(voice) &&
     reached(past, 0) >= reach &&
@@ -55,6 +57,27 @@ export function pastRunBack<I, O>(voice: Voice<I, O>, elapsed: number): number {
     if (!backsWith(p)) continue;
     const t = backWith(p, elapsed);
     if (t >= p.anchorNow && t <= p.until) return t;
+  }
+  return Number.NaN;
+}
+
+/**
+ * The mix time a voice's clock got to `elapsed` running forward, where the clock it runs on now was
+ * entered past it by seeks that kept state: the moment of the seek that crossed it, or where a clock
+ * before read it. NaN where its clock now reads it itself, where a seek since rebuilt its records,
+ * which step as though this clock had always run, and where its past clocks no longer say.
+ */
+export function keptEnd<I, O>(voice: Voice<I, O>, elapsed: number): number {
+  const past = voice.clocks;
+  if (past === null || voice.owner !== null || !(voice.anchorElapsed > elapsed)) return Number.NaN;
+  let at = voice.anchorNow;
+  for (let i = past.length - 1; i >= 0; i--) {
+    const p = past[i] as Past;
+    if (p.until !== at || p.rebuilds !== voice.rebuilds) return Number.NaN;
+    if (!(elapsedWith(p, p.until) >= elapsed)) return at;
+    const t = timeWith(p, elapsed);
+    if (t >= p.anchorNow) return t;
+    at = p.anchorNow;
   }
   return Number.NaN;
 }

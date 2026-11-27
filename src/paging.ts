@@ -135,22 +135,25 @@ export function pageTransport(transport: Transport): void {
     records.push({ mix: '', stream: 'frame', at: f.at, seq: f.seq, data: { u: f.u, k: f.k } }),
   );
   const pace = transport.pace;
-  const timeOf = (u: number) => (pace === null ? u : pace.reading(u));
-  if (transport.announced.some((a) => !pager.marks.has(a) && timeOf(a.at) < reach)) {
+  const timeOf = (a: Announced) => a.t ?? (pace === null ? a.at : pace.reading(a.at));
+  if (transport.announced.some((a) => !pager.marks.has(a) && timeOf(a) < reach)) {
     // An anchor cued later still picks among marks behind memory, and only an end can answer it.
     const ends = endMarks(transport.announced, timeOf);
     const kept: Announced[] = [];
     for (const a of transport.announced) {
-      if (!(timeOf(a.at) < reach)) {
+      const t = timeOf(a);
+      if (!(t < reach)) {
         kept.push(a);
         continue;
       }
+      // The clocks it is read through are shed below.
+      a.t = t;
       if (!pager.marks.has(a))
         records.push({
           mix: '',
           stream: 'mark',
           subject: a.order,
-          at: timeOf(a.at),
+          at: t,
           seq: a.seq,
           data: a,
         });
@@ -171,7 +174,7 @@ export function pageTransport(transport: Transport): void {
  * The marks some query could pick: for every name and tag, and for none, within one score (or one
  * mix's unnamed score), the first and last announced and the earliest and latest in time.
  */
-function endMarks(marks: readonly Announced[], timeOf: (u: number) => number): Set<Announced> {
+function endMarks(marks: readonly Announced[], timeOf: (a: Announced) => number): Set<Announced> {
   const ends = new Map<string, Announced[]>();
   const take = (key: string, a: Announced) => {
     const e = ends.get(key);
@@ -179,11 +182,11 @@ function endMarks(marks: readonly Announced[], timeOf: (u: number) => number): S
       ends.set(key, [a, a, a, a]);
       return;
     }
-    const t = timeOf(a.at);
+    const t = timeOf(a);
     if (a.order < (e[0] as Announced).order) e[0] = a;
     if (a.order > (e[1] as Announced).order) e[1] = a;
-    if (t < timeOf((e[2] as Announced).at)) e[2] = a;
-    if (t > timeOf((e[3] as Announced).at)) e[3] = a;
+    if (t < timeOf(e[2] as Announced)) e[2] = a;
+    if (t > timeOf(e[3] as Announced)) e[3] = a;
   };
   for (const a of marks) {
     const scope = a.score === undefined ? `#${a.slot}` : `:${a.score}`;

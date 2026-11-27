@@ -7,6 +7,7 @@ import type { Mixer } from './mixer.js';
 import { originOf, startedAt } from './origin.js';
 import { page } from './paging.js';
 import { wholeRecord } from './record.js';
+import { scoreTouched } from './scored.js';
 import type { Subject } from './subject.js';
 import type { Paged } from './types.js';
 import { unreach, unreached } from './unreached.js';
@@ -127,11 +128,14 @@ export function held<I, O>(
   // A voice already fading out at its end keeps that end, so a seek back replays it unread.
   if (delay > voice.latest && !leaving(voice, now)) {
     voice.latest = delay;
+    // A later end moves the marks an anchor on its score reads.
+    scoreTouched(this, voice);
     // A later end can take a frozen voice live again.
     if (voice.state === 'frozen') schedule(this, voice);
   }
   if (delay < voice.soonest && !leaving(voice, now)) {
     voice.soonest = delay;
+    scoreTouched(this, voice);
     // An earlier start moves where a voice running back ends.
     schedule(this, voice);
   }

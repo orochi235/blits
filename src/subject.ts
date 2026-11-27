@@ -53,6 +53,12 @@ export interface Ahead<S> {
    */
   leftTicks: number;
   left: S | undefined;
+  /**
+   * The last step that sent on the way to `state` and to `left`: a seek whose count of steps sent
+   * stops short of it must step again, or play's later sends are lost.
+   */
+  sentTicks: number;
+  leftSent: number;
 }
 
 /**

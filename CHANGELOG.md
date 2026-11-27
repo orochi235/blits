@@ -50,6 +50,17 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
   its latest stretch is read from its run, and a handle no longer looks its voice up among every
   voice cued. At 10,000 springs each read once a frame, a frame took 2.20 ms where it took 3.59
   (teitou, `bench/springreads.sh`).
+- A seek back sends again what a `stepMs` patch sent in play after the moment sought. Where the
+  record replaced had stepped further, the record put back took its state and skipped those steps'
+  sends.
+- A handle `seek` with `state: 'keep'` that takes a voice frozen after its end past that end steps
+  each subject's state to the moment of the seek. It was left where the subject's last probe had
+  stepped it, so a read ahead across the seek disagreed with play.
+- An anchor on a score follows a voice's end when a subject met later moves it, under a transport
+  as without one. On a transport it kept the end the voice had when the anchor was first placed.
+- With a history store, an announced mark keeps its mix time once the transport pages the rate
+  changes before it. Read through the rates left in memory, it moved, and so did a voice anchored
+  on it.
 
 ## 1.6.0
 

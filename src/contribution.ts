@@ -10,7 +10,7 @@ import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
 import { nearly } from './nearly.js';
-import { ownerReading } from './origin.js';
+import { keptEnd, ownerReading } from './origin.js';
 import { pageOut } from './paging.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
@@ -157,7 +157,7 @@ export function contribution<I, O>(
       still === 0
         ? now
         : still === 1
-          ? voice.timeAt(held.delay + voice.span)
+          ? endFor(voice, held.delay + voice.span)
           : voice.ranBackTo(held.delay, now);
     // Never probed, it may be a record a seek put back, sharing its copy's state until it steps.
     const snaps = held.snaps;
@@ -268,6 +268,12 @@ export function keyed<I, O>(
   return delta;
 }
 
+/** The mix time a subject `end` into a voice got past its last pass, where it steps to frozen after. */
+function endFor<I, O>(voice: Voice<I, O>, end: number): number {
+  const kept = keptEnd(voice, end);
+  return Number.isNaN(kept) ? voice.timeAt(end) : kept;
+}
+
 /** How many whole intervals of `tick` a subject's step grid holds by mix time `to`. */
 function dueBy(held: Subject<unknown>, tick: number, to: number): number {
   // The epsilon keeps an interval like 1000 / 120 from landing a hair short of a whole count.
@@ -302,8 +308,16 @@ function ahead<I, O>(
   if (held.ticks !== was.ticks || held.since !== got.since || held.rebuilt !== was.rebuilt) return;
   const at = got.sought;
   const due = dueBy(held, tick, to);
-  const usable = got.state !== undefined && got.ticks <= due;
-  if (got.left !== undefined && got.leftTicks <= due && !(usable && got.ticks > got.leftTicks)) {
+  // Steps play sent after the moment sought send again, so a state stepped past them is not taken.
+  const sent = mix.resent?.get(held) ?? Number.NaN;
+  const known = (n: number) => Number.isNaN(sent) || n <= sent;
+  const usable = got.state !== undefined && got.ticks <= due && known(got.sentTicks);
+  if (
+    got.left !== undefined &&
+    got.leftTicks <= due &&
+    known(got.leftSent) &&
+    !(usable && got.ticks > got.leftTicks)
+  ) {
     // Taken, not copied: the next seek back keeps the state this record steps on to in its place.
     held.state = got.left;
     got.left = undefined;
@@ -319,8 +333,10 @@ function ahead<I, O>(
   const last = usable ? got.at : from.at;
   if (!(at < to) || at - last < apart(mix.opts.history as { every?: number })) return;
   own(voice, held);
+  const sends = mix.sent.length;
   mix.tick(voice, subject, held, tick, at);
   got.state = copyState(voice, held.state);
+  got.sentTicks = mix.sent.length !== sends ? held.ticks : usable ? got.sentTicks : 0;
   got.ticks = held.ticks;
   got.at = at;
 }

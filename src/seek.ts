@@ -73,6 +73,7 @@ function restore<I, O>(
   const snap = snaps[i] as NonNullable<typeof snaps>[number];
   // What the record replaced held, which a record put back over it would lose.
   const { ticks, since, rebuilt, state, slot, restored, restedAt } = live;
+  const leftSent = lastSent(mix.sends?.get(live));
   let h: Subject<unknown>;
   if (mine && live.reaches) {
     // Its chain may still read its number from it, and its store has just stamped it.
@@ -109,6 +110,8 @@ function restore<I, O>(
         state: undefined,
         leftTicks: 0,
         left: undefined,
+        sentTicks: 0,
+        leftSent: 0,
       };
       snap.ahead = ahead;
     } else {
@@ -119,9 +122,17 @@ function restore<I, O>(
       // Nothing else holds the record replaced, so its state is taken, not copied.
       ahead.leftTicks = ticks;
       ahead.left = state;
+      ahead.leftSent = leftSent;
     }
   }
   return h;
+}
+
+/** The last step a record's log of sends noted, 0 where it sent none; Infinity where it let go. */
+function lastSent(log: readonly number[] | undefined): number {
+  if (log === undefined || log.length === 0) return 0;
+  const n = log[log.length - 1] as number;
+  return Number.isNaN(n) ? Number.POSITIVE_INFINITY : n;
 }
 
 /**
@@ -420,6 +431,8 @@ function backTo(transport: Transport, t: number, frame: Frame): void {
   transport.undrop(seq);
   // What history kept after the frame is let go; the tape holds the calls that made it.
   transport.announced = transport.announced.filter((a) => a.seq <= seq);
+  // A mark still ahead of the moment sought is read through the clocks played on from there.
+  for (const a of transport.announced) if (a.t !== undefined && a.t > t) a.t = undefined;
   transport.frames.set(transport.frames.all().filter((f) => f.seq <= seq));
   if (transport.pacedSeq > seq) {
     transport.pace = null;

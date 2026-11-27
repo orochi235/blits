@@ -64,12 +64,28 @@ async function failures(
   return out;
 }
 
+/** Programs past the default range that each found a bug, in the mode they found it in. */
+const PINNED: [number, keyof typeof modes][] = [
+  // A seek back took the state play stepped on to, and lost the sends of the steps it skipped.
+  [242, 'remaps'],
+  // A seek keeping state past a voice's end left it stepped only to its last probe.
+  [243, 'remaps, transport and store'],
+  // A subject met later moved a voice's end, and an anchor on its score kept the old one.
+  [259, 'remaps, transport and store'],
+  // A store let go of the rate a mark was announced under, and the mark moved.
+  [344, 'remaps, transport and store'],
+];
+
 describe('seek and replay against straight play', () => {
-  for (const [name, mode] of Object.entries(modes))
-    for (const seed of seeds())
-      it(`program ${seed}, ${name}`, async () => {
-        const jumps = 'jumps' in mode && mode.jumps;
-        const remaps = 'remaps' in mode && mode.remaps;
-        expect(await failures(seed, mode.transport, mode.store, jumps, remaps)).toEqual([]);
-      });
+  const cases = [
+    ...Object.keys(modes).flatMap((name) => seeds().map((seed) => [seed, name] as const)),
+    ...PINNED.filter(([seed]) => !seeds().includes(seed)),
+  ];
+  for (const [seed, name] of cases)
+    it(`program ${seed}, ${name}`, async () => {
+      const mode = modes[name as keyof typeof modes];
+      const jumps = 'jumps' in mode && mode.jumps;
+      const remaps = 'remaps' in mode && mode.remaps;
+      expect(await failures(seed, mode.transport, mode.store, jumps, remaps)).toEqual([]);
+    });
 });

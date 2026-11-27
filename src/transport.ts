@@ -57,6 +57,11 @@ export interface Announced {
   slot: number;
   /** That mix's name, for `Marked.mix`. */
   mix: string | undefined;
+  /**
+   * Its mix time, fixed when a store takes the clocks before it out of memory, which reading `at`
+   * through the clocks left would misplace: see `markAt`.
+   */
+  t?: number;
 }
 
 type Member = Mixer<unknown, unknown>;

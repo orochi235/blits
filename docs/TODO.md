@@ -23,23 +23,6 @@ Owner tags:
   without history, reaching back only to the last host call. Needs a ruling on whether blits takes
   a seek with that limit. No consumer waits on it: weasel's clock bounds its history with a finite
   `ms` instead (2026-11-26). Closes on the ruling, or when such a seek ships.
-- **[agent] Replay fuzz program 98 under "transport" reads ahead short of play** (2026-11-27,
-  `BLITS_REPLAY_SEEDS=98-98 -t "program 98, transport"`, both lanes settings, with and without a
-  store; fails the same on `8d69c0be`, before the remap): a seek to frame 2, then a read ahead to
-  frame 29, shows m0.s1.g 0.6002 where play showed 0.6214. Not shrunk yet. Closes when 98 passes.
-- **[agent] Four replay fuzz programs of the remap modes fail with no remap in them** (2026-11-27,
-  `BLITS_REPLAY_SEEDS=1-400 -t remaps`; the remap modes draw other programs than the plain ones). Each
-  shrinks to plain calls, and 243 and 259 fail the same with every remapped voice swapped for an
-  unremapped patch of the remap's pass length (run on teitou):
-  242 (alone, and transport and store): a `sender` with `stepMs: 12`, `freeze: 'after'` and a named
-  stagger, ramped at frame 1; a seek to frame 5 loses an event the next frame sent in play.
-  243 (transport and store): a stateful patch with a finite pass, `loop: 2`, `freeze: 'both'`, cued at
-  frame 6, then a `seekKeep` at frame 8; a read ahead from a seek to frame 2 shows 0 where play showed 3.73.
-  259 (transport and store): a keys voice weighed `around` and anchored after the end of a voice whose
-  stagger is asked as met; a seek back to frame 2 shows g 1 at frame 5 where play showed 0.94.
-  344 (transport and store): an announcement, a mix rate of 2, then a `call` cueing a keys voice
-  anchored to the announcement; a seek back to frame 2 shows 0.472 at frame 29 where play showed 0.424.
-  Closes when those programs pass in both remap modes.
 - **[agent] Move the five timeline libraries onto `@msb235/blits/show`** (2026-11-25), in this order:
   x-xstitch and x-pcb, then beamos, then blinken, then klieg, which first moves its slot crossfade onto
   `mix.arc`. `docs/show.md` has each one's schema as a show and what doesn't fit. The subpath shipped in
@@ -51,7 +34,9 @@ Owner tags:
   option, or the owner rules the path belongs in the patch, not the keyframe.
 
 - **[maintainer] A read ahead cannot see a resting frame it skips** (2026-11-23, replay fuzz
-  programs 98, 630 and 717, the only programs of 1–1008 still failing on 2026-11-24):
+  programs 98, 630 and 717, the only programs of 1–1008 still failing on 2026-11-24; 98 is the
+  only one of 1–600 failing on 2026-11-27, under "transport" and "transport and store", where it
+  shrinks to a looping blend and a `fade({ at: 'rest' })` on one member):
   `fade({ at: 'rest' })` takes a subject out at the first frame its delta equals rest, and a looping
   keys patch rests at each pass start, so play takes it out only where a frame lands exactly there.
   A stepped `patch` does at its pass starts too (630, running back), and a `wave` at a zero

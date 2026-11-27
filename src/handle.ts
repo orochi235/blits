@@ -193,7 +193,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     let ahead = false;
     if (voice.state !== 'pending') {
       const u = this.#host.nowFor(voice);
-      leave(voice, u, true);
+      leave(voice, u, true, opts?.state === 'keep');
       voice.rebase(u);
       ahead = elapsed > voice.anchorElapsed;
     }

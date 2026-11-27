@@ -10,6 +10,19 @@ import {
   timeWith,
 } from './clock.js';
 
+/**
+ * The mix time of an announced mark, seen from host time `now`: the time it was fixed at where a
+ * store took the clocks before it out of memory, else its host time `at` read through `pace`.
+ */
+export function markAt(
+  pace: Pace | null,
+  mark: { readonly at: number; readonly t?: number },
+  now: number,
+): number {
+  if (mark.t !== undefined) return mark.t;
+  return pace === null ? mark.at : pace.at(mark.at, now);
+}
+
 /** A clock in a pace's log, with the frame that set it, which a history store's cut goes by. */
 export interface Paced extends Clock {
   seq: number;

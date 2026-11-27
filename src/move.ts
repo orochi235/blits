@@ -9,7 +9,8 @@ import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { leave as leaveClock, startedAt } from './origin.js';
 import { descendants, type Holding, heading, ownerReading, plays, starts } from './owner.js';
-import { mixAt, place, repin, startAt, startOf } from './place.js';
+import { markAt } from './pace.js';
+import { place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
@@ -60,7 +61,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     // Kept while still ahead, or while history reaches it; anchors waiting on one were placed above,
     // in every mix on the transport.
     const reach = mix.opts.history === undefined ? now : mix.transport.keepsFrom();
-    mix.announced = mix.announced.filter((a) => mixAt(mix, a.at) >= reach);
+    mix.announced = mix.announced.filter((a) => markAt(mix.pace, a, mix.u) >= reach);
   }
   // A live mix visits only the voices due by now; a projection, which copies few, visits all.
   const visit = mix.projecting || mix.walkAll ? mix.cued : popDue(mix, now);

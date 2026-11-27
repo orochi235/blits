@@ -8,6 +8,7 @@ import { markOf, voiceMarks } from './marks.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
 import { rewire } from './owner.js';
+import { markAt } from './pace.js';
 import { pin, place } from './place.js';
 import { recount } from './roster.js';
 import { HELD, type Stamp } from './stamps.js';
@@ -130,7 +131,7 @@ function nextEvent(transport: Transport, c: Transport, t: number): number {
       const inner = v.spec.marks;
       if (inner !== undefined) for (const mark of Object.keys(inner)) sooner(markOf(m, v, mark));
     }
-  for (const a of c.announced) sooner(c.pace === null ? a.at : c.pace.at(a.at, c.u));
+  for (const a of c.announced) sooner(markAt(c.pace, a, c.u));
   return e < t ? e : Number.POSITIVE_INFINITY;
 }
 

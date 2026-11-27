@@ -6,6 +6,7 @@ import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { nowSoFar } from './now.js';
 import { mixTime, ownerReading } from './owner.js';
+import { markAt } from './pace.js';
 import { holders, scored, scoredGone, scoreVersion, unhold } from './scored.js';
 import { refloor } from './spans.js';
 import type { Anchor, MarkName, Placement, Query, VoiceSpec } from './types.js';
@@ -503,7 +504,7 @@ function timeOf<I, O>(
         (q.name === undefined || a.name === q.name) &&
         (q.tag === undefined || a.tags.includes(q.tag))
       )
-        picked.take(a.order, Number.isNaN(a.at) ? undefined : mixAt(mix, a.at));
+        picked.take(a.order, Number.isNaN(a.at) ? undefined : markAt(mix.pace, a, mix.u));
   return (picked.any ? picked : forgotten).answer();
 }
 
