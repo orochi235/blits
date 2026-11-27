@@ -20,7 +20,7 @@ import { descendants, ownerReading, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
 import { remapped } from './remap.js';
-import { landed } from './rests.js';
+import { landed, landsIn } from './rests.js';
 import { heard } from './signals.js';
 import { cuedById, frameOf } from './strays.js';
 import type { Subject } from './subject.js';
@@ -277,6 +277,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       return mix.share === null ? 0 : mix.share.weightAt(voice, slot);
     },
     landed: (voice) => landed(mix, voice, mix.now),
+    landsIn: (voice) => landsIn(mix, voice, mix.now),
     frameOf: (voice, subject) => frameOf(mix, voice, subject),
     taping: () => taping(mix),
     attached: () => mix.attached(),

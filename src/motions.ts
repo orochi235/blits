@@ -1,5 +1,5 @@
 import { applied, change, commit, cut, dueTo, insert, peek, queue, rewind } from './changes.js';
-import { BOUND, COAST, closed, DRIFT, REFLECT, SPEED } from './closed.js';
+import { BOUND, COAST, closed, DRIFT, EASED, landsAfter, REFLECT, SPEED } from './closed.js';
 import type { Curve } from './easing.js';
 import {
   made,
@@ -497,6 +497,42 @@ export class Motions<I> {
       runs[b + RunField.FLAGS] = flags | LANDED;
     }
     return true;
+  }
+
+  /**
+   * The fewest ms of voice time after the latest frame before `landed` can turn true: the most any
+   * subject not yet landed needs, 0 where one may land at the next frame or cannot be told (a change
+   * waiting, a glide with bounds, a channel in a space). Reads each subject's stretch once, so a
+   * host asks it when it last found the voice moving, not every frame.
+   */
+  landsIn(): number {
+    const runs = this.runs;
+    const n = this.n;
+    const law = this.lawBuf;
+    let most = 0;
+    for (let s = 0; s < this.numbers.size; s++) {
+      const b = this.base(s);
+      const flags = runs[b + RunField.FLAGS] as number;
+      if ((flags & (LANDED | PENDING)) === LANDED) continue;
+      const subject = this.numbers.subject(s);
+      if (subject === absent) continue;
+      if (flags & PENDING || this.space !== null) return 0;
+      const at = runs[b + RunField.AT] as number;
+      const t = this.frame(subject);
+      if (!(t >= at)) return 0;
+      const ms = runs[b + RunField.MS] as number;
+      if (law[0] === EASED) {
+        most = Math.max(most, at + ms - t);
+        continue;
+      }
+      const x = b + RunField.X0;
+      const xs = this.xs;
+      if (this.evaluateRun(at, ms, x, t, xs, this.vs)) continue;
+      for (let i = 0; i < n; i++) xs[i] = (xs[i] as number) - (runs[x + 2 * n + i] as number);
+      most = Math.max(most, landsAfter(law, n, xs, this.vs));
+      if (most === Number.POSITIVE_INFINITY) return most;
+    }
+    return most;
   }
 
   /**

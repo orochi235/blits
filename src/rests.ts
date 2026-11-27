@@ -93,6 +93,18 @@ export function landed<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number):
   return motion.landed(voice.seeks);
 }
 
+/**
+ * The fewest ms of voice time after the latest frame before `landed` can turn true: 0 where it is
+ * true, may turn true at the next frame or cannot be told, Infinity where it never can.
+ */
+export function landsIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): number {
+  const motion = voice.motion;
+  if (motion === undefined || voice.state === 'done') return Number.POSITIVE_INFINITY;
+  if (!landed(mix, voice, now) && voice.state !== 'pending' && voice.met === null)
+    return motion.landsIn();
+  return 0;
+}
+
 /** Whether the lanes' values alone say if the subject at `slot` rests: see `Lanes.alone`. */
 export function restsLaned<I, O>(this: Mixer<I, O>, slot: number): boolean {
   return this.bounded.length === 0 && (this.lanes as Lanes<I, O>).alone(slot);

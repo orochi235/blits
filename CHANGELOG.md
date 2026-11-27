@@ -28,6 +28,10 @@ addition the minor, and a fix the patch. Each release lists its changes as **Bre
 - `settleBy: 'length'` on a spring or a glide holds the distance left and the speed each as one
   length over the axes, as a Euclidean rest threshold does; `'axis'`, the default, holds each axis
   on its own.
+- `landsIn` on a voice's handle: the fewest ms of voice time after the latest frame before
+  `landed` can turn true, so a host waiting on a landing reads nothing until then. Exact for a
+  coast, a bound from its energy for a spring, a tween's time left; 0 where it may land at the next
+  frame or cannot be told, Infinity where it never can.
 - `settleOn: 'speed'` on a coast (a spring with no stiffness, or a glide with no bounds) lands it
   once its speed is within `settle`, where it stands then, rather than once it is also within
   `settle` of where friction would stop it. The curve heads for that point from release, so it

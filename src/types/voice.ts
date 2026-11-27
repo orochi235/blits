@@ -590,6 +590,15 @@ export interface Handle<I = unknown> {
    * for a voice playing no motion patch, and for one still pending or done.
    */
   readonly landed: boolean;
+  /**
+   * The fewest ms of voice time after the latest frame before {@link Handle.landed | `landed`} can
+   * turn true, so a host waiting on it reads nothing until then: exact for a coast, a bound from
+   * its energy for a spring, a tween's time left. 0 where it is landed, may land at the next frame,
+   * or cannot be told (a change waiting, a glide with bounds, a channel in a space); Infinity where
+   * it never can (no damping, no motion patch, done). Reads each subject's stretch once: ask it on
+   * a frame that found the voice moving, not on every frame.
+   */
+  readonly landsIn: number;
   /** Resolves when the voice has been removed from the mix, however that happened. */
   readonly done: Promise<void>;
   /**

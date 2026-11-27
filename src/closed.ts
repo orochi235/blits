@@ -395,3 +395,66 @@ function coastSlowing(
   }
   return still;
 }
+
+/** Shaves an exact landing time by a hair, so rounding never sets it after the frame that lands. */
+const SOONER = 1 - 1e-9;
+
+/**
+ * The fewest ms after a stretch stands `y` from where it heads and moves at `v` (each `n` axes)
+ * before `closed` can find it still: exact for a coast, from its energy for a spring, which damping
+ * takes out no faster than e^(−4ζω₀t), twice the rate its amplitude falls at; 0 for a bounded
+ * glide, Infinity where it never lands.
+ */
+export function landsAfter(
+  law: ArrayLike<number>,
+  n: number,
+  y: ArrayLike<number>,
+  v: ArrayLike<number>,
+): number {
+  const form = law[0] as number;
+  const by = law[1] as number;
+  const length = by < 0;
+  const settle = length ? -by : by;
+  if (form === BOUND || form === REFLECT || form === EASED) return 0;
+  if (form === COAST || form === DRIFT) {
+    let far = 0;
+    let fast = 0;
+    for (let i = 0; i < n; i++) {
+      const yi = y[i] as number;
+      const vi = v[i] as number;
+      if (length) {
+        far += yi * yi;
+        fast += vi * vi;
+      } else {
+        far = Math.max(far, Math.abs(yi));
+        fast = Math.max(fast, Math.abs(vi));
+      }
+    }
+    if (length) {
+      far = Math.sqrt(far);
+      fast = Math.sqrt(fast);
+    }
+    // A coast on speed alone is still once slow; under reach, its distance left falls with it.
+    const top = law[3] === SPEED ? fast : Math.max(far, fast);
+    if (top <= settle) return 0;
+    if (form === DRIFT) return Number.POSITIVE_INFINITY;
+    return 1000 * (law[2] as number) * Math.log(top / settle) * SOONER;
+  }
+  let w2: number;
+  let rate: number;
+  if (form === OVER) {
+    w2 = (law[2] as number) * (law[3] as number);
+    rate = -2 * ((law[2] as number) + (law[3] as number));
+  } else {
+    const w0 = law[3] as number;
+    w2 = w0 * w0;
+    rate = 4 * (form === UNDER ? (law[2] as number) : 1) * w0;
+  }
+  let energy = 0;
+  for (let i = 0; i < n; i++) energy += w2 * (y[i] as number) ** 2 + (v[i] as number) ** 2;
+  // Still, every axis is within settle in both, or with `length` each length is.
+  const still = (w2 + 1) * settle * settle * (length ? 1 : n);
+  if (!(energy > still)) return 0;
+  if (!(rate > 0)) return Number.POSITIVE_INFINITY;
+  return ((1000 * Math.log(energy / still)) / rate) * SOONER;
+}

@@ -24,6 +24,8 @@ export interface HandleHost<I, O> {
   weightOf(voice: Voice<I, O>, subject: I): number;
   /** Whether every subject the voice's motion reaches sits where it heads at the latest frame. */
   landed(voice: Voice<I, O>): boolean;
+  /** The fewest ms of voice time after the latest frame before `landed` can turn true. */
+  landsIn(voice: Voice<I, O>): number;
   /** The voice time `subject` was at in the latest frame, NaN before it has one. */
   frameOf(voice: Voice<I, O>, subject: I): number;
   /**
@@ -233,6 +235,11 @@ export class VoiceHandle<I, O> implements Handle<I> {
   get landed(): boolean {
     const voice = this.#voice;
     return voice !== null && this.#host.landed(voice);
+  }
+
+  get landsIn(): number {
+    const voice = this.#voice;
+    return voice === null ? Number.POSITIVE_INFINITY : this.#host.landsIn(voice);
   }
 
   weightOf(subject: I): number {
